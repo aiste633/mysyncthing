@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Builds go/build/stbridge.aar (Syncthing core + bridge) with gomobile.
 # Needs: Go (toolchain auto-download ok), ANDROID_HOME, ANDROID_NDK_HOME.
+# -checklinkname=0: github.com/wlynxg/anet (Android interface listing) links to net internals.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -10,7 +11,8 @@ export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"
 
 [ -f "$st/go.mod" ] || { echo "go/syncthing submodule missing: git submodule update --init" >&2; exit 1; }
 
-version="$(git -C "$st" describe --tags --always)"
+# Shallow submodule checkouts have no tags, so the version is pinned in a file.
+version="$(cat "$here/syncthing.version")"
 # Reproducible builds (F-Droid): fixed timestamp from the pinned commit.
 export SOURCE_DATE_EPOCH="$(git -C "$st" log -1 --format=%ct)"
 
@@ -30,7 +32,7 @@ gomobile bind \
   -javapkg eu.stedb.mysyncthing \
   -tags noupgrade \
   -trimpath \
-  -ldflags "-w -buildid= -X github.com/syncthing/syncthing/lib/build.Version=$version -X github.com/syncthing/syncthing/lib/build.Stamp=$SOURCE_DATE_EPOCH -X github.com/syncthing/syncthing/lib/build.User=mysyncthing -X github.com/syncthing/syncthing/lib/build.Host=mysyncthing -X github.com/syncthing/syncthing/lib/build.Tags=noupgrade" \
+  -ldflags "-w -buildid= -checklinkname=0 -X github.com/syncthing/syncthing/lib/build.Version=$version -X github.com/syncthing/syncthing/lib/build.Stamp=$SOURCE_DATE_EPOCH -X github.com/syncthing/syncthing/lib/build.User=mysyncthing -X github.com/syncthing/syncthing/lib/build.Host=mysyncthing -X github.com/syncthing/syncthing/lib/build.Tags=noupgrade" \
   -o "$out/stbridge.aar" \
   .
 echo "built $out/stbridge.aar ($version)"

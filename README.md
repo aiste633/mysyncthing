@@ -28,6 +28,7 @@ git submodule update --init
 
 ```sh
 cd go/syncthing && git fetch --tags && git checkout vX.Y.Z
+echo vX.Y.Z > ../syncthing.version
 cd ../bridge && go mod tidy && go test .
 ```
 

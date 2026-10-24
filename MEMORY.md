@@ -25,4 +25,5 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 4. F-Droid metadata (fastlane/), reproducible-build check, release signing.
 
 ## Pins
-- Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Upstream requires Go 1.26.2.
+- Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Keep `go/syncthing.version` in sync when bumping.
+- Android link needs `-ldflags=-checklinkname=0` (wlynxg/anet uses go:linkname into net). Upstream requires Go 1.26.2.
