@@ -103,7 +103,7 @@ class RestClient(address: String, private val apiKey: String) {
 
     private suspend fun call(req: Request): String = withContext(Dispatchers.IO) {
         http.newCall(req).execute().use { resp ->
-            val text = resp.body.string()
+            val text = resp.body?.string().orEmpty()
             if (!resp.isSuccessful) throw ApiException(resp.code, text.take(200))
             text
         }
