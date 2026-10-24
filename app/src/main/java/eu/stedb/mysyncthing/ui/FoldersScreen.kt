@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
@@ -34,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderStatus
+import eu.stedb.mysyncthing.core.Snapshot
 import java.util.UUID
 
 /** A folder to create, possibly pre-filled from a pending offer. */
@@ -43,6 +45,12 @@ data class FolderDraft(val id: String, val label: String, val path: String = "",
 fun FoldersScreen(s: Snapshot, vm: MainViewModel) {
     var draft by remember { mutableStateOf<FolderDraft?>(null) }
     Box(Modifier.fillMaxSize()) {
+        if (s.loaded && s.folders.isEmpty() && s.pendingFolders.isEmpty()) {
+            EmptyState(
+                Icons.Default.FolderOpen, "No folders yet",
+                "Tap + to sync a folder on this phone. Folders other devices share with you appear here too.",
+            )
+        }
         LazyColumn(Modifier.fillMaxSize()) {
             s.pendingFolders.forEach { (id, pending) ->
                 pending.offeredBy.forEach { (device, offer) ->

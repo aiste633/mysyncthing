@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.AlertDialog
@@ -40,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.Snapshot
 
 private data class DeviceDraft(val id: String = "", val name: String = "")
 
@@ -74,6 +76,14 @@ fun DevicesScreen(s: Snapshot, vm: MainViewModel) {
                 }
             }
             items(s.devices, key = { it.deviceID }) { d -> DeviceRow(d, s, vm) }
+            if (s.loaded && s.devices.isEmpty() && s.pendingDevices.isEmpty()) {
+                item("empty") {
+                    EmptyState(
+                        Icons.Default.Devices, "No other devices yet",
+                        "Tap + and scan the other device's QR code, or show it this phone's ID from the row above.",
+                    )
+                }
+            }
         }
         FloatingActionButton(
             onClick = { draft = DeviceDraft() },

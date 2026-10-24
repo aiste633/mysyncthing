@@ -9,6 +9,10 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 data class SystemStatus(val myID: String, val uptime: Long = 0)
 
+/** 0: not asked yet, -1: declined, >0: accepted report version. */
+@Serializable
+data class Options(val urAccepted: Int = 0)
+
 @Serializable
 data class Device(
     val deviceID: String,
