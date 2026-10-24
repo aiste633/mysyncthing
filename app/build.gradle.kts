@@ -7,6 +7,8 @@ plugins {
 android {
     namespace = "eu.stedb.mysyncthing"
     compileSdk = 36
+    // Also strips the Go .so files, so it must match the NDK go/build.sh uses.
+    ndkVersion = providers.gradleProperty("mysyncthing.ndkVersion").get()
 
     defaultConfig {
         applicationId = "eu.stedb.mysyncthing"
@@ -21,6 +23,10 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            // Android 15+ phones are arm64; debug builds keep x86_64 for the emulator.
+            ndk { abiFilters += "arm64-v8a" }
+            // Reproducible builds: no git commit in the APK, so a source tarball build matches too.
+            vcsInfo { include = false }
         }
     }
 

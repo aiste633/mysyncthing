@@ -15,7 +15,7 @@ The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to
 
 ## Build
 
-Requirements: JDK 21, Go (the toolchain auto-downloads the version upstream needs), Android SDK 36, NDK (`ANDROID_NDK_HOME`).
+Requirements: JDK 21, Go (the toolchain auto-downloads the version upstream needs), Android SDK 36, and the NDK version pinned in `gradle.properties` (`mysyncthing.ndkVersion`; `sdkmanager "ndk;<version>"`).
 
 ```sh
 git submodule update --init
@@ -23,6 +23,28 @@ git submodule update --init
 ```
 
 `cd go/bridge && go test .` starts and stops the real core on the host. Run `go generate ./lib/api/auto` in `go/syncthing` once first.
+
+## Reproducible builds and releases
+
+Every build of a commit gives a byte-identical unsigned release APK (arm64 only; debug builds also carry x86_64). This is what lets F-Droid ship the APK signed with our key. What keeps it that way:
+
+- Toolchains are pinned in one place each: NDK in `gradle.properties`, Go in `go/syncthing/go.mod`, Gradle in the wrapper (with checksum), JDK 21 via `jvmToolchain`.
+- `go/build.sh` strips paths, build IDs and timestamps from the Go library, and builds through the fixed symlink `/tmp/mysyncthing-go`, because gomobile records module paths.
+- `gradle/verification-metadata.xml` holds SHA-256 checksums of every Gradle dependency. After changing a dependency or plugin version, refresh it:
+
+  ```sh
+  ./gradlew --write-verification-metadata sha256 :app:assembleRelease :app:assembleDebug testDebugUnitTest :app:lintDebug
+  ```
+
+- CI (`.github/workflows/reproducible.yml`) builds the release APK twice, with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report is attached). On tags and manual runs, F-Droid's build image builds it a third time from the recipe in `fdroid/`.
+
+Releasing:
+
+1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
+2. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk`.
+3. On your machine: `KEYSTORE=~/keys/mysyncthing.jks scripts/sign-release.sh v0.1.0`, then publish the draft.
+
+F-Droid: `fdroid/eu.stedb.mysyncthing.yml` is the draft recipe for fdroiddata, not yet submitted.
 
 ## Updating Syncthing
 
