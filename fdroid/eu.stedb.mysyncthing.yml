@@ -3,9 +3,11 @@
 # prints it) and update the Builds entry to the release tag.
 # CI builds from this file too (.github/workflows/reproducible.yml), with Repo and commit
 # pointed at the commit under test, so keep the build steps here and in CI in one place.
+# Go 1.26.2 is fetched by GOTOOLCHAIN=auto (checksum-verified). Reviewers may ask for a
+# source-built Go instead (srclibs: go@go1.26.2, as Syncthing-Fork's recipe does).
 Categories:
+  - Cloud Storage & File Sync
   - Connectivity
-  - System
 License: AGPL-3.0-only
 SourceCode: https://github.com/aiste633/mysyncthing
 IssueTracker: https://github.com/aiste633/mysyncthing/issues
@@ -29,9 +31,12 @@ Builds:
       - update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
     gradle:
       - yes
+    scanignore:
+      - go/syncthing/lib/model/testdata
     ndk: 30.0.16248370
 
-AllowedAPKSigningKeys: TODO-release-certificate-sha256
+# Fill in before submitting: the SHA-256 that scripts/sign-release.sh prints.
+# AllowedAPKSigningKeys: <64 hex digits>
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
