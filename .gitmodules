@@ -1,0 +1,3 @@
+[submodule "go/syncthing"]
+	path = go/syncthing
+	url = https://github.com/syncthing/syncthing.git
