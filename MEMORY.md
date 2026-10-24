@@ -26,4 +26,5 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 ## Pins
 - Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Keep `go/syncthing.version` in sync when bumping.
+- Build via `:app:assembleDebug`; `:core:bundle*Aar` fails by design (local Go AAR dependency).
 - Android link needs `-ldflags=-checklinkname=0` (wlynxg/anet uses go:linkname into net). Upstream requires Go 1.26.2.

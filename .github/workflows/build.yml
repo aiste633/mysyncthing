@@ -33,7 +33,8 @@ jobs:
         working-directory: go/bridge
         run: go vet . && go test .
       - name: Build, unit tests, lint
-        run: ./gradlew --no-daemon assembleDebug testDebugUnitTest lintDebug
+        # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
+        run: ./gradlew --no-daemon :app:assembleDebug testDebugUnitTest :app:lintDebug
       - uses: actions/upload-artifact@v4
         with:
           name: app-debug

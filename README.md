@@ -19,7 +19,7 @@ Requirements: JDK 21, Go (the toolchain auto-downloads the version upstream need
 
 ```sh
 git submodule update --init
-./gradlew assembleDebug   # runs go/build.sh first
+./gradlew :app:assembleDebug   # runs go/build.sh first; :core alone cannot be bundled as an AAR
 ```
 
 `cd go/bridge && go test .` starts and stops the real core on the host. Run `go generate ./lib/api/auto` in `go/syncthing` once first.
