@@ -31,11 +31,10 @@ val buildGoBridge by tasks.registering(Exec::class) {
     outputs.file(bridgeAar)
 }
 
-tasks.named("preBuild") { dependsOn(buildGoBridge) }
-
 dependencies {
     // Local AAR: fine for app builds; publishing :core as an AAR is not a goal.
-    api(files(bridgeAar))
+    // builtBy lets consumers (e.g. :app desugaring) wait for the AAR task.
+    api(files(bridgeAar).builtBy(buildGoBridge))
     api(libs.kotlinx.coroutines.android)
     api(libs.kotlinx.serialization.json)
     implementation(libs.androidx.core.ktx)
