@@ -2,6 +2,20 @@
 
 A Syncthing client for Android 15 and 16 (API 35/36), written in Kotlin and Jetpack Compose. It is a new app, not a fork of syncthing-android. It is distributed through F-Droid.
 
+## Home-screen widget
+
+See your sync status at a glance, without opening the app. The widget is a single row, the size of a search bar. It shows whether everything is up to date, syncing (with progress), paused or needs your attention, and which devices are connected. Its button pauses and resumes syncing, and a tap opens the app. Colours and icons follow your wallpaper and dark mode.
+
+<p align="center"><img src="docs/images/widget.png" width="400" alt="The widget in four states: up to date, syncing at 89 %, a new folder shared with you, and paused"></p>
+
+## Features
+
+- Folders and devices as clear cards with colour and icon status, in Material You colours and dark mode.
+- Accept shared folders with a suggested location, choose the folder type, sharing and file versioning.
+- Run conditions: Wi-Fi only, unmetered only, while charging, not in battery saver.
+- Starts at boot and keeps syncing in the background; the notification says what is happening.
+- Syncthing's own web GUI is built in for anything the app does not cover.
+
 ## Layout
 
 | Path | What |

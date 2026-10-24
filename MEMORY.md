@@ -50,6 +50,12 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Accepted folders default to `/storage/emulated/0/Syncthing/<label>`; accept screen offers folder type, sharing and versioning.
 - Request notification (own channel, Review/Ignore actions): mockup shown, waiting for the user's OK.
 
+## Widget (branch `home-widget`, stacked on `native-gui`, 2026-10-25)
+- `core/StatusWidget`: RemoteViews 4x1 pill (56 dp, centred in the cell), no polling: the service renders on summary changes, at most every 2 s. Colour + icon per `SyncState` (green check, amber arrows/pause/bell, red error, grey stop), progress bar while syncing, pause/resume button toggles `RunConditions.pausedByUser` (enforced like a run condition; also a Settings switch). Tap opens the app (Devices tab when only a device request waits).
+- Problem (red) includes "No network" and "Not connected"; a single offline device is grey in the app.
+- README features the widget near the top with docs/images/widget.png. F-Droid description should mention it once fastlane metadata exists.
+- Emulator tips: place widgets by long-press home, Widgets, then a raw `input motionevent` DOWN/MOVE/UP drag (`input draganddrop` does not work); `ui tap <text>` matches substrings anywhere, tap tabs by coordinates.
+
 ## Working rules
 - Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.
 - Never commit anything about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths), including this file, comments and commit messages. Use placeholders and check the staged diff before each commit. Local test notes live in Claude's own memory folder, not in the repo.

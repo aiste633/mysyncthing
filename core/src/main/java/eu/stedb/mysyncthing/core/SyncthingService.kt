@@ -33,6 +33,13 @@ class SyncthingService : LifecycleService() {
         super.onCreate()
         settings = Settings(this)
         createChannel()
+        // Renders at most every 2 s; a StateFlow collector always ends on the latest summary.
+        lifecycleScope.launch {
+            SyncStatus.summary.collect {
+                StatusWidget.render(this@SyncthingService, it)
+                delay(2_000)
+            }
+        }
         startForeground(NOTIFICATION_ID, notification("Starting"), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
 
         lifecycleScope.launch {
@@ -71,7 +78,10 @@ class SyncthingService : LifecycleService() {
     override fun onDestroy() {
         // Let the core flush its database before the process may be killed.
         runBlocking { SyncthingCore.stop() }
-        SyncStatus.publish(Summary(SyncState.Stopped, "Stopped"))
+        Summary(SyncState.Stopped, "Stopped").let {
+            SyncStatus.publish(it)
+            StatusWidget.render(this, it) // the collector above is already cancelled
+        }
         super.onDestroy()
     }
 

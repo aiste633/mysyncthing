@@ -24,8 +24,11 @@ data class DeviceState(
     val batterySaver: Boolean = false,
 )
 
+const val PAUSED_BY_USER = "Paused by you"
+
 /** Null when syncing is allowed, otherwise a short reason for the notification/UI. */
 fun RunConditions.blockedBy(d: DeviceState): String? = when {
+    pausedByUser -> PAUSED_BY_USER
     wifiOnly && !d.wifi -> "Not on Wi-Fi"
     unmeteredOnly && !d.unmetered -> "Network is metered"
     chargingOnly && !d.charging -> "Not charging"

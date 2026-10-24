@@ -20,4 +20,9 @@ class ConditionsTest {
         assertEquals("Not charging", RunConditions(chargingOnly = true).blockedBy(DeviceState(wifi = true)))
         assertNull(RunConditions(wifiOnly = true, unmeteredOnly = true, chargingOnly = true).blockedBy(wifiCharging))
     }
+
+    @Test
+    fun userPauseWinsOverEverything() {
+        assertEquals(PAUSED_BY_USER, RunConditions(pausedByUser = true).blockedBy(wifiCharging))
+    }
 }

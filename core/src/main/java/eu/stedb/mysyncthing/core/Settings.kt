@@ -25,6 +25,8 @@ data class RunConditions(
     val chargingOnly: Boolean = false,
     val respectBatterySaver: Boolean = true,
     val startOnBoot: Boolean = true,
+    /** Set by the widget or Settings; enforced like the other conditions. */
+    val pausedByUser: Boolean = false,
 )
 
 class Settings(context: Context) {
@@ -52,6 +54,7 @@ class Settings(context: Context) {
             it[CHARGING_ONLY] = c.chargingOnly
             it[RESPECT_BATTERY_SAVER] = c.respectBatterySaver
             it[START_ON_BOOT] = c.startOnBoot
+            it[PAUSED_BY_USER] = c.pausedByUser
         }
     }
 
@@ -71,6 +74,7 @@ class Settings(context: Context) {
         chargingOnly = this[CHARGING_ONLY] ?: false,
         respectBatterySaver = this[RESPECT_BATTERY_SAVER] ?: true,
         startOnBoot = this[START_ON_BOOT] ?: true,
+        pausedByUser = this[PAUSED_BY_USER] ?: false,
     )
 
     private fun Preferences.credentials(): Credentials? {
@@ -89,6 +93,7 @@ class Settings(context: Context) {
         val CHARGING_ONLY = booleanPreferencesKey("charging_only")
         val RESPECT_BATTERY_SAVER = booleanPreferencesKey("respect_battery_saver")
         val START_ON_BOOT = booleanPreferencesKey("start_on_boot")
+        val PAUSED_BY_USER = booleanPreferencesKey("paused_by_user")
         val CONDITION_PAUSE = stringSetPreferencesKey("condition_pause")
 
         fun randomToken(bytes: Int): String {

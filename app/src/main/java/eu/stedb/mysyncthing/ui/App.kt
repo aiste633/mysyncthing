@@ -56,7 +56,7 @@ private object Routes {
 }
 
 @Composable
-fun App(vm: MainViewModel = viewModel()) {
+fun App(requestedTab: String? = null, onTabShown: () -> Unit = {}, vm: MainViewModel = viewModel()) {
     val context = LocalContext.current
     AppTheme {
         val permissions = rememberPermissionState()
@@ -75,6 +75,10 @@ fun App(vm: MainViewModel = viewModel()) {
         val current by nav.currentBackStackEntryAsState()
         val route = current?.destination?.route
         val topLevel = Tab.entries.any { it.route == route }
+        LaunchedEffect(requestedTab) {
+            Tab.entries.find { it.route == requestedTab }?.let { nav.navigate(it.route) { launchSingleTop = true } }
+            if (requestedTab != null) onTabShown()
+        }
 
         UsageReportingPrompt(core, vm)
 
