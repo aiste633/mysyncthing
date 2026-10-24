@@ -33,7 +33,6 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun status(): SystemStatus = get("rest/system/status")
     suspend fun devices(): List<Device> = get("rest/config/devices")
     suspend fun device(id: String): Device = get("rest/config/devices/$id")
-    suspend fun options(): Options = get("rest/config/options")
     suspend fun folders(): List<Folder> = get("rest/config/folders")
     suspend fun connections(): Connections = get("rest/system/connections")
     suspend fun folderStatus(folder: String): FolderStatus = get("rest/db/status", "folder" to folder)
@@ -54,10 +53,6 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun setDeviceName(id: String, name: String) =
         send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })
-
-    /** -1 declines usage reporting, so the web GUI stops asking. */
-    suspend fun setUsageReporting(accepted: Int) =
-        send("PATCH", "rest/config/options", buildJsonObject { put("urAccepted", accepted) })
 
     suspend fun addFolder(id: String, label: String, path: String, deviceIds: List<String>) =
         send("POST", "rest/config/folders", buildJsonObject {

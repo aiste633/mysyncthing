@@ -90,15 +90,14 @@ class SyncthingService : LifecycleService() {
     }
 
     /**
-     * Fixes upstream defaults that do not suit a phone: the device name comes
-     * from the hostname ("localhost" on Android), and the web GUI would ask
-     * about usage reporting on every visit. Only touches values never chosen.
+     * Upstream names the device after the hostname, which is "localhost" on
+     * Android. Only replaces that default, never a name the user chose.
+     * Usage reporting is left to upstream's own consent prompt.
      */
     private suspend fun applyPhoneDefaults(client: RestClient) {
         runCatching {
             val me = client.device(client.status().myID)
             if (me.name.isBlank() || me.name == "localhost") client.setDeviceName(me.deviceID, phoneName())
-            if (client.options().urAccepted == 0) client.setUsageReporting(-1)
         }
     }
 
