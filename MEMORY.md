@@ -15,11 +15,12 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 ## State
 - 2026-10-24: scaffold written. The Go bridge builds and its test passes on the host (start/stop/restart in one process, REST auth checked). It cross-compiles for android/arm64.
-- Android/Kotlin code has NOT been compiled yet: the first session had no access to dl.google.com. GitHub Actions (`.github/workflows/build.yml`) is the first real build.
+- 2026-10-24 17:55: CI green (run 6): AAR, debug APK, unit tests, lint. The APK has never been run on a device.
+- The first session had no access to dl.google.com, so Android builds are verified only in GitHub Actions.
 - Versions of Google-hosted artifacts in `gradle/libs.versions.toml` (AGP 8.13.0, Compose BOM 2025.08.00, androidx) were picked blind. Bump them to current stable on the first build that can reach Google Maven.
 
 ## Next
-1. Get CI green (fix compile errors, bump versions, maybe move to AGP 9 with built-in Kotlin).
+1. Bump Google-hosted versions to current stable (AGP 9 / compileSdk 37 would allow OkHttp 5).
 2. Test on a device: start at boot, run conditions, QR pairing, folder accept.
 3. Notifications for pending devices/folders; folder detail screen (ignores, versioning); per-folder sharing edit.
 4. F-Droid metadata (fastlane/), reproducible-build check, release signing.
