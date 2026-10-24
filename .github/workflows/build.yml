@@ -1,0 +1,41 @@
+name: build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go/syncthing/go.mod
+          cache-dependency-path: go/bridge/go.sum
+      # The runner image ships the SDK, cmdline-tools and a current NDK.
+      - name: Android SDK platform and NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" > /dev/null
+          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Generate web GUI assets
+        working-directory: go/syncthing
+        run: go generate ./lib/api/auto
+      - name: Go bridge tests
+        working-directory: go/bridge
+        run: go vet . && go test .
+      - name: Build, unit tests, lint
+        # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
+        run: ./gradlew --no-daemon :app:assembleDebug testDebugUnitTest :app:lintDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
