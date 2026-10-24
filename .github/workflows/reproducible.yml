@@ -126,6 +126,12 @@ jobs:
           source /etc/profile.d/bsenv.sh   # sets $fdroidserver and $home_vagrant
           apt-get update -q
           apt-get install -qy sudo
+          # As in fdroiddata's own "fdroid build" CI job: current fdroidserver and gradlew-fdroid.
+          rm -rf "$fdroidserver"
+          git clone --depth 1 https://gitlab.com/fdroid/fdroidserver.git "$fdroidserver"
+          git -C "$home_vagrant/gradlew-fdroid" pull
+          sdkmanager "platform-tools" "build-tools;31.0.0" > /dev/null
+          mkdir -p "$home_vagrant/.android" "$home_vagrant/.gradle"
           src="$GITHUB_WORKSPACE/src"
           vercode="$(sed -n 's/^ *versionCode = \([0-9]*\)$/\1/p' "$src/app/build.gradle.kts")"
           vername="$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' "$src/app/build.gradle.kts")"
@@ -140,7 +146,8 @@ jobs:
           touch "$home_vagrant/config.yml"
           chown -R vagrant "$home_vagrant" "$src"
           cd "$home_vagrant"
-          sudo --preserve-env --user vagrant env PATH="$fdroidserver:$PATH" PYTHONPATH="$fdroidserver" \
+          sudo --preserve-env --user vagrant env PATH="$fdroidserver:$PATH" \
+            PYTHONPATH="$fdroidserver:$fdroidserver/examples" PYTHONUNBUFFERED=true \
             HOME="$home_vagrant" fdroid build --verbose --test --on-server --no-tarball "$APPID:$vercode"
           sha256sum "$home_vagrant/tmp/${APPID}_$vercode.apk" "$GITHUB_WORKSPACE"/expected/*.apk
           cmp "$home_vagrant/tmp/${APPID}_$vercode.apk" "$GITHUB_WORKSPACE"/expected/*.apk
