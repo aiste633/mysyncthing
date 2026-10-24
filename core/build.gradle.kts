@@ -22,7 +22,6 @@ kotlin { jvmToolchain(21) }
 
 val goDir = rootProject.layout.projectDirectory.dir("go")
 val bridgeAar = goDir.file("build/stbridge.aar")
-val ndkDir = androidComponents.sdkComponents.ndkDirectory
 
 val buildGoBridge by tasks.registering(Exec::class) {
     description = "Builds the Syncthing core as an AAR with gomobile"
@@ -33,7 +32,9 @@ val buildGoBridge by tasks.registering(Exec::class) {
     inputs.file(goDir.file("syncthing.version"))
     outputs.file(bridgeAar)
     // The pinned NDK, not whatever ANDROID_NDK_HOME says; build.sh checks its version.
-    doFirst { environment("ANDROID_NDK_HOME", ndkDir.get().asFile.path) }
+    // A local val, so the configuration cache does not capture the script object.
+    val ndkDir = androidComponents.sdkComponents.ndkDirectory
+    doFirst { (this as Exec).environment("ANDROID_NDK_HOME", ndkDir.get().asFile.path) }
 }
 
 dependencies {
