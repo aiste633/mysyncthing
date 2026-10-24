@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 data class Snapshot(
     val loaded: Boolean = false,
     val myId: String = "",
+    val myName: String = "",
     val devices: List<Device> = emptyList(),
     val folders: List<Folder> = emptyList(),
     val folderStatus: Map<String, FolderStatus> = emptyMap(),
@@ -79,12 +80,14 @@ object SyncStatus {
         val pendingFolders = async { c.pendingFolders() }
         val me = myId.await()
         val folderList = folders.await()
-        val deviceList = devices.await().filter { it.deviceID != me }
+        val allDevices = devices.await()
+        val deviceList = allDevices.filter { it.deviceID != me }
         val status = folderList.map { f -> async { f.id to runCatching { c.folderStatus(f.id) }.getOrDefault(FolderStatus()) } }
         val completion = deviceList.map { d -> async { d.deviceID to runCatching { c.completion(d.deviceID) }.getOrDefault(Completion()) } }
         Snapshot(
             loaded = true,
             myId = me,
+            myName = allDevices.find { it.deviceID == me }?.name.orEmpty(),
             devices = deviceList,
             folders = folderList,
             folderStatus = status.awaitAll().toMap(),

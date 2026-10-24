@@ -4,9 +4,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.addJsonObject
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -54,13 +56,33 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun setDeviceName(id: String, name: String) =
         send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })
 
-    suspend fun addFolder(id: String, label: String, path: String, deviceIds: List<String>) =
+    suspend fun addFolder(id: String, label: String, path: String, deviceIds: List<String>, type: String, versioning: Versioning) =
         send("POST", "rest/config/folders", buildJsonObject {
             put("id", id)
             put("label", label)
             put("path", path)
+            put("type", type)
             putJsonArray("devices") { deviceIds.forEach { d -> addJsonObject { put("deviceID", d) } } }
+            put("versioning", versioning.toJson())
         })
+
+    /** Changes only the given fields of a folder's config. */
+    suspend fun patchFolder(id: String, fields: JsonObject) = send("PATCH", "rest/config/folders/$id", fields)
+
+    suspend fun setFolderDevices(id: String, deviceIds: List<String>) = patchFolder(id, buildJsonObject {
+        putJsonArray("devices") { deviceIds.forEach { d -> addJsonObject { put("deviceID", d) } } }
+    })
+
+    suspend fun setVersioning(id: String, versioning: Versioning) = patchFolder(id, buildJsonObject {
+        put("versioning", versioning.toJson())
+    })
+
+    suspend fun folderErrors(id: String): FolderErrors = get("rest/folder/errors", "folder" to id)
+    suspend fun ignores(id: String): List<String> = get<Ignores>("rest/db/ignores", "folder" to id).ignore.orEmpty()
+
+    suspend fun setIgnores(id: String, lines: List<String>) = send("POST", "rest/db/ignores", buildJsonObject {
+        putJsonArray("ignore") { lines.forEach { add(JsonPrimitive(it)) } }
+    }, query = listOf("folder" to id))
 
     suspend fun removeFolder(id: String) = send("DELETE", "rest/config/folders/$id")
 
@@ -69,14 +91,13 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun shareFolder(folder: Folder, deviceId: String) {
         if (folder.devices.any { it.deviceID == deviceId }) return
-        send("PATCH", "rest/config/folders/${folder.id}", buildJsonObject {
-            putJsonArray("devices") {
-                (folder.devices.map { it.deviceID } + deviceId).forEach { d -> addJsonObject { put("deviceID", d) } }
-            }
-        })
+        setFolderDevices(folder.id, folder.devices.map { it.deviceID } + deviceId)
     }
 
     suspend fun dismissPendingDevice(id: String) = send("DELETE", "rest/cluster/pending/devices", query = listOf("device" to id))
+
+    suspend fun dismissPendingFolder(folder: String, device: String) =
+        send("DELETE", "rest/cluster/pending/folders", query = listOf("folder" to folder, "device" to device))
 
     /** Pauses or resumes all devices; used to enforce run conditions without stopping the core. */
     suspend fun setAllPaused(paused: Boolean) = send("POST", if (paused) "rest/system/pause" else "rest/system/resume")
@@ -86,6 +107,12 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun scan(folder: String? = null) =
         send("POST", "rest/db/scan", query = listOfNotNull(folder?.let { "folder" to it }))
+
+    // Written out by hand: the default serializer drops type = "" (off), which PATCH then ignores.
+    private fun Versioning.toJson() = buildJsonObject {
+        put("type", type)
+        putJsonObject("params") { params.forEach { (k, v) -> put(k, v) } }
+    }
 
     private suspend inline fun <reified T> get(path: String, vararg query: Pair<String, String>): T {
         val body = call(request(path, query.toList()).get().build())

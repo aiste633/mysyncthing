@@ -44,6 +44,12 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Test tips: REST port changes on every core restart (read it from logcat "GUI and API listening"); `dumpsys battery reset` leaves the emulator unplugged; `adb emu network speed` did not throttle transfers.
 - 2026-10-25 polish (branch `polish-emulator-findings`): shared `SyncStatus` in core (one event follower in the service; app reads it), notification texts from `summarize()` (unit-tested), device named after the phone, web GUI follows dark mode via values-night theme. Verified on both emulators. Still open for the GUI step: accept dialog default path and folder type, sharing edit, folder settings and versioning.
 
+## GUI decisions (2026-10-25)
+- Material You (wallpaper) colours; more contrast: tinted screen background, cards with outline, status as colour + icon (green check / yellow arrows, pause, bell / red error).
+- Folder card tap opens a folder settings screen (name, type, sharing, versioning, ignores, remove); device card opens device settings.
+- Accepted folders default to `/storage/emulated/0/Syncthing/<label>`; accept screen offers folder type, sharing and versioning.
+- Request notification (own channel, Review/Ignore actions): mockup shown, waiting for the user's OK.
+
 ## Working rules
 - Keep upstream's usage-reporting consent prompt (user's wish, out of respect for upstream); never pre-answer it.
 - Never commit anything about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths), including this file, comments and commit messages. Use placeholders and check the staged diff before each commit. Local test notes live in Claude's own memory folder, not in the repo.

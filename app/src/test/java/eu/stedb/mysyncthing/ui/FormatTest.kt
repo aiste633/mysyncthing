@@ -16,4 +16,19 @@ class FormatTest {
     fun shortIdIsFirstGroup() {
         assertEquals("ABCDEFG", shortId("ABCDEFG-HIJKLMN-OPQRSTU"))
     }
+
+    @Test
+    fun internalStorageIsRelative() {
+        assertEquals("/DCIM/Camera", displayPath("/storage/emulated/0/DCIM/Camera"))
+        assertEquals("/storage/1234-ABCD/Music", displayPath("/storage/1234-ABCD/Music"))
+    }
+
+    @Test
+    fun staggeredEditsDaysButStoresSeconds() {
+        assertEquals("31536000", versioningStored("staggered", "365"))
+        assertEquals("365", versioningShown("staggered", "31536000"))
+        assertEquals("Staggered · 365 days", versioningSummary("staggered", mapOf("maxAge" to "31536000")))
+        assertEquals("Trash can · keep forever", versioningSummary("trashcan", emptyMap()))
+        assertEquals("Simple · 5 versions", versioningSummary("simple", emptyMap()))
+    }
 }
