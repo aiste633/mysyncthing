@@ -36,7 +36,7 @@ Every build of a commit gives a byte-identical unsigned release APK (arm64 only;
   ./gradlew --write-verification-metadata sha256 :app:assembleRelease :app:assembleDebug testDebugUnitTest :app:lintDebug
   ```
 
-- CI (`.github/workflows/reproducible.yml`) builds the release APK twice, with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report is attached). On tags and manual runs, F-Droid's build image builds it a third time from the recipe in `fdroid/`.
+- CI (`.github/workflows/reproducible.yml`) builds the release APK twice, with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report is attached). On pull requests, tags and manual runs, F-Droid's build image builds it a third time from the recipe in `fdroid/` and must match too.
 
 Releasing:
 

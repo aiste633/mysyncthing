@@ -1,9 +1,9 @@
 name: reproducible
 
 # Builds the unsigned release APK twice under different conditions and requires identical
-# bytes. On v* tags (or by hand) F-Droid's own build environment builds it a third time
-# from fdroid/eu.stedb.mysyncthing.yml, and a tag then gets a draft release with the APK
-# for scripts/sign-release.sh.
+# bytes. On pull requests, v* tags and manual runs, F-Droid's own build environment builds
+# it a third time from fdroid/eu.stedb.mysyncthing.yml. A tag then gets a draft release
+# with the APK for scripts/sign-release.sh.
 
 on:
   push:
@@ -101,7 +101,7 @@ jobs:
           path: diffoscope.html
 
   fdroid:
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v')
     needs: [release, compare]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
