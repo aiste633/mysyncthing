@@ -2,6 +2,7 @@
 
 package eu.stedb.mysyncthing.ui
 
+import android.animation.ValueAnimator
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -35,6 +36,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -87,10 +89,21 @@ fun CoreGate(state: CoreState, content: @Composable () -> Unit) {
         Column(Modifier.safeDrawingPadding()) {
             when (state) {
                 is CoreState.Failed -> Centered { Text("Syncthing failed: ${state.message}", color = MaterialTheme.colorScheme.error) }
-                else -> Centered { CircularProgressIndicator(); Text("Starting Syncthing") }
+                else -> Centered { BusyIndicator(); Text("Starting Syncthing") }
             }
         }
     }
+}
+
+/**
+ * A spinner, or a static icon when the phone has animations turned off: the
+ * spinner then freezes on its first frame, a dot that reads as nothing.
+ */
+@Composable
+fun BusyIndicator() {
+    val animated = remember { ValueAnimator.areAnimatorsEnabled() }
+    if (animated) CircularProgressIndicator()
+    else Icon(Icons.Default.HourglassTop, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
 }
 
 /** A screen with a top bar on the app's tinted background. [onBack] adds a back arrow. */
