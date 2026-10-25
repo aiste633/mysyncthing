@@ -50,7 +50,10 @@ class SyncthingService : LifecycleService() {
         startForeground(NOTIFICATION_ID, notification("Starting"), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
 
         lifecycleScope.launch {
-            SyncthingCore.start(File(filesDir, "syncthing"), settings.credentials())
+            val home = File(filesDir, "syncthing")
+            // A phone migration copies the identity and config but not the database (data_extraction_rules.xml).
+            if (File(home, "config.xml").exists() && !File(home, "index-v2").exists()) settings.setMovedFromOtherPhone(true)
+            SyncthingCore.start(home, settings.credentials())
             val running = SyncthingCore.state.first { it !is CoreState.Starting }
             if (running !is CoreState.Running) {
                 SyncStatus.publish(summarize(running, Snapshot(), null, true))

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -20,6 +21,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -30,6 +32,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -41,6 +44,7 @@ import androidx.navigation.compose.rememberNavController
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.SyncthingService
+import kotlinx.coroutines.flow.first
 
 private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
     Folders("folders", "Folders", Icons.Default.Folder),
@@ -94,7 +98,13 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         LaunchedEffect(target) {
             when (target) {
                 is LaunchTarget.Tab -> Tab.entries.find { it.route == target.route }?.let { nav.navigate(it.route) { launchSingleTop = true } }
-                is LaunchTarget.ReviewFolder -> nav.navigate(Routes.addFolder(target.folder, target.device))
+                // Any app can start MainActivity with these extras, so only a real pending offer opens the form.
+                is LaunchTarget.ReviewFolder -> {
+                    val s = vm.snapshot.first { it.loaded }
+                    if (s.pendingFolders[target.folder]?.offeredBy?.containsKey(target.device) == true) {
+                        nav.navigate(Routes.addFolder(target.folder, target.device))
+                    }
+                }
                 is LaunchTarget.ReviewDevice -> {
                     reviewDevice = target.device
                     nav.navigate(Tab.Devices.route) { launchSingleTop = true }
@@ -105,6 +115,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         }
 
         UsageReportingPrompt(core, vm)
+        MovedFromOtherPhoneNote(vm)
 
         // Each screen draws its own top bar; this Scaffold only adds the tab bar.
         Scaffold(
@@ -163,6 +174,25 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
             }
         }
     }
+}
+
+/** Once after a phone migration: the old phone has the same device ID. */
+@Composable
+private fun MovedFromOtherPhoneNote(vm: MainViewModel) {
+    val moved by vm.movedFromOtherPhone.collectAsStateWithLifecycle()
+    if (!moved) return
+    AlertDialog(
+        onDismissRequest = {},
+        properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
+        title = { Text("Moved from another phone") },
+        text = {
+            Text(
+                "This phone kept the device ID, folders and devices of your old phone, and is checking the folders again. " +
+                    "Stop or uninstall Syncthing on the old phone: two phones with the same device ID disturb each other's connections.",
+            )
+        },
+        confirmButton = { TextButton(onClick = vm::dismissMovedNote) { Text("OK") } },
+    )
 }
 
 @Composable

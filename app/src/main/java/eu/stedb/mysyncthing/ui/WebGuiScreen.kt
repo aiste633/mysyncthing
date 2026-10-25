@@ -16,7 +16,8 @@ import java.util.Base64
 
 /**
  * Upstream web GUI as a fallback for settings the native UI lacks. The first
- * request carries Basic auth; Syncthing then sets a session cookie.
+ * request carries Basic auth; Syncthing then sets a session cookie. The user
+ * never sees a login page or the login settings: only the app knows the login.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -40,6 +41,10 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                             return "${u.scheme}://${u.authority}" != origin
                         }
 
+                        override fun onPageFinished(view: WebView, url: String) {
+                            if (url.startsWith("$origin/")) view.evaluateJavascript(HIDE_APP_MANAGED, null)
+                        }
+
                         // Unhandled, a renderer crash would kill the whole process, and the sync core with it.
                         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
                             onClose()
@@ -56,3 +61,20 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
     }
 }
 
+/**
+ * Hides what only the app may manage: Log Out (it would reload into the login
+ * page), and the GUI address, login, HTTPS and LDAP settings, which the core
+ * refuses to change (the GUI could only show a generic error). Theme stays.
+ */
+private const val HIDE_APP_MANAGED = """(function () {
+  var s = document.createElement('style');
+  s.textContent = [
+    'li:has(> a[ng-click="logout()"])',
+    '#settings-gui .form-group:has(#Address)',
+    '#settings-gui .row:has(#user)',
+    '#settings-gui .row:has(#UseTLS)',
+    '#advancedAccordion > .panel:has(#guiConfig)',
+    '#advancedAccordion > .panel:has(#ldapConfig)',
+  ].join(', ') + ' { display: none !important; }';
+  document.head.appendChild(s);
+})();"""

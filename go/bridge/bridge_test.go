@@ -2,6 +2,7 @@ package stbridge
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -41,5 +42,51 @@ func TestStartStopRestart(t *testing.T) {
 		if IsRunning() {
 			t.Fatalf("round %d: still running after stop", round)
 		}
+	}
+}
+
+// The web GUI's settings save goes through the same config API: the login and
+// access settings must be refused, anything else must still go through.
+func TestGUILoginLocked(t *testing.T) {
+	if err := Start(t.TempDir(), "test-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	defer Stop()
+
+	patch := func(body string) int {
+		req, _ := http.NewRequest(http.MethodPatch, "http://"+GuiAddress()+"/rest/config/gui", strings.NewReader(body))
+		req.Header.Set("X-API-Key", "test-key")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	for _, body := range []string{
+		`{"password": ""}`,
+		`{"user": "someone"}`,
+		`{"insecureAdminAccess": true}`,
+		`{"metricsWithoutAuth": true}`,
+	} {
+		if code := patch(body); code == http.StatusOK {
+			t.Errorf("%s: accepted", body)
+		}
+	}
+	// The app's own way in: Basic auth on the page load (REST calls would also need the CSRF token).
+	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/", nil)
+	req.SetBasicAuth("android", "secret")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("GUI login no longer works: %d", resp.StatusCode)
+	}
+
+	// Last: a GUI change restarts the GUI listener.
+	if code := patch(`{"theme": "dark"}`); code != http.StatusOK {
+		t.Errorf("theme change refused: %d", code)
 	}
 }

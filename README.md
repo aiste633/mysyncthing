@@ -14,7 +14,9 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning.
 - Run conditions: Wi-Fi only, unmetered only, while charging, not in battery saver.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.
-- Syncthing's own web GUI is built in for anything the app does not cover.
+- Syncthing's own web GUI is built in for anything the app does not cover, signed in automatically and private to the app.
+- Reproducible builds: every build of a release gives a byte-identical APK, so anyone can check that a release APK was built from this source.
+- No tracking: no analytics or crash-reporting libraries. Syncthing's anonymous usage reporting is asked once and is off unless you say yes.
 
 ## Layout
 
@@ -25,7 +27,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 | `go/bridge/` | Go package `stbridge`; runs Syncthing in-process, exposes start/stop/identity |
 | `go/syncthing/` | Upstream Syncthing, git submodule pinned to a release tag |
 
-The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, authenticated with a per-install API key. The web GUI is protected by a generated user/password, because other apps can reach loopback.
+The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, authenticated with a per-install API key. The web GUI is protected by a random 64-character user and password that only the app knows, because other apps can reach loopback; the core refuses any change to them.
 
 ## Build
 
