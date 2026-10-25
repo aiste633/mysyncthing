@@ -1,5 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
+import eu.stedb.mysyncthing.core.DiskSize
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -52,6 +53,44 @@ fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: 
         else -> t.format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
     }
 }
+
+val PULL_ORDERS = listOf(
+    "random" to "Random",
+    "alphabetic" to "Alphabetical",
+    "smallestFirst" to "Smallest first",
+    "largestFirst" to "Largest first",
+    "oldestFirst" to "Oldest first",
+    "newestFirst" to "Newest first",
+)
+
+fun orderLabel(order: String): String = PULL_ORDERS.find { it.first == order }?.second ?: order
+
+/** "Every hour", "Every 6 hours", "Once a day", "Never". */
+fun rescanText(seconds: Int): String = when {
+    seconds <= 0 -> "Never"
+    seconds == 86_400 -> "Once a day"
+    seconds % 86_400 == 0 -> "Every ${seconds / 86_400} days"
+    seconds == 3_600 -> "Every hour"
+    seconds % 3_600 == 0 -> "Every ${seconds / 3_600} hours"
+    seconds % 60 == 0 -> "Every ${seconds / 60} min"
+    else -> "Every $seconds s"
+}
+
+/** The usual choices, plus the current value when it is something else. */
+fun rescanChoices(current: Int): List<Pair<Int, String>> =
+    (listOf(3_600, 21_600, 86_400, 0) + current).distinct().map { it to rescanText(it) }
+
+fun rescanHint(seconds: Int): String? = when (seconds) {
+    3_600 -> "Default"
+    0 -> "Only changes that watching sees are synced"
+    else -> null
+}
+
+/** 1.0 as "1", 2.5 as "2.5". */
+fun number(v: Double): String = if (v == Math.floor(v) && v < 1e15) v.toLong().toString() else v.toString()
+
+/** "1 %", "5 GB": upstream's units are SI. */
+fun diskSizeText(d: DiskSize): String = "${number(d.value)} ${d.unit}"
 
 /** Syncthing's grouped display form, e.g. ABCDEFG-HIJKLMN. Only the first group is shown in lists. */
 fun shortId(id: String): String = id.substringBefore('-')

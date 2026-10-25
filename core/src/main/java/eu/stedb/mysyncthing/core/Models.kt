@@ -22,7 +22,38 @@ data class ServiceStatus(val error: String? = null)
 
 /** A notice for the user, as the web GUI shows them; kept by the core until cleared. */
 @Serializable
-data class SystemError(@SerialName("when") val time: String = "", val message: String = "")
+data class SystemError(@SerialName("when") val time: String = "", val message: String = "") {
+    /** The message without the log's key=value tail, for people. */
+    val text: String get() = readableNotice(message)
+}
+
+/**
+ * Core notices are slog lines such as `Failed to start (error="port in use"
+ * log.pkg=api)`. Keeps the message and the values, drops the log.* keys:
+ * "Failed to start: port in use". Values that are slog lines themselves,
+ * as in an external error report, are made readable the same way.
+ */
+fun readableNotice(message: String): String {
+    if (!message.endsWith(")")) return message
+    // The first " (" whose rest is all key=value pairs; a quoted value may itself hold brackets.
+    var open = message.indexOf(" (")
+    while (open >= 0) {
+        val tail = message.substring(open + 2, message.length - 1)
+        val pairs = NOTICE_PAIR.findAll(tail).toList()
+        if (pairs.isNotEmpty() && pairs.joinToString(" ") { it.value } == tail.trim()) {
+            val values = pairs.filterNot { it.groupValues[1].startsWith("log.") }.map { m ->
+                // A wrapped report carries another slog line as its value.
+                readableNotice(m.groupValues[2].let { v -> if (v.startsWith("\"")) v.substring(1, v.length - 1).replace("\\\"", "\"") else v })
+            }
+            val head = message.substring(0, open)
+            return if (values.isEmpty()) head else "$head: ${values.joinToString(", ")}"
+        }
+        open = message.indexOf(" (", open + 1)
+    }
+    return message
+}
+
+private val NOTICE_PAIR = Regex("""([\w.]+)=("(?:[^"\\]|\\.)*"|\S+)""")
 
 @Serializable
 data class SystemErrors(val errors: List<SystemError>? = null)
@@ -57,7 +88,22 @@ data class Folder(
     val versioning: Versioning = Versioning(),
     val fsWatcherEnabled: Boolean = true,
     val rescanIntervalS: Int = 3600,
-)
+    val order: String = "random",
+    val minDiskFree: DiskSize = DiskSize(),
+    val group: String = "",
+    val ignorePerms: Boolean = false,
+) {
+    /** Changes the user must decide on: edits on a receive-only phone, or remote edits a send-only phone ignores. */
+    fun needsReview(st: FolderStatus?): Boolean = st != null && when (type) {
+        "receiveonly" -> st.receiveOnlyTotalItems > 0
+        "sendonly" -> st.needTotalItems > 0
+        else -> false
+    }
+}
+
+/** Upstream's size setting: [unit] is "%" or an SI unit (kB, MB, GB, TB). */
+@Serializable
+data class DiskSize(val value: Double = 1.0, val unit: String = "%")
 
 @Serializable
 data class FileError(val path: String = "", val error: String = "")
@@ -77,6 +123,8 @@ data class FolderStatus(
     val errors: Int = 0,
     val error: String = "",
     val needTotalItems: Int = 0,
+    val receiveOnlyTotalItems: Int = 0,
+    val receiveOnlyChangedBytes: Long = 0,
     val globalFiles: Int = 0,
     val globalDirectories: Int = 0,
     val localFiles: Int = 0,

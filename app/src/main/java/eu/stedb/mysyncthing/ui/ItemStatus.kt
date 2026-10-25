@@ -15,10 +15,11 @@ fun folderStatus(f: Folder, st: FolderStatus?): ItemStatus = when {
     st == null -> ItemStatus(SyncState.Stopped, "Unknown")
     st.state == "error" -> ItemStatus(SyncState.Problem, "Error")
     st.errors > 0 -> ItemStatus(SyncState.Problem, "${st.errors} ${if (st.errors == 1) "error" else "errors"}")
-    st.needBytes > 0 || st.state == "syncing" || st.state == "sync-preparing" -> {
+    (st.needBytes > 0 && f.type != "sendonly") || st.state == "syncing" || st.state == "sync-preparing" -> {
         val p = if (st.globalBytes > 0) 1f - st.needBytes.toFloat() / st.globalBytes else null
         ItemStatus(SyncState.Syncing, p?.let { "Syncing ${(it * 100).toInt().coerceAtMost(99)} %" } ?: "Syncing", p)
     }
+    f.needsReview(st) -> ItemStatus(SyncState.NeedsInput, if (f.type == "receiveonly") "Local changes" else "Out of sync")
     st.state == "scanning" || st.state == "scan-waiting" -> ItemStatus(SyncState.Syncing, "Scanning")
     f.devices.size <= 1 -> ItemStatus(SyncState.NeedsInput, "Not shared") // the list includes this device
     else -> ItemStatus(SyncState.UpToDate, "Up to date")

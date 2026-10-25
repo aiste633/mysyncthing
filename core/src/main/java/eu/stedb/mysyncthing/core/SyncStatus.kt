@@ -58,7 +58,8 @@ object SyncStatus {
     /**
      * Refreshes once, then on every relevant event, at most once a second. Returns only when cancelled.
      * Notices have no event, so they are read again whenever the long-poll returns
-     * and [ERRORS_EVERY_MS] have passed: no extra wake-ups.
+     * and [ERRORS_EVERY_MS] have passed: no extra wake-ups. When nothing else
+     * happens a new notice thus shows within about a minute, the poll's timeout.
      */
     internal suspend fun follow(client: RestClient) {
         var since = 0L
@@ -190,12 +191,24 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean)
         }
         return result(SyncState.NeedsInput, text)
     }
+    val review = active.filter { it.needsReview(s.folderStatus[it.id]) }
+    if (review.isNotEmpty()) {
+        val f = review.singleOrNull()
+        val name = f?.label?.ifEmpty { f.id }
+        val text = when {
+            f == null -> "${review.size} folders need review"
+            f.type == "receiveonly" -> "Local changes in $name"
+            else -> "$name is out of sync"
+        }
+        return result(SyncState.NeedsInput, text)
+    }
     if (s.devices.isEmpty()) return result(SyncState.NeedsInput, "No devices added")
     if (s.folders.isEmpty()) return result(SyncState.NeedsInput, "No folders added")
     if (s.devices.all { it.paused } || active.isEmpty()) return result(SyncState.Paused, "Paused")
     if (connected.isEmpty()) return result(SyncState.Problem, "Not connected")
 
-    val statuses = active.mapNotNull { s.folderStatus[it.id] }
+    // A send-only folder never downloads; what it "needs" is the review above.
+    val statuses = active.filter { it.type != "sendonly" }.mapNotNull { s.folderStatus[it.id] }
     // Progress over the folders that need something, so one new file in a big idle folder is not "99 %".
     val needing = statuses.filter { it.needBytes > 0 }
     val need = needing.sumOf { it.needBytes }

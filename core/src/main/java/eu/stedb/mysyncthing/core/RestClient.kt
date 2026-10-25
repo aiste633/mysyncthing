@@ -51,6 +51,15 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun need(folder: String, page: Int, perPage: Int): NeedPage =
         get("rest/db/need", "folder" to folder, "page" to page.toString(), "perpage" to perPage.toString())
 
+    suspend fun localChanged(folder: String, page: Int, perPage: Int): RemoteNeedPage =
+        get("rest/db/localchanged", "folder" to folder, "page" to page.toString(), "perpage" to perPage.toString())
+
+    /** Receive-only: drops this phone's changes and takes the other devices' version. */
+    suspend fun revert(folder: String) = send("POST", "rest/db/revert", query = listOf("folder" to folder))
+
+    /** Send-only: makes this phone's version win on every device. */
+    suspend fun override(folder: String) = send("POST", "rest/db/override", query = listOf("folder" to folder))
+
     suspend fun remoteNeed(folder: String, device: String, page: Int, perPage: Int): RemoteNeedPage =
         get("rest/db/remoteneed", "folder" to folder, "device" to device, "page" to page.toString(), "perpage" to perPage.toString())
     suspend fun pendingDevices(): Map<String, PendingDevice> = get("rest/cluster/pending/devices")
@@ -94,12 +103,17 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun setDeviceName(id: String, name: String) =
         send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })
 
-    suspend fun addFolder(id: String, label: String, path: String, deviceIds: List<String>, type: String, versioning: Versioning) =
+    suspend fun addFolder(
+        id: String, label: String, path: String, deviceIds: List<String>, type: String, versioning: Versioning, paused: Boolean = false,
+    ) =
         send("POST", "rest/config/folders", buildJsonObject {
             put("id", id)
             put("label", label)
             put("path", path)
             put("type", type)
+            put("paused", paused)
+            // Android's shared storage has no real Unix permissions to sync.
+            put("ignorePerms", true)
             putJsonArray("devices") { deviceIds.forEach { d -> addJsonObject { put("deviceID", d) } } }
             put("versioning", versioning.toJson())
         })

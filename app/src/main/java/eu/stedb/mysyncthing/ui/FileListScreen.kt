@@ -56,16 +56,19 @@ fun NeedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> Uni
     val shown = page?.let { it.progress.orEmpty().size + it.queued.orEmpty().size + it.rest.orEmpty().size } ?: 0
     val status = if (f != null && st != null) folderStatus(f, st) else null
 
-    FileList("Still to download", onBack) {
+    // A send-only folder never downloads: the list is what other devices changed.
+    val sendOnly = f?.type == "sendonly"
+    FileList(if (sendOnly) "Changed on other devices" else "Still to download", onBack) {
         item("header") {
-            Header(f?.label?.ifEmpty { null } ?: folder, st?.let { "${count(it.needTotalItems, "item")} · ${bytes(it.needBytes)} left" }, status)
+            val left = st?.let { "${count(it.needTotalItems, "item")} · ${bytes(it.needBytes)}" + if (sendOnly) "" else " left" }
+            Header(f?.label?.ifEmpty { null } ?: folder, left, status)
         }
         val p = page
         if (p == null) {
             item("loading") { Note("Loading") }
             return@FileList
         }
-        if (shown == 0) item("none") { Note("Nothing left to download.") }
+        if (shown == 0) item("none") { Note(if (sendOnly) "No changes from other devices." else "Nothing left to download.") }
         // The puller marks a whole batch "in progress" at once; only files with
         // download progress are really transferring, the rest wait their turn.
         val (active, started) = p.progress.orEmpty().partition { it.name in progress }
@@ -97,6 +100,31 @@ fun RemoteNeedScreen(s: Snapshot, device: String, folder: String, vm: MainViewMo
             list.isEmpty() -> item("none") { Note("$name has everything from this folder.") }
             else -> {
                 section(null, list) { e -> FileRow(e.name, needDetail(e)) }
+                if (list.size >= limit) item("more") { More { limit += PAGE } }
+            }
+        }
+    }
+}
+
+/** What changed on this phone in a receive-only folder (web GUI: "Locally Changed Items"). */
+@Composable
+fun LocalChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> Unit) {
+    val f = s.folders.find { it.id == folder }
+    val st = s.folderStatus[folder]
+    var limit by rememberSaveable { mutableIntStateOf(PAGE) }
+    var files by remember { mutableStateOf<List<FileEntry>?>(null) }
+    LaunchedEffect(folder, limit, st?.receiveOnlyTotalItems) { vm.localChanged(folder, limit)?.let { files = it } }
+
+    FileList("Changed on this phone", onBack) {
+        item("header") {
+            Header(f?.label?.ifEmpty { null } ?: folder, st?.let { "${count(it.receiveOnlyTotalItems, "item")} · ${bytes(it.receiveOnlyChangedBytes)}" })
+        }
+        val list = files
+        when {
+            list == null -> item("loading") { Note("Loading") }
+            list.isEmpty() -> item("none") { Note("No local changes.") }
+            else -> {
+                section(null, list) { e -> FileRow(e.name, if (e.deleted) "Deleted" else needDetail(e)) }
                 if (list.size >= limit) item("more") { More { limit += PAGE } }
             }
         }

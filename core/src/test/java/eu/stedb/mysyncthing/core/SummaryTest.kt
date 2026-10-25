@@ -77,4 +77,27 @@ class SummaryTest {
         assertEquals(SyncState.Problem to "1 problem · server", line(notices))
         assertEquals(SyncState.Paused to "Paused: Not on Wi-Fi", line(notices, "Not on Wi-Fi"))
     }
+
+    @Test
+    fun noticesLoseTheLogTail() {
+        assertEquals("External error report: disk full", readableNotice("External error report (error=\"disk full\" log.pkg=api)"))
+        assertEquals("Failed to start: open x (permission denied), 22000",
+            readableNotice("Failed to start (error=\"open x (permission denied)\" port=22000 log.pkg=connections)"))
+        assertEquals("Folder marker missing", readableNotice("Folder marker missing (log.pkg=model)"))
+        assertEquals("Plain message (with brackets)", readableNotice("Plain message (with brackets)"))
+        assertEquals("No tail", readableNotice("No tail"))
+        assertEquals("External error report: Disk full: no space",
+            readableNotice("External error report (error=\"Disk full (error=\\\"no space\\\" log.pkg=api)\" log.pkg=api)"))
+    }
+
+    @Test
+    fun foldersWaitingForADecision() {
+        val music = photos.copy(label = "Music", type = "receiveonly")
+        val changed = snap().copy(folders = listOf(music), folderStatus = mapOf(photos.id to idle.copy(receiveOnlyTotalItems = 3)))
+        assertEquals(SyncState.NeedsInput to "Local changes in Music · server", line(changed))
+        // A send-only folder's need is remote edits it ignores, not a download in progress.
+        val camera = photos.copy(label = "Camera", type = "sendonly")
+        val outOfSync = snap().copy(folders = listOf(camera), folderStatus = mapOf(photos.id to idle.copy(needBytes = 500, needTotalItems = 2)))
+        assertEquals(SyncState.NeedsInput to "Camera is out of sync · server", line(outOfSync))
+    }
 }
