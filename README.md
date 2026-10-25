@@ -6,7 +6,7 @@ A Syncthing client for Android 15 and 16 (API 35/36), written in Kotlin and Jetp
 
 See your sync status at a glance, without opening the app. The widget is a single row, the size of a search bar. It shows whether everything is up to date, syncing (with progress), paused or needs your attention, and which devices are connected. Its button pauses and resumes syncing, and a tap opens the app. Colours and icons follow your wallpaper and dark mode.
 
-<p align="center"><img src="docs/images/widget.png" width="400" alt="The widget in four states: up to date, syncing at 60 %, a new folder shared with you, and paused"></p>
+<p align="center"><img src="docs/images/widget.png" width="400" alt="The widget in four states: up to date, syncing at 71 %, no network, and paused"></p>
 
 ## Features
 
