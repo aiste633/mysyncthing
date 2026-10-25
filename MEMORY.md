@@ -71,7 +71,8 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 ## Security audit (2026-10-25)
 - Web GUI login: 64 random characters for user and password (`Settings.credentials()`, earlier short ones are replaced). `go/bridge` subscribes `guiGuard`, which refuses any config change to the GUI login or access settings (e.g. from the web GUI's settings); `TestGUILoginLocked` covers it. The WebView hides Log Out, which would reload into the login page.
-- WebView: Google usage metrics and Safe Browsing off (manifest meta-data); it only loads loopback.
+- WebView: Google usage metrics and Safe Browsing off (manifest meta-data); it only loads loopback. Injected CSS (`HIDE_APP_MANAGED` in `WebGuiScreen.kt`) hides Log Out, Shut Down and the GUI login/address/HTTPS/LDAP settings; recheck its selectors when bumping Syncthing.
+- Restart from the web GUI (or a database reset) restarts the core in place in `go/bridge` (`watch`): same address, `IsRunning` stays true. `SyncStatus.follow` resets its event cursor after an error, because a restarted core counts events from 1.
 - Phone migration (`res/xml/data_extraction_rules.xml`): device transfer carries config.xml, cert/key and the DataStore, never the database (a stale database plus a partial file copy would spread deletions). Cloud backup stays off. The service flags "config but no `index-v2`" as moved, and the app shows a one-time note to stop Syncthing on the old phone.
 - Folder review from an intent opens only for a real pending offer (MainActivity is exported). Request notifications: no IP, and a public version for the lock screen.
 

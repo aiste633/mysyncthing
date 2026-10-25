@@ -63,13 +63,15 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
 
 /**
  * Hides what only the app may manage: Log Out (it would reload into the login
- * page), and the GUI address, login, HTTPS and LDAP settings, which the core
- * refuses to change (the GUI could only show a generic error). Theme stays.
+ * page), Shut Down (stopping is the service's job; Restart works in place),
+ * and the GUI address, login, HTTPS and LDAP settings, which the core refuses
+ * to change (the GUI could only show a generic error). Theme stays.
  */
 private const val HIDE_APP_MANAGED = """(function () {
   var s = document.createElement('style');
   s.textContent = [
     'li:has(> a[ng-click="logout()"])',
+    'li:has(> a[ng-click="shutdown()"])',
     '#settings-gui .form-group:has(#Address)',
     '#settings-gui .row:has(#user)',
     '#settings-gui .row:has(#UseTLS)',
