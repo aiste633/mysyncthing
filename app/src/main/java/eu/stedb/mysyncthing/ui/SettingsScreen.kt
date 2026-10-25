@@ -1,6 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material.icons.filled.CreateNewFolder
+import androidx.compose.material.icons.filled.DevicesOther
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Lan
@@ -66,6 +68,8 @@ fun SettingsScreen(
     permissions: PermissionState,
     onOpenWebGui: () -> Unit,
     onOpenIgnored: () -> Unit,
+    onOpenFolderDefaults: () -> Unit,
+    onOpenDeviceDefaults: () -> Unit,
 ) {
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
@@ -129,6 +133,17 @@ fun SettingsScreen(
                 Toggle("Battery saver is off", "Pause while battery saver is on", Icons.Default.BatterySaver, rc.respectBatterySaver) { v ->
                     vm.setRunConditions { it.copy(respectBatterySaver = v) }
                 }
+            }
+
+            SettingsGroup("New folders and devices") {
+                SettingRow(
+                    "Default settings for new folders", "Type, versioning, ignore patterns and more",
+                    Icons.Default.CreateNewFolder, onClick = if (running) onOpenFolderDefaults else null,
+                )
+                SettingRow(
+                    "Default settings for new devices", "Auto-accept, addresses, limits and more",
+                    Icons.Default.DevicesOther, onClick = if (running) onOpenDeviceDefaults else null,
+                )
             }
 
             opts?.let { o ->

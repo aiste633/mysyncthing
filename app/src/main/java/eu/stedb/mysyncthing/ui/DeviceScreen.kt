@@ -182,7 +182,7 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
 
 private enum class DeviceDialog { Name, Group, Addresses, Recv, Send, Compression, Connections, Remove }
 
-private fun addressesText(a: List<String>): String = when {
+internal fun addressesText(a: List<String>): String = when {
     a.isEmpty() || a == listOf("dynamic") -> "Found automatically"
     else -> a.joinToString(", ") { if (it == "dynamic") "automatic" else it }
 }
@@ -194,7 +194,7 @@ private fun normalizeAddress(a: String): String = a.trim().let { if ("://" in it
 
 /** "Find automatically" plus fixed addresses Syncthing tries first. */
 @Composable
-private fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) = ListEditDialog(
+internal fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) = ListEditDialog(
     "Addresses", initial, token = "dynamic", tokenTitle = "Find automatically", tokenHint = "Through local and global discovery",
     addHint = "For example tcp://192.0.2.10:22000 or a VPN address", valid = ADDRESS::matches, normalize = ::normalizeAddress,
     onDismiss = onDismiss, onSave = onSave,

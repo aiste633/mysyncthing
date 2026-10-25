@@ -94,4 +94,11 @@ class FormatTest {
         assertFalse(isDiscoveryServer("${https}exa mple.com/"))
         assertFalse(isDiscoveryServer("discovery.example.com"))
     }
+
+    @Test
+    fun newFoldersFollowTheDefaultLocation() {
+        assertEquals("/storage/emulated/0/Syncthing", pathBase(eu.stedb.mysyncthing.core.Folder(path = "~")))
+        assertEquals("/storage/emulated/0/Sync", pathBase(eu.stedb.mysyncthing.core.Folder(path = "/storage/emulated/0/Sync/")))
+        assertEquals("/storage/emulated/0/Sync/a_b", suggestedPath(" a/b ", "/storage/emulated/0/Sync"))
+    }
 }

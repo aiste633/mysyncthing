@@ -259,7 +259,7 @@ private fun contents(files: Int, dirs: Int, size: Long) =
 
 /** Amount plus unit (%, MB, GB, or the unit already set); shows what is free now for scale. */
 @Composable
-private fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Unit, onSave: (DiskSize) -> Unit) {
+internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Unit, onSave: (DiskSize) -> Unit) {
     var value by rememberSaveable { mutableStateOf(number(initial.value)) }
     var unit by rememberSaveable { mutableStateOf(initial.unit) }
     val units = (listOf("%", "MB", "GB") + initial.unit).distinct()

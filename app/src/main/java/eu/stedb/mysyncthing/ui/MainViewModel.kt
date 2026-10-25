@@ -17,6 +17,7 @@ import eu.stedb.mysyncthing.core.Versioning
 import android.os.SystemClock
 import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connections
+import eu.stedb.mysyncthing.core.Device
 import eu.stedb.mysyncthing.core.DeviceStats
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.IgnoredRequests
@@ -163,6 +164,24 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setCompression(id: String, c: String) = patchDevice(id, "Compression") { put("compression", c) }
     fun setNumConnections(id: String, n: Int) = patchDevice(id, "Connections") { put("numConnections", n) }
 
+    suspend fun defaultFolder(): Folder? = runCatching { client?.defaultFolder() }.getOrNull()
+    suspend fun defaultDevice(): Device? = runCatching { client?.defaultDevice() }.getOrNull()
+    suspend fun defaultIgnores(): List<String>? = runCatching { client?.defaultIgnores() }.getOrNull()
+
+    /** Changes the defaults for new folders or devices; false when it failed. */
+    suspend fun patchDefaults(device: Boolean, label: String, fields: JsonObjectBuilder.() -> Unit): Boolean {
+        val c = client ?: return false
+        val body = buildJsonObject(fields)
+        return runCatching { if (device) c.patchDefaultDevice(body) else c.patchDefaultFolder(body) }
+            .onFailure { _message.send("$label failed: ${it.message}") }.isSuccess
+    }
+
+    suspend fun saveDefaultIgnores(lines: List<String>): Boolean {
+        val c = client ?: return false
+        return runCatching { c.setDefaultIgnores(lines) }
+            .onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
+    }
+
     suspend fun options(): Options? = runCatching { client?.options() }.getOrNull()
     suspend fun restartRequired(): Boolean = runCatching { client?.restartRequired() }.getOrNull() == true
 
@@ -190,9 +209,26 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun ignoreDevice(id: String) = act("Ignore") { ignoreDevice(id) }
     fun ignoreFolder(folder: String, device: String) = act("Ignore") { ignoreFolder(folder, device) }
 
-    /** [paused] keeps a new folder from syncing until its ignore patterns are set. */
+    /**
+     * [paused] keeps a new folder from syncing until its ignore patterns are set.
+     * Otherwise the default ignore patterns, if any, are written while it is
+     * still paused, so nothing they exclude is synced first.
+     */
     fun addFolder(d: FolderDraft, paused: Boolean = false) = act("Add folder", done = "Added ${d.label.ifBlank { d.id }}") {
-        addFolder(d.id.trim(), d.label.trim(), d.path.trim(), d.devices.toList(), d.type, d.versioning, paused)
+        val id = d.id.trim()
+        val ignores = if (paused) emptyList() else runCatching { defaultIgnores() }.getOrDefault(emptyList())
+        addFolder(id, d.label.trim(), d.path.trim(), d.devices.toList(), d.type, d.versioning, paused || ignores.isNotEmpty())
+        if (paused || ignores.isEmpty()) return@act
+        // The folder may take a moment to start after the config change.
+        repeat(5) { attempt ->
+            val failure = runCatching { setIgnores(id, ignores) }.exceptionOrNull()
+            if (failure == null) {
+                setFolderPaused(id, false)
+                return@act
+            }
+            if (attempt == 4) throw IllegalStateException("added paused, default ignore patterns not set (${failure.message})")
+            delay(500)
+        }
     }
 
     fun removeFolder(id: String) = act("Remove folder") { removeFolder(id) }
