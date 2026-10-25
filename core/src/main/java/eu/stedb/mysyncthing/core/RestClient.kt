@@ -5,7 +5,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -150,7 +152,7 @@ class RestClient(address: String, private val apiKey: String) {
         send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })
 
     suspend fun addFolder(
-        id: String, label: String, path: String, deviceIds: List<String>, type: String, versioning: Versioning, paused: Boolean = false,
+        id: String, label: String, path: String, devices: List<FolderDevice>, type: String, versioning: Versioning, paused: Boolean = false,
     ) =
         send("POST", "rest/config/folders", buildJsonObject {
             put("id", id)
@@ -160,16 +162,19 @@ class RestClient(address: String, private val apiKey: String) {
             put("paused", paused)
             // Android's shared storage has no real Unix permissions to sync.
             put("ignorePerms", true)
-            putJsonArray("devices") { deviceIds.forEach { d -> addJsonObject { put("deviceID", d) } } }
+            putFolderDevices(devices)
             put("versioning", versioning.toJson())
         })
 
     /** Changes only the given fields of a folder's config. */
     suspend fun patchFolder(id: String, fields: JsonObject) = send("PATCH", "rest/config/folders/$id", fields)
 
-    suspend fun setFolderDevices(id: String, deviceIds: List<String>) = patchFolder(id, buildJsonObject {
-        putJsonArray("devices") { deviceIds.forEach { d -> addJsonObject { put("deviceID", d) } } }
+    /** Whole entries, so other devices keep their introducer and encryption password. */
+    suspend fun setFolderDevices(id: String, devices: List<FolderDevice>) = patchFolder(id, buildJsonObject {
+        putFolderDevices(devices)
     })
+
+    private fun JsonObjectBuilder.putFolderDevices(devices: List<FolderDevice>) = put("devices", folderDevicesJson(devices))
 
     suspend fun setVersioning(id: String, versioning: Versioning) = patchFolder(id, buildJsonObject {
         put("versioning", versioning.toJson())
@@ -189,7 +194,7 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun shareFolder(folder: Folder, deviceId: String) {
         if (folder.devices.any { it.deviceID == deviceId }) return
-        setFolderDevices(folder.id, folder.devices.map { it.deviceID } + deviceId)
+        setFolderDevices(folder.id, folder.devices + FolderDevice(deviceId))
     }
 
     /**
@@ -258,5 +263,20 @@ class RestClient(address: String, private val apiKey: String) {
 
     private companion object {
         val JSON = "application/json".toMediaType()
+    }
+}
+
+/**
+ * Every field of every entry, even when empty: the core decodes a PATCH onto
+ * the stored list, reusing its entries by position, so a field left out keeps
+ * whatever the entry at that position had, such as a removed device's password.
+ */
+internal fun folderDevicesJson(devices: List<FolderDevice>): JsonArray = buildJsonArray {
+    devices.forEach { d ->
+        addJsonObject {
+            put("deviceID", d.deviceID)
+            put("introducedBy", d.introducedBy)
+            put("encryptionPassword", d.encryptionPassword)
+        }
     }
 }

@@ -48,6 +48,8 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
     val status = deviceStatus(d, conn, s.completion[id])
     val look = status.state.look()
     var dialog by rememberSaveable { mutableStateOf<DeviceDialog?>(null) }
+    // The folder whose password dialog is open, for an encrypted share.
+    var encrypt by rememberSaveable { mutableStateOf<String?>(null) }
     val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
     var lastSeen by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(id, conn?.connected) { lastSeen = vm.deviceStats(id)?.lastSeen }
@@ -102,13 +104,20 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
 
             SettingsGroup("Trust") {
                 SettingRow(
-                    "Introducer", "Also add the devices it shares folders with",
-                    trailing = { Switch(d.introducer, onCheckedChange = null) },
-                ) { vm.setIntroducer(id, !d.introducer) }
-                SettingRow(
-                    "Accept its folders automatically", "Saved to Syncthing/<folder name> without asking",
-                    trailing = { Switch(d.autoAcceptFolders, onCheckedChange = null) },
-                ) { vm.setAutoAccept(id, !d.autoAcceptFolders) }
+                    "Untrusted", "Only receives encrypted data. Each shared folder needs a password.",
+                    trailing = { Switch(d.untrusted, onCheckedChange = null) },
+                ) { if (d.untrusted) vm.setUntrusted(id, false) else dialog = DeviceDialog.Untrusted }
+                // The core allows neither for an untrusted device.
+                if (!d.untrusted) {
+                    SettingRow(
+                        "Introducer", "Also add the devices it shares folders with",
+                        trailing = { Switch(d.introducer, onCheckedChange = null) },
+                    ) { vm.setIntroducer(id, !d.introducer) }
+                    SettingRow(
+                        "Accept its folders automatically", "Saved to Syncthing/<folder name> without asking",
+                        trailing = { Switch(d.autoAcceptFolders, onCheckedChange = null) },
+                    ) { vm.setAutoAccept(id, !d.autoAcceptFolders) }
+                }
             }
 
             SettingsGroup("General") {
@@ -132,11 +141,11 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
             SettingsGroup("Shared folders") {
                 if (s.folders.isEmpty()) SettingRow("No folders yet", "Add one on the Folders tab")
                 s.folders.forEach { f ->
-                    val on = f.devices.any { it.deviceID == id }
+                    val entry = f.devices.find { it.deviceID == id }
                     SettingRow(
-                        f.label.ifEmpty { f.id }, displayPath(f.path),
-                        trailing = { Checkbox(on, onCheckedChange = null) },
-                    ) { vm.setShared(f, id, !on) }
+                        f.label.ifEmpty { f.id }, encryptionText(d, entry) ?: displayPath(f.path),
+                        trailing = { Checkbox(entry != null, onCheckedChange = null) },
+                    ) { if (sharesEncrypted(d, entry)) encrypt = f.id else vm.setShared(f, id, entry == null) }
                 }
             }
 
@@ -172,15 +181,32 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
             "Connections", connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0),
             { if (it == 0) "Syncthing decides, currently 3. More can help on fast, distant links." else null }, onDismiss = close,
         ) { vm.setNumConnections(id, it); close() }
+        DeviceDialog.Untrusted -> {
+            val plain = s.folders.filter { f -> f.devices.any { it.deviceID == id && it.encryptionPassword.isEmpty() } }
+            ConfirmDialog(
+                "Mark as untrusted?",
+                "${d.name.ifEmpty { shortId(id) }} will only get encrypted folders, and can't be an introducer or accept folders automatically." +
+                    if (plain.isEmpty()) "" else " These folders are shared without a password and stop being shared: " +
+                        plain.joinToString(", ") { it.label.ifEmpty { it.id } } + ".",
+                "Mark untrusted", onDismiss = close,
+            ) { vm.setUntrusted(id, true); close() }
+        }
         DeviceDialog.Remove -> ConfirmDialog(
             "Remove ${d.name.ifEmpty { shortId(id) }}?", "Folders stop syncing with this device. No files are deleted.",
             "Remove", onDismiss = close,
         ) { vm.removeDevice(id); close(); onBack() }
         null -> {}
     }
+    s.folders.find { it.id == encrypt }?.let { f ->
+        val entry = f.devices.find { it.deviceID == id }
+        PasswordDialog(
+            f.label.ifEmpty { f.id }, d.name.ifEmpty { shortId(id) }, entry?.encryptionPassword.orEmpty(), shared = entry != null,
+            onDismiss = { encrypt = null }, onUnshare = { vm.setShared(f, id, false); encrypt = null },
+        ) { vm.setShared(f, id, true, it); encrypt = null }
+    }
 }
 
-private enum class DeviceDialog { Name, Group, Addresses, Recv, Send, Compression, Connections, Remove }
+private enum class DeviceDialog { Name, Group, Addresses, Recv, Send, Compression, Connections, Untrusted, Remove }
 
 internal fun addressesText(a: List<String>): String = when {
     a.isEmpty() || a == listOf("dynamic") -> "Found automatically"
