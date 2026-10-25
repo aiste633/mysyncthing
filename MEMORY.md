@@ -57,6 +57,18 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - README features the widget near the top with docs/images/widget.png. F-Droid description should mention it once fastlane metadata exists.
 - Emulator tips: place widgets by long-press home, Widgets, then a raw `input motionevent` DOWN/MOVE/UP drag (`input draganddrop` does not work); `ui tap <text>` matches substrings anywhere, tap tabs by coordinates.
 
+## Edge to edge and first phone test (branch `edge-to-edge`, 2026-10-25)
+- Insets: `SafeBars` (system bars + display cutout) for the top bar, tab bar and snackbar; `AppScreen` content uses `safeDrawing` (adds the keyboard); the FAB gets End-side padding because Scaffold only lifts it above bottom insets. Checked with cutout emulation, 3-button and gesture nav, both landscapes, on API 35/36 and a real Android 16 phone (OnePlus, punch-hole, 3-button nav).
+- QR scanner is `ui/ScanActivity` (zxing CaptureActivity subclass): follows rotation, hint kept above the nav bar.
+- Animations off (user's phone): indeterminate spinners freeze as a dot, so use `BusyIndicator()`.
+- Corners: user wants much less rounded; theme `AppShapes` (2-8 dp) and `ButtonShape` (4 dp) on filled/outlined/tonal buttons.
+- Widget: OnePlus launcher ignores `previewLayout`; `previewImage` covers it.
+- Real-phone results: setup, two-way sync, widget, QR scan with the camera all fine. 1 h unplugged with screen off and battery optimisation on (no OEM battery switches): not killed, same process, files arrived in 13-30 s. 3.25 GB over mobile data from a server in ~11 min (~5 MB/s), no errors; edits and deletes went back. Wi-Fi to mobile took ~7.5 min to reconnect because the peer keeps the dead TCP link until its 5 min receive timeout and rejects worse-priority connections meanwhile (upstream `lib/connections/service.go`); mobile to Wi-Fi 18 s.
+- Material 3 determinate bars draw a stop dot and gap (looked like a glitch): use `ProgressBar()`. Segmented labels must allow two lines (phone display size larger than the emulator's).
+- Open: OxygenOS has its own per-app battery switches (background activity, auto-launch); setup should explain them and open the app's battery page (user will show the screens).
+- Open: first-run setup disappears once All files access is granted, so the optional notification and battery buttons are never shown (design question for the user).
+- Real phone rules: another Syncthing app may be installed and stopped there; never touch it, keep it stopped while testing (same default ports). Check the foreground app before any tap.
+
 ## Working rules
 - Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.
 - Never commit anything about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths), including this file, comments and commit messages. Use placeholders and check the staged diff before each commit. Local test notes live in Claude's own memory folder, not in the repo.
