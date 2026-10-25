@@ -49,6 +49,7 @@ fun FoldersScreen(
     onOpen: (String) -> Unit,
     onAdd: () -> Unit,
     onAccept: (folder: String, device: String) -> Unit,
+    onOpenRecent: () -> Unit,
 ) {
     AppScreen(
         title = "Folders",
@@ -61,6 +62,7 @@ fun FoldersScreen(
                     text = { Text("Rescan all folders") }, enabled = s.folders.any { !it.paused },
                     onClick = { menu = false; vm.rescanAll() },
                 )
+                DropdownMenuItem(text = { Text("Recent changes") }, onClick = { menu = false; onOpenRecent() })
             }
         },
         fab = { ExtendedFloatingActionButton(onClick = onAdd, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Add folder") }) },

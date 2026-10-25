@@ -18,11 +18,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import eu.stedb.mysyncthing.core.CoreState
 import kotlinx.coroutines.launch
+
+private const val STATS = "https://data.syncthing.net/"
 
 /** Upstream's consent state: whether to ask now, and whether reporting is on. */
 data class UsageConsent(val needsPrompt: Boolean, val enabled: Boolean)
@@ -53,9 +61,13 @@ fun UsageReportingPrompt(core: CoreState, vm: MainViewModel) {
                     "The encrypted usage report is sent daily. It is used to track common platforms, folder sizes, " +
                         "and app versions. If the reported data set is changed you will be prompted with this dialog again.",
                 )
+                val link = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
                 Text(
-                    "The aggregated statistics are publicly available at https://data.syncthing.net/. " +
-                        "You can change your decision at any time in Settings.",
+                    buildAnnotatedString {
+                        append("The aggregated statistics are publicly available at ")
+                        withLink(LinkAnnotation.Url(STATS, TextLinkStyles(link))) { append(STATS) }
+                        append(". You can change your decision at any time in Settings.")
+                    },
                     modifier = Modifier.padding(top = 8.dp),
                 )
                 TextButton(onClick = { scope.launch { preview = vm.usageReport() ?: "Could not load the report." } }) {
