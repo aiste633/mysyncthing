@@ -78,7 +78,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 ## Working rules
 - Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.
 - This file is public on purpose, so any session can resume the work. Nothing about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths, personal e-mail) may go into it, or into code, comments, commit messages or PR text. Use placeholders. Local test notes live in Claude's own memory folder, not in the repo.
-- `scripts/check-leaks.sh` enforces this in CI (job `privacy` in `build.yml`) over all files and history; run it before each push. The optional repository secret `LEAK_DENYLIST` (one term per line) adds the user's own hostnames and names.
+- `scripts/check-leaks.sh` enforces this in CI (job `privacy` in `build.yml`) over all files and history; run it before each push. It is allowlist-only (user's choice, no secret denylist): every IP, IPv6, URL host, host:port, LAN name (.lan, .local, ...), UNC path, user@host, home path, device ID, e-mail and commit identity must be a public host on its list or a placeholder (loopback, RFC 5737 ranges, example.com, `${...}`, `<...>`). Add a new public host to `public_hosts` there; never add a private one.
 - Commit as `Claude <noreply@anthropic.com>` (repo-local git config); the machine default identity contains the username and hostname.
 - Ask before pushing or opening a PR; one short-lived branch and PR per step, deleted after merge.
 - Propose GUI designs and get the user's answer before building them.

@@ -51,7 +51,4 @@ jobs:
         with:
           fetch-depth: 0
       - name: No personal details in files, commits or history
-        env:
-          # Optional repository secret: private terms (hostnames, user names), one per line.
-          LEAK_DENYLIST: ${{ secrets.LEAK_DENYLIST }}
         run: scripts/check-leaks.sh
