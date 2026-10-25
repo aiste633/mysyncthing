@@ -15,7 +15,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -33,6 +35,11 @@ class SyncthingService : LifecycleService() {
         super.onCreate()
         settings = Settings(this)
         createChannel()
+        RequestNotifications.createChannel(this)
+        lifecycleScope.launch {
+            SyncStatus.snapshot.filter { it.loaded }.map { it.requests() }.distinctUntilChanged()
+                .collect { RequestNotifications.update(this@SyncthingService, it) }
+        }
         // Renders at most every 2 s; a StateFlow collector always ends on the latest summary.
         lifecycleScope.launch {
             SyncStatus.summary.collect {
@@ -82,6 +89,7 @@ class SyncthingService : LifecycleService() {
             SyncStatus.publish(it)
             StatusWidget.render(this, it) // the collector above is already cancelled
         }
+        RequestNotifications.update(this, emptyList()) // Ignore needs a running core
         super.onDestroy()
     }
 

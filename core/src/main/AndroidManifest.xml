@@ -36,6 +36,10 @@
         </receiver>
 
         <receiver
+            android:name=".IgnoreRequestReceiver"
+            android:exported="false" />
+
+        <receiver
             android:name=".BootReceiver"
             android:exported="true">
             <intent-filter>

@@ -21,7 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -43,6 +46,13 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
     Settings("settings", "Settings", Icons.Default.Settings),
 }
 
+/** A screen opened from outside the app: the widget or a request notification. */
+sealed interface LaunchTarget {
+    data class Tab(val route: String) : LaunchTarget
+    data class ReviewFolder(val folder: String, val device: String) : LaunchTarget
+    data class ReviewDevice(val device: String) : LaunchTarget
+}
+
 private object Routes {
     const val FOLDER = "folder/{id}"
     const val DEVICE = "device/{id}"
@@ -56,7 +66,7 @@ private object Routes {
 }
 
 @Composable
-fun App(requestedTab: String? = null, onTabShown: () -> Unit = {}, vm: MainViewModel = viewModel()) {
+fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainViewModel = viewModel()) {
     val context = LocalContext.current
     AppTheme {
         val permissions = rememberPermissionState()
@@ -75,9 +85,18 @@ fun App(requestedTab: String? = null, onTabShown: () -> Unit = {}, vm: MainViewM
         val current by nav.currentBackStackEntryAsState()
         val route = current?.destination?.route
         val topLevel = Tab.entries.any { it.route == route }
-        LaunchedEffect(requestedTab) {
-            Tab.entries.find { it.route == requestedTab }?.let { nav.navigate(it.route) { launchSingleTop = true } }
-            if (requestedTab != null) onTabShown()
+        var reviewDevice by rememberSaveable { mutableStateOf<String?>(null) }
+        LaunchedEffect(target) {
+            when (target) {
+                is LaunchTarget.Tab -> Tab.entries.find { it.route == target.route }?.let { nav.navigate(it.route) { launchSingleTop = true } }
+                is LaunchTarget.ReviewFolder -> nav.navigate(Routes.addFolder(target.folder, target.device))
+                is LaunchTarget.ReviewDevice -> {
+                    reviewDevice = target.device
+                    nav.navigate(Tab.Devices.route) { launchSingleTop = true }
+                }
+                null -> return@LaunchedEffect
+            }
+            onTargetShown()
         }
 
         UsageReportingPrompt(core, vm)
@@ -101,7 +120,12 @@ fun App(requestedTab: String? = null, onTabShown: () -> Unit = {}, vm: MainViewM
                     }
                 }
                 composable(Tab.Devices.route) {
-                    CoreGate(core) { DevicesScreen(snapshot, summary, vm, onOpen = { nav.navigate(Routes.device(it)) }) }
+                    CoreGate(core) {
+                        DevicesScreen(
+                            snapshot, summary, vm, onOpen = { nav.navigate(Routes.device(it)) },
+                            review = reviewDevice, onReviewShown = { reviewDevice = null },
+                        )
+                    }
                 }
                 composable(Tab.Settings.route) {
                     SettingsScreen(vm, snapshot, summary, core, permissions, onOpenWebGui = { nav.navigate(Routes.WEB_GUI) })
