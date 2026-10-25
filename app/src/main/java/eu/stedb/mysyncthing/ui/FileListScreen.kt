@@ -66,12 +66,15 @@ fun NeedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> Uni
             return@FileList
         }
         if (shown == 0) item("none") { Note("Nothing left to download.") }
-        section("Downloading now", p.progress.orEmpty()) { e ->
-            val d = progress[e.name]
-            FileRow(e.name, d?.let { "${bytes(it.bytesDone)} of ${bytes(it.bytesTotal)}" } ?: needDetail(e),
-                progress = d?.takeIf { it.bytesTotal > 0 }?.let { it.bytesDone.toFloat() / it.bytesTotal })
+        // The puller marks a whole batch "in progress" at once; only files with
+        // download progress are really transferring, the rest wait their turn.
+        val (active, started) = p.progress.orEmpty().partition { it.name in progress }
+        section("Downloading now", active) { e ->
+            val d = progress.getValue(e.name)
+            FileRow(e.name, "${bytes(d.bytesDone)} of ${bytes(d.bytesTotal)}",
+                progress = d.takeIf { it.bytesTotal > 0 }?.let { it.bytesDone.toFloat() / it.bytesTotal })
         }
-        section("Waiting", p.queued.orEmpty() + p.rest.orEmpty()) { e -> FileRow(e.name, needDetail(e)) }
+        section("Waiting", started + p.queued.orEmpty() + p.rest.orEmpty()) { e -> FileRow(e.name, needDetail(e)) }
         if (shown >= limit) item("more") { More { limit += PAGE } }
     }
 }
