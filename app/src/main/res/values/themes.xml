@@ -1,3 +1,5 @@
 <resources>
+    <!-- values-night switches to the dark parent; the web GUI's WebView then reports
+         prefers-color-scheme: dark, which Syncthing's default theme follows. -->
     <style name="Theme.MySyncthing" parent="android:Theme.Material.Light.NoActionBar" />
 </resources>

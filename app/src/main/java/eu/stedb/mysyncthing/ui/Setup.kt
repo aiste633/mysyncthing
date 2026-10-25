@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import eu.stedb.mysyncthing.core.SyncthingService
 
 /** Permissions the app depends on, re-read whenever the activity resumes. */
 @Stable
@@ -70,7 +71,12 @@ fun rememberPermissionState(): PermissionState {
 
 @Composable
 fun rememberNotificationRequest(state: PermissionState): () -> Unit {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { state.refresh() }
+    val context = LocalContext.current
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        state.refresh()
+        // A notification posted while denied stays hidden until it is posted again.
+        if (granted) SyncthingService.refreshNotification(context)
+    }
     return { launcher.launch(Manifest.permission.POST_NOTIFICATIONS) }
 }
 

@@ -32,6 +32,7 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun status(): SystemStatus = get("rest/system/status")
     suspend fun devices(): List<Device> = get("rest/config/devices")
+    suspend fun device(id: String): Device = get("rest/config/devices/$id")
     suspend fun folders(): List<Folder> = get("rest/config/folders")
     suspend fun connections(): Connections = get("rest/system/connections")
     suspend fun folderStatus(folder: String): FolderStatus = get("rest/db/status", "folder" to folder)
@@ -49,6 +50,9 @@ class RestClient(address: String, private val apiKey: String) {
     })
 
     suspend fun removeDevice(id: String) = send("DELETE", "rest/config/devices/$id")
+
+    suspend fun setDeviceName(id: String, name: String) =
+        send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })
 
     suspend fun addFolder(id: String, label: String, path: String, deviceIds: List<String>) =
         send("POST", "rest/config/folders", buildJsonObject {

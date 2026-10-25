@@ -34,3 +34,19 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Keep `go/syncthing.version` in sync when bumping.
 - Build via `:app:assembleDebug`; `:core:bundle*Aar` fails by design (local Go AAR dependency).
 - Android link needs `-ldflags=-checklinkname=0` (wlynxg/anet uses go:linkname into net). Upstream requires Go 1.26.2.
+
+
+## Emulator test results (2026-10-24/25, API 35 and 36 AOSP x86_64 images)
+- Local build: JDK 21 required (Gradle 8.14 cannot run on JDK 25). Debug build, `go test`, unit tests and lint pass; debug APK ~130 MB.
+- Works on both API levels: setup screen, All files access, core start, `specialUse` FGS, web GUI auto-login, SAF folder picker to POSIX path, pending device/folder cards, receiving a multi-GB share, two-way create/edit/delete, remote delete, Trash Can versioning, conflict copies, start at boot, app update (`MY_PACKAGE_REPLACED`; ID, keys, folders kept), swipe-away, forced deep doze without battery exemption, kill -9 mid-transfer (START_STICKY restart, transfer resumes), all four run conditions incl. rapid flapping, user-paused device kept paused.
+- Network: Wi-Fi to mobile and airplane on/off reconnect in ~20 s; with 300-600 ms emulated latency reconnect took ~5 min (check on a real phone). Emulator NAT blocks LAN discovery.
+- Polish found: web GUI shows usage-reporting prompt; WebView top bar gap; empty folder list has no hint; accept-folder dialog has no default path and no folder type; no native way to add sharing to an existing folder or set versioning; device name is "localhost"; notification says "Syncing" when paused by user, offline, or no device connected; FGS notification not shown after notification permission is granted until its next update.
+- Test tips: REST port changes on every core restart (read it from logcat "GUI and API listening"); `dumpsys battery reset` leaves the emulator unplugged; `adb emu network speed` did not throttle transfers.
+- 2026-10-25 polish (branch `polish-emulator-findings`): shared `SyncStatus` in core (one event follower in the service; app reads it), notification texts from `summarize()` (unit-tested), device named after the phone, web GUI follows dark mode via values-night theme. Verified on both emulators. Still open for the GUI step: accept dialog default path and folder type, sharing edit, folder settings and versioning.
+
+## Working rules
+- Keep upstream's usage-reporting consent prompt (user's wish, out of respect for upstream); never pre-answer it.
+- Never commit anything about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths), including this file, comments and commit messages. Use placeholders and check the staged diff before each commit. Local test notes live in Claude's own memory folder, not in the repo.
+- Commit as `Claude <noreply@anthropic.com>` (repo-local git config); the machine default identity contains the username and hostname.
+- Ask before pushing or opening a PR; one short-lived branch and PR per step, deleted after merge.
+- Propose GUI designs and get the user's answer before building them.

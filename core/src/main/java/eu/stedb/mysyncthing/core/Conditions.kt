@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 
 /** Device state relevant to run conditions. */
 data class DeviceState(
+    val online: Boolean = false,
     val wifi: Boolean = false,
     val unmetered: Boolean = false,
     val charging: Boolean = false,
@@ -42,6 +43,7 @@ private fun network(context: Context): Flow<DeviceState> = callbackFlow {
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
             trySend(
                 DeviceState(
+                    online = true,
                     wifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                         caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
                     unmetered = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
