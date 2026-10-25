@@ -1,6 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FormatTest {
@@ -77,5 +79,19 @@ class FormatTest {
         assertEquals(0, limitKib(0.0, "MB/s"))
         assertEquals("Automatic", connectionsText(0))
         assertEquals(listOf(0, 1, 2, 3, 4, 8, 6), connectionChoices(6).map { it.first })
+    }
+
+    @Test
+    fun discoveryServersNeedHttpsAndAHost() {
+        val https = "https" + "://"
+        assertTrue(isDiscoveryServer("${https}discovery.example.com/"))
+        assertTrue(isDiscoveryServer("${https}discovery.example.com:8443/?id=ABC"))
+        assertTrue(isDiscoveryServer("${https}192.0.2.10:8443/?insecure"))
+        assertFalse(isDiscoveryServer("http" + "://example.com/"))
+        assertFalse(isDiscoveryServer("${https}/path"))
+        assertFalse(isDiscoveryServer("${https}example.com:99999/"))
+        assertFalse(isDiscoveryServer("${https}user@example.com/"))
+        assertFalse(isDiscoveryServer("${https}exa mple.com/"))
+        assertFalse(isDiscoveryServer("discovery.example.com"))
     }
 }

@@ -37,6 +37,11 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun status(): SystemStatus = get("rest/system/status")
     suspend fun devices(): List<Device> = get("rest/config/devices")
     suspend fun options(): Options = get("rest/config/options")
+    suspend fun patchOptions(fields: JsonObject) = send("PATCH", "rest/config/options", fields)
+    suspend fun restartRequired(): Boolean = get<RestartRequired>("rest/config/restart-required").requiresRestart
+
+    /** The bridge starts the core again in place, on the same address. */
+    suspend fun restart() = send("POST", "rest/system/restart")
     suspend fun device(id: String): Device = get("rest/config/devices/$id")
     suspend fun folders(): List<Folder> = get("rest/config/folders")
     suspend fun connections(): Connections = get("rest/system/connections")

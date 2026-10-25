@@ -199,3 +199,9 @@ fun versioningSummary(type: String, params: Map<String, String>): String {
         else -> "$label · $n ${p.unit}"
     }
 }
+
+/** A global discovery server Syncthing can use: https with a host, an optional port and ?id=… or ?insecure. */
+fun isDiscoveryServer(s: String): Boolean {
+    val u = runCatching { java.net.URI(s.trim()) }.getOrNull() ?: return false
+    return u.scheme == "https" && !u.host.isNullOrEmpty() && u.userInfo == null && (u.port == -1 || u.port in 1..65535)
+}
