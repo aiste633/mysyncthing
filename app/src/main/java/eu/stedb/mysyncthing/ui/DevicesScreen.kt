@@ -29,7 +29,6 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -120,10 +119,10 @@ private fun ThisDeviceCard(s: Snapshot, onShowQr: () -> Unit) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                FilledTonalButton(onClick = onShowQr) {
+                FilledTonalButton(shape = ButtonShape, onClick = onShowQr) {
                     Icon(Icons.Default.QrCode, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Show ID")
                 }
-                FilledTonalButton(onClick = {
+                FilledTonalButton(shape = ButtonShape, onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, s.myId)
                     context.startActivity(Intent.createChooser(send, "Share device ID"))
                 }) {
@@ -156,7 +155,7 @@ private fun DeviceCard(d: Device, s: Snapshot, onClick: () -> Unit) {
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             status.progress?.let {
-                LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp), color = look.color)
+                ProgressBar(it, look.color, Modifier.padding(top = 6.dp))
             }
         }
     }
@@ -179,7 +178,8 @@ private fun DeviceDialog(initialId: String, initialName: String, onDismiss: () -
                     supportingText = { Text(if (initialId.isNotEmpty()) "Check it matches the other device" else "Scan its QR code or paste it") },
                     trailingIcon = {
                         if (initialId.isEmpty()) IconButton(onClick = {
-                            scan.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setBeepEnabled(false).setOrientationLocked(false))
+                            scan.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setBeepEnabled(false).setOrientationLocked(false)
+                                .setCaptureActivity(ScanActivity::class.java))
                         }) { Icon(Icons.Default.QrCodeScanner, "Scan QR code") }
                     },
                 )

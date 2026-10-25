@@ -2,9 +2,11 @@ package eu.stedb.mysyncthing.ui
 
 import android.net.Uri
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Folder
@@ -105,7 +107,10 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         Scaffold(
             contentWindowInsets = WindowInsets(0),
             // Without the tab bar nothing lifts the snackbar above the system navigation bar.
-            snackbarHost = { SnackbarHost(snackbar, if (topLevel) Modifier else Modifier.navigationBarsPadding()) },
+            snackbarHost = {
+                val sides = if (topLevel) WindowInsetsSides.Horizontal else WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+                SnackbarHost(snackbar, Modifier.windowInsetsPadding(SafeBars.only(sides)))
+            },
             bottomBar = { if (topLevel) TabBar(nav, route, snapshot) },
         ) { padding ->
             NavHost(nav, startDestination = Tab.Folders.route, modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
@@ -160,7 +165,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
 @Composable
 private fun TabBar(nav: NavHostController, route: String?, s: Snapshot) {
     val folderRequests = s.pendingFolders.values.sumOf { it.offeredBy.size }
-    NavigationBar {
+    NavigationBar(windowInsets = SafeBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom)) {
         Tab.entries.forEach { tab ->
             val badge = when (tab) {
                 Tab.Folders -> folderRequests

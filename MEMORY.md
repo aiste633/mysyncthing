@@ -3,7 +3,7 @@
 Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 ## Decisions (confirmed 2026-10-24)
-- App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0. Distribution: F-Droid only (no Play constraints, no proprietary deps, reproducible builds).
+- App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0. Distribution: the app will be published on F-Droid (no Play constraints, no proprietary deps, reproducible builds). When is not decided yet: no date, don't describe it as imminent or as already available.
 - minSdk 35, target/compileSdk 36. No wider reach wanted.
 - Kotlin + Jetpack Compose. Modules `:app`, `:core`, plus `go/`.
 - Core: in-process via `gomobile bind` of `go/bridge` (Go package `stbridge`, Java package `eu.stedb.mysyncthing.stbridge`). Not the exec'd-binary approach.
@@ -50,12 +50,24 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Accepted folders default to `/storage/emulated/0/Syncthing/<label>`; accept screen offers folder type, sharing and versioning.
 - Request notification (own channel, Review/Ignore actions): mockup shown, waiting for the user's OK.
 
-## Widget (branch `home-widget`, stacked on `native-gui`, 2026-10-25)
+## Widget (merged in PR #4, 2026-10-25)
 - `core/StatusWidget`: RemoteViews bar, 1 row, placed 4 cells wide, user-resizable horizontally (minResizeWidth 180 dp fits icon, text, button; up to full width), 52 dp high centred in the cell, 2 dp corners (user wants almost square). The launcher drag outline is the whole cell row and cannot be smaller than one row, no polling: the service renders on summary changes, at most every 2 s. Colour + icon per `SyncState` (green check, amber arrows/pause/bell, red error, grey stop), progress bar while syncing, pause/resume button toggles `RunConditions.pausedByUser` (enforced like a run condition; also a Settings switch). Tap opens the app (Devices tab when only a device request waits).
 - Request notifications (`core/RequestNotifications`, channel "Requests"): one per pending device/folder offer, Review deep-links to the accept screen or add-device dialog, Ignore is permanent (remoteIgnoredDevices / device ignoredFolders, like upstream). No explicit group: cancelling a group summary drops its children.
 - Problem (red) includes "No network" and "Not connected"; a single offline device is grey in the app.
 - README features the widget near the top with docs/images/widget.png. F-Droid description should mention it once fastlane metadata exists.
 - Emulator tips: place widgets by long-press home, Widgets, then a raw `input motionevent` DOWN/MOVE/UP drag (`input draganddrop` does not work); `ui tap <text>` matches substrings anywhere, tap tabs by coordinates.
+
+## Edge to edge and first phone test (branch `edge-to-edge`, 2026-10-25)
+- Insets: `SafeBars` (system bars + display cutout) for the top bar, tab bar and snackbar; `AppScreen` content uses `safeDrawing` (adds the keyboard); the FAB gets End-side padding because Scaffold only lifts it above bottom insets. Checked with cutout emulation, 3-button and gesture nav, both landscapes, on API 35/36 and a real Android 16 phone (OnePlus, punch-hole, 3-button nav).
+- QR scanner is `ui/ScanActivity` (zxing CaptureActivity subclass): follows rotation, hint kept above the nav bar.
+- Animations off (user's phone): indeterminate spinners freeze as a dot, so use `BusyIndicator()`.
+- Corners: user wants much less rounded; theme `AppShapes` (2-8 dp) and `ButtonShape` (4 dp) on filled/outlined/tonal buttons.
+- Widget: OnePlus launcher ignores `previewLayout`; `previewImage` covers it.
+- Real-phone results: setup, two-way sync, widget, QR scan with the camera all fine. 1 h unplugged with screen off and battery optimisation on (no OEM battery switches): not killed, same process, files arrived in 13-30 s. 3.25 GB over mobile data from a server in ~11 min (~5 MB/s), no errors; edits and deletes went back. Wi-Fi to mobile took ~7.5 min to reconnect because the peer keeps the dead TCP link until its 5 min receive timeout and rejects worse-priority connections meanwhile (upstream `lib/connections/service.go`); mobile to Wi-Fi 18 s.
+- Material 3 determinate bars draw a stop dot and gap (looked like a glitch): use `ProgressBar()`. Segmented labels must allow two lines (phone display size larger than the emulator's).
+- Open: OxygenOS has its own per-app battery switches (background activity, auto-launch); setup should explain them and open the app's battery page (user will show the screens).
+- Open: first-run setup disappears once All files access is granted, so the optional notification and battery buttons are never shown (design question for the user).
+- Real phone rules: another Syncthing app may be installed and stopped there; never touch it, keep it stopped while testing (same default ports). Check the foreground app before any tap.
 
 ## Working rules
 - Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.

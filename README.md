@@ -1,6 +1,6 @@
 # MySyncthing
 
-A Syncthing client for Android 15 and 16 (API 35/36), written in Kotlin and Jetpack Compose. It is a new app, not a fork of syncthing-android. It is distributed through F-Droid.
+A Syncthing client for Android 15 and 16 (API 35/36), written in Kotlin and Jetpack Compose. It is a new app, not a fork of syncthing-android. It will be published on F-Droid; there is no release date yet.
 
 ## Home-screen widget
 
@@ -58,7 +58,7 @@ Releasing:
 2. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk`.
 3. On your machine: `KEYSTORE=~/keys/mysyncthing.jks scripts/sign-release.sh v0.1.0`, then publish the draft.
 
-F-Droid: `fdroid/eu.stedb.mysyncthing.yml` is the draft recipe for fdroiddata, not yet submitted.
+F-Droid: `fdroid/eu.stedb.mysyncthing.yml` is the draft recipe for fdroiddata. It has not been submitted, and when it will be is not decided yet.
 
 ## Updating Syncthing
 

@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -87,7 +89,8 @@ fun SetupScreen(state: PermissionState) {
     // Surface sets the text colour for dark mode; there is no Scaffold here.
     Surface(Modifier.fillMaxSize(), color = AppColors.background) {
         Column(
-            Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
+            // Scrolls so the last button stays reachable in landscape.
+            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text("Set up", style = MaterialTheme.typography.headlineMedium)
@@ -95,14 +98,14 @@ fun SetupScreen(state: PermissionState) {
                 "Syncthing reads and writes your folders directly, so it needs All files access. " +
                     "Without it, nothing can sync."
             )
-            Button(onClick = state::requestStorage) { Text("Grant All files access") }
+            Button(shape = ButtonShape, onClick = state::requestStorage) { Text("Grant All files access") }
             if (!state.notifications) {
                 Text("Optional: notifications show sync status and new device requests.")
-                OutlinedButton(onClick = requestNotifications) { Text("Allow notifications") }
+                OutlinedButton(shape = ButtonShape, onClick = requestNotifications) { Text("Allow notifications") }
             }
             if (!state.batteryExempt) {
                 Text("Optional: exempting the app from battery optimisation keeps sync running reliably.")
-                OutlinedButton(onClick = state::requestBatteryExemption) { Text("Disable battery optimisation") }
+                OutlinedButton(shape = ButtonShape, onClick = state::requestBatteryExemption) { Text("Disable battery optimisation") }
             }
         }
     }

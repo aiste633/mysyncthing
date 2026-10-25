@@ -3,8 +3,11 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,6 +31,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Versioning
@@ -107,14 +111,18 @@ fun FolderEditScreen(s: Snapshot, initial: FolderDraft, offeredBy: String?, onBa
             }
             SettingsGroup("Type") {
                 Column(Modifier.padding(16.dp)) {
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
                         FOLDER_TYPES.forEachIndexed { i, (value, label) ->
                             SegmentedButton(
                                 selected = d.type == value, onClick = { d = d.copy(type = value) },
-                                shape = SegmentedButtonDefaults.itemShape(i, FOLDER_TYPES.size),
+                                modifier = Modifier.fillMaxHeight(),
+                                shape = SegmentedButtonDefaults.itemShape(i, FOLDER_TYPES.size, MaterialTheme.shapes.extraSmall),
                                 icon = {}, // the check mark would not leave room for the labels on a phone
                                 colors = SegmentedButtonDefaults.colors(inactiveContainerColor = Color.Transparent),
-                            ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }
+                            ) {
+                                // Two lines: with a larger display size "Send & receive" no longer fits in one.
+                                Text(label, maxLines = 2, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium)
+                            }
                         }
                     }
                     folderTypeHint(d.type)?.let {

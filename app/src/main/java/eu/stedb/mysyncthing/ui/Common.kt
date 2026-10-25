@@ -2,29 +2,42 @@
 
 package eu.stedb.mysyncthing.ui
 
+import android.animation.ValueAnimator
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,6 +45,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -51,6 +65,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
@@ -61,14 +76,37 @@ import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.Summary
 
+/**
+ * System bars plus the camera cutout, without the keyboard. Material's bars only
+ * avoid the system bars by default, so in landscape their buttons and the list
+ * edges would sit under the cutout (edge-to-edge is enforced from API 35).
+ */
+val SafeBars: WindowInsets @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
+
 /** Shows [content] only while the core runs; otherwise its state. */
 @Composable
 fun CoreGate(state: CoreState, content: @Composable () -> Unit) {
-    when (state) {
-        is CoreState.Running -> content()
-        is CoreState.Failed -> Centered { Text("Syncthing failed: ${state.message}", color = MaterialTheme.colorScheme.error) }
-        else -> Centered { CircularProgressIndicator(); Text("Starting Syncthing") }
+    if (state is CoreState.Running) return content()
+    // Not inside an AppScreen, so it sets its own background and insets.
+    Surface(Modifier.fillMaxSize(), color = AppColors.background) {
+        Column(Modifier.safeDrawingPadding()) {
+            when (state) {
+                is CoreState.Failed -> Centered { Text("Syncthing failed: ${state.message}", color = MaterialTheme.colorScheme.error) }
+                else -> Centered { BusyIndicator(); Text("Starting Syncthing") }
+            }
+        }
     }
+}
+
+/**
+ * A spinner, or a static icon when the phone has animations turned off: the
+ * spinner then freezes on its first frame, a dot that reads as nothing.
+ */
+@Composable
+fun BusyIndicator() {
+    val animated = remember { ValueAnimator.areAnimatorsEnabled() }
+    if (animated) CircularProgressIndicator()
+    else Icon(Icons.Default.HourglassTop, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
 }
 
 /** A screen with a top bar on the app's tinted background. [onBack] adds a back arrow. */
@@ -82,6 +120,8 @@ fun AppScreen(
 ) {
     Scaffold(
         containerColor = AppColors.background,
+        // Content and FAB keep clear of the bars, the cutout and the keyboard.
+        contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
                 title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
@@ -90,10 +130,25 @@ fun AppScreen(
                 },
                 actions = { actions() },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.background),
+                windowInsets = SafeBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
             )
         },
-        floatingActionButton = fab,
+        // Scaffold lifts the FAB above the bottom insets only; in landscape the side
+        // navigation bar would cover it.
+        floatingActionButton = { Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End))) { fab() } },
         content = content,
+    )
+}
+
+/**
+ * A plain bar: Material's default adds a gap and a dot at the track's end,
+ * which reads as a glitch, and rounded caps.
+ */
+@Composable
+fun ProgressBar(progress: Float, color: Color, modifier: Modifier = Modifier) {
+    LinearProgressIndicator(
+        progress = { progress }, modifier = modifier.fillMaxWidth(), color = color,
+        strokeCap = StrokeCap.Butt, gapSize = 0.dp, drawStopIndicator = {},
     )
 }
 
@@ -188,17 +243,23 @@ fun EmptyState(icon: ImageVector, title: String, hint: String) {
     Centered {
         Icon(icon, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(hint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
+        Text(
+            hint, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center, modifier = Modifier.widthIn(max = 400.dp),
+        )
     }
 }
 
+/** Centred in the space; scrolls when that is too short, as in landscape. */
 @Composable
 private fun Centered(content: @Composable () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) { content() }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        Column(
+            Modifier.verticalScroll(rememberScrollState()).fillMaxWidth().heightIn(min = maxHeight).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) { content() }
+    }
 }
 
 /** Single-choice dialog with radio rows and an optional explanation per choice. */
