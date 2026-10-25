@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -32,13 +33,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.FileError
+import eu.stedb.mysyncthing.core.FolderStats
 import eu.stedb.mysyncthing.core.Snapshot
 
 private enum class FolderDialog { Name, Type, Ignores, Remove }
 
 /** Settings and status of one folder; every change applies at once, as in system Settings. */
 @Composable
-fun FolderScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit) {
+fun FolderScreen(
+    s: Snapshot,
+    id: String,
+    vm: MainViewModel,
+    onBack: () -> Unit,
+    onOpenNeed: () -> Unit,
+    onOpenFailed: () -> Unit,
+) {
     val f = s.folders.find { it.id == id }
     if (f == null) {
         // Removed, or the snapshot is reloading after a config change.
@@ -53,6 +62,8 @@ fun FolderScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit)
     var errors by remember { mutableStateOf<List<FileError>>(emptyList()) }
     LaunchedEffect(id, st?.errors) { errors = if ((st?.errors ?: 0) > 0) vm.folderErrors(id) else emptyList() }
     LaunchedEffect(id) { ignores = vm.ignores(id) }
+    var stats by remember { mutableStateOf<FolderStats?>(null) }
+    LaunchedEffect(id, st?.state) { stats = vm.folderStats(id) }
 
     AppScreen(title = f.label.ifEmpty { f.id }, onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
@@ -68,6 +79,9 @@ fun FolderScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit)
                             "${bytes(st.localBytes)} on this phone of ${bytes(st.globalBytes)}",
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    st?.error?.ifEmpty { null }?.let {
+                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                     }
                     status.progress?.let { ProgressBar(it, look.color) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
@@ -85,10 +99,23 @@ fun FolderScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit)
                 }
             }
 
+            if (st != null && st.needTotalItems > 0 && !f.paused) {
+                SettingsGroup("Still to download") {
+                    SettingRow(
+                        "${count(st.needTotalItems, "item")} · ${bytes(st.needBytes)}", "See which files",
+                        trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, onClick = onOpenNeed,
+                    )
+                }
+            }
             if (errors.isNotEmpty()) {
                 SettingsGroup("Failed items") {
-                    errors.take(20).forEach { SettingRow(it.path, it.error) }
-                    if (errors.size > 20) SettingRow("${errors.size - 20} more", "See the web GUI for the full list")
+                    errors.take(FAILED_PREVIEW).forEach { SettingRow(it.path, it.error) }
+                    if (errors.size > FAILED_PREVIEW) {
+                        SettingRow(
+                            "See all ${errors.size}", null,
+                            trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, onClick = onOpenFailed,
+                        )
+                    }
                 }
             }
 
@@ -99,6 +126,17 @@ fun FolderScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit)
                 SettingRow("Folder ID", f.id)
             }
 
+            if (st != null) {
+                SettingsGroup("Details") {
+                    SettingRow("Last scan", stats?.lastScan?.let { whenText(it) } ?: "Not yet")
+                    stats?.lastFile?.takeIf { it.filename.isNotEmpty() }?.let { lf ->
+                        val what = if (lf.deleted) "Deleted ${lf.filename}" else lf.filename
+                        SettingRow("Last change", listOfNotNull(what, whenText(lf.at)).joinToString(" · "))
+                    }
+                    SettingRow("On this phone", contents(st.localFiles, st.localDirectories, st.localBytes))
+                    SettingRow("On all devices", contents(st.globalFiles, st.globalDirectories, st.globalBytes))
+                }
+            }
             SettingsGroup("Shared with") {
                 if (s.devices.isEmpty()) SettingRow("No devices added yet", "Add one on the Devices tab")
                 s.devices.forEach { dev ->
@@ -155,3 +193,8 @@ fun FolderScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit)
         null -> {}
     }
 }
+
+private const val FAILED_PREVIEW = 5
+
+private fun contents(files: Int, dirs: Int, size: Long) =
+    "${count(files, "file")} · ${count(dirs, "folder")} · ${bytes(size)}"

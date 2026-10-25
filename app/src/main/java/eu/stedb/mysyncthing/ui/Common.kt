@@ -37,6 +37,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -75,6 +76,7 @@ import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.Summary
+import eu.stedb.mysyncthing.core.SystemError
 
 /**
  * System bars plus the camera cutout, without the keyboard. Material's bars only
@@ -202,6 +204,36 @@ fun RequestCard(title: String, detail: String?, actions: @Composable () -> Unit)
             }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.End) { actions() }
+    }
+}
+
+/** The core's notices, in red, newest first, until the user clears them. */
+@Composable
+fun ProblemsCard(errors: List<SystemError>, onClear: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+    ) {
+        val fg = MaterialTheme.colorScheme.onErrorContainer
+        Row(Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.Top) {
+            Icon(Icons.Default.Error, null, tint = fg)
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    if (errors.size == 1) "1 problem" else "${errors.size} problems",
+                    style = MaterialTheme.typography.titleSmall, color = fg,
+                )
+                errors.reversed().forEach { e ->
+                    Text(
+                        listOfNotNull(whenText(e.time), e.message).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall, color = fg,
+                    )
+                }
+            }
+        }
+        Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.End) {
+            TextButton(onClick = onClear) { Text("Clear", color = fg) }
+        }
     }
 }
 

@@ -45,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import eu.stedb.mysyncthing.core.Device
@@ -57,6 +58,7 @@ fun DevicesScreen(
     summary: Summary,
     vm: MainViewModel,
     onOpen: (String) -> Unit,
+    onOpenThisPhone: () -> Unit,
     review: String? = null,
     onReviewShown: () -> Unit = {},
 ) {
@@ -69,6 +71,7 @@ fun DevicesScreen(
         onReviewShown()
     }
     var showMyId by rememberSaveable { mutableStateOf(false) }
+    val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
     AppScreen(
         title = "Devices",
         actions = { StatusChip(summary) },
@@ -78,7 +81,7 @@ fun DevicesScreen(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             LazyColumn(contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp)) {
-                item("me") { ThisDeviceCard(s) { showMyId = true } }
+                item("me") { ThisDeviceCard(s, live, onOpenThisPhone) { showMyId = true } }
                 s.pendingDevices.forEach { (id, p) ->
                     item("pending-$id") {
                         RequestCard("${p.name.ifEmpty { shortId(id) }} wants to connect", "Device ID ${shortId(id)} · ${p.address}") {
@@ -106,9 +109,9 @@ fun DevicesScreen(
 }
 
 @Composable
-private fun ThisDeviceCard(s: Snapshot, onShowQr: () -> Unit) {
+private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, onShowQr: () -> Unit) {
     val context = LocalContext.current
-    ListCard {
+    ListCard(onClick = onOpen) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Smartphone, null, tint = MaterialTheme.colorScheme.primary)
@@ -116,6 +119,15 @@ private fun ThisDeviceCard(s: Snapshot, onShowQr: () -> Unit) {
                 Column {
                     Text(s.myName.ifEmpty { "This phone" }, style = MaterialTheme.typography.titleMedium)
                     Text("This device · ID ${shortId(s.myId)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+            live?.let { l ->
+                l.total?.let { Text(speedText(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                val look = l.health.look()
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
+                    Spacer(Modifier.width(6.dp))
+                    Text(l.healthText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {

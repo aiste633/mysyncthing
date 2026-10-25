@@ -1,5 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import java.time.OffsetDateTime
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /** SI (base-1000) byte sizes. */
@@ -10,6 +13,44 @@ fun bytes(n: Long): String {
     var i = -1
     while (v >= 1000 && i < units.length - 1) { v /= 1000; i++ }
     return String.format(Locale.ROOT, "%.1f %sB", v, units[i])
+}
+
+/** A transfer speed with its unit, e.g. "1.2 MB/s". */
+fun rate(bytesPerSecond: Long): String = bytes(bytesPerSecond) + "/s"
+
+/** "12 min", "3 h 5 min", "2 d 4 h": the two largest units. */
+fun duration(seconds: Long): String {
+    val d = seconds / 86_400
+    val h = seconds % 86_400 / 3_600
+    val m = seconds % 3_600 / 60
+    return when {
+        d > 0 -> if (h > 0) "$d d $h h" else "$d d"
+        h > 0 -> if (m > 0) "$h h $m min" else "$h h"
+        m > 0 -> "$m min"
+        else -> "$seconds s"
+    }
+}
+
+/** "1 file", "1,204 files"; digits grouped as the phone's language does. */
+fun count(n: Int, word: String): String =
+    String.format(Locale.getDefault(), "%,d", n) + " " + if (n == 1) word else word + "s"
+
+/**
+ * A REST time stamp (RFC 3339) for people, day before month, 24 h: "12:03" today,
+ * "yesterday, 22:10", "25 Oct, 12:03" this year, else with the year.
+ * Null for Go's zero time, which the core uses for "never".
+ */
+fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): String? {
+    val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
+    if (t.year < 2000) return null
+    val time = t.format(DateTimeFormatter.ofPattern("HH:mm", locale))
+    val day = t.toLocalDate()
+    return when {
+        day == now.toLocalDate() -> time
+        day == now.toLocalDate().minusDays(1) -> "yesterday, $time"
+        t.year == now.year -> t.format(DateTimeFormatter.ofPattern("d MMM, HH:mm", locale))
+        else -> t.format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
+    }
 }
 
 /** Syncthing's grouped display form, e.g. ABCDEFG-HIJKLMN. Only the first group is shown in lists. */

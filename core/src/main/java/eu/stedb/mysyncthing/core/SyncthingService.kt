@@ -36,9 +36,14 @@ class SyncthingService : LifecycleService() {
         settings = Settings(this)
         createChannel()
         RequestNotifications.createChannel(this)
+        ProblemNotifications.createChannel(this)
         lifecycleScope.launch {
             SyncStatus.snapshot.filter { it.loaded }.map { it.requests() }.distinctUntilChanged()
                 .collect { RequestNotifications.update(this@SyncthingService, it) }
+        }
+        lifecycleScope.launch {
+            SyncStatus.snapshot.filter { it.loaded }.map { it.systemErrors }.distinctUntilChanged()
+                .collect { ProblemNotifications.update(this@SyncthingService, it) }
         }
         // Renders at most every 2 s; a StateFlow collector always ends on the latest summary.
         lifecycleScope.launch {
@@ -93,6 +98,7 @@ class SyncthingService : LifecycleService() {
             StatusWidget.render(this, it) // the collector above is already cancelled
         }
         RequestNotifications.update(this, emptyList()) // Ignore needs a running core
+        ProblemNotifications.update(this, emptyList()) // a stopped core's notices are stale
         super.onDestroy()
     }
 

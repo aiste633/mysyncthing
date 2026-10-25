@@ -53,6 +53,7 @@ fun FoldersScreen(
                 )
             }
             LazyColumn(contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp)) {
+                if (s.systemErrors.isNotEmpty()) item("problems") { ProblemsCard(s.systemErrors, onClear = vm::clearErrors) }
                 s.pendingFolders.forEach { (id, pending) ->
                     pending.offeredBy.forEach { (device, offer) ->
                         item("pending-$id-$device") {
