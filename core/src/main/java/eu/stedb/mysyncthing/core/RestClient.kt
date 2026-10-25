@@ -3,6 +3,7 @@ package eu.stedb.mysyncthing.core
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -17,6 +18,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 class ApiException(val code: Int, message: String) : IOException("HTTP $code: $message")
@@ -94,10 +96,28 @@ class RestClient(address: String, private val apiKey: String) {
         setFolderDevices(folder.id, folder.devices.map { it.deviceID } + deviceId)
     }
 
-    suspend fun dismissPendingDevice(id: String) = send("DELETE", "rest/cluster/pending/devices", query = listOf("device" to id))
+    /**
+     * Ignores a device for good, as the web GUI's Ignore does. Only deleting
+     * the pending entry would bring it back on its next connection attempt.
+     */
+    suspend fun ignoreDevice(id: String) {
+        val p = pendingDevices()[id] ?: return
+        val cfg = get<JsonObject>("rest/config")
+        val entry = buildJsonObject {
+            put("deviceID", id); put("name", p.name); put("address", p.address); put("time", Instant.now().toString())
+        }
+        val ignored = (cfg["remoteIgnoredDevices"] as? JsonArray).orEmpty() + entry
+        send("PUT", "rest/config", JsonObject(cfg + ("remoteIgnoredDevices" to JsonArray(ignored))))
+    }
 
-    suspend fun dismissPendingFolder(folder: String, device: String) =
-        send("DELETE", "rest/cluster/pending/folders", query = listOf("folder" to folder, "device" to device))
+    /** Ignores one device's offer of a folder for good, stored on that device as upstream does. */
+    suspend fun ignoreFolder(folder: String, device: String) {
+        val label = pendingFolders()[folder]?.offeredBy?.get(device)?.label.orEmpty()
+        val d = get<JsonObject>("rest/config/devices/$device")
+        val entry = buildJsonObject { put("id", folder); put("label", label); put("time", Instant.now().toString()) }
+        val ignored = (d["ignoredFolders"] as? JsonArray).orEmpty() + entry
+        send("PATCH", "rest/config/devices/$device", buildJsonObject { put("ignoredFolders", JsonArray(ignored)) })
+    }
 
     /** Pauses or resumes all devices; used to enforce run conditions without stopping the core. */
     suspend fun setAllPaused(paused: Boolean) = send("POST", if (paused) "rest/system/pause" else "rest/system/resume")

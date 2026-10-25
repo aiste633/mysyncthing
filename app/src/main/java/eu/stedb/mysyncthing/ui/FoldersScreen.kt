@@ -59,7 +59,7 @@ fun FoldersScreen(
                         item("pending-$id-$device") {
                             val who = s.devices.find { it.deviceID == device }?.name?.ifEmpty { null } ?: shortId(device)
                             RequestCard("$who shares \"${offer.label.ifEmpty { id }}\"", "Choose where to keep it on this phone") {
-                                TextButton(onClick = { vm.dismissPendingFolder(id, device) }) { Text("Ignore") }
+                                TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text("Ignore") }
                                 TextButton(onClick = { onAccept(id, device) }) { Text("Review") }
                             }
                         }

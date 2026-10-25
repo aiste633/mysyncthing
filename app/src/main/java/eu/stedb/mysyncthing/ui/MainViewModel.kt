@@ -57,8 +57,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun removeDevice(id: String) = act("Remove device") { removeDevice(id) }
     fun renameDevice(id: String, name: String) = act("Rename") { setDeviceName(id, name.trim()) }
     fun setDevicePaused(id: String, paused: Boolean) = act("Pause") { setDevicePaused(id, paused) }
-    fun dismissPendingDevice(id: String) = act("Ignore") { dismissPendingDevice(id) }
-    fun dismissPendingFolder(folder: String, device: String) = act("Ignore") { dismissPendingFolder(folder, device) }
+    fun ignoreDevice(id: String) = act("Ignore") { ignoreDevice(id) }
+    fun ignoreFolder(folder: String, device: String) = act("Ignore") { ignoreFolder(folder, device) }
 
     fun addFolder(d: FolderDraft) = act("Add folder", done = "Added ${d.label.ifBlank { d.id }}") {
         addFolder(d.id.trim(), d.label.trim(), d.path.trim(), d.devices.toList(), d.type, d.versioning)

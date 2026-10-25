@@ -69,7 +69,7 @@ fun DevicesScreen(s: Snapshot, summary: Summary, vm: MainViewModel, onOpen: (Str
                 s.pendingDevices.forEach { (id, p) ->
                     item("pending-$id") {
                         RequestCard("${p.name.ifEmpty { shortId(id) }} wants to connect", "Device ID ${shortId(id)} · ${p.address}") {
-                            TextButton(onClick = { vm.dismissPendingDevice(id) }) { Text("Ignore") }
+                            TextButton(onClick = { vm.ignoreDevice(id) }) { Text("Ignore") }
                             TextButton(onClick = { draft = listOf(id, p.name) }) { Text("Review") }
                         }
                     }
