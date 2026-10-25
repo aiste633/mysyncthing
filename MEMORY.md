@@ -51,7 +51,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Request notification (own channel, Review/Ignore actions): mockup shown, waiting for the user's OK.
 
 ## Working rules
-- Keep upstream's usage-reporting consent prompt (user's wish, out of respect for upstream); never pre-answer it.
+- Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.
 - Never commit anything about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths), including this file, comments and commit messages. Use placeholders and check the staged diff before each commit. Local test notes live in Claude's own memory folder, not in the repo.
 - Commit as `Claude <noreply@anthropic.com>` (repo-local git config); the machine default identity contains the username and hostname.
 - Ask before pushing or opening a PR; one short-lived branch and PR per step, deleted after merge.

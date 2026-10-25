@@ -36,6 +36,7 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun status(): SystemStatus = get("rest/system/status")
     suspend fun devices(): List<Device> = get("rest/config/devices")
+    suspend fun options(): Options = get("rest/config/options")
     suspend fun device(id: String): Device = get("rest/config/devices/$id")
     suspend fun folders(): List<Folder> = get("rest/config/folders")
     suspend fun connections(): Connections = get("rest/system/connections")
@@ -54,6 +55,30 @@ class RestClient(address: String, private val apiKey: String) {
     })
 
     suspend fun removeDevice(id: String) = send("DELETE", "rest/config/devices/$id")
+
+    /**
+     * Records the answer to the consent prompt exactly as upstream's web GUI
+     * does: "No" keeps an earlier accepted version, so only a format change is declined.
+     */
+    suspend fun answerUsagePrompt(accept: Boolean) {
+        val max = status().urVersionMax
+        val current = options().urAccepted
+        setUsageOptions(if (accept) max else if (current == 0) -1 else current, max)
+    }
+
+    /** The Settings switch: on accepts the current format, off declines entirely. */
+    suspend fun setUsageReporting(on: Boolean) {
+        val max = status().urVersionMax
+        setUsageOptions(if (on) max else -1, max)
+    }
+
+    private suspend fun setUsageOptions(accepted: Int, seen: Int) = send("PATCH", "rest/config/options", buildJsonObject {
+        put("urAccepted", accepted)
+        put("urSeen", seen)
+    })
+
+    /** The report that would be sent, for the Preview button. */
+    suspend fun usageReport(): String = call(request("rest/svc/report", emptyList()).get().build())
 
     suspend fun setDeviceName(id: String, name: String) =
         send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })

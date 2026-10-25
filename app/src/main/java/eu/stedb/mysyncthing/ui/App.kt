@@ -76,6 +76,8 @@ fun App(vm: MainViewModel = viewModel()) {
         val route = current?.destination?.route
         val topLevel = Tab.entries.any { it.route == route }
 
+        UsageReportingPrompt(core, vm)
+
         // Each screen draws its own top bar; this Scaffold only adds the tab bar.
         Scaffold(
             contentWindowInsets = WindowInsets(0),

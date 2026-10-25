@@ -53,6 +53,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun folderErrors(folder: String): List<FileError> =
         runCatching { client?.folderErrors(folder)?.errors }.getOrNull().orEmpty()
 
+    suspend fun usageConsent(): UsageConsent? = runCatching {
+        val c = client ?: return null
+        val max = c.status().urVersionMax
+        val o = c.options()
+        UsageConsent(needsPrompt = o.urAccepted > -1 && o.urSeen < max && o.urAccepted < max, enabled = o.urAccepted > 0)
+    }.getOrNull()
+
+    suspend fun usageReport(): String? = runCatching { client?.usageReport() }.getOrNull()
+    fun answerUsagePrompt(accept: Boolean) = act("Usage reporting") { answerUsagePrompt(accept) }
+    fun setUsageReporting(on: Boolean) = act("Usage reporting") { setUsageReporting(on) }
+
     fun addDevice(id: String, name: String) = act("Add device") { addDevice(id.trim().uppercase(), name.trim()) }
     fun removeDevice(id: String) = act("Remove device") { removeDevice(id) }
     fun renameDevice(id: String, name: String) = act("Rename") { setDeviceName(id, name.trim()) }

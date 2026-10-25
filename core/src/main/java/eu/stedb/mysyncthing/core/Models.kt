@@ -7,7 +7,11 @@ import kotlinx.serialization.json.JsonElement
 // Only the fields the native UI uses; the REST API returns many more.
 
 @Serializable
-data class SystemStatus(val myID: String, val uptime: Long = 0)
+data class SystemStatus(val myID: String, val uptime: Long = 0, val urVersionMax: Int = 0)
+
+/** Usage-reporting consent, as upstream stores it: urAccepted 0 = not asked, -1 = declined, >0 = accepted version. */
+@Serializable
+data class Options(val urAccepted: Int = 0, val urSeen: Int = 0)
 
 @Serializable
 data class Device(

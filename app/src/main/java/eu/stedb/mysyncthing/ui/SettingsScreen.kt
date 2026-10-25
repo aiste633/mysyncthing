@@ -13,12 +13,15 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Wifi
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -92,6 +95,17 @@ fun SettingsScreen(
             }
 
             SettingsGroup("Advanced") {
+                var usage by remember { mutableStateOf<UsageConsent?>(null) }
+                LaunchedEffect(running) { usage = vm.usageConsent() }
+                usage?.let { u ->
+                    SettingRow(
+                        "Anonymous usage reporting", "Helps Syncthing's developers; statistics at data.syncthing.net",
+                        Icons.Default.QueryStats, trailing = { Switch(u.enabled, onCheckedChange = null) },
+                    ) {
+                        vm.setUsageReporting(!u.enabled)
+                        usage = u.copy(enabled = !u.enabled)
+                    }
+                }
                 SettingRow(
                     "Web GUI", "Syncthing's full settings, for what this app does not show",
                     Icons.Default.Language, onClick = if (running) onOpenWebGui else null,
