@@ -13,17 +13,28 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.Folder
@@ -42,7 +53,17 @@ fun FoldersScreen(
 ) {
     AppScreen(
         title = "Folders",
-        actions = { StatusChip(summary) },
+        actions = {
+            StatusChip(summary)
+            var menu by remember { mutableStateOf(false) }
+            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
+            DropdownMenu(menu, onDismissRequest = { menu = false }) {
+                DropdownMenuItem(
+                    text = { Text("Rescan all folders") }, enabled = s.folders.any { !it.paused },
+                    onClick = { menu = false; vm.rescanAll() },
+                )
+            }
+        },
         fab = { ExtendedFloatingActionButton(onClick = onAdd, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Add folder") }) },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -52,7 +73,11 @@ fun FoldersScreen(
                     "Tap Add folder to sync a folder on this phone. Folders other devices share with you appear here too.",
                 )
             }
-            LazyColumn(contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp)) {
+            val list = rememberLazyListState()
+            // A new problem card goes above the first item; at the top of the list, keep it in view.
+            val hasProblems = s.systemErrors.isNotEmpty()
+            LaunchedEffect(hasProblems) { if (hasProblems && list.firstVisibleItemIndex <= 1) list.scrollToItem(0) }
+            LazyColumn(state = list, contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp)) {
                 if (s.systemErrors.isNotEmpty()) item("problems") { ProblemsCard(s.systemErrors, onClear = vm::clearErrors) }
                 s.pendingFolders.forEach { (id, pending) ->
                     pending.offeredBy.forEach { (device, offer) ->
@@ -65,11 +90,22 @@ fun FoldersScreen(
                         }
                     }
                 }
-                items(s.folders, key = { it.id }) { f -> FolderCard(f, s.folderStatus[f.id], s) { onOpen(f.id) } }
+                // Ungrouped folders first, then each group under its name.
+                s.folders.groupBy { it.group.trim() }.toSortedMap(String.CASE_INSENSITIVE_ORDER.thenBy { it }).forEach { (group, folders) ->
+                    if (group.isNotEmpty()) item("group-$group") { GroupTitle(group) }
+                    items(folders, key = { it.id }) { f -> FolderCard(f, s.folderStatus[f.id], s) { onOpen(f.id) } }
+                }
             }
         }
     }
 }
+
+@Composable
+private fun GroupTitle(name: String) = Text(
+    name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+    color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 20.dp, bottom = 6.dp),
+)
 
 @Composable
 private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onClick: () -> Unit) {

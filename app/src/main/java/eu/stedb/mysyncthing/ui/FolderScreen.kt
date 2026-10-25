@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -32,11 +33,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import android.os.StatFs
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
+import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.FolderStats
 import eu.stedb.mysyncthing.core.Snapshot
 
-private enum class FolderDialog { Name, Type, Ignores, Remove }
+private enum class FolderDialog { Name, Group, Type, Rescan, Order, DiskFree, Revert, Override, Remove }
 
 /** Settings and status of one folder; every change applies at once, as in system Settings. */
 @Composable
@@ -47,6 +58,8 @@ fun FolderScreen(
     onBack: () -> Unit,
     onOpenNeed: () -> Unit,
     onOpenFailed: () -> Unit,
+    onOpenChanges: () -> Unit,
+    onOpenIgnores: () -> Unit,
 ) {
     val f = s.folders.find { it.id == id }
     if (f == null) {
@@ -84,6 +97,27 @@ fun FolderScreen(
                         Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                     }
                     status.progress?.let { ProgressBar(it, look.color) }
+                    if (st != null && f.needsReview(st)) {
+                        val local = f.type == "receiveonly"
+                        Text(
+                            if (local) {
+                                "${count(st.receiveOnlyTotalItems, "item")}, ${bytes(st.receiveOnlyChangedBytes)}, changed on this phone. " +
+                                    "This folder is receive only, so other devices don't get these changes."
+                            } else {
+                                "${count(st.needTotalItems, "item")} changed on other devices. " +
+                                    "This folder is send only, so those changes aren't applied here."
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton(shape = ButtonShape, onClick = if (local) onOpenChanges else onOpenNeed) { Text("Show changes") }
+                            FilledTonalButton(shape = ButtonShape, onClick = { dialog = if (local) FolderDialog.Revert else FolderDialog.Override }) {
+                                Icon(Icons.AutoMirrored.Filled.Undo, null, Modifier.size(18.dp))
+                                Spacer(Modifier.width(6.dp))
+                                Text(if (local) "Revert…" else "Override…")
+                            }
+                        }
+                    }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
                         FilledTonalButton(shape = ButtonShape, onClick = { vm.setFolderPaused(id, !f.paused) }) {
                             Icon(if (f.paused) Icons.Default.PlayArrow else Icons.Default.Pause, null, Modifier.size(18.dp))
@@ -99,7 +133,7 @@ fun FolderScreen(
                 }
             }
 
-            if (st != null && st.needTotalItems > 0 && !f.paused) {
+            if (st != null && st.needTotalItems > 0 && !f.paused && f.type != "sendonly") {
                 SettingsGroup("Still to download") {
                     SettingRow(
                         "${count(st.needTotalItems, "item")} · ${bytes(st.needBytes)}", "See which files",
@@ -121,6 +155,7 @@ fun FolderScreen(
 
             SettingsGroup("General") {
                 SettingRow("Name", f.label.ifEmpty { "(none)" }) { dialog = FolderDialog.Name }
+                SettingRow("Group", f.group.ifEmpty { "None" }) { dialog = FolderDialog.Group }
                 SettingRow("Folder on this phone", displayPath(f.path))
                 SettingRow("Type", "${folderTypeLabel(f.type)}. ${folderTypeHint(f.type).orEmpty()}") { dialog = FolderDialog.Type }
                 SettingRow("Folder ID", f.id)
@@ -141,9 +176,10 @@ fun FolderScreen(
                 if (s.devices.isEmpty()) SettingRow("No devices added yet", "Add one on the Devices tab")
                 s.devices.forEach { dev ->
                     val on = f.devices.any { it.deviceID == dev.deviceID }
-                    val ds = deviceStatus(dev, s.connections[dev.deviceID], null)
+                    // A device's sync state only means something for folders it shares.
+                    val state = if (on) deviceStatus(dev, s.connections[dev.deviceID], null).text else "Not shared"
                     SettingRow(
-                        dev.name.ifEmpty { shortId(dev.deviceID) }, ds.text,
+                        dev.name.ifEmpty { shortId(dev.deviceID) }, state,
                         trailing = { Checkbox(on, onCheckedChange = null) },
                     ) { vm.setShared(f, dev.deviceID, !on) }
                 }
@@ -158,10 +194,14 @@ fun FolderScreen(
                     "Watch for changes", "Sync edits within seconds instead of at the next scan",
                     trailing = { Switch(f.fsWatcherEnabled, onCheckedChange = null) },
                 ) { vm.setWatcher(id, !f.fsWatcherEnabled) }
+                SettingRow("Full rescan", "${rescanText(f.rescanIntervalS)}. Catches what watching misses.") { dialog = FolderDialog.Rescan }
                 SettingRow(
                     "Ignore patterns",
-                    ignores?.let { if (it.isEmpty()) "None" else "${it.size} ${if (it.size == 1) "rule" else "rules"}" } ?: "Loading",
-                ) { if (ignores != null) dialog = FolderDialog.Ignores }
+                    ignores?.let { if (it.isEmpty()) "None" else count(it.size, "rule") } ?: "Loading",
+                    onClick = onOpenIgnores,
+                )
+                SettingRow("Download order", orderLabel(f.order)) { dialog = FolderDialog.Order }
+                SettingRow("Keep free on this phone", "${diskSizeText(f.minDiskFree)}. Syncing pauses below this.") { dialog = FolderDialog.DiskFree }
             }
 
             SettingsGroup("Remove") {
@@ -179,13 +219,31 @@ fun FolderScreen(
         FolderDialog.Type -> ChoiceDialog("Folder type", FOLDER_TYPES, f.type, ::folderTypeHint, onDismiss = { dialog = null }) {
             vm.setFolderType(id, it); dialog = null
         }
-        FolderDialog.Ignores -> TextDialog(
-            "Ignore patterns", ignores.orEmpty().joinToString("\n"), "One pattern per line", singleLine = false,
-            supporting = "Example: *.tmp or /Thumbnails", valid = { true }, onDismiss = { dialog = null },
-        ) { text ->
-            val lines = text.lines().map { it.trimEnd() }.dropLastWhile { it.isEmpty() }
-            vm.setIgnores(id, lines); ignores = lines; dialog = null
+        FolderDialog.Group -> TextDialog(
+            "Folder group", f.group, "Group", supporting = "Folders in a group are listed together. Only on this phone.",
+            valid = { true }, onDismiss = { dialog = null },
+        ) { vm.setFolderGroup(id, it); dialog = null }
+        FolderDialog.Rescan -> ChoiceDialog("Full rescan", rescanChoices(f.rescanIntervalS), f.rescanIntervalS, ::rescanHint, onDismiss = { dialog = null }) {
+            vm.setRescanInterval(id, it); dialog = null
         }
+        FolderDialog.Order -> ChoiceDialog("Download order", PULL_ORDERS, f.order, onDismiss = { dialog = null }) {
+            vm.setPullOrder(id, it); dialog = null
+        }
+        FolderDialog.DiskFree -> DiskFreeDialog(f.minDiskFree, f.path, onDismiss = { dialog = null }) {
+            vm.setMinDiskFree(id, it); dialog = null
+        }
+        FolderDialog.Revert -> ConfirmDialog(
+            "Revert local changes?",
+            "${count(st?.receiveOnlyTotalItems ?: 0, "item")} changed on this phone are replaced with the version from your other devices, " +
+                "or deleted if they don't exist there. This can't be undone.",
+            "Revert", onDismiss = { dialog = null },
+        ) { vm.revert(id); dialog = null }
+        FolderDialog.Override -> ConfirmDialog(
+            "Override changes?",
+            "Your other devices get this phone's version of ${count(st?.needTotalItems ?: 0, "item")}. " +
+                "The changes made to them elsewhere are lost. This can't be undone.",
+            "Override", onDismiss = { dialog = null },
+        ) { vm.override(id); dialog = null }
         FolderDialog.Remove -> ConfirmDialog(
             "Remove ${f.label.ifEmpty { f.id }}?", "Syncthing stops syncing this folder. Files on this phone are not deleted.",
             "Remove", onDismiss = { dialog = null },
@@ -198,3 +256,41 @@ private const val FAILED_PREVIEW = 5
 
 private fun contents(files: Int, dirs: Int, size: Long) =
     "${count(files, "file")} · ${count(dirs, "folder")} · ${bytes(size)}"
+
+/** Amount plus unit (%, MB, GB, or the unit already set); shows what is free now for scale. */
+@Composable
+private fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Unit, onSave: (DiskSize) -> Unit) {
+    var value by rememberSaveable { mutableStateOf(number(initial.value)) }
+    var unit by rememberSaveable { mutableStateOf(initial.unit) }
+    val units = (listOf("%", "MB", "GB") + initial.unit).distinct()
+    val free = remember(path) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
+    val v = value.replace(',', '.').toDoubleOrNull()
+    val valid = v != null && v >= 0 && (unit != "%" || v <= 100)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Keep free on this phone") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value, { value = it }, label = { Text("Amount") }, singleLine = true, isError = !valid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    units.forEachIndexed { i, u ->
+                        SegmentedButton(
+                            selected = unit == u, onClick = { unit = u }, icon = {},
+                            shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
+                        ) { Text(u) }
+                    }
+                }
+                Text(
+                    "Syncing into this folder pauses when less is free." +
+                        (free?.let { (a, t) -> " Free now: ${bytes(a)} of ${bytes(t)}." } ?: ""),
+                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(DiskSize(v!!, unit)) }, enabled = valid) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}

@@ -45,6 +45,8 @@ data class FolderDraft(
     val devices: Set<String> = emptySet(),
     val type: String = "sendreceive",
     val versioning: Versioning = Versioning(),
+    /** Add it paused and open the ignore patterns, so nothing syncs before they apply. */
+    val ignoresFirst: Boolean = false,
 )
 
 /** Where accepted folders go unless the user picks another place. */
@@ -146,6 +148,12 @@ fun FolderEditScreen(s: Snapshot, initial: FolderDraft, offeredBy: String?, onBa
             SettingsGroup("File versioning") {
                 VersioningEditor(d.versioning) { d = d.copy(versioning = it) }
             }
+            SettingsGroup("Ignore patterns") {
+                SettingRow(
+                    "Set ignore patterns first", "The folder stays paused until you save them",
+                    trailing = { Checkbox(d.ignoresFirst, onCheckedChange = null) },
+                ) { d = d.copy(ignoresFirst = !d.ignoresFirst) }
+            }
         }
     }
 }
@@ -189,12 +197,14 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
 private fun newFolderId(): String = UUID.randomUUID().toString().replace("-", "").take(10).chunked(5).joinToString("-")
 
 private val draftSaver = androidx.compose.runtime.saveable.Saver<FolderDraft, List<Any>>(
-    save = { listOf(it.id, it.label, it.path, ArrayList(it.devices), it.type, it.versioning.type, HashMap(it.versioning.params)) },
+    save = {
+        listOf(it.id, it.label, it.path, ArrayList(it.devices), it.type, it.versioning.type, HashMap(it.versioning.params), it.ignoresFirst)
+    },
     restore = {
         @Suppress("UNCHECKED_CAST")
         FolderDraft(
             it[0] as String, it[1] as String, it[2] as String, (it[3] as List<String>).toSet(), it[4] as String,
-            Versioning(it[5] as String, it[6] as Map<String, String>),
+            Versioning(it[5] as String, it[6] as Map<String, String>), it[7] as Boolean,
         )
     },
 )

@@ -52,4 +52,16 @@ class FormatTest {
         assertEquals(null, whenText("0001-01-01T00:00:00Z", now, en))
         assertEquals(null, whenText("garbage", now, en))
     }
+
+    @Test
+    fun folderSettingTexts() {
+        assertEquals("1 %", diskSizeText(eu.stedb.mysyncthing.core.DiskSize()))
+        assertEquals("2.5 GB", diskSizeText(eu.stedb.mysyncthing.core.DiskSize(2.5, "GB")))
+        assertEquals("Every hour", rescanText(3600))
+        assertEquals("Every 6 hours", rescanText(21_600))
+        assertEquals("Once a day", rescanText(86_400))
+        assertEquals("Never", rescanText(0))
+        assertEquals(listOf(3_600, 21_600, 86_400, 0, 600), rescanChoices(600).map { it.first })
+        assertEquals("Smallest first", orderLabel("smallestFirst"))
+    }
 }

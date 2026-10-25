@@ -37,6 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -63,6 +65,8 @@ private object Routes {
     const val FOLDER = "folder/{id}"
     const val FOLDER_NEED = "folder/{id}/need"
     const val FOLDER_FAILED = "folder/{id}/failed"
+    const val FOLDER_CHANGES = "folder/{id}/changes"
+    const val FOLDER_IGNORES = "folder/{id}/ignores?first={first}"
     const val DEVICE = "device/{id}"
     const val DEVICE_NEEDS = "device/{id}/needs/{folder}"
     const val THIS_PHONE = "this-phone"
@@ -70,6 +74,7 @@ private object Routes {
     const val WEB_GUI = "webgui"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
+    fun ignores(id: String, first: Boolean = false) = "folder/${Uri.encode(id)}/ignores?first=$first"
     fun device(id: String) = "device/${Uri.encode(id)}"
     fun deviceNeeds(id: String, folder: String) = "device/${Uri.encode(id)}/needs/${Uri.encode(folder)}"
     fun addFolder(offer: String? = null, from: String? = null) =
@@ -162,6 +167,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                             snapshot, id, vm, onBack = { nav.popBackStack() },
                             onOpenNeed = { nav.navigate("${Routes.folder(id)}/need") },
                             onOpenFailed = { nav.navigate("${Routes.folder(id)}/failed") },
+                            onOpenChanges = { nav.navigate("${Routes.folder(id)}/changes") },
+                            onOpenIgnores = { nav.navigate(Routes.ignores(id)) },
                         )
                     }
                 }
@@ -170,6 +177,17 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 }
                 composable(Routes.FOLDER_FAILED) { entry ->
                     CoreGate(core) { FailedScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                }
+                composable(Routes.FOLDER_CHANGES) { entry ->
+                    CoreGate(core) { LocalChangesScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                }
+                composable(
+                    Routes.FOLDER_IGNORES, arguments = listOf(navArgument("first") { type = NavType.BoolType; defaultValue = false }),
+                ) { entry ->
+                    val args = entry.arguments
+                    CoreGate(core) {
+                        IgnoresScreen(snapshot, args?.getString("id").orEmpty(), args?.getBoolean("first") == true, vm, onBack = { nav.popBackStack() })
+                    }
                 }
                 composable(Routes.DEVICE) { entry ->
                     val id = entry.arguments?.getString("id").orEmpty()
@@ -193,8 +211,12 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         if (snapshot.loaded) {
                             val initial = remember(offer, from) { draftFor(snapshot, offer, from) }
                             FolderEditScreen(snapshot, initial, from, onBack = { nav.popBackStack() }) {
-                                vm.addFolder(it)
-                                nav.popBackStack()
+                                vm.addFolder(it, paused = it.ignoresFirst)
+                                if (it.ignoresFirst) {
+                                    nav.navigate(Routes.ignores(it.id.trim(), first = true)) { popUpTo(Routes.ADD_FOLDER) { inclusive = true } }
+                                } else {
+                                    nav.popBackStack()
+                                }
                             }
                         }
                     }

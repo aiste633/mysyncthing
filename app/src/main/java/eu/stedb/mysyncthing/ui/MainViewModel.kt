@@ -18,6 +18,7 @@ import android.os.SystemClock
 import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.DeviceStats
+import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.FileEntry
 import eu.stedb.mysyncthing.core.FileProgress
 import eu.stedb.mysyncthing.core.FolderStats
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonObject
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val settings = Settings(app)
@@ -85,6 +87,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun need(folder: String, perPage: Int): NeedPage? = runCatching { client?.need(folder, 1, perPage) }.getOrNull()
     suspend fun remoteNeed(folder: String, device: String, perPage: Int): List<FileEntry>? =
         runCatching { client?.remoteNeed(folder, device, 1, perPage)?.files.orEmpty() }.getOrNull()
+    suspend fun localChanged(folder: String, perPage: Int): List<FileEntry>? =
+        runCatching { client?.localChanged(folder, 1, perPage)?.files.orEmpty() }.getOrNull()
 
     /** What [device] still needs from this phone, per folder, for the folders that need anything. */
     suspend fun remoteCompletion(device: String, folders: List<String>): Map<String, Completion> = runCatching {
@@ -141,18 +145,36 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun ignoreDevice(id: String) = act("Ignore") { ignoreDevice(id) }
     fun ignoreFolder(folder: String, device: String) = act("Ignore") { ignoreFolder(folder, device) }
 
-    fun addFolder(d: FolderDraft) = act("Add folder", done = "Added ${d.label.ifBlank { d.id }}") {
-        addFolder(d.id.trim(), d.label.trim(), d.path.trim(), d.devices.toList(), d.type, d.versioning)
+    /** [paused] keeps a new folder from syncing until its ignore patterns are set. */
+    fun addFolder(d: FolderDraft, paused: Boolean = false) = act("Add folder", done = "Added ${d.label.ifBlank { d.id }}") {
+        addFolder(d.id.trim(), d.label.trim(), d.path.trim(), d.devices.toList(), d.type, d.versioning, paused)
     }
 
     fun removeFolder(id: String) = act("Remove folder") { removeFolder(id) }
     fun setFolderPaused(id: String, paused: Boolean) = act("Pause") { setFolderPaused(id, paused) }
     fun rescan(id: String) = act("Rescan", done = "Rescanning") { scan(id) }
+    fun rescanAll() = act("Rescan", done = "Rescanning all folders") { scan(null) }
+    fun revert(id: String) = act("Revert", done = "Reverting local changes") { revert(id) }
+    fun override(id: String) = act("Override", done = "Overriding changes") { override(id) }
+    fun setFolderGroup(id: String, group: String) = act("Group") { patchFolder(id, buildJsonObject { put("group", group.trim()) }) }
+    fun setRescanInterval(id: String, seconds: Int) = act("Full rescan") { patchFolder(id, buildJsonObject { put("rescanIntervalS", seconds) }) }
+    fun setPullOrder(id: String, order: String) = act("Download order") { patchFolder(id, buildJsonObject { put("order", order) }) }
+    fun setMinDiskFree(id: String, size: DiskSize) = act("Keep free") {
+        patchFolder(id, buildJsonObject { putJsonObject("minDiskFree") { put("value", size.value); put("unit", size.unit) } })
+    }
     fun setFolderLabel(id: String, label: String) = act("Rename") { patchFolder(id, buildJsonObject { put("label", label.trim()) }) }
     fun setFolderType(id: String, type: String) = act("Change type") { patchFolder(id, buildJsonObject { put("type", type) }) }
     fun setWatcher(id: String, on: Boolean) = act("Watch for changes") { patchFolder(id, buildJsonObject { put("fsWatcherEnabled", on) }) }
     fun setVersioning(id: String, v: Versioning) = act("Versioning") { setVersioning(id, v) }
-    fun setIgnores(id: String, lines: List<String>) = act("Ignore patterns", done = "Ignore patterns saved") { setIgnores(id, lines) }
+
+    /** Saves ignore patterns; [resume] unpauses a folder that waited for them. False when it failed. */
+    suspend fun saveIgnores(id: String, lines: List<String>, resume: Boolean): Boolean {
+        val c = client ?: return false
+        return runCatching {
+            c.setIgnores(id, lines)
+            if (resume) c.setFolderPaused(id, false)
+        }.onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
+    }
 
     /** Adds or removes one device from a folder's share list. */
     fun setShared(folder: Folder, device: String, shared: Boolean) = act("Sharing") {
