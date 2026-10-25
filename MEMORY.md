@@ -18,14 +18,19 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - 2026-10-24 17:55: CI green (run 6): AAR, debug APK, unit tests, lint. The APK has never been run on a device.
 - The first session had no access to dl.google.com, so Android builds are verified only in GitHub Actions.
 - Versions of Google-hosted artifacts in `gradle/libs.versions.toml` (AGP 8.13.0, Compose BOM 2025.08.00, androidx) were picked blind. Bump them to current stable on the first build that can reach Google Maven.
+- 2026-10-24 23:20: reproducible builds (branch `claude/project-thread-yav31b`). Two local Go AAR builds from different checkout paths are byte-identical. CI twin build, F-Droid image build and the release workflow are written; see README "Reproducible builds and releases".
 
 ## Next
 1. Bump Google-hosted versions to current stable (AGP 9 / compileSdk 37 would allow OkHttp 5).
 2. Test on a device: start at boot, run conditions, QR pairing, folder accept.
 3. Notifications for pending devices/folders; folder detail screen (ignores, versioning); per-folder sharing edit.
-4. F-Droid metadata (fastlane/), reproducible-build check, release signing.
+4. First release: create the release key (`scripts/sign-release.sh` header), tag, sign, fill `AllowedAPKSigningKeys` in `fdroid/eu.stedb.mysyncthing.yml`, then submit to fdroiddata (user does this once the app is usable).
 
 ## Pins
+- NDK `mysyncthing.ndkVersion` in `gradle.properties` (r30, 30.0.16248370). `go/build.sh` refuses any other NDK. Also update `ndk:` in `fdroid/eu.stedb.mysyncthing.yml`.
+- Release APK is arm64-v8a only (`abiFilters` in release); `vcsInfo` off. Signing happens on the user's PC only, never in CI.
+- gomobile embeds absolute module paths in the .so build info; `go/build.sh` builds via the symlink `/tmp/mysyncthing-go` so they match everywhere. Do not remove.
+- Any dependency/plugin bump: regenerate `gradle/verification-metadata.xml` (command in README).
 - Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Keep `go/syncthing.version` in sync when bumping.
 - Build via `:app:assembleDebug`; `:core:bundle*Aar` fails by design (local Go AAR dependency).
 - Android link needs `-ldflags=-checklinkname=0` (wlynxg/anet uses go:linkname into net). Upstream requires Go 1.26.2.

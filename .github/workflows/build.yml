@@ -20,11 +20,11 @@ jobs:
         with:
           go-version-file: go/syncthing/go.mod
           cache-dependency-path: go/bridge/go.sum
-      # The runner image ships the SDK, cmdline-tools and a current NDK.
+      # The runner image ships the SDK and cmdline-tools; the NDK is pinned in gradle.properties.
       - name: Android SDK platform and NDK
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" > /dev/null
-          echo "ANDROID_NDK_HOME=$ANDROID_NDK_LATEST_HOME" >> "$GITHUB_ENV"
+          ndk="$(sed -n 's/^mysyncthing\.ndkVersion=//p' gradle.properties)"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "ndk;$ndk" > /dev/null
       - uses: gradle/actions/setup-gradle@v5
       - name: Generate web GUI assets
         working-directory: go/syncthing

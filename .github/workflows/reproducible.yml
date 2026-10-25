@@ -1,0 +1,180 @@
+name: reproducible
+
+# Builds the unsigned release APK twice under different conditions and requires identical
+# bytes. On pull requests, v* tags and manual runs, F-Droid's own build environment builds
+# it a third time from fdroid/eu.stedb.mysyncthing.yml. A tag then gets a draft release
+# with the APK for scripts/sign-release.sh.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    strategy:
+      matrix:
+        include:
+          - leg: a
+            path: src
+            tz: UTC
+            locale: C.UTF-8
+            umask: "0022"
+          - leg: b
+            path: a/much/longer/checkout/path
+            tz: Pacific/Chatham
+            locale: en_US.UTF-8
+            umask: "0077"
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      TZ: ${{ matrix.tz }}
+      LC_ALL: ${{ matrix.locale }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.path }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+          path: ${{ matrix.path }}
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: ${{ matrix.path }}/go/syncthing/go.mod
+          cache: false
+      - name: Android SDK platform and NDK
+        run: |
+          ndk="$(sed -n 's/^mysyncthing\.ndkVersion=//p' gradle.properties)"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "ndk;$ndk" > /dev/null
+      - uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-disabled: true
+      - name: Version
+        id: version
+        run: |
+          version="$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' app/build.gradle.kts)"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [[ "$GITHUB_REF" == refs/tags/v* && "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "tag $GITHUB_REF_NAME does not match versionName $version" >&2
+            exit 1
+          fi
+      - name: Build unsigned release APK
+        run: |
+          umask ${{ matrix.umask }}
+          ./gradlew --no-daemon --no-build-cache :app:assembleRelease
+          mkdir -p "$RUNNER_TEMP/out"
+          cp app/build/outputs/apk/release/app-release-unsigned.apk \
+            "$RUNNER_TEMP/out/mysyncthing-${{ steps.version.outputs.version }}-unsigned.apk"
+          sha256sum "$RUNNER_TEMP"/out/*.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk-${{ matrix.leg }}
+          path: ${{ runner.temp }}/out/*.apk
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+  compare:
+    needs: release
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          pattern: apk-*
+      - name: Compare
+        run: |
+          sha256sum apk-a/*.apk apk-b/*.apk
+          cmp apk-a/*.apk apk-b/*.apk && exit 0
+          sudo apt-get update -q && sudo apt-get install -qy --no-install-recommends diffoscope-minimal
+          diffoscope --html diffoscope.html apk-a/*.apk apk-b/*.apk || true
+          exit 1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diffoscope
+          path: diffoscope.html
+
+  fdroid:
+    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v')
+    needs: [release, compare]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    # The image F-Droid's own merge-request CI builds apps in.
+    container: registry.gitlab.com/fdroid/fdroidserver:buildserver-trixie
+    env:
+      ANDROID_HOME: /opt/android-sdk
+      APPID: eu.stedb.mysyncthing
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          path: src
+      - uses: actions/download-artifact@v5
+        with:
+          name: apk-a
+          path: expected
+      - name: fdroid build
+        shell: bash
+        run: |
+          set -euxo pipefail
+          source /etc/profile.d/bsenv.sh   # sets $fdroidserver and $home_vagrant
+          apt-get update -q
+          apt-get install -qy sudo
+          # As in fdroiddata's own "fdroid build" CI job: current fdroidserver and gradlew-fdroid.
+          rm -rf "$fdroidserver"
+          git clone --depth 1 https://gitlab.com/fdroid/fdroidserver.git "$fdroidserver"
+          git -C "$home_vagrant/gradlew-fdroid" pull
+          sdkmanager "platform-tools" "build-tools;31.0.0" > /dev/null
+          mkdir -p "$home_vagrant/.android" "$home_vagrant/.gradle"
+          src="$GITHUB_WORKSPACE/src"
+          vercode="$(sed -n 's/^ *versionCode = \([0-9]*\)$/\1/p' "$src/app/build.gradle.kts")"
+          vername="$(sed -n 's/^ *versionName = "\(.*\)"$/\1/p' "$src/app/build.gradle.kts")"
+          # The recipe as published, pointed at this commit; no signed binary to compare yet.
+          mkdir -p "$home_vagrant/metadata"
+          sed -e "s|^Repo: .*|Repo: $src|" -e '/^Binaries:/d' -e '/^AllowedAPKSigningKeys:/d' \
+              -e "s|^  - versionName: .*|  - versionName: $vername|" \
+              -e "s|^    versionCode: .*|    versionCode: $vercode|" \
+              -e "s|^    commit: .*|    commit: $GITHUB_SHA|" \
+              "$src/fdroid/$APPID.yml" > "$home_vagrant/metadata/$APPID.yml"
+          cat "$home_vagrant/metadata/$APPID.yml"
+          touch "$home_vagrant/config.yml"
+          chown -R vagrant "$home_vagrant" "$src"
+          cd "$home_vagrant"
+          sudo --preserve-env --user vagrant env PATH="$fdroidserver:$PATH" \
+            PYTHONPATH="$fdroidserver:$fdroidserver/examples" PYTHONUNBUFFERED=true \
+            HOME="$home_vagrant" fdroid build --verbose --test --on-server --no-tarball "$APPID:$vercode"
+          sha256sum "$home_vagrant/tmp/${APPID}_$vercode.apk" "$GITHUB_WORKSPACE"/expected/*.apk
+          cmp "$home_vagrant/tmp/${APPID}_$vercode.apk" "$GITHUB_WORKSPACE"/expected/*.apk
+          mkdir -p "$GITHUB_WORKSPACE/fdroid-out"
+          cp "$home_vagrant/tmp/${APPID}_$vercode.apk" "$GITHUB_WORKSPACE/fdroid-out/"
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-fdroid
+          path: fdroid-out/
+          if-no-files-found: ignore
+
+  draft-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [release, compare, fdroid]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v5
+        with:
+          name: apk-a
+      - name: Draft release with the unsigned APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
+            --title "MySyncthing ${{ needs.release.outputs.version }}" \
+            --notes "Unsigned build attached. Sign with scripts/sign-release.sh $GITHUB_REF_NAME, then publish." \
+            ./*.apk

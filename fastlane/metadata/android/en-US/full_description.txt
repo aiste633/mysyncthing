@@ -1,0 +1,8 @@
+<p>MySyncthing runs <a href="https://syncthing.net">Syncthing</a> on Android 15 and 16. Syncthing keeps folders in sync between your devices, directly and encrypted, without a cloud service in between.</p>
+<ul>
+<li>Pair devices by QR code or device ID, and accept folders shared with you</li>
+<li>Runs as a foreground service and starts at boot</li>
+<li>Run conditions: Wi-Fi only, unmetered networks only, charging only, pause in battery saver</li>
+<li>Syncthing's own web interface is built in for advanced settings</li>
+</ul>
+<p>The Syncthing core (v2) runs inside the app. Reaching folders anywhere on shared storage needs the "All files access" permission.</p>

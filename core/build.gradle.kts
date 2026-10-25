@@ -7,6 +7,7 @@ plugins {
 android {
     namespace = "eu.stedb.mysyncthing.core"
     compileSdk = 36
+    ndkVersion = providers.gradleProperty("mysyncthing.ndkVersion").get()
     defaultConfig {
         minSdk = 35
         consumerProguardFiles("consumer-rules.pro")
@@ -28,7 +29,12 @@ val buildGoBridge by tasks.registering(Exec::class) {
     commandLine("./build.sh")
     inputs.dir(goDir.dir("bridge"))
     inputs.file(goDir.file("syncthing/go.mod")).optional()
+    inputs.file(goDir.file("syncthing.version"))
     outputs.file(bridgeAar)
+    // The pinned NDK, not whatever ANDROID_NDK_HOME says; build.sh checks its version.
+    // A local val, so the configuration cache does not capture the script object.
+    val ndkDir = androidComponents.sdkComponents.ndkDirectory
+    doFirst { (this as Exec).environment("ANDROID_NDK_HOME", ndkDir.get().asFile.path) }
 }
 
 dependencies {
