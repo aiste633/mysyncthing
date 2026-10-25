@@ -72,10 +72,13 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
     val context = LocalContext.current
     AppTheme {
         val permissions = rememberPermissionState()
-        if (!permissions.storage) {
-            SetupScreen(permissions)
+        val setupDone by vm.setupDone.collectAsStateWithLifecycle()
+        // All files access is required, so losing it brings the checklist back.
+        if (!permissions.storage || setupDone == false) {
+            SetupScreen(permissions, onDone = vm::finishSetup)
             return@AppTheme
         }
+        if (setupDone == null) return@AppTheme
         LaunchedEffect(Unit) { SyncthingService.start(context) }
 
         val nav = rememberNavController()

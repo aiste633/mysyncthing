@@ -58,6 +58,13 @@ class Settings(context: Context) {
         }
     }
 
+    /** True once the user tapped Done on the setup checklist. */
+    val setupDone: Flow<Boolean> = store.data.map { it[SETUP_DONE] ?: false }
+
+    suspend fun setSetupDone() {
+        store.edit { it[SETUP_DONE] = true }
+    }
+
     /**
      * Devices the user had paused before a run condition paused everything,
      * so resuming does not undo the user's own choice. Null when not paused by us.
@@ -95,6 +102,7 @@ class Settings(context: Context) {
         val START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         val PAUSED_BY_USER = booleanPreferencesKey("paused_by_user")
         val CONDITION_PAUSE = stringSetPreferencesKey("condition_pause")
+        val SETUP_DONE = booleanPreferencesKey("setup_done")
 
         fun randomToken(bytes: Int): String {
             val b = ByteArray(bytes).also { SecureRandom().nextBytes(it) }

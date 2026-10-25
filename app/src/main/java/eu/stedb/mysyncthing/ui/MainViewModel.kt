@@ -30,6 +30,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val runConditions: StateFlow<RunConditions> =
         settings.runConditions.stateIn(viewModelScope, SharingStarted.Eagerly, RunConditions())
 
+    /** Null until read, so the setup checklist does not flash for users who finished it. */
+    val setupDone: StateFlow<Boolean?> = settings.setupDone.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun finishSetup() {
+        viewModelScope.launch { settings.setSetupDone() }
+    }
+
     /** Followed by the service, so the screens add no extra event long-poll. */
     val snapshot: StateFlow<Snapshot> = SyncStatus.snapshot
     val summary: StateFlow<Summary> = SyncStatus.summary
