@@ -37,6 +37,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch { settings.setSetupDone() }
     }
 
+    val movedFromOtherPhone: StateFlow<Boolean> =
+        settings.movedFromOtherPhone.stateIn(viewModelScope, SharingStarted.Eagerly, false)
+
+    fun dismissMovedNote() {
+        viewModelScope.launch { settings.setMovedFromOtherPhone(false) }
+    }
+
     /** Followed by the service, so the screens add no extra event long-poll. */
     val snapshot: StateFlow<Snapshot> = SyncStatus.snapshot
     val summary: StateFlow<Summary> = SyncStatus.summary

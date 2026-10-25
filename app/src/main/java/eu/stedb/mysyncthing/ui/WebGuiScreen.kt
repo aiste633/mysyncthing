@@ -16,7 +16,9 @@ import java.util.Base64
 
 /**
  * Upstream web GUI as a fallback for settings the native UI lacks. The first
- * request carries Basic auth; Syncthing then sets a session cookie.
+ * request carries Basic auth; Syncthing then sets a session cookie. The user
+ * never sees a login page: only the app knows the login, and Log Out is hidden
+ * because the page would reload into one.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
@@ -40,6 +42,10 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                             return "${u.scheme}://${u.authority}" != origin
                         }
 
+                        override fun onPageFinished(view: WebView, url: String) {
+                            if (url.startsWith("$origin/")) view.evaluateJavascript(HIDE_LOGOUT, null)
+                        }
+
                         // Unhandled, a renderer crash would kill the whole process, and the sync core with it.
                         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
                             onClose()
@@ -56,3 +62,9 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
     }
 }
 
+/** Log Out would reload into the login page, which only the app can answer. */
+private const val HIDE_LOGOUT = """(function () {
+  var s = document.createElement('style');
+  s.textContent = 'li:has(> a[ng-click="logout()"]) { display: none !important; }';
+  document.head.appendChild(s);
+})();"""

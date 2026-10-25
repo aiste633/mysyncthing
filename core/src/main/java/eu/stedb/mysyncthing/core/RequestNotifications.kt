@@ -18,7 +18,7 @@ fun Snapshot.requests(): List<Request> {
     fun name(id: String) = devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: id.substringBefore('-')
     val forDevices = pendingDevices.map { (id, p) ->
         Request("device:$id", "${p.name.ifEmpty { id.substringBefore('-') }} wants to connect",
-            "Device ID ${id.substringBefore('-')} · from ${p.address}", null, id)
+            "Device ID ${id.substringBefore('-')}", null, id)
     }
     val forFolders = pendingFolders.flatMap { (folder, p) ->
         p.offeredBy.map { (device, offer) ->
@@ -71,6 +71,14 @@ object RequestNotifications {
         .setOnlyAlertOnce(true)
         .setAutoCancel(true)
         .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
+        // Device names, IDs and addresses stay off the lock screen.
+        .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+        .setPublicVersion(
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.widget_ic_input)
+                .setContentTitle(if (r.folder != null) "A folder was shared with you" else "A device wants to connect")
+                .build()
+        )
         .build()
 
     private fun review(context: Context, r: Request): PendingIntent {

@@ -15,7 +15,10 @@ import java.util.Base64
 
 private val Context.dataStore by preferencesDataStore("settings")
 
-/** Secrets shared between the app and the core. Generated once, kept in app-private storage. */
+/**
+ * Secrets shared between the app and the core. Generated once, kept in app-private storage.
+ * Only the app knows the GUI login; the bridge refuses any change to it.
+ */
 data class Credentials(val apiKey: String, val guiUser: String, val guiPassword: String)
 
 /** When the core is allowed to sync. All false means "always". */
@@ -34,8 +37,9 @@ class Settings(context: Context) {
 
     suspend fun credentials(): Credentials {
         val prefs = store.data.first()
-        prefs.credentials()?.let { return it }
-        val created = Credentials(randomToken(32), "android", randomToken(24))
+        prefs.credentials()?.takeIf { it.guiPassword.length >= TOKEN_CHARS }?.let { return it }
+        // Also replaces the short GUI login of earlier versions; the bridge applies it at start.
+        val created = Credentials(prefs[API_KEY] ?: randomToken(), randomToken(), randomToken())
         store.edit {
             it[API_KEY] = created.apiKey
             it[GUI_USER] = created.guiUser
@@ -63,6 +67,13 @@ class Settings(context: Context) {
 
     suspend fun setSetupDone() {
         store.edit { it[SETUP_DONE] = true }
+    }
+
+    /** True after a phone migration brought the identity along, until the user has seen the note. */
+    val movedFromOtherPhone: Flow<Boolean> = store.data.map { it[MOVED] ?: false }
+
+    suspend fun setMovedFromOtherPhone(moved: Boolean) {
+        store.edit { it[MOVED] = moved }
     }
 
     /**
@@ -103,9 +114,13 @@ class Settings(context: Context) {
         val PAUSED_BY_USER = booleanPreferencesKey("paused_by_user")
         val CONDITION_PAUSE = stringSetPreferencesKey("condition_pause")
         val SETUP_DONE = booleanPreferencesKey("setup_done")
+        val MOVED = booleanPreferencesKey("moved_from_other_phone")
 
-        fun randomToken(bytes: Int): String {
-            val b = ByteArray(bytes).also { SecureRandom().nextBytes(it) }
+        /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */
+        const val TOKEN_CHARS = 64
+
+        fun randomToken(): String {
+            val b = ByteArray(TOKEN_CHARS * 3 / 4).also { SecureRandom().nextBytes(it) }
             return Base64.getUrlEncoder().withoutPadding().encodeToString(b)
         }
     }

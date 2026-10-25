@@ -48,7 +48,8 @@ var (
 // returns once the REST API is ready. The GUI/REST listener is bound to a
 // free loopback port (see GuiAddress). apiKey is accepted in addition to the
 // one in config. guiUser/guiPassword protect the web GUI, since other apps
-// on the device can reach loopback.
+// on the device can reach loopback; only the app knows them, and config
+// changes that touch them are refused (see guiGuard).
 func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 	mu.Lock()
 	defer mu.Unlock()
@@ -102,6 +103,7 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 		cncl()
 		return fmt.Errorf("config defaults: %w", err)
 	}
+	cfg.Subscribe(guiGuard{})
 
 	sdb, err := syncthing.OpenDatabase(locations.Get(locations.Database), deleteRetention)
 	if err != nil {
@@ -196,13 +198,11 @@ func Version() string {
 func applyAndroidDefaults(cfg config.Wrapper, user, password string) error {
 	gui := cfg.GUI()
 	needPassword := gui.User != user || gui.CompareHashedPassword(password) != nil
-	opts := cfg.Options()
-	if !needPassword && gui.Enabled && !opts.StartBrowser && !gui.UseTLS() {
+	if !needPassword && lockOf(gui) == lockOf(locked(gui)) && !cfg.Options().StartBrowser {
 		return nil
 	}
 	w, err := cfg.Modify(func(c *config.Configuration) {
-		c.GUI.Enabled = true
-		c.GUI.RawUseTLS = false // loopback only; WebView would reject the self-signed cert
+		c.GUI = locked(c.GUI)
 		c.Options.StartBrowser = false
 		if needPassword {
 			c.GUI.User = user
@@ -215,6 +215,48 @@ func applyAndroidDefaults(cfg config.Wrapper, user, password string) error {
 	w.Wait()
 	return nil
 }
+
+// locked returns gui with every setting that guards access set the app's way.
+func locked(gui config.GUIConfiguration) config.GUIConfiguration {
+	gui.Enabled = true
+	gui.RawUseTLS = false // loopback only; WebView would reject the self-signed cert
+	gui.AuthMode = config.AuthModeStatic
+	gui.InsecureAdminAccess = false
+	gui.InsecureSkipHostCheck = false
+	gui.MetricsWithoutAuth = false
+	return gui
+}
+
+// guiAccess is the part of the GUI config that decides who can get in.
+type guiAccess struct {
+	enabled, tls, insecureAdmin, skipHostCheck, openMetrics bool
+	user, password                                          string
+	authMode                                                config.AuthMode
+}
+
+func lockOf(g config.GUIConfiguration) guiAccess {
+	return guiAccess{
+		g.Enabled, g.RawUseTLS, g.InsecureAdminAccess, g.InsecureSkipHostCheck, g.MetricsWithoutAuth,
+		g.User, g.Password, g.AuthMode,
+	}
+}
+
+// guiGuard refuses config changes, such as a save in the web GUI's settings,
+// that would change the GUI login or open the GUI to other apps on the device.
+type guiGuard struct{}
+
+var errGUILocked = errors.New("the GUI login and access settings are managed by MySyncthing")
+
+func (guiGuard) VerifyConfiguration(from, to config.Configuration) error {
+	if lockOf(from.GUI) != lockOf(to.GUI) {
+		return errGUILocked
+	}
+	return nil
+}
+
+func (guiGuard) CommitConfiguration(_, _ config.Configuration) bool { return true }
+
+func (guiGuard) String() string { return "guiGuard" }
 
 func freeLoopbackAddr() (string, error) {
 	l, err := net.Listen("tcp", "127.0.0.1:0")

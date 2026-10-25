@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Phone migration (device to device) carries the device ID, folders, devices and
+  app settings, but not the database: with an old database, files the migration
+  did not copy would look deleted, and the deletions would spread to every device.
+  Without it the core rescans. Cloud backup stays off (allowBackup="false").
+-->
+<data-extraction-rules>
+    <device-transfer>
+        <include domain="file" path="syncthing/config.xml" />
+        <include domain="file" path="syncthing/cert.pem" />
+        <include domain="file" path="syncthing/key.pem" />
+        <include domain="file" path="datastore/settings.preferences_pb" />
+    </device-transfer>
+</data-extraction-rules>
