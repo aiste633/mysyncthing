@@ -69,9 +69,16 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Setup is a checklist (All files access required, notifications optional, run in background recommended) that stays until Done (`setup_done` in DataStore; shown again while All files access is missing); Settings has the same rows under Permissions. Approved by the user 2026-10-25. A notification prompt Android no longer shows (refused twice) opens the app's notification settings.
 - Real phone rules: another Syncthing app may be installed and stopped there; never touch it, keep it stopped while testing (same default ports). Check the foreground app before any tap.
 
+## Security audit (2026-10-25)
+- Web GUI login: 64 random characters for user and password (`Settings.credentials()`, earlier short ones are replaced). `go/bridge` subscribes `guiGuard`, which refuses any config change to the GUI login or access settings (e.g. from the web GUI's settings); `TestGUILoginLocked` covers it. The WebView hides Log Out, which would reload into the login page.
+- WebView: Google usage metrics and Safe Browsing off (manifest meta-data); it only loads loopback.
+- Phone migration (`res/xml/data_extraction_rules.xml`): device transfer carries config.xml, cert/key and the DataStore, never the database (a stale database plus a partial file copy would spread deletions). Cloud backup stays off. The service flags "config but no `index-v2`" as moved, and the app shows a one-time note to stop Syncthing on the old phone.
+- Folder review from an intent opens only for a real pending offer (MainActivity is exported). Request notifications: no IP, and a public version for the lock screen.
+
 ## Working rules
 - Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.
-- Never commit anything about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths), including this file, comments and commit messages. Use placeholders and check the staged diff before each commit. Local test notes live in Claude's own memory folder, not in the repo.
+- This file is public on purpose, so any session can resume the work. Nothing about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths, personal e-mail) may go into it, or into code, comments, commit messages or PR text. Use placeholders. Local test notes live in Claude's own memory folder, not in the repo.
+- `scripts/check-leaks.sh` enforces this in CI (job `privacy` in `build.yml`) over all files and history; run it before each push. The optional repository secret `LEAK_DENYLIST` (one term per line) adds the user's own hostnames and names.
 - Commit as `Claude <noreply@anthropic.com>` (repo-local git config); the machine default identity contains the username and hostname.
 - Ask before pushing or opening a PR; one short-lived branch and PR per step, deleted after merge.
 - Propose GUI designs and get the user's answer before building them.
