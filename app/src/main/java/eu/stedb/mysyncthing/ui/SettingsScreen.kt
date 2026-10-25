@@ -5,13 +5,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.BatteryAlert
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatterySaver
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.QueryStats
@@ -83,15 +81,6 @@ fun SettingsScreen(
                 Toggle("Start at boot", "Sync starts when the phone starts", Icons.Default.RestartAlt, rc.startOnBoot) { v ->
                     vm.setRunConditions { it.copy(startOnBoot = v) }
                 }
-                if (!permissions.notifications) {
-                    SettingRow("Allow notifications", "Shows sync status and new requests", Icons.Default.Notifications, onClick = requestNotifications)
-                }
-                if (!permissions.batteryExempt) {
-                    SettingRow(
-                        "Disable battery optimisation", "Keeps sync running reliably in the background",
-                        Icons.Default.BatteryAlert, onClick = permissions::requestBatteryExemption,
-                    )
-                }
                 when (core) {
                     is CoreState.Stopped, is CoreState.Failed ->
                         SettingRow("Start Syncthing", null, Icons.Default.PowerSettingsNew) { SyncthingService.start(context) }
@@ -99,6 +88,10 @@ fun SettingsScreen(
                         SyncthingService.stop(context)
                     }
                 }
+            }
+
+            SettingsGroup("Permissions") {
+                PermissionRows(permissions, requestNotifications)
             }
 
             SettingsGroup("Advanced") {
