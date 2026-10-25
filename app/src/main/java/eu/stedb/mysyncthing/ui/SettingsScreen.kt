@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.RestartAlt
@@ -55,6 +56,12 @@ fun SettingsScreen(
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             SettingsGroup("This phone") {
                 SettingRow("Device name", s.myName.ifEmpty { "Not set" }, Icons.Default.Smartphone) { if (running && s.loaded) rename = true }
+            }
+
+            SettingsGroup("Syncing") {
+                Toggle("Pause syncing", "Until you resume it here or on the widget", Icons.Default.PauseCircle, rc.pausedByUser) { v ->
+                    vm.setRunConditions { it.copy(pausedByUser = v) }
+                }
             }
 
             SettingsGroup("Sync only when") {

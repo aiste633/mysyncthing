@@ -35,6 +35,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,9 +53,22 @@ import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
 
 @Composable
-fun DevicesScreen(s: Snapshot, summary: Summary, vm: MainViewModel, onOpen: (String) -> Unit) {
+fun DevicesScreen(
+    s: Snapshot,
+    summary: Summary,
+    vm: MainViewModel,
+    onOpen: (String) -> Unit,
+    review: String? = null,
+    onReviewShown: () -> Unit = {},
+) {
     // Pair of (id, name) for the add dialog; also used to accept a pending device.
     var draft by rememberSaveable { mutableStateOf<List<String>?>(null) }
+    // A request notification's Review opens the add dialog for that device, if it is still waiting.
+    LaunchedEffect(review, s.loaded) {
+        if (review == null || !s.loaded) return@LaunchedEffect
+        s.pendingDevices[review]?.let { draft = listOf(review, it.name) }
+        onReviewShown()
+    }
     var showMyId by rememberSaveable { mutableStateOf(false) }
     AppScreen(
         title = "Devices",

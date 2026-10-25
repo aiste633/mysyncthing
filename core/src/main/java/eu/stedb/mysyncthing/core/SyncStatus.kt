@@ -126,7 +126,7 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean)
         CoreState.Starting -> return Summary(SyncState.Syncing, "Starting")
         is CoreState.Running -> if (!s.loaded) return Summary(SyncState.Syncing, "Starting")
     }
-    if (blockedBy != null) return Summary(SyncState.Paused, "Paused: $blockedBy")
+    if (blockedBy != null) return Summary(SyncState.Paused, if (blockedBy == PAUSED_BY_USER) blockedBy else "Paused: $blockedBy")
     if (!online) return Summary(SyncState.Problem, "No network")
 
     val connected = s.devices.filter { s.connections[it.deviceID]?.connected == true }
@@ -155,8 +155,10 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean)
     if (connected.isEmpty()) return result(SyncState.Problem, "Not connected")
 
     val statuses = active.mapNotNull { s.folderStatus[it.id] }
-    val need = statuses.sumOf { it.needBytes }
-    val global = statuses.sumOf { it.globalBytes }
+    // Progress over the folders that need something, so one new file in a big idle folder is not "99 %".
+    val needing = statuses.filter { it.needBytes > 0 }
+    val need = needing.sumOf { it.needBytes }
+    val global = needing.sumOf { it.globalBytes }
     if (need > 0 || statuses.any { it.state in SYNCING_STATES }) {
         val pct = if (global > 0) ((global - need) * 100 / global).toInt().coerceIn(0, 99) else null
         return result(SyncState.Syncing, pct?.let { "Syncing $it %" } ?: "Syncing", pct)

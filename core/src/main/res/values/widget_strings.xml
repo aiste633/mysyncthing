@@ -1,0 +1,7 @@
+<resources>
+    <string name="widget_name">Syncthing</string>
+    <string name="widget_description">Sync status, connected devices and a pause button</string>
+    <string name="widget_pause">Pause syncing</string>
+    <string name="widget_resume">Resume syncing</string>
+    <string name="widget_start">Start Syncthing</string>
+</resources>
