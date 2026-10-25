@@ -63,6 +63,9 @@ object SyncStatus {
                         throw e
                     } catch (_: Exception) {
                         delay(5_000)
+                        // After a restart in place (web GUI) the core counts events from 1 again.
+                        since = 0
+                        refresh.trySend(Unit)
                     }
                 }
             }

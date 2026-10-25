@@ -1,7 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -35,14 +37,34 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
                     webViewClient = object : WebViewClient() {
+                        private var retries = 0
+                        private var failed = false
+
                         // Stay on the local GUI; never send credentials elsewhere.
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             val u = request.url
                             return "${u.scheme}://${u.authority}" != origin
                         }
 
+                        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                            failed = false
+                        }
+
                         override fun onPageFinished(view: WebView, url: String) {
+                            if (!failed) retries = 0
                             if (url.startsWith("$origin/")) view.evaluateJavascript(HIDE_APP_MANAGED, null)
+                        }
+
+                        // Some settings (e.g. the theme) restart the GUI listener, and the page reloads
+                        // into that gap: retry for a while instead of staying on the error page.
+                        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                            val u = request.url
+                            if (!request.isForMainFrame || "${u.scheme}://${u.authority}" != origin) return
+                            if (error.errorCode != ERROR_CONNECT) return
+                            failed = true
+                            if (retries++ < 30) view.postDelayed({
+                                if (view.isAttachedToWindow) view.loadUrl(u.toString(), mapOf("Authorization" to auth))
+                            }, 1_000)
                         }
 
                         // Unhandled, a renderer crash would kill the whole process, and the sync core with it.
@@ -63,13 +85,15 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
 
 /**
  * Hides what only the app may manage: Log Out (it would reload into the login
- * page), and the GUI address, login, HTTPS and LDAP settings, which the core
- * refuses to change (the GUI could only show a generic error). Theme stays.
+ * page), Shut Down (stopping is the service's job; Restart works in place),
+ * and the GUI address, login, HTTPS and LDAP settings, which the core refuses
+ * to change (the GUI could only show a generic error). Theme stays.
  */
 private const val HIDE_APP_MANAGED = """(function () {
   var s = document.createElement('style');
   s.textContent = [
     'li:has(> a[ng-click="logout()"])',
+    'li:has(> a[ng-click="shutdown()"])',
     '#settings-gui .form-group:has(#Address)',
     '#settings-gui .row:has(#user)',
     '#settings-gui .row:has(#UseTLS)',

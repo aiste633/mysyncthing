@@ -1,9 +1,13 @@
 package stbridge
 
 import (
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/syncthing/syncthing/lib/syncthing"
 )
 
 // Starts the real core in a temp home, checks REST auth, and restarts it in
@@ -88,5 +92,53 @@ func TestGUILoginLocked(t *testing.T) {
 	// Last: a GUI change restarts the GUI listener.
 	if code := patch(`{"theme": "dark"}`); code != http.StatusOK {
 		t.Errorf("theme change refused: %d", code)
+	}
+}
+
+// "Restart" in the web GUI restarts the core in place: same address, and
+// IsRunning never reports a gap the app would read as a crash.
+func TestRestartInPlace(t *testing.T) {
+	if err := Start(t.TempDir(), "test-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	defer Stop()
+	addr := GuiAddress()
+	current := func() *syncthing.App {
+		mu.Lock()
+		defer mu.Unlock()
+		return app
+	}
+	before := current()
+
+	call := func(method, path string) error {
+		req, _ := http.NewRequest(method, "http://"+addr+path, nil)
+		req.Header.Set("X-API-Key", "test-key")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return err
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("HTTP %d", resp.StatusCode)
+		}
+		return nil
+	}
+	if err := call(http.MethodPost, "/rest/system/restart"); err != nil {
+		t.Fatal(err)
+	}
+
+	for deadline := time.Now().Add(30 * time.Second); ; time.Sleep(50 * time.Millisecond) {
+		if !IsRunning() {
+			t.Fatalf("not running during restart: %q", LastError())
+		}
+		if a := current(); a != before && call(http.MethodGet, "/rest/system/status") == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("core did not come back after restart")
+		}
+	}
+	if GuiAddress() != addr {
+		t.Fatalf("address changed: %s -> %s", addr, GuiAddress())
 	}
 }

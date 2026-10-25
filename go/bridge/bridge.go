@@ -44,6 +44,11 @@ var (
 	earlyEnd <-chan error // closed when the early supervisor (events, config) has stopped
 )
 
+// params is what the core was started with, kept for restarts in place.
+type params struct {
+	homeDir, apiKey, guiUser, guiPassword, addr string
+}
+
 // Start launches Syncthing with its config and database under homeDir and
 // returns once the REST API is ready. The GUI/REST listener is bound to a
 // free loopback port (see GuiAddress). apiKey is accepted in addition to the
@@ -64,9 +69,15 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 	if err != nil {
 		return err
 	}
+	return startLocked(params{homeDir, apiKey, guiUser, guiPassword, addr})
+}
+
+// startLocked starts the core; the caller holds mu.
+func startLocked(p params) error {
+	homeDir := p.homeDir
 	// Env overrides are read by lib/config on every access.
-	os.Setenv("STGUIADDRESS", addr)
-	os.Setenv("STGUIAPIKEY", apiKey)
+	os.Setenv("STGUIADDRESS", p.addr)
+	os.Setenv("STGUIAPIKEY", p.apiKey)
 	os.Setenv("STNOUPGRADE", "1")
 
 	if err := locations.SetBaseDir(locations.ConfigBaseDir, homeDir); err != nil {
@@ -99,7 +110,7 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 		return fmt.Errorf("config: %w", err)
 	}
 	early.Add(cfg)
-	if err := applyAndroidDefaults(cfg, guiUser, guiPassword); err != nil {
+	if err := applyAndroidDefaults(cfg, p.guiUser, p.guiPassword); err != nil {
 		cncl()
 		return fmt.Errorf("config defaults: %w", err)
 	}
@@ -126,21 +137,34 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 
 	app, cancel, exitErr, earlyEnd = a, cncl, nil, earlyDone
 	deviceID = protocol.NewDeviceID(cert.Certificate[0]).String()
-	guiAddr = addr
-
-	go func() {
-		status := a.Wait()
-		mu.Lock()
-		defer mu.Unlock()
-		if app == a {
-			if status == svcutil.ExitError {
-				exitErr = a.Error()
-			}
-			cancel()
-			app, cancel, guiAddr = nil, nil, ""
-		}
-	}()
+	guiAddr = p.addr
+	go watch(a, p)
 	return nil
+}
+
+// watch handles the core exiting on its own. A restart asked for in the web
+// GUI ("Restart Needed" after some settings, or a database reset) starts it
+// again in place, on the same address, so the app's client and the open web
+// GUI carry on. mu is held throughout, so IsRunning never sees a gap.
+func watch(a *syncthing.App, p params) {
+	status := a.Wait()
+	mu.Lock()
+	defer mu.Unlock()
+	if app != a {
+		return // Stop was called
+	}
+	c, done := cancel, earlyEnd
+	app, cancel, guiAddr = nil, nil, ""
+	c()
+	<-done
+	switch status {
+	case svcutil.ExitRestart:
+		if err := startLocked(p); err != nil {
+			exitErr = fmt.Errorf("restart: %w", err)
+		}
+	case svcutil.ExitError:
+		exitErr = a.Error()
+	}
 }
 
 // Stop shuts Syncthing down and blocks until it has exited.
