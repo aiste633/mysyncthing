@@ -111,7 +111,7 @@ fun FolderEditScreen(s: Snapshot, initial: FolderDraft, offeredBy: String?, onBa
                         FOLDER_TYPES.forEachIndexed { i, (value, label) ->
                             SegmentedButton(
                                 selected = d.type == value, onClick = { d = d.copy(type = value) },
-                                shape = SegmentedButtonDefaults.itemShape(i, FOLDER_TYPES.size),
+                                shape = SegmentedButtonDefaults.itemShape(i, FOLDER_TYPES.size, MaterialTheme.shapes.extraSmall),
                                 icon = {}, // the check mark would not leave room for the labels on a phone
                                 colors = SegmentedButtonDefaults.colors(inactiveContainerColor = Color.Transparent),
                             ) { Text(label, maxLines = 1, style = MaterialTheme.typography.labelMedium) }

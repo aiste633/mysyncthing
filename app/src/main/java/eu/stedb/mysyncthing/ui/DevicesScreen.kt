@@ -120,10 +120,10 @@ private fun ThisDeviceCard(s: Snapshot, onShowQr: () -> Unit) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
-                FilledTonalButton(onClick = onShowQr) {
+                FilledTonalButton(shape = ButtonShape, onClick = onShowQr) {
                     Icon(Icons.Default.QrCode, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Show ID")
                 }
-                FilledTonalButton(onClick = {
+                FilledTonalButton(shape = ButtonShape, onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, s.myId)
                     context.startActivity(Intent.createChooser(send, "Share device ID"))
                 }) {

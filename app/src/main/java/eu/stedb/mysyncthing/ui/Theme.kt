@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -27,8 +29,23 @@ import eu.stedb.mysyncthing.core.SyncState
 fun AppTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    MaterialTheme(colorScheme = scheme, content = content)
+    MaterialTheme(colorScheme = scheme, shapes = AppShapes, content = content)
 }
+
+/**
+ * Much less rounded than Material's defaults, as the user asked: cards, dialogs,
+ * FABs, chips and text fields take these.
+ */
+private val AppShapes = Shapes(
+    extraSmall = RoundedCornerShape(2.dp),
+    small = RoundedCornerShape(4.dp),
+    medium = RoundedCornerShape(4.dp),
+    large = RoundedCornerShape(6.dp),
+    extraLarge = RoundedCornerShape(8.dp),
+)
+
+/** Material buttons are pills whatever the theme says, so each one passes this. */
+val ButtonShape = RoundedCornerShape(4.dp)
 
 /**
  * Screens sit on a tinted background and lists are cards with an outline, so

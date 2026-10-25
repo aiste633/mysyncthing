@@ -65,7 +65,7 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit)
                         )
                     }
                     status.progress?.let { LinearProgressIndicator(progress = { it }, Modifier.fillMaxWidth(), color = look.color) }
-                    FilledTonalButton(onClick = { vm.setDevicePaused(id, !d.paused) }, modifier = Modifier.padding(top = 4.dp)) {
+                    FilledTonalButton(shape = ButtonShape, onClick = { vm.setDevicePaused(id, !d.paused) }, modifier = Modifier.padding(top = 4.dp)) {
                         Icon(if (d.paused) Icons.Default.PlayArrow else Icons.Default.Pause, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
                         Text(if (d.paused) "Resume" else "Pause")

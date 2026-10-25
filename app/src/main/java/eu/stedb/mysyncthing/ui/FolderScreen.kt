@@ -72,12 +72,12 @@ fun FolderScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit)
                     }
                     status.progress?.let { LinearProgressIndicator(progress = { it }, Modifier.fillMaxWidth(), color = look.color) }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
-                        FilledTonalButton(onClick = { vm.setFolderPaused(id, !f.paused) }) {
+                        FilledTonalButton(shape = ButtonShape, onClick = { vm.setFolderPaused(id, !f.paused) }) {
                             Icon(if (f.paused) Icons.Default.PlayArrow else Icons.Default.Pause, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text(if (f.paused) "Resume" else "Pause")
                         }
-                        FilledTonalButton(onClick = { vm.rescan(id) }, enabled = !f.paused) {
+                        FilledTonalButton(shape = ButtonShape, onClick = { vm.rescan(id) }, enabled = !f.paused) {
                             Icon(Icons.Default.Refresh, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
                             Text("Rescan")
