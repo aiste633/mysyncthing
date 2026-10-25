@@ -76,6 +76,37 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun removeDevice(id: String) = send("DELETE", "rest/config/devices/$id")
 
+    /** Sets the new-folder defaults to [path] and ignorePerms while the path is still upstream's "~". */
+    suspend fun adoptFolderDefaults(path: String) {
+        val d = get<JsonObject>("rest/config/defaults/folder")
+        val current = (d["path"] as? JsonPrimitive)?.content.orEmpty()
+        if (current != "~" && current.isNotEmpty()) return
+        send("PATCH", "rest/config/defaults/folder", buildJsonObject { put("path", path); put("ignorePerms", true) })
+    }
+
+    suspend fun patchDevice(id: String, fields: JsonObject) = send("PATCH", "rest/config/devices/$id", fields)
+
+    /** Devices heard on the local network, plus the global lookups the core has cached. */
+    suspend fun discovery(): Map<String, Discovered> = get("rest/system/discovery")
+
+    suspend fun ignoredRequests(): IgnoredRequests = get("rest/config")
+
+    /** Lets a device's connection requests through again; the request returns on its next attempt. */
+    suspend fun unignoreDevice(id: String) {
+        val cfg = get<JsonObject>("rest/config")
+        val left = (cfg["remoteIgnoredDevices"] as? JsonArray).orEmpty()
+            .filter { (it as? JsonObject)?.get("deviceID")?.let { v -> (v as? JsonPrimitive)?.content } != id }
+        send("PUT", "rest/config", JsonObject(cfg + ("remoteIgnoredDevices" to JsonArray(left))))
+    }
+
+    /** Lets [device] offer [folder] again. */
+    suspend fun unignoreFolder(folder: String, device: String) {
+        val d = get<JsonObject>("rest/config/devices/$device")
+        val left = (d["ignoredFolders"] as? JsonArray).orEmpty()
+            .filter { (it as? JsonObject)?.get("id")?.let { v -> (v as? JsonPrimitive)?.content } != folder }
+        patchDevice(device, buildJsonObject { put("ignoredFolders", JsonArray(left)) })
+    }
+
     /**
      * Records the answer to the consent prompt exactly as upstream's web GUI
      * does: "No" keeps an earlier accepted version, so only a format change is declined.

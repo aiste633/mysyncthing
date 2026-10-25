@@ -92,6 +92,42 @@ fun number(v: Double): String = if (v == Math.floor(v) && v < 1e15) v.toLong().t
 /** "1 %", "5 GB": upstream's units are SI. */
 fun diskSizeText(d: DiskSize): String = "${number(d.value)} ${d.unit}"
 
+/**
+ * A speed limit the core stores in KiB/s, as SI for people: 488 KiB/s is
+ * "500 kB/s". kB/s are whole numbers, MB/s keep one decimal.
+ */
+fun limitSi(kib: Int): Pair<Double, String> {
+    val b = kib * 1024.0
+    return if (b >= 1_000_000) Math.round(b / 100_000) / 10.0 to "MB/s" else Math.round(b / 1000).toDouble() to "kB/s"
+}
+
+/** Back to the core's KiB/s; anything above zero stays at least 1 so it is not read as "no limit". */
+fun limitKib(value: Double, unit: String): Int {
+    if (value <= 0) return 0
+    val b = value * if (unit == "MB/s") 1_000_000 else 1000
+    return Math.round(b / 1024).toInt().coerceAtLeast(1)
+}
+
+fun limitText(kib: Int): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> "${number(v)} $u" }
+
+val COMPRESSIONS = listOf("metadata" to "Metadata only", "always" to "All data", "never" to "Off")
+
+fun compressionHint(c: String): String? = when (c) {
+    "metadata" -> "Default"
+    "always" -> "Saves data on text and documents, costs battery. Photos and videos gain almost nothing."
+    else -> null
+}
+
+/** 0 is Syncthing's choice, currently 3 connections. */
+fun connectionsText(n: Int): String = when {
+    n <= 0 -> "Automatic"
+    n == 1 -> "1 connection"
+    else -> "$n connections"
+}
+
+fun connectionChoices(current: Int): List<Pair<Int, String>> =
+    (listOf(0, 1, 2, 3, 4, 8) + current.coerceAtLeast(0)).distinct().map { it to connectionsText(it) }
+
 /** Syncthing's grouped display form, e.g. ABCDEFG-HIJKLMN. Only the first group is shown in lists. */
 fun shortId(id: String): String = id.substringBefore('-')
 

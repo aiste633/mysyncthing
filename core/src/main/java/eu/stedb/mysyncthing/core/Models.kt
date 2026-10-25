@@ -68,7 +68,37 @@ data class Device(
     val name: String = "",
     val paused: Boolean = false,
     val addresses: List<String> = listOf("dynamic"),
+    /** "metadata", "always" or "never". */
+    val compression: String = "metadata",
+    val introducer: Boolean = false,
+    val autoAcceptFolders: Boolean = false,
+    /** KiB/s, 0 for no limit. */
+    val maxSendKbps: Int = 0,
+    val maxRecvKbps: Int = 0,
+    /** 0 lets Syncthing choose. */
+    val numConnections: Int = 0,
+    val group: String = "",
+    val ignoredFolders: List<ObservedFolder> = emptyList(),
 )
+
+/** A folder offer the user ignored, stored on the device that offered it. */
+@Serializable
+data class ObservedFolder(val time: String = "", val id: String = "", val label: String = "")
+
+/** A device whose connection request the user ignored. */
+@Serializable
+data class ObservedDevice(val time: String = "", val deviceID: String = "", val name: String = "", val address: String = "")
+
+/** The parts of the full config that hold ignored requests; upstream has no narrower endpoint for them. */
+@Serializable
+data class IgnoredRequests(
+    val remoteIgnoredDevices: List<ObservedDevice> = emptyList(),
+    val devices: List<Device> = emptyList(),
+)
+
+/** One entry of the discovery cache: where a device was last announced. */
+@Serializable
+data class Discovered(val addresses: List<String> = emptyList())
 
 @Serializable
 data class FolderDevice(val deviceID: String)

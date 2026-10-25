@@ -9,14 +9,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -30,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.core.Completion
@@ -46,8 +57,7 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
     val conn = s.connections[id]
     val status = deviceStatus(d, conn, s.completion[id])
     val look = status.state.look()
-    var rename by rememberSaveable { mutableStateOf(false) }
-    var remove by rememberSaveable { mutableStateOf(false) }
+    var dialog by rememberSaveable { mutableStateOf<DeviceDialog?>(null) }
     val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
     var lastSeen by remember { mutableStateOf<String?>(null) }
     LaunchedEffect(id, conn?.connected) { lastSeen = vm.deviceStats(id)?.lastSeen }
@@ -100,8 +110,21 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                 }
             }
 
+            SettingsGroup("Trust") {
+                SettingRow(
+                    "Introducer", "Also add the devices it shares folders with",
+                    trailing = { Switch(d.introducer, onCheckedChange = null) },
+                ) { vm.setIntroducer(id, !d.introducer) }
+                SettingRow(
+                    "Accept its folders automatically", "Saved to Syncthing/<folder name> without asking",
+                    trailing = { Switch(d.autoAcceptFolders, onCheckedChange = null) },
+                ) { vm.setAutoAccept(id, !d.autoAcceptFolders) }
+            }
+
             SettingsGroup("General") {
-                SettingRow("Name", d.name.ifEmpty { "(none)" }) { rename = true }
+                SettingRow("Name", d.name.ifEmpty { "(none)" }) { dialog = DeviceDialog.Name }
+                SettingRow("Group", d.group.ifEmpty { "None" }) { dialog = DeviceDialog.Group }
+                SettingRow("Addresses", addressesText(d.addresses)) { dialog = DeviceDialog.Addresses }
                 SelectionContainer { SettingRow("Device ID", id) }
             }
 
@@ -127,21 +150,103 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                 }
             }
 
+            SettingsGroup("Advanced") {
+                SettingRow("Download limit", limitText(d.maxRecvKbps)) { dialog = DeviceDialog.Recv }
+                SettingRow("Upload limit", limitText(d.maxSendKbps)) { dialog = DeviceDialog.Send }
+                SettingRow("Compression", COMPRESSIONS.find { it.first == d.compression }?.second ?: d.compression) { dialog = DeviceDialog.Compression }
+                SettingRow("Connections", connectionsText(d.numConnections)) { dialog = DeviceDialog.Connections }
+            }
+
             SettingsGroup("Remove") {
                 SettingRow("Remove device", "It can no longer sync with this phone.", icon = Icons.Default.Delete, danger = true) {
-                    remove = true
+                    dialog = DeviceDialog.Remove
                 }
             }
         }
     }
 
-    if (rename) {
-        TextDialog("Device name", d.name, "Name", onDismiss = { rename = false }) { vm.renameDevice(id, it); rename = false }
-    }
-    if (remove) {
-        ConfirmDialog(
+    val close = { dialog = null }
+    when (dialog) {
+        DeviceDialog.Name -> TextDialog("Device name", d.name, "Name", onDismiss = close) { vm.renameDevice(id, it); close() }
+        DeviceDialog.Group -> TextDialog(
+            "Device group", d.group, "Group", supporting = "Devices in a group are listed together. Only on this phone.",
+            valid = { true }, onDismiss = close,
+        ) { vm.setDeviceGroup(id, it); close() }
+        DeviceDialog.Addresses -> AddressesDialog(d.addresses, onDismiss = close) { vm.setAddresses(id, it); close() }
+        DeviceDialog.Recv -> SpeedLimitDialog("Download limit", d.maxRecvKbps, onDismiss = close) { vm.setDeviceRecvLimit(id, it); close() }
+        DeviceDialog.Send -> SpeedLimitDialog("Upload limit", d.maxSendKbps, onDismiss = close) { vm.setDeviceSendLimit(id, it); close() }
+        DeviceDialog.Compression -> ChoiceDialog("Compression", COMPRESSIONS, d.compression, ::compressionHint, onDismiss = close) {
+            vm.setCompression(id, it); close()
+        }
+        DeviceDialog.Connections -> ChoiceDialog(
+            "Connections", connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0),
+            { if (it == 0) "Syncthing decides, currently 3. More can help on fast, distant links." else null }, onDismiss = close,
+        ) { vm.setNumConnections(id, it); close() }
+        DeviceDialog.Remove -> ConfirmDialog(
             "Remove ${d.name.ifEmpty { shortId(id) }}?", "Folders stop syncing with this device. No files are deleted.",
-            "Remove", onDismiss = { remove = false },
-        ) { vm.removeDevice(id); remove = false; onBack() }
+            "Remove", onDismiss = close,
+        ) { vm.removeDevice(id); close(); onBack() }
+        null -> {}
     }
+}
+
+private enum class DeviceDialog { Name, Group, Addresses, Recv, Send, Compression, Connections, Remove }
+
+private fun addressesText(a: List<String>): String = when {
+    a.isEmpty() || a == listOf("dynamic") -> "Found automatically"
+    else -> a.joinToString(", ") { if (it == "dynamic") "automatic" else it }
+}
+
+/** TCP, QUIC and relay addresses; a bare host:port is taken as TCP. */
+private val ADDRESS = Regex("^(tcp[46]?|quic[46]?|relay)" + "://\\S+$")
+
+private fun normalizeAddress(a: String): String = a.trim().let { if ("://" in it || it.isEmpty()) it else "tcp://${it}" }
+
+/** "Find automatically" plus fixed addresses Syncthing tries first. */
+@Composable
+private fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) {
+    var dynamic by rememberSaveable { mutableStateOf(initial.isEmpty() || "dynamic" in initial) }
+    var fixed by rememberSaveable { mutableStateOf(initial.filter { it != "dynamic" }) }
+    var draft by rememberSaveable { mutableStateOf("") }
+    val next = normalizeAddress(draft)
+    val draftValid = ADDRESS.matches(next)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Addresses") },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().toggleable(dynamic, role = Role.Checkbox) { dynamic = it },
+                ) {
+                    Checkbox(dynamic, onCheckedChange = null)
+                    Column(Modifier.weight(1f)) {
+                        Text("Find automatically", style = MaterialTheme.typography.bodyLarge)
+                        Text("Through local and global discovery", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                fixed.forEach { a ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Text(a, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                        IconButton(onClick = { fixed = fixed - a }) { Icon(Icons.Default.Close, "Remove $a") }
+                    }
+                }
+                OutlinedTextField(
+                    draft, { draft = it }, label = { Text("Add address") }, singleLine = true,
+                    isError = draft.isNotBlank() && !draftValid,
+                    supportingText = { Text("For example tcp://192.0.2.10:22000 or a VPN address") },
+                    trailingIcon = {
+                        IconButton(enabled = draftValid, onClick = { fixed = (fixed + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, "Add") }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            // A typed but not yet added address counts too, so it is not lost.
+            val all = (if (dynamic) listOf("dynamic") else emptyList()) + (fixed + listOfNotNull(next.takeIf { draftValid })).distinct()
+            TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text("Save") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

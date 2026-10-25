@@ -18,6 +18,8 @@ import android.os.SystemClock
 import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.DeviceStats
+import eu.stedb.mysyncthing.core.Discovered
+import eu.stedb.mysyncthing.core.IgnoredRequests
 import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.FileEntry
 import eu.stedb.mysyncthing.core.FileProgress
@@ -36,7 +38,10 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -138,7 +143,34 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun answerUsagePrompt(accept: Boolean) = act("Usage reporting") { answerUsagePrompt(accept) }
     fun setUsageReporting(on: Boolean) = act("Usage reporting") { setUsageReporting(on) }
 
-    fun addDevice(id: String, name: String) = act("Add device") { addDevice(id.trim().uppercase(), name.trim()) }
+    /** Adds the device and shares [folders] with it in the same step. */
+    fun addDevice(id: String, name: String, folders: List<Folder> = emptyList()) = act("Add device") {
+        val device = id.trim().uppercase()
+        addDevice(device, name.trim())
+        folders.forEach { shareFolder(it, device) }
+    }
+    private fun patchDevice(id: String, label: String, fields: JsonObjectBuilder.() -> Unit) =
+        act(label) { patchDevice(id, buildJsonObject(fields)) }
+    fun setIntroducer(id: String, on: Boolean) = patchDevice(id, "Introducer") { put("introducer", on) }
+    fun setAutoAccept(id: String, on: Boolean) = patchDevice(id, "Accept folders") { put("autoAcceptFolders", on) }
+    fun setDeviceGroup(id: String, group: String) = patchDevice(id, "Group") { put("group", group.trim()) }
+    fun setAddresses(id: String, addresses: List<String>) = patchDevice(id, "Addresses") {
+        putJsonArray("addresses") { addresses.forEach { add(JsonPrimitive(it)) } }
+    }
+    fun setDeviceRecvLimit(id: String, kib: Int) = patchDevice(id, "Download limit") { put("maxRecvKbps", kib) }
+    fun setDeviceSendLimit(id: String, kib: Int) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
+    fun setCompression(id: String, c: String) = patchDevice(id, "Compression") { put("compression", c) }
+    fun setNumConnections(id: String, n: Int) = patchDevice(id, "Connections") { put("numConnections", n) }
+
+    suspend fun discovery(): Map<String, Discovered> = runCatching { client?.discovery() }.getOrNull().orEmpty()
+    suspend fun ignoredRequests(): IgnoredRequests? = runCatching { client?.ignoredRequests() }.getOrNull()
+
+    /** Undoes an Ignore; false when it failed (the reason goes to the snackbar). */
+    suspend fun unignore(device: String, folder: String? = null): Boolean {
+        val c = client ?: return false
+        return runCatching { if (folder == null) c.unignoreDevice(device) else c.unignoreFolder(folder, device) }
+            .onFailure { _message.send("Unignore failed: ${it.message}") }.isSuccess
+    }
     fun removeDevice(id: String) = act("Remove device") { removeDevice(id) }
     fun renameDevice(id: String, name: String) = act("Rename") { setDeviceName(id, name.trim()) }
     fun setDevicePaused(id: String, paused: Boolean) = act("Pause") { setDevicePaused(id, paused) }

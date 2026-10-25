@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatterySaver
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
@@ -43,6 +44,7 @@ fun SettingsScreen(
     core: CoreState,
     permissions: PermissionState,
     onOpenWebGui: () -> Unit,
+    onOpenIgnored: () -> Unit,
 ) {
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
@@ -60,6 +62,10 @@ fun SettingsScreen(
                 Toggle("Pause syncing", "Until you resume it here or on the widget", Icons.Default.PauseCircle, rc.pausedByUser) { v ->
                     vm.setRunConditions { it.copy(pausedByUser = v) }
                 }
+                SettingRow(
+                    "Ignored requests", "Devices and folders you tapped Ignore on, to undo it",
+                    Icons.Default.Block, onClick = if (running) onOpenIgnored else null,
+                )
             }
 
             SettingsGroup("Sync only when") {
