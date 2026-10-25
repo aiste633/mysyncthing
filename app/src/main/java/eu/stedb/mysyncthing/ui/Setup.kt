@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
@@ -83,23 +84,26 @@ fun rememberNotificationRequest(state: PermissionState): () -> Unit {
 @Composable
 fun SetupScreen(state: PermissionState) {
     val requestNotifications = rememberNotificationRequest(state)
-    Column(
-        Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        Text("Set up", style = MaterialTheme.typography.headlineMedium)
-        Text(
-            "Syncthing reads and writes your folders directly, so it needs All files access. " +
-                "Without it, nothing can sync."
-        )
-        Button(onClick = state::requestStorage) { Text("Grant All files access") }
-        if (!state.notifications) {
-            Text("Optional: notifications show sync status and new device requests.")
-            OutlinedButton(onClick = requestNotifications) { Text("Allow notifications") }
-        }
-        if (!state.batteryExempt) {
-            Text("Optional: exempting the app from battery optimisation keeps sync running reliably.")
-            OutlinedButton(onClick = state::requestBatteryExemption) { Text("Disable battery optimisation") }
+    // Surface sets the text colour for dark mode; there is no Scaffold here.
+    Surface(Modifier.fillMaxSize(), color = AppColors.background) {
+        Column(
+            Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Text("Set up", style = MaterialTheme.typography.headlineMedium)
+            Text(
+                "Syncthing reads and writes your folders directly, so it needs All files access. " +
+                    "Without it, nothing can sync."
+            )
+            Button(onClick = state::requestStorage) { Text("Grant All files access") }
+            if (!state.notifications) {
+                Text("Optional: notifications show sync status and new device requests.")
+                OutlinedButton(onClick = requestNotifications) { Text("Allow notifications") }
+            }
+            if (!state.batteryExempt) {
+                Text("Optional: exempting the app from battery optimisation keeps sync running reliably.")
+                OutlinedButton(onClick = state::requestBatteryExemption) { Text("Disable battery optimisation") }
+            }
         }
     }
 }

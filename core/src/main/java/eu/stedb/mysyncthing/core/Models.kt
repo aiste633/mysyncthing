@@ -7,7 +7,11 @@ import kotlinx.serialization.json.JsonElement
 // Only the fields the native UI uses; the REST API returns many more.
 
 @Serializable
-data class SystemStatus(val myID: String, val uptime: Long = 0)
+data class SystemStatus(val myID: String, val uptime: Long = 0, val urVersionMax: Int = 0)
+
+/** Usage-reporting consent, as upstream stores it: urAccepted 0 = not asked, -1 = declined, >0 = accepted version. */
+@Serializable
+data class Options(val urAccepted: Int = 0, val urSeen: Int = 0)
 
 @Serializable
 data class Device(
@@ -20,6 +24,10 @@ data class Device(
 @Serializable
 data class FolderDevice(val deviceID: String)
 
+/** Upstream versioning config; `type` "" means off. Param values are strings, as upstream stores them. */
+@Serializable
+data class Versioning(val type: String = "", val params: Map<String, String> = emptyMap())
+
 @Serializable
 data class Folder(
     val id: String,
@@ -28,7 +36,19 @@ data class Folder(
     val type: String = "sendreceive",
     val paused: Boolean = false,
     val devices: List<FolderDevice> = emptyList(),
+    val versioning: Versioning = Versioning(),
+    val fsWatcherEnabled: Boolean = true,
+    val rescanIntervalS: Int = 3600,
 )
+
+@Serializable
+data class FileError(val path: String = "", val error: String = "")
+
+@Serializable
+data class FolderErrors(val errors: List<FileError>? = null)
+
+@Serializable
+data class Ignores(val ignore: List<String>? = null)
 
 @Serializable
 data class FolderStatus(
@@ -44,6 +64,8 @@ data class Connection(
     val connected: Boolean = false,
     val paused: Boolean = false,
     val address: String = "",
+    val type: String = "",
+    val isLocal: Boolean = false,
     val inBytesTotal: Long = 0,
     val outBytesTotal: Long = 0,
 )

@@ -3,10 +3,13 @@ package eu.stedb.mysyncthing.core
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.addJsonObject
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
@@ -15,6 +18,7 @@ import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.IOException
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 class ApiException(val code: Int, message: String) : IOException("HTTP $code: $message")
@@ -32,6 +36,7 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun status(): SystemStatus = get("rest/system/status")
     suspend fun devices(): List<Device> = get("rest/config/devices")
+    suspend fun options(): Options = get("rest/config/options")
     suspend fun device(id: String): Device = get("rest/config/devices/$id")
     suspend fun folders(): List<Folder> = get("rest/config/folders")
     suspend fun connections(): Connections = get("rest/system/connections")
@@ -51,16 +56,60 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun removeDevice(id: String) = send("DELETE", "rest/config/devices/$id")
 
+    /**
+     * Records the answer to the consent prompt exactly as upstream's web GUI
+     * does: "No" keeps an earlier accepted version, so only a format change is declined.
+     */
+    suspend fun answerUsagePrompt(accept: Boolean) {
+        val max = status().urVersionMax
+        val current = options().urAccepted
+        setUsageOptions(if (accept) max else if (current == 0) -1 else current, max)
+    }
+
+    /** The Settings switch: on accepts the current format, off declines entirely. */
+    suspend fun setUsageReporting(on: Boolean) {
+        val max = status().urVersionMax
+        setUsageOptions(if (on) max else -1, max)
+    }
+
+    private suspend fun setUsageOptions(accepted: Int, seen: Int) = send("PATCH", "rest/config/options", buildJsonObject {
+        put("urAccepted", accepted)
+        put("urSeen", seen)
+    })
+
+    /** The report that would be sent, for the Preview button. */
+    suspend fun usageReport(): String = call(request("rest/svc/report", emptyList()).get().build())
+
     suspend fun setDeviceName(id: String, name: String) =
         send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })
 
-    suspend fun addFolder(id: String, label: String, path: String, deviceIds: List<String>) =
+    suspend fun addFolder(id: String, label: String, path: String, deviceIds: List<String>, type: String, versioning: Versioning) =
         send("POST", "rest/config/folders", buildJsonObject {
             put("id", id)
             put("label", label)
             put("path", path)
+            put("type", type)
             putJsonArray("devices") { deviceIds.forEach { d -> addJsonObject { put("deviceID", d) } } }
+            put("versioning", versioning.toJson())
         })
+
+    /** Changes only the given fields of a folder's config. */
+    suspend fun patchFolder(id: String, fields: JsonObject) = send("PATCH", "rest/config/folders/$id", fields)
+
+    suspend fun setFolderDevices(id: String, deviceIds: List<String>) = patchFolder(id, buildJsonObject {
+        putJsonArray("devices") { deviceIds.forEach { d -> addJsonObject { put("deviceID", d) } } }
+    })
+
+    suspend fun setVersioning(id: String, versioning: Versioning) = patchFolder(id, buildJsonObject {
+        put("versioning", versioning.toJson())
+    })
+
+    suspend fun folderErrors(id: String): FolderErrors = get("rest/folder/errors", "folder" to id)
+    suspend fun ignores(id: String): List<String> = get<Ignores>("rest/db/ignores", "folder" to id).ignore.orEmpty()
+
+    suspend fun setIgnores(id: String, lines: List<String>) = send("POST", "rest/db/ignores", buildJsonObject {
+        putJsonArray("ignore") { lines.forEach { add(JsonPrimitive(it)) } }
+    }, query = listOf("folder" to id))
 
     suspend fun removeFolder(id: String) = send("DELETE", "rest/config/folders/$id")
 
@@ -69,14 +118,31 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun shareFolder(folder: Folder, deviceId: String) {
         if (folder.devices.any { it.deviceID == deviceId }) return
-        send("PATCH", "rest/config/folders/${folder.id}", buildJsonObject {
-            putJsonArray("devices") {
-                (folder.devices.map { it.deviceID } + deviceId).forEach { d -> addJsonObject { put("deviceID", d) } }
-            }
-        })
+        setFolderDevices(folder.id, folder.devices.map { it.deviceID } + deviceId)
     }
 
-    suspend fun dismissPendingDevice(id: String) = send("DELETE", "rest/cluster/pending/devices", query = listOf("device" to id))
+    /**
+     * Ignores a device for good, as the web GUI's Ignore does. Only deleting
+     * the pending entry would bring it back on its next connection attempt.
+     */
+    suspend fun ignoreDevice(id: String) {
+        val p = pendingDevices()[id] ?: return
+        val cfg = get<JsonObject>("rest/config")
+        val entry = buildJsonObject {
+            put("deviceID", id); put("name", p.name); put("address", p.address); put("time", Instant.now().toString())
+        }
+        val ignored = (cfg["remoteIgnoredDevices"] as? JsonArray).orEmpty() + entry
+        send("PUT", "rest/config", JsonObject(cfg + ("remoteIgnoredDevices" to JsonArray(ignored))))
+    }
+
+    /** Ignores one device's offer of a folder for good, stored on that device as upstream does. */
+    suspend fun ignoreFolder(folder: String, device: String) {
+        val label = pendingFolders()[folder]?.offeredBy?.get(device)?.label.orEmpty()
+        val d = get<JsonObject>("rest/config/devices/$device")
+        val entry = buildJsonObject { put("id", folder); put("label", label); put("time", Instant.now().toString()) }
+        val ignored = (d["ignoredFolders"] as? JsonArray).orEmpty() + entry
+        send("PATCH", "rest/config/devices/$device", buildJsonObject { put("ignoredFolders", JsonArray(ignored)) })
+    }
 
     /** Pauses or resumes all devices; used to enforce run conditions without stopping the core. */
     suspend fun setAllPaused(paused: Boolean) = send("POST", if (paused) "rest/system/pause" else "rest/system/resume")
@@ -86,6 +152,12 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun scan(folder: String? = null) =
         send("POST", "rest/db/scan", query = listOfNotNull(folder?.let { "folder" to it }))
+
+    // Written out by hand: the default serializer drops type = "" (off), which PATCH then ignores.
+    private fun Versioning.toJson() = buildJsonObject {
+        put("type", type)
+        putJsonObject("params") { params.forEach { (k, v) -> put(k, v) } }
+    }
 
     private suspend inline fun <reified T> get(path: String, vararg query: Pair<String, String>): T {
         val body = call(request(path, query.toList()).get().build())

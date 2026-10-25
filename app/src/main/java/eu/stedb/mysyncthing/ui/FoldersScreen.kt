@@ -1,162 +1,105 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FolderOpen
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderStatus
 import eu.stedb.mysyncthing.core.Snapshot
-import java.util.UUID
-
-/** A folder to create, possibly pre-filled from a pending offer. */
-data class FolderDraft(val id: String, val label: String, val path: String = "", val devices: Set<String> = emptySet())
+import eu.stedb.mysyncthing.core.Summary
 
 @Composable
-fun FoldersScreen(s: Snapshot, vm: MainViewModel) {
-    var draft by remember { mutableStateOf<FolderDraft?>(null) }
-    Box(Modifier.fillMaxSize()) {
-        if (s.loaded && s.folders.isEmpty() && s.pendingFolders.isEmpty()) {
-            EmptyState(
-                Icons.Default.FolderOpen, "No folders yet",
-                "Tap + to sync a folder on this phone. Folders other devices share with you appear here too.",
-            )
-        }
-        LazyColumn(Modifier.fillMaxSize()) {
-            s.pendingFolders.forEach { (id, pending) ->
-                pending.offeredBy.forEach { (device, offer) ->
-                    item("pending-$id-$device") {
-                        val who = s.devices.find { it.deviceID == device }?.name?.ifEmpty { null } ?: shortId(device)
-                        Card(Modifier.fillMaxWidth().padding(8.dp)) {
-                            ListItem(
-                                headlineContent = { Text("$who shares \"${offer.label.ifEmpty { id }}\"") },
-                                trailingContent = {
-                                    TextButton(onClick = { draft = FolderDraft(id, offer.label.ifEmpty { id }, devices = setOf(device)) }) {
-                                        Text("Accept")
-                                    }
-                                },
-                            )
+fun FoldersScreen(
+    s: Snapshot,
+    summary: Summary,
+    vm: MainViewModel,
+    onOpen: (String) -> Unit,
+    onAdd: () -> Unit,
+    onAccept: (folder: String, device: String) -> Unit,
+) {
+    AppScreen(
+        title = "Folders",
+        actions = { StatusChip(summary) },
+        fab = { ExtendedFloatingActionButton(onClick = onAdd, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Add folder") }) },
+    ) { padding ->
+        Box(Modifier.fillMaxSize().padding(padding)) {
+            if (s.loaded && s.folders.isEmpty() && s.pendingFolders.isEmpty()) {
+                EmptyState(
+                    Icons.Default.FolderOpen, "No folders yet",
+                    "Tap Add folder to sync a folder on this phone. Folders other devices share with you appear here too.",
+                )
+            }
+            LazyColumn(contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp)) {
+                s.pendingFolders.forEach { (id, pending) ->
+                    pending.offeredBy.forEach { (device, offer) ->
+                        item("pending-$id-$device") {
+                            val who = s.devices.find { it.deviceID == device }?.name?.ifEmpty { null } ?: shortId(device)
+                            RequestCard("$who shares \"${offer.label.ifEmpty { id }}\"", "Choose where to keep it on this phone") {
+                                TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text("Ignore") }
+                                TextButton(onClick = { onAccept(id, device) }) { Text("Review") }
+                            }
                         }
                     }
                 }
+                items(s.folders, key = { it.id }) { f -> FolderCard(f, s.folderStatus[f.id], s) { onOpen(f.id) } }
             }
-            items(s.folders, key = { it.id }) { f -> FolderRow(f, s.folderStatus[f.id], vm) }
-        }
-        FloatingActionButton(
-            onClick = { draft = FolderDraft(newFolderId(), "") },
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-        ) { Icon(Icons.Default.Add, "Add folder") }
-    }
-    draft?.let { d ->
-        FolderDialog(d, s, onDismiss = { draft = null }) {
-            vm.addFolder(it.id, it.label, it.path, it.devices.toList())
-            draft = null
         }
     }
 }
 
 @Composable
-private fun FolderRow(f: Folder, st: FolderStatus?, vm: MainViewModel) {
-    var menu by remember { mutableStateOf(false) }
-    var confirmRemove by remember { mutableStateOf(false) }
-    Box {
-        ListItem(
-            modifier = Modifier.clickable { menu = true },
-            headlineContent = { Text(f.label.ifEmpty { f.id }) },
-            supportingContent = {
-                Column {
-                    Text(f.path, style = MaterialTheme.typography.bodySmall)
-                    val state = if (f.paused) "paused" else st?.state.orEmpty()
-                    val need = st?.needBytes ?: 0
-                    Text(if (need > 0) "$state · ${bytes(need)} to sync" else "$state · ${bytes(st?.localBytes ?: 0)}")
-                    if (st != null && st.globalBytes > 0 && need > 0) {
-                        LinearProgressIndicator(
-                            progress = { 1f - need.toFloat() / st.globalBytes },
-                            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        )
-                    }
-                }
-            },
-        )
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            DropdownMenuItem(text = { Text(if (f.paused) "Resume" else "Pause") }, onClick = { vm.setFolderPaused(f.id, !f.paused); menu = false })
-            DropdownMenuItem(text = { Text("Rescan") }, onClick = { vm.rescan(f.id); menu = false })
-            DropdownMenuItem(text = { Text("Remove (files stay)") }, onClick = { confirmRemove = true; menu = false })
+private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onClick: () -> Unit) {
+    val status = folderStatus(f, st)
+    val look = status.state.look()
+    val shared = f.devices.count { it.deviceID != s.myId }
+    ListCard(onClick = onClick) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    f.label.ifEmpty { f.id }, style = MaterialTheme.typography.titleMedium,
+                    maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
+                )
+                Icon(look.icon, null, Modifier.size(18.dp), tint = look.color)
+                Spacer(Modifier.width(4.dp))
+                Text(status.text, style = MaterialTheme.typography.labelLarge, color = look.color)
+            }
+            Text(
+                displayPath(f.path), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            val details = listOfNotNull(
+                st?.let { bytes(it.localBytes) },
+                folderTypeLabel(f.type).takeIf { f.type != "sendreceive" },
+                if (shared == 0) "not shared" else "shared with $shared",
+            )
+            Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            status.progress?.let {
+                LinearProgressIndicator(progress = { it }, modifier = Modifier.fillMaxWidth().padding(top = 6.dp), color = look.color)
+            }
         }
     }
-    if (confirmRemove) {
-        AlertDialog(
-            onDismissRequest = { confirmRemove = false },
-            title = { Text("Remove ${f.label.ifEmpty { f.id }}?") },
-            text = { Text("Syncthing stops syncing this folder. Files on disk are not deleted.") },
-            confirmButton = { TextButton(onClick = { vm.removeFolder(f.id); confirmRemove = false }) { Text("Remove") } },
-            dismissButton = { TextButton(onClick = { confirmRemove = false }) { Text("Cancel") } },
-        )
-    }
 }
-
-@Composable
-private fun FolderDialog(initial: FolderDraft, s: Snapshot, onDismiss: () -> Unit, onConfirm: (FolderDraft) -> Unit) {
-    var d by remember { mutableStateOf(initial) }
-    val pick = rememberFolderPicker { d = d.copy(path = it, label = d.label.ifEmpty { it.substringAfterLast('/') }) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add folder") },
-        text = {
-            LazyColumn {
-                item { OutlinedTextField(d.label, { d = d.copy(label = it) }, label = { Text("Label") }) }
-                item { OutlinedTextField(d.id, { d = d.copy(id = it) }, label = { Text("Folder ID") }) }
-                item {
-                    OutlinedTextField(d.path, { d = d.copy(path = it) }, label = { Text("Path") })
-                    TextButton(onClick = pick) { Text("Choose directory") }
-                }
-                item { Text("Share with", style = MaterialTheme.typography.titleSmall) }
-                items(s.devices, key = { it.deviceID }) { dev ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = dev.deviceID in d.devices,
-                            onCheckedChange = { on -> d = d.copy(devices = if (on) d.devices + dev.deviceID else d.devices - dev.deviceID) },
-                        )
-                        Text(dev.name.ifEmpty { shortId(dev.deviceID) })
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(d) }, enabled = d.id.isNotBlank() && d.path.startsWith("/")) { Text("Add") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
-/** Upstream-style random ID: xxxxx-xxxxx. */
-private fun newFolderId(): String = UUID.randomUUID().toString().replace("-", "").take(10).chunked(5).joinToString("-")
