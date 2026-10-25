@@ -18,10 +18,11 @@ class ScanActivity : CaptureActivity() {
         val status = findViewById<View>(com.google.zxing.client.android.R.id.zxing_status_view) ?: return
         ViewCompat.setOnApplyWindowInsetsListener(status) { v, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val gap = (16 * resources.displayMetrics.density).toInt()
             v.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                leftMargin = bars.left
-                rightMargin = bars.right
-                bottomMargin = bars.bottom
+                leftMargin = bars.left + gap
+                rightMargin = bars.right + gap
+                bottomMargin = bars.bottom + gap
             }
             insets
         }
