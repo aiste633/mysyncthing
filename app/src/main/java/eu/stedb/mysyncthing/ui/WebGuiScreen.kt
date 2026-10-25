@@ -1,7 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
 import android.annotation.SuppressLint
+import android.graphics.Bitmap
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -35,14 +37,34 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
                     webViewClient = object : WebViewClient() {
+                        private var retries = 0
+                        private var failed = false
+
                         // Stay on the local GUI; never send credentials elsewhere.
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             val u = request.url
                             return "${u.scheme}://${u.authority}" != origin
                         }
 
+                        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+                            failed = false
+                        }
+
                         override fun onPageFinished(view: WebView, url: String) {
+                            if (!failed) retries = 0
                             if (url.startsWith("$origin/")) view.evaluateJavascript(HIDE_APP_MANAGED, null)
+                        }
+
+                        // Some settings (e.g. the theme) restart the GUI listener, and the page reloads
+                        // into that gap: retry for a while instead of staying on the error page.
+                        override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
+                            val u = request.url
+                            if (!request.isForMainFrame || "${u.scheme}://${u.authority}" != origin) return
+                            if (error.errorCode != ERROR_CONNECT) return
+                            failed = true
+                            if (retries++ < 30) view.postDelayed({
+                                if (view.isAttachedToWindow) view.loadUrl(u.toString(), mapOf("Authorization" to auth))
+                            }, 1_000)
                         }
 
                         // Unhandled, a renderer crash would kill the whole process, and the sync core with it.
