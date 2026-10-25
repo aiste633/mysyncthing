@@ -179,7 +179,8 @@ private fun DeviceDialog(initialId: String, initialName: String, onDismiss: () -
                     supportingText = { Text(if (initialId.isNotEmpty()) "Check it matches the other device" else "Scan its QR code or paste it") },
                     trailingIcon = {
                         if (initialId.isEmpty()) IconButton(onClick = {
-                            scan.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setBeepEnabled(false).setOrientationLocked(false))
+                            scan.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setBeepEnabled(false).setOrientationLocked(false)
+                                .setCaptureActivity(ScanActivity::class.java))
                         }) { Icon(Icons.Default.QrCodeScanner, "Scan QR code") }
                     },
                 )

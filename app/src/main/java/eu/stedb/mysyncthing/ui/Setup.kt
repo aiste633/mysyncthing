@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -87,7 +89,8 @@ fun SetupScreen(state: PermissionState) {
     // Surface sets the text colour for dark mode; there is no Scaffold here.
     Surface(Modifier.fillMaxSize(), color = AppColors.background) {
         Column(
-            Modifier.fillMaxSize().safeDrawingPadding().padding(24.dp),
+            // Scrolls so the last button stays reachable in landscape.
+            Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text("Set up", style = MaterialTheme.typography.headlineMedium)

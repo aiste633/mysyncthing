@@ -21,5 +21,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Follows the phone's rotation, unlike zxing's own landscape-only activity. -->
+        <activity
+            android:name=".ui.ScanActivity"
+            android:exported="false"
+            android:screenOrientation="fullUser"
+            android:stateNotNeeded="true"
+            android:theme="@style/zxing_CaptureTheme"
+            android:windowSoftInputMode="stateAlwaysHidden" />
     </application>
 </manifest>
