@@ -1,5 +1,6 @@
 package eu.stedb.mysyncthing.core
 
+import android.os.SystemClock
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -9,7 +10,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.decodeFromJsonElement
 
 /** Everything the screens, the notification and the widget show, refreshed from REST on relevant events. */
 data class Snapshot(
@@ -23,6 +26,7 @@ data class Snapshot(
     val completion: Map<String, Completion> = emptyMap(),
     val pendingDevices: Map<String, PendingDevice> = emptyMap(),
     val pendingFolders: Map<String, PendingFolder> = emptyMap(),
+    val systemErrors: List<SystemError> = emptyList(),
 )
 
 /**
@@ -34,6 +38,10 @@ object SyncStatus {
     private val _snapshot = MutableStateFlow(Snapshot())
     val snapshot: StateFlow<Snapshot> = _snapshot.asStateFlow()
 
+    /** Files being downloaded right now, by folder and file name; from the DownloadProgress event. */
+    private val _downloads = MutableStateFlow<Map<String, Map<String, FileProgress>>>(emptyMap())
+    val downloads: StateFlow<Map<String, Map<String, FileProgress>>> = _downloads.asStateFlow()
+
     private val _summary = MutableStateFlow(Summary(SyncState.Stopped, "Stopped"))
     val summary: StateFlow<Summary> = _summary.asStateFlow()
 
@@ -41,9 +49,20 @@ object SyncStatus {
         _summary.value = summary
     }
 
-    /** Refreshes once, then on every relevant event, at most once a second. Returns only when cancelled. */
+    /** Clears the core's notices; the snapshot follows at once instead of at the next check. */
+    suspend fun clearErrors(client: RestClient) {
+        client.clearErrors()
+        _snapshot.update { it.copy(systemErrors = emptyList()) }
+    }
+
+    /**
+     * Refreshes once, then on every relevant event, at most once a second. Returns only when cancelled.
+     * Notices have no event, so they are read again whenever the long-poll returns
+     * and [ERRORS_EVERY_MS] have passed: no extra wake-ups.
+     */
     internal suspend fun follow(client: RestClient) {
         var since = 0L
+        var errorsAt = SystemClock.elapsedRealtime()
         val refresh = Channel<Unit>(Channel.CONFLATED)
         try {
             coroutineScope {
@@ -59,6 +78,16 @@ object SyncStatus {
                         val events = client.events(since)
                         if (events.isNotEmpty()) since = events.last().id
                         if (events.any { it.type in REFRESH_EVENTS }) refresh.trySend(Unit)
+                        events.lastOrNull { it.type == "DownloadProgress" }?.let { e ->
+                            runCatching { _downloads.value = client.json.decodeFromJsonElement(e.data!!) }
+                        }
+                        if (SystemClock.elapsedRealtime() - errorsAt > ERRORS_EVERY_MS) {
+                            errorsAt = SystemClock.elapsedRealtime()
+                            // Not via the catch below: that would rewind the event cursor.
+                            runCatching { client.systemErrors() }.onSuccess { errors ->
+                                _snapshot.update { if (it.loaded) it.copy(systemErrors = errors) else it }
+                            }
+                        }
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Exception) {
@@ -71,8 +100,11 @@ object SyncStatus {
             }
         } finally {
             _snapshot.value = Snapshot()
+            _downloads.value = emptyMap()
         }
     }
+
+    private const val ERRORS_EVERY_MS = 30_000L
 
     private suspend fun load(c: RestClient): Snapshot = coroutineScope {
         val myId = async { c.status().myID }
@@ -81,6 +113,7 @@ object SyncStatus {
         val connections = async { c.connections().connections }
         val pendingDevices = async { c.pendingDevices() }
         val pendingFolders = async { c.pendingFolders() }
+        val errors = async { runCatching { c.systemErrors() }.getOrDefault(emptyList()) }
         val me = myId.await()
         val folderList = folders.await()
         val allDevices = devices.await()
@@ -98,6 +131,7 @@ object SyncStatus {
             completion = completion.awaitAll().toMap(),
             pendingDevices = pendingDevices.await(),
             pendingFolders = pendingFolders.await(),
+            systemErrors = errors.await(),
         )
     }
 }
@@ -131,9 +165,13 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean)
     }
     if (blockedBy != null) return Summary(SyncState.Paused, if (blockedBy == PAUSED_BY_USER) blockedBy else "Paused: $blockedBy")
     if (!online) return Summary(SyncState.Problem, "No network")
+    if (s.systemErrors.isNotEmpty()) {
+        val n = s.systemErrors.size
+        return Summary(SyncState.Problem, "$n ${plural(n, "problem")}", connected = s.connectedNames())
+    }
 
     val connected = s.devices.filter { s.connections[it.deviceID]?.connected == true }
-    val names = connected.map { it.name.ifEmpty { it.deviceID.substringBefore('-') } }
+    val names = s.connectedNames()
     fun result(state: SyncState, text: String, progress: Int? = null) = Summary(state, text, progress, names)
 
     val active = s.folders.filter { !it.paused }
@@ -173,6 +211,9 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean)
     }
     return result(SyncState.UpToDate, "Up to date")
 }
+
+private fun Snapshot.connectedNames() = devices.filter { connections[it.deviceID]?.connected == true }
+    .map { it.name.ifEmpty { it.deviceID.substringBefore('-') } }
 
 /** The notification line: state, then who it is connected to. */
 fun Summary.line(): String = when {

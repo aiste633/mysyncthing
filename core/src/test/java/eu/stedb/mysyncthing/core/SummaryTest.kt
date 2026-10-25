@@ -70,4 +70,11 @@ class SummaryTest {
         assertEquals(SyncState.Problem to "3 items failed to sync · server", line(snap(status = idle.copy(errors = 3))))
         assertEquals(SyncState.NeedsInput to "No devices added", line(snap(devices = emptyList())))
     }
+
+    @Test
+    fun coreNoticesAreProblemsUnlessPaused() {
+        val notices = snap().copy(systemErrors = listOf(SystemError("2026-10-25T12:03:00Z", "Listen (BEP/tcp): address already in use")))
+        assertEquals(SyncState.Problem to "1 problem · server", line(notices))
+        assertEquals(SyncState.Paused to "Paused: Not on Wi-Fi", line(notices, "Not on Wi-Fi"))
+    }
 }

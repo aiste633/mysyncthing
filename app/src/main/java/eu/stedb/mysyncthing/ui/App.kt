@@ -61,12 +61,17 @@ sealed interface LaunchTarget {
 
 private object Routes {
     const val FOLDER = "folder/{id}"
+    const val FOLDER_NEED = "folder/{id}/need"
+    const val FOLDER_FAILED = "folder/{id}/failed"
     const val DEVICE = "device/{id}"
+    const val DEVICE_NEEDS = "device/{id}/needs/{folder}"
+    const val THIS_PHONE = "this-phone"
     const val ADD_FOLDER = "add-folder?offer={offer}&from={from}"
     const val WEB_GUI = "webgui"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
     fun device(id: String) = "device/${Uri.encode(id)}"
+    fun deviceNeeds(id: String, folder: String) = "device/${Uri.encode(id)}/needs/${Uri.encode(folder)}"
     fun addFolder(offer: String? = null, from: String? = null) =
         "add-folder?offer=${Uri.encode(offer.orEmpty())}&from=${Uri.encode(from.orEmpty())}"
 }
@@ -142,6 +147,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     CoreGate(core) {
                         DevicesScreen(
                             snapshot, summary, vm, onOpen = { nav.navigate(Routes.device(it)) },
+                            onOpenThisPhone = { nav.navigate(Routes.THIS_PHONE) },
                             review = reviewDevice, onReviewShown = { reviewDevice = null },
                         )
                     }
@@ -150,10 +156,35 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     SettingsScreen(vm, snapshot, summary, core, permissions, onOpenWebGui = { nav.navigate(Routes.WEB_GUI) })
                 }
                 composable(Routes.FOLDER) { entry ->
-                    CoreGate(core) { FolderScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                    val id = entry.arguments?.getString("id").orEmpty()
+                    CoreGate(core) {
+                        FolderScreen(
+                            snapshot, id, vm, onBack = { nav.popBackStack() },
+                            onOpenNeed = { nav.navigate("${Routes.folder(id)}/need") },
+                            onOpenFailed = { nav.navigate("${Routes.folder(id)}/failed") },
+                        )
+                    }
+                }
+                composable(Routes.FOLDER_NEED) { entry ->
+                    CoreGate(core) { NeedScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                }
+                composable(Routes.FOLDER_FAILED) { entry ->
+                    CoreGate(core) { FailedScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
                 }
                 composable(Routes.DEVICE) { entry ->
-                    CoreGate(core) { DeviceScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                    val id = entry.arguments?.getString("id").orEmpty()
+                    CoreGate(core) {
+                        DeviceScreen(snapshot, id, vm, onBack = { nav.popBackStack() }, onOpenNeeds = { nav.navigate(Routes.deviceNeeds(id, it)) })
+                    }
+                }
+                composable(Routes.DEVICE_NEEDS) { entry ->
+                    val args = entry.arguments
+                    CoreGate(core) {
+                        RemoteNeedScreen(snapshot, args?.getString("id").orEmpty(), args?.getString("folder").orEmpty(), vm, onBack = { nav.popBackStack() })
+                    }
+                }
+                composable(Routes.THIS_PHONE) {
+                    CoreGate(core) { ThisPhoneScreen(snapshot, vm, onBack = { nav.popBackStack() }) }
                 }
                 composable(Routes.ADD_FOLDER) { entry ->
                     val offer = entry.arguments?.getString("offer")?.ifEmpty { null }

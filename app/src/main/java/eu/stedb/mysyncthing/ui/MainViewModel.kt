@@ -14,7 +14,21 @@ import eu.stedb.mysyncthing.core.Summary
 import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
 import eu.stedb.mysyncthing.core.Versioning
+import android.os.SystemClock
+import eu.stedb.mysyncthing.core.Completion
+import eu.stedb.mysyncthing.core.Connections
+import eu.stedb.mysyncthing.core.DeviceStats
+import eu.stedb.mysyncthing.core.FileEntry
+import eu.stedb.mysyncthing.core.FileProgress
+import eu.stedb.mysyncthing.core.FolderStats
+import eu.stedb.mysyncthing.core.NeedPage
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -66,6 +80,48 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun ignores(folder: String): List<String>? = runCatching { client?.ignores(folder) }.getOrNull()
     suspend fun folderErrors(folder: String): List<FileError> =
         runCatching { client?.folderErrors(folder)?.errors }.getOrNull().orEmpty()
+    suspend fun folderStats(folder: String): FolderStats? = runCatching { client?.folderStats()?.get(folder) }.getOrNull()
+    suspend fun deviceStats(device: String): DeviceStats? = runCatching { client?.deviceStats()?.get(device) }.getOrNull()
+    suspend fun need(folder: String, perPage: Int): NeedPage? = runCatching { client?.need(folder, 1, perPage) }.getOrNull()
+    suspend fun remoteNeed(folder: String, device: String, perPage: Int): List<FileEntry>? =
+        runCatching { client?.remoteNeed(folder, device, 1, perPage)?.files.orEmpty() }.getOrNull()
+
+    /** What [device] still needs from this phone, per folder, for the folders that need anything. */
+    suspend fun remoteCompletion(device: String, folders: List<String>): Map<String, Completion> = runCatching {
+        val c = client ?: return emptyMap()
+        coroutineScope {
+            folders.map { f -> async { f to c.completion(device, f) } }.awaitAll()
+                .filter { (_, comp) -> comp.needItems > 0 || comp.needBytes > 0 }.toMap()
+        }
+    }.getOrDefault(emptyMap())
+
+    val downloads: StateFlow<Map<String, Map<String, FileProgress>>> = SyncStatus.downloads
+
+    /**
+     * Speeds and listener/discovery health, polled every 2 s while a screen
+     * collects it: the core has no event for them. The first sample has no speeds.
+     */
+    fun liveStats(): Flow<LiveStats> = flow {
+        var prev: Pair<Long, Connections>? = null
+        while (true) {
+            val c = client
+            val sample = if (c == null) null else runCatching {
+                coroutineScope {
+                    val conns = async { c.connections() }
+                    c.status() to conns.await()
+                }
+            }.getOrNull()
+            if (sample != null) {
+                val (status, conns) = sample
+                val now = SystemClock.elapsedRealtime()
+                emit(LiveStats.of(status, conns, prev, now))
+                prev = now to conns
+            }
+            delay(2_000)
+        }
+    }
+
+    fun clearErrors() = act("Clear") { SyncStatus.clearErrors(this) }
 
     suspend fun usageConsent(): UsageConsent? = runCatching {
         val c = client ?: return null

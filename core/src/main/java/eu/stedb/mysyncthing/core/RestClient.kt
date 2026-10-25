@@ -41,7 +41,18 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun folders(): List<Folder> = get("rest/config/folders")
     suspend fun connections(): Connections = get("rest/system/connections")
     suspend fun folderStatus(folder: String): FolderStatus = get("rest/db/status", "folder" to folder)
-    suspend fun completion(device: String): Completion = get("rest/db/completion", "device" to device)
+    suspend fun completion(device: String, folder: String? = null): Completion =
+        get("rest/db/completion", *listOfNotNull("device" to device, folder?.let { "folder" to it }).toTypedArray())
+    suspend fun folderStats(): Map<String, FolderStats> = get("rest/stats/folder")
+    suspend fun deviceStats(): Map<String, DeviceStats> = get("rest/stats/device")
+    suspend fun systemErrors(): List<SystemError> = get<SystemErrors>("rest/system/error").errors.orEmpty()
+    suspend fun clearErrors() = send("POST", "rest/system/error/clear")
+
+    suspend fun need(folder: String, page: Int, perPage: Int): NeedPage =
+        get("rest/db/need", "folder" to folder, "page" to page.toString(), "perpage" to perPage.toString())
+
+    suspend fun remoteNeed(folder: String, device: String, page: Int, perPage: Int): RemoteNeedPage =
+        get("rest/db/remoteneed", "folder" to folder, "device" to device, "page" to page.toString(), "perpage" to perPage.toString())
     suspend fun pendingDevices(): Map<String, PendingDevice> = get("rest/cluster/pending/devices")
     suspend fun pendingFolders(): Map<String, PendingFolder> = get("rest/cluster/pending/folders")
 
