@@ -78,9 +78,11 @@ fun DevicesScreen(
                 }
                 if (s.loaded && s.devices.isEmpty() && s.pendingDevices.isEmpty()) {
                     item("empty") {
-                        EmptyState(
+                        // The list scrolls already, so the hint itself must not (EmptyState would crash here).
+                        EmptyHint(
                             Icons.Default.Devices, "No other devices yet",
                             "Tap Add device and scan the other device's QR code, or show it this phone's ID.",
+                            Modifier.padding(horizontal = 24.dp, vertical = 48.dp),
                         )
                     }
                 }

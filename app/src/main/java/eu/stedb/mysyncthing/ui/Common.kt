@@ -338,7 +338,20 @@ fun AddFab(label: String, onClick: () -> Unit) = ExtendedFloatingActionButton(on
 /** Shown instead of an empty list: what the list holds and how to fill it. */
 @Composable
 fun EmptyState(icon: ImageVector, title: String, hint: String) {
-    Centered {
+    Centered { EmptyHint(icon, title, hint) }
+}
+
+/**
+ * The empty-state hint without centring or scrolling, for a place that already scrolls,
+ * such as a lazy list item: [Centered] needs a bounded height, which a list item has not.
+ */
+@Composable
+fun EmptyHint(icon: ImageVector, title: String, hint: String, modifier: Modifier = Modifier) {
+    Column(
+        modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
         Icon(icon, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Text(title, style = MaterialTheme.typography.titleMedium)
         Text(
@@ -348,7 +361,7 @@ fun EmptyState(icon: ImageVector, title: String, hint: String) {
     }
 }
 
-/** Centred in the space; scrolls when that is too short, as in landscape. */
+/** Centred in the space; scrolls when that is too short, as in landscape. Needs a bounded height. */
 @Composable
 private fun Centered(content: @Composable () -> Unit) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
