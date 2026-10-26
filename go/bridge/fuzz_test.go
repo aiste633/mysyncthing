@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -178,17 +179,22 @@ func FuzzRESTConfig(f *testing.F) {
 		default:
 			return
 		}
-		do(t, method, path, body, true)
+		// The fuzzer counts an input running past 10 s as a hang and kills the
+		// worker without a message, so everything here fits in 8 s.
+		start := time.Now()
+		sent := do(t, method, path, body, true)
+		took := time.Since(start)
 		// A GUI change restarts the listener; wait until it answers again.
 		var code int
 		var in bool
-		for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+		for deadline := start.Add(6 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
 			if code, in = basicAuth(t, fuzzUser, fuzzPassword); code != 0 {
 				break
 			}
 		}
 		if code != http.StatusOK || !in {
-			t.Fatalf("%s %s %q: app login refused (HTTP %d)", method, path, body, code)
+			t.Fatalf("%s %s %q: app login refused (HTTP %d; the change answered %d after %v, login tried until %v)%s",
+				method, path, body, code, sent, took, time.Since(start), stacks())
 		}
 		if _, in := basicAuth(t, fuzzUser, "wrong"); in {
 			t.Fatalf("%s %s %q: wrong password let in", method, path, body)
@@ -215,7 +221,7 @@ func t0Home(tb testing.TB) string {
 func mustGet(tb testing.TB, path string) []byte {
 	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+path, nil)
 	req.Header.Set("X-API-Key", fuzzAPIKey)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		tb.Fatal(err)
 	}
@@ -233,7 +239,7 @@ func do(t *testing.T, method, path string, body []byte, auth bool) int {
 	if auth {
 		req.Header.Set("X-API-Key", fuzzAPIKey)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return 0
 	}
@@ -247,7 +253,7 @@ func do(t *testing.T, method, path string, body []byte, auth bool) int {
 func basicAuth(t *testing.T, user, password string) (int, bool) {
 	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/", nil)
 	req.SetBasicAuth(user, password)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return 0, false
 	}
@@ -287,4 +293,21 @@ func FuzzCheckIgnores(f *testing.F) {
 			t.Fatalf("accepted %q, but the folder fails on it: %v", patterns, err)
 		}
 	})
+}
+
+// client gives up on a GUI that stops answering, so a hang is reported as a
+// failure with its input instead of killing the fuzz worker.
+var client = &http.Client{Timeout: 2 * time.Second}
+
+// stacks writes every goroutine's stack to a file, for a stall, and names it.
+func stacks() string {
+	buf := make([]byte, 1<<24)
+	buf = buf[:runtime.Stack(buf, true)]
+	f, err := os.CreateTemp("", "fuzzrest-stall-*.txt")
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	_, _ = f.Write(buf)
+	return "; goroutines in " + f.Name()
 }
