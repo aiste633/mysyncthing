@@ -186,7 +186,7 @@ data class FileError(val path: String = "", val error: String = "")
 data class FolderErrors(val errors: List<FileError>? = null)
 
 @Serializable
-data class Ignores(val ignore: List<String>? = null)
+data class Ignores(val ignore: List<String>? = null, val error: String? = null)
 
 @Serializable
 data class FolderStatus(

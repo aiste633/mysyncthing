@@ -205,15 +205,10 @@ internal fun addressesText(a: List<String>): String = when {
     else -> a.joinToString(", ") { if (it == "dynamic") "automatic" else it }
 }
 
-/** TCP, QUIC and relay addresses; a bare host:port is taken as TCP. */
-private val ADDRESS = Regex("^(tcp[46]?|quic[46]?|relay)" + "://\\S+$")
-
-private fun normalizeAddress(a: String): String = a.trim().let { if ("://" in it || it.isEmpty()) it else "tcp://${it}" }
-
 /** "Find automatically" plus fixed addresses Syncthing tries first. */
 @Composable
 internal fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) = ListEditDialog(
     "Addresses", initial, token = "dynamic", tokenTitle = "Find automatically", tokenHint = "Through local and global discovery",
-    addHint = "For example tcp://192.0.2.10:22000 or a VPN address", valid = ADDRESS::matches, normalize = ::normalizeAddress,
+    addHint = "For example tcp://192.0.2.10:22000 or a VPN address", valid = ::isDeviceAddress, normalize = ::normalizeAddress,
     onDismiss = onDismiss, onSave = onSave,
 )

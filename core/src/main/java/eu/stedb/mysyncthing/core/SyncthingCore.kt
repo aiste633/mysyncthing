@@ -31,6 +31,10 @@ object SyncthingCore {
 
     val version: String get() = Stbridge.version()
 
+    /** Why the core would fail on these ignore patterns, or null; [folderPath] "" for the defaults (go/bridge CheckIgnores). */
+    fun checkIgnores(folderPath: String, lines: List<String>): String? =
+        Stbridge.checkIgnores(folderPath, lines.joinToString("\n")).ifEmpty { null }
+
     internal suspend fun start(home: File, credentials: Credentials) = withContext(serial) {
         if (Stbridge.isRunning()) return@withContext
         _state.value = CoreState.Starting

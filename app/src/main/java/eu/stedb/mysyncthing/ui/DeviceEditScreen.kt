@@ -50,9 +50,9 @@ fun DeviceEditScreen(
     var share by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val isRequest = initialId.isNotEmpty()
     val scan = rememberLauncherForActivityResult(ScanContract()) { r -> r.contents?.let { id = it.trim() } }
-    val canonical = id.trim().uppercase().replace("-", "")
-    val known = s.devices.any { it.deviceID.replace("-", "") == canonical } || s.myId.replace("-", "") == canonical
-    val valid = DEVICE_ID.matches(id.trim()) && !known
+    val canonical = deviceId(id)
+    val known = canonical != null && (s.devices.any { it.deviceID == canonical } || s.myId == canonical)
+    val valid = canonical != null && !known
 
     // Local discovery announces every 30 s, so a slow refresh is enough.
     var nearby by remember { mutableStateOf<Map<String, Discovered>>(emptyMap()) }
@@ -71,7 +71,7 @@ fun DeviceEditScreen(
         title = if (isRequest) "Add \"${initialName.ifEmpty { shortId(initialId) }}\"" else "Add device",
         onBack = back,
         actions = {
-            TextButton(enabled = valid, onClick = { onSave(id, name, s.folders.filter { it.id in share }) }) { Text("Save") }
+            TextButton(enabled = valid, onClick = { onSave(canonical!!, name, s.folders.filter { it.id in share }) }) { Text("Save") }
         },
     ) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
@@ -90,7 +90,7 @@ fun DeviceEditScreen(
                             Text(
                                 when {
                                     known -> "Already added"
-                                    id.isNotBlank() && !valid -> "Not a device ID: 8 groups of 7 letters and digits"
+                                    id.isNotBlank() && !valid -> "Not a device ID. Check every character against the other device."
                                     isRequest -> "Check it matches the other device"
                                     else -> "Scan its QR code, paste it, or pick a nearby device"
                                 },
@@ -131,6 +131,3 @@ fun DeviceEditScreen(
         }
     }
 }
-
-/** 8 groups of 7 base32 chars, dashes optional (Syncthing accepts both). */
-private val DEVICE_ID = Regex("^[A-Za-z2-7]{7}(-?[A-Za-z2-7]{7}){7}$")
