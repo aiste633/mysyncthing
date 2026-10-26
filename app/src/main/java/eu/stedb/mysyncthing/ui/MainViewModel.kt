@@ -20,6 +20,7 @@ import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.DeviceStats
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.IgnoredRequests
+import eu.stedb.mysyncthing.core.Options
 import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.FileEntry
 import eu.stedb.mysyncthing.core.FileProgress
@@ -161,6 +162,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setDeviceSendLimit(id: String, kib: Int) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
     fun setCompression(id: String, c: String) = patchDevice(id, "Compression") { put("compression", c) }
     fun setNumConnections(id: String, n: Int) = patchDevice(id, "Connections") { put("numConnections", n) }
+
+    suspend fun options(): Options? = runCatching { client?.options() }.getOrNull()
+    suspend fun restartRequired(): Boolean = runCatching { client?.restartRequired() }.getOrNull() == true
+
+    /** Changes Syncthing's global options; false when it failed (the reason goes to the snackbar). */
+    suspend fun patchOptions(label: String, fields: JsonObjectBuilder.() -> Unit): Boolean {
+        val c = client ?: return false
+        return runCatching { c.patchOptions(buildJsonObject(fields)) }
+            .onFailure { _message.send("$label failed: ${it.message}") }.isSuccess
+    }
+
+    fun restartCore() = act("Restart", done = "Restarting Syncthing") { restart() }
 
     suspend fun discovery(): Map<String, Discovered> = runCatching { client?.discovery() }.getOrNull().orEmpty()
     suspend fun ignoredRequests(): IgnoredRequests? = runCatching { client?.ignoredRequests() }.getOrNull()

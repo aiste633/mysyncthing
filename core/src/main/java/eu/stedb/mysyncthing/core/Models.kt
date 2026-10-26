@@ -60,7 +60,23 @@ data class SystemErrors(val errors: List<SystemError>? = null)
 
 /** Usage-reporting consent, as upstream stores it: urAccepted 0 = not asked, -1 = declined, >0 = accepted version. */
 @Serializable
-data class Options(val urAccepted: Int = 0, val urSeen: Int = 0)
+data class Options(
+    val urAccepted: Int = 0,
+    val urSeen: Int = 0,
+    /** KiB/s, 0 for no limit. */
+    val maxRecvKbps: Int = 0,
+    val maxSendKbps: Int = 0,
+    val limitBandwidthInLan: Boolean = false,
+    val localAnnounceEnabled: Boolean = true,
+    val globalAnnounceEnabled: Boolean = true,
+    val relaysEnabled: Boolean = true,
+    val natEnabled: Boolean = true,
+    val listenAddresses: List<String> = listOf("default"),
+    val globalAnnounceServers: List<String> = listOf("default"),
+)
+
+@Serializable
+data class RestartRequired(val requiresRestart: Boolean = false)
 
 @Serializable
 data class Device(

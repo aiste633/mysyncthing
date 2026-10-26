@@ -9,24 +9,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +31,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.core.Completion
@@ -204,49 +194,8 @@ private fun normalizeAddress(a: String): String = a.trim().let { if ("://" in it
 
 /** "Find automatically" plus fixed addresses Syncthing tries first. */
 @Composable
-private fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) {
-    var dynamic by rememberSaveable { mutableStateOf(initial.isEmpty() || "dynamic" in initial) }
-    var fixed by rememberSaveable { mutableStateOf(initial.filter { it != "dynamic" }) }
-    var draft by rememberSaveable { mutableStateOf("") }
-    val next = normalizeAddress(draft)
-    val draftValid = ADDRESS.matches(next)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Addresses") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().toggleable(dynamic, role = Role.Checkbox) { dynamic = it },
-                ) {
-                    Checkbox(dynamic, onCheckedChange = null)
-                    Column(Modifier.weight(1f)) {
-                        Text("Find automatically", style = MaterialTheme.typography.bodyLarge)
-                        Text("Through local and global discovery", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                fixed.forEach { a ->
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Text(a, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                        IconButton(onClick = { fixed = fixed - a }) { Icon(Icons.Default.Close, "Remove $a") }
-                    }
-                }
-                OutlinedTextField(
-                    draft, { draft = it }, label = { Text("Add address") }, singleLine = true,
-                    isError = draft.isNotBlank() && !draftValid,
-                    supportingText = { Text("For example tcp://192.0.2.10:22000 or a VPN address") },
-                    trailingIcon = {
-                        IconButton(enabled = draftValid, onClick = { fixed = (fixed + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, "Add") }
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        },
-        confirmButton = {
-            // A typed but not yet added address counts too, so it is not lost.
-            val all = (if (dynamic) listOf("dynamic") else emptyList()) + (fixed + listOfNotNull(next.takeIf { draftValid })).distinct()
-            TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text("Save") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
+private fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) = ListEditDialog(
+    "Addresses", initial, token = "dynamic", tokenTitle = "Find automatically", tokenHint = "Through local and global discovery",
+    addHint = "For example tcp://192.0.2.10:22000 or a VPN address", valid = ADDRESS::matches, normalize = ::normalizeAddress,
+    onDismiss = onDismiss, onSave = onSave,
+)

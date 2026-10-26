@@ -34,14 +34,18 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassTop
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -443,6 +447,68 @@ fun SpeedLimitDialog(title: String, kib: Int, onDismiss: () -> Unit, onSave: (In
             }
         },
         confirmButton = { TextButton(onClick = { onSave(limitKib(v!!, unit)) }, enabled = valid) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
+
+/**
+ * A list setting where one [token] ("dynamic", "default") stands for
+ * Syncthing's automatic choice, shown as a checkbox, plus entries of the
+ * user's own. Saving needs at least one of them.
+ */
+@Composable
+fun ListEditDialog(
+    title: String,
+    initial: List<String>,
+    token: String,
+    tokenTitle: String,
+    tokenHint: String,
+    addHint: String,
+    valid: (String) -> Boolean,
+    normalize: (String) -> String = { it.trim() },
+    onDismiss: () -> Unit,
+    onSave: (List<String>) -> Unit,
+) {
+    var auto by rememberSaveable { mutableStateOf(initial.isEmpty() || token in initial) }
+    var own by rememberSaveable { mutableStateOf(initial.filter { it != token }) }
+    var draft by rememberSaveable { mutableStateOf("") }
+    val next = normalize(draft)
+    val draftValid = valid(next)
+    // A typed but not yet added entry counts too, so it is not lost.
+    val all = (if (auto) listOf(token) else emptyList()) + (own + listOfNotNull(next.takeIf { draftValid })).distinct()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth().toggleable(auto, role = Role.Checkbox) { auto = it },
+                ) {
+                    Checkbox(auto, onCheckedChange = null)
+                    Column(Modifier.weight(1f)) {
+                        Text(tokenTitle, style = MaterialTheme.typography.bodyLarge)
+                        Text(tokenHint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+                own.forEach { a ->
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                        Text(a, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                        IconButton(onClick = { own = own - a }) { Icon(Icons.Default.Close, "Remove $a") }
+                    }
+                }
+                OutlinedTextField(
+                    draft, { draft = it }, label = { Text("Add") }, singleLine = true,
+                    isError = draft.isNotBlank() && !draftValid,
+                    supportingText = { Text(addHint) },
+                    trailingIcon = {
+                        IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, "Add") }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
