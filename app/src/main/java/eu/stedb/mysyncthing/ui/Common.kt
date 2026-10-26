@@ -3,6 +3,7 @@
 package eu.stedb.mysyncthing.ui
 
 import android.animation.ValueAnimator
+import androidx.activity.compose.BackHandler
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -123,11 +124,15 @@ fun BusyIndicator() {
     else Icon(Icons.Default.HourglassTop, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
 }
 
-/** A screen with a top bar on the app's tinted background. [onBack] adds a back arrow. */
+/**
+ * A screen with a top bar on the app's tinted background. [onBack] adds a back
+ * arrow; [status] adds the status chip after the title.
+ */
 @Composable
 fun AppScreen(
     title: String,
     onBack: (() -> Unit)? = null,
+    status: Summary? = null,
     actions: @Composable () -> Unit = {},
     fab: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -138,7 +143,15 @@ fun AppScreen(
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
-                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    if (status == null) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // In the title slot, not the actions: the bar sizes actions first, so a long
+                    // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
+                    else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        StatusChip(status, Modifier.weight(1f, fill = false).padding(start = 12.dp))
+                    }
+                },
                 navigationIcon = {
                     if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
@@ -171,7 +184,7 @@ fun ProgressBar(progress: Float, color: Color, modifier: Modifier = Modifier) {
 fun StatusChip(summary: Summary, modifier: Modifier = Modifier) {
     val look = summary.state.look()
     Surface(
-        modifier = modifier.padding(end = 8.dp),
+        modifier = modifier.padding(end = 4.dp),
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
@@ -179,8 +192,7 @@ fun StatusChip(summary: Summary, modifier: Modifier = Modifier) {
             Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
             Spacer(Modifier.width(6.dp))
             Text(
-                summary.text, style = MaterialTheme.typography.labelLarge, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 180.dp),
+                summary.text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -424,6 +436,23 @@ fun TextDialog(
         confirmButton = { TextButton(onClick = { onSave(text) }, enabled = problem == null) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/**
+ * Back (system or arrow) that asks before dropping a form the user [changed].
+ * Returns the action for the top bar's arrow.
+ */
+@Composable
+fun rememberDiscardGuard(changed: Boolean, onBack: () -> Unit): () -> Unit {
+    var asking by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = changed) { asking = true }
+    if (asking) {
+        ConfirmDialog("Discard changes?", "What you entered here is lost.", "Discard", onDismiss = { asking = false }) {
+            asking = false
+            onBack()
+        }
+    }
+    return { if (changed) asking = true else onBack() }
 }
 
 @Composable

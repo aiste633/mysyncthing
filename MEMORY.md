@@ -98,6 +98,11 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - An offer of a folder this phone already has (the core lists it as pending when not shared with that device) shows Share instead of Review.
 - Sync service notification: Android raises a foreground service's MIN channel to LOW, so it always shows in the shade. It has a lock-screen public version without device or folder names (`Summary.publicText`), and its own group (`service`) so Android's automatic group of the other notifications doesn't get an ongoing, unswipeable summary. Setup says how to hide it.
 - Wi-Fi only: new installs start with "Sync only on Wi-Fi" on and setup asks ("Sync on mobile data"); installs set up earlier keep "any network" (`wifiOnly` defaults to `SETUP_DONE != true`, frozen when setup finishes).
+- Lock screen: the status notification follows Android's setting (user's choice 2026-10-26): "show all content" shows device names, "hide sensitive" shows the public version.
+- Top-level screens pass `status = summary` to `AppScreen`: the chip sits in the title slot and takes only the width the title leaves (in the actions it cut the title to "Folde…").
+- Folders list scrolls to the top when a problem or request card is added while at the top (LazyColumn keeps the first visible item anchored, so the card landed off screen).
+- Request notification titles lead with the folder name (`"<label>" shared with you`); text in BigText.
+- Add folder and Add device ask "Discard changes?" on Back once edited (`rememberDiscardGuard`).
 - Add folder type is an inline radio list with hints. Numbers keep a space before % (SI style, user confirmed).
 
 ## Working rules

@@ -65,9 +65,11 @@ fun DeviceEditScreen(
     val added = remember(s.devices, s.myId) { (s.devices.map { it.deviceID } + s.myId).toSet() }
     val candidates = nearby.filterKeys { it !in added }
 
+    val back = rememberDiscardGuard(id != initialId || name != initialName || share.isNotEmpty(), onBack)
+
     AppScreen(
         title = if (isRequest) "Add \"${initialName.ifEmpty { shortId(initialId) }}\"" else "Add device",
-        onBack = onBack,
+        onBack = back,
         actions = {
             TextButton(enabled = valid, onClick = { onSave(id, name, s.folders.filter { it.id in share }) }) { Text("Save") }
         },

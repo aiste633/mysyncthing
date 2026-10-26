@@ -23,8 +23,10 @@ fun Snapshot.requests(): List<Request> {
     val forFolders = pendingFolders.flatMap { (folder, p) ->
         p.offeredBy.map { (device, offer) ->
             val have = folders.any { it.id == folder }
-            Request("folder:$folder:$device", "${name(device)} shares \"${offer.label.ifEmpty { folder }}\"",
-                if (have) "You already have this folder. Tap Review to share it." else "Tap Review to choose where to keep it", folder, device)
+            // The folder name leads: a heads-up shows one line of title and cut "<device> shares "…" before it.
+            Request("folder:$folder:$device", "\"${offer.label.ifEmpty { folder }}\" shared with you",
+                "From ${name(device)}. " + if (have) "You already have this folder; tap Review to share it." else "Tap Review to choose where to keep it.",
+                folder, device)
         }
     }
     return forDevices + forFolders
@@ -74,6 +76,7 @@ object RequestNotifications {
         .setSmallIcon(R.drawable.widget_ic_input)
         .setContentTitle(r.title)
         .setContentText(r.text)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(r.text))
         .setContentIntent(review(context, r))
         .addAction(0, "Review", review(context, r))
         .addAction(0, "Ignore", ignore(context, r))

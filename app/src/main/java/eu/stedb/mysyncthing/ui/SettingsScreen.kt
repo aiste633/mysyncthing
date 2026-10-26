@@ -92,7 +92,7 @@ fun SettingsScreen(
         Unit
     }
 
-    AppScreen(title = "Settings", actions = { StatusChip(summary) }) { padding ->
+    AppScreen(title = "Settings", status = summary) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             if (restartNeeded && running) {
                 ListCard {

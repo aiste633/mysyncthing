@@ -87,9 +87,11 @@ fun FolderEditScreen(
     val idError = folderIdError(d.id, s.folders.map { it.id })
     val valid = pathError == null && idError == null
 
+    val back = rememberDiscardGuard(d != initial, onBack)
+
     AppScreen(
         title = if (isOffer) "Add \"${initial.label}\"" else "Add folder",
-        onBack = onBack,
+        onBack = back,
         actions = { TextButton(onClick = { onSave(d) }, enabled = valid) { Text("Save") } },
     ) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {

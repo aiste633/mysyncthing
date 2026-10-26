@@ -56,7 +56,7 @@ fun DevicesScreen(
     val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
     AppScreen(
         title = "Devices",
-        actions = { StatusChip(summary) },
+        status = summary,
         fab = {
             AddFab("Add device") { onAdd("", "") }
         },

@@ -27,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -51,8 +52,8 @@ fun FoldersScreen(
 ) {
     AppScreen(
         title = "Folders",
+        status = summary,
         actions = {
-            StatusChip(summary)
             var menu by remember { mutableStateOf(false) }
             IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
             DropdownMenu(menu, onDismissRequest = { menu = false }) {
@@ -73,9 +74,15 @@ fun FoldersScreen(
                 )
             }
             val list = rememberLazyListState()
-            // A new problem card goes above the first item; at the top of the list, keep it in view.
-            val hasProblems = s.systemErrors.isNotEmpty()
-            LaunchedEffect(hasProblems) { if (hasProblems && list.firstVisibleItemIndex <= 1) list.scrollToItem(0) }
+            // Problem and request cards go above the folders. The list keeps its first visible
+            // item in place, so at the top a new card would land just above the screen: scroll to it.
+            val topCards = (if (s.systemErrors.isNotEmpty()) 1 else 0) + s.pendingFolders.values.sumOf { it.offeredBy.size }
+            var shownTop by remember { mutableIntStateOf(topCards) }
+            LaunchedEffect(topCards) {
+                val added = topCards - shownTop
+                shownTop = topCards
+                if (added > 0 && list.firstVisibleItemIndex <= added) list.scrollToItem(0)
+            }
             LazyColumn(state = list, contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp)) {
                 if (s.systemErrors.isNotEmpty()) item("problems") { ProblemsCard(s.systemErrors, onClear = vm::clearErrors) }
                 s.pendingFolders.forEach { (id, pending) ->

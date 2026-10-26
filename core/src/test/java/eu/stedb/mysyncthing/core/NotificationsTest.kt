@@ -31,8 +31,11 @@ class NotificationsTest {
         )
         val s = Snapshot(loaded = true, devices = listOf(laptop), folders = listOf(photos), pendingFolders = offers)
         assertEquals(
-            listOf("You already have this folder. Tap Review to share it.", "Tap Review to choose where to keep it"),
-            s.requests().map { it.text },
+            listOf(
+                "\"Photos\" shared with you" to "From laptop. You already have this folder; tap Review to share it.",
+                "\"New\" shared with you" to "From laptop. Tap Review to choose where to keep it.",
+            ),
+            s.requests().map { it.title to it.text },
         )
     }
 }
