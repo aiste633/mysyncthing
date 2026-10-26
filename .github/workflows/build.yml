@@ -27,7 +27,7 @@ jobs:
       - name: Android SDK platform and NDK
         run: |
           ndk="$(sed -n 's/^mysyncthing\.ndkVersion=//p' gradle.properties)"
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "ndk;$ndk" > /dev/null
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0" "ndk;$ndk" > /dev/null
       - uses: gradle/actions/setup-gradle@v5
       - name: Patch the core
         run: go/patch.sh

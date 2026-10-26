@@ -16,18 +16,17 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 ## State
 - 2026-10-24: scaffold written. The Go bridge builds and its test passes on the host (start/stop/restart in one process, REST auth checked). It cross-compiles for android/arm64.
 - 2026-10-24 17:55: CI green (run 6): AAR, debug APK, unit tests, lint. The APK has never been run on a device.
-- The first session had no access to dl.google.com, so Android builds are verified only in GitHub Actions.
-- Versions of Google-hosted artifacts in `gradle/libs.versions.toml` (AGP 8.13.0, Compose BOM 2025.08.00, androidx) were picked blind. Bump them to current stable on the first build that can reach Google Maven.
+- 2026-10-26: Google-hosted versions bumped to current stable (they had been picked blind without Google Maven access): AGP 9.4.1 with built-in Kotlin, Gradle 9.8.2, Compose BOM 2026.09.00, androidx, OkHttp 5.5.1. Fixes R8 being too old for Kotlin 2.4 (Kotlin 2.4 needs R8 9.1.29+; AGP 8.13 bundled R8 8.13).
 - 2026-10-24 23:20: reproducible builds (branch `claude/project-thread-yav31b`). Two local Go AAR builds from different checkout paths are byte-identical. CI twin build, F-Droid image build and the release workflow are written; see README "Reproducible builds and releases".
 
 ## Next
-1. Bump Google-hosted versions to current stable (AGP 9 / compileSdk 37 would allow OkHttp 5).
-2. Test on a device: start at boot, run conditions, QR pairing, folder accept.
-3. Notifications for pending devices/folders; folder detail screen (ignores, versioning); per-folder sharing edit.
-4. First release: create the release key (`scripts/sign-release.sh` header), tag, sign, fill `AllowedAPKSigningKeys` in `fdroid/eu.stedb.mysyncthing.yml`, then submit to fdroiddata (user does this once the app is usable).
+1. Test on a device: start at boot, run conditions, QR pairing, folder accept.
+2. Notifications for pending devices/folders; folder detail screen (ignores, versioning); per-folder sharing edit.
+3. First release: create the release key (`scripts/sign-release.sh` header), tag, sign, fill `AllowedAPKSigningKeys` in `fdroid/eu.stedb.mysyncthing.yml`, then submit to fdroiddata (user does this once the app is usable).
 
 ## Pins
 - NDK `mysyncthing.ndkVersion` in `gradle.properties` (r30, 30.0.16248370). `go/build.sh` refuses any other NDK. Also update `ndk:` in `fdroid/eu.stedb.mysyncthing.yml`.
+- compileSdk 37 (Compose 1.12 and Navigation 2.10 require it); targetSdk stays 36. Kotlin 2.4 needs R8 9.1.29+, so keep AGP and Kotlin in step (developer.android.com/build/kotlin-support).
 - Release APK is arm64-v8a only (`abiFilters` in release); `vcsInfo` off. Signing happens on the user's PC only, never in CI.
 - gomobile embeds absolute module paths in the .so build info; `go/build.sh` builds via the symlink `/tmp/mysyncthing-go` so they match everywhere. Do not remove.
 - Any dependency/plugin bump: regenerate `gradle/verification-metadata.xml` (command in README).
@@ -37,7 +36,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 
 ## Emulator test results (2026-10-24/25, API 35 and 36 AOSP x86_64 images)
-- Local build: JDK 21 required (Gradle 8.14 cannot run on JDK 25). Debug build, `go test`, unit tests and lint pass; debug APK ~130 MB.
+- Local build: JDK 21 (Gradle 8.14 could not run on JDK 25; recheck with Gradle 9). Debug build, `go test`, unit tests and lint pass; debug APK ~130 MB.
 - Works on both API levels: setup screen, All files access, core start, `specialUse` FGS, web GUI auto-login, SAF folder picker to POSIX path, pending device/folder cards, receiving a multi-GB share, two-way create/edit/delete, remote delete, Trash Can versioning, conflict copies, start at boot, app update (`MY_PACKAGE_REPLACED`; ID, keys, folders kept), swipe-away, forced deep doze without battery exemption, kill -9 mid-transfer (START_STICKY restart, transfer resumes), all four run conditions incl. rapid flapping, user-paused device kept paused.
 - Network: Wi-Fi to mobile and airplane on/off reconnect in ~20 s; with 300-600 ms emulated latency reconnect took ~5 min (check on a real phone). Emulator NAT blocks LAN discovery.
 - Polish found: web GUI shows usage-reporting prompt; WebView top bar gap; empty folder list has no hint; accept-folder dialog has no default path and no folder type; no native way to add sharing to an existing folder or set versioning; device name is "localhost"; notification says "Syncing" when paused by user, offline, or no device connected; FGS notification not shown after notification permission is granted until its next update.
