@@ -27,6 +27,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -237,7 +238,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         val defaults by produceState<Folder?>(null) { value = vm.defaultFolder() ?: Folder() }
                         val base = defaults
                         if (snapshot.loaded && base != null) {
-                            val initial = remember(offer, from) { draftFor(snapshot, offer, from, base) }
+                            // Saved, so a recreated screen keeps the same new folder ID and the form still counts as unchanged.
+                            val initial = rememberSaveable(offer, from, saver = draftSaver) { draftFor(snapshot, offer, from, base) }
                             FolderEditScreen(snapshot, initial, from, pathBase(base), onBack = { nav.popBackStack() }) {
                                 vm.addFolder(it, paused = it.ignoresFirst)
                                 if (it.ignoresFirst) {
