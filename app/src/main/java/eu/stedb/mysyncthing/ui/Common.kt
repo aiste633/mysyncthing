@@ -433,7 +433,7 @@ fun TextDialog(
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
-    var text by remember { mutableStateOf(initial) }
+    var text by rememberSaveable { mutableStateOf(initial) }
     val problem = error(text)
     AlertDialog(
         onDismissRequest = onDismiss,

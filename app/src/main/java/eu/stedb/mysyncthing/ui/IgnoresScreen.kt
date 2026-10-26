@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -49,7 +50,8 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
     var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
     var original by rememberSaveable { mutableStateOf("") }
     var loaded by rememberSaveable { mutableStateOf(false) }
-    var saving by rememberSaveable { mutableStateOf(false) }
+    // Not saved: a recreated screen is no longer waiting for the save, which still finishes in the ViewModel.
+    var saving by remember { mutableStateOf(false) }
     var help by rememberSaveable { mutableStateOf(false) }
     var leaving by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()

@@ -91,6 +91,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /**
+     * Runs a write that a screen waits for in the ViewModel's scope, so leaving the
+     * screen (Back, another tab, rotation) stops only the waiting: a restore is
+     * still dated and rescanned, and a save still completes and reports.
+     */
+    private suspend fun <T> write(block: suspend () -> T): T = viewModelScope.async { block() }.await()
+
     /** One-off reads for detail screens; null when the core is not running or the call fails. */
     suspend fun ignores(folder: String): List<String>? = runCatching { client?.ignores(folder) }.getOrNull()
     suspend fun folderErrors(folder: String): List<FileError> =
@@ -190,8 +197,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun versions(folder: String): Map<String, List<FileVersion>>? = runCatching { client?.versions(folder) }.getOrNull()
 
     /** Restores files to the given version times; false when anything failed (the reason goes to the snackbar). */
-    suspend fun restoreVersions(folder: String, versions: Map<String, String>): Boolean {
-        val c = client ?: return false
+    suspend fun restoreVersions(folder: String, versions: Map<String, String>): Boolean = write {
+        val c = client ?: return@write false
         val result = runCatching {
             val f = c.folders().first { it.id == folder }
             c.restoreDatedNow(f, versions)
@@ -208,7 +215,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             )
             else -> _message.send(if (versions.size == 1) "Restored" else "Restored ${count(versions.size, "file")}")
         }
-        return errors.isEmpty()
+        errors.isEmpty()
     }
 
     suspend fun defaultFolder(): Folder? = runCatching { client?.defaultFolder() }.getOrNull()
@@ -216,16 +223,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun defaultIgnores(): List<String>? = runCatching { client?.defaultIgnores() }.getOrNull()
 
     /** Changes the defaults for new folders or devices; false when it failed. */
-    suspend fun patchDefaults(device: Boolean, label: String, fields: JsonObjectBuilder.() -> Unit): Boolean {
-        val c = client ?: return false
+    suspend fun patchDefaults(device: Boolean, label: String, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
+        val c = client ?: return@write false
         val body = buildJsonObject(fields)
-        return runCatching { if (device) c.patchDefaultDevice(body) else c.patchDefaultFolder(body) }
+        runCatching { if (device) c.patchDefaultDevice(body) else c.patchDefaultFolder(body) }
             .onFailure { _message.send("$label failed: ${it.message}") }.isSuccess
     }
 
-    suspend fun saveDefaultIgnores(lines: List<String>): Boolean {
-        val c = client ?: return false
-        return runCatching { c.setDefaultIgnores(lines) }
+    suspend fun saveDefaultIgnores(lines: List<String>): Boolean = write {
+        val c = client ?: return@write false
+        runCatching { c.setDefaultIgnores(lines) }
             .onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
     }
 
@@ -233,9 +240,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun restartRequired(): Boolean = runCatching { client?.restartRequired() }.getOrNull() == true
 
     /** Changes Syncthing's global options; false when it failed (the reason goes to the snackbar). */
-    suspend fun patchOptions(label: String, fields: JsonObjectBuilder.() -> Unit): Boolean {
-        val c = client ?: return false
-        return runCatching { c.patchOptions(buildJsonObject(fields)) }
+    suspend fun patchOptions(label: String, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
+        val c = client ?: return@write false
+        runCatching { c.patchOptions(buildJsonObject(fields)) }
             .onFailure { _message.send("$label failed: ${it.message}") }.isSuccess
     }
 
@@ -245,9 +252,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun ignoredRequests(): IgnoredRequests? = runCatching { client?.ignoredRequests() }.getOrNull()
 
     /** Undoes an Ignore; false when it failed (the reason goes to the snackbar). */
-    suspend fun unignore(device: String, folder: String? = null): Boolean {
-        val c = client ?: return false
-        return runCatching { if (folder == null) c.unignoreDevice(device) else c.unignoreFolder(folder, device) }
+    suspend fun unignore(device: String, folder: String? = null): Boolean = write {
+        val c = client ?: return@write false
+        runCatching { if (folder == null) c.unignoreDevice(device) else c.unignoreFolder(folder, device) }
             .onFailure { _message.send("Unignore failed: ${it.message}") }.isSuccess
     }
     fun removeDevice(id: String) = act("Remove device") { removeDevice(id) }
@@ -297,9 +304,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setVersioning(id: String, v: Versioning) = act("Versioning") { setVersioning(id, v) }
 
     /** Saves ignore patterns; [resume] unpauses a folder that waited for them. False when it failed. */
-    suspend fun saveIgnores(id: String, lines: List<String>, resume: Boolean): Boolean {
-        val c = client ?: return false
-        return runCatching {
+    suspend fun saveIgnores(id: String, lines: List<String>, resume: Boolean): Boolean = write {
+        val c = client ?: return@write false
+        runCatching {
             c.setIgnores(id, lines)
             if (resume) c.setFolderPaused(id, false)
         }.onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess

@@ -202,7 +202,7 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
 /** Upstream-style random ID: xxxxx-xxxxx. */
 private fun newFolderId(): String = UUID.randomUUID().toString().replace("-", "").take(10).chunked(5).joinToString("-")
 
-private val draftSaver = androidx.compose.runtime.saveable.Saver<FolderDraft, List<Any>>(
+internal val draftSaver = androidx.compose.runtime.saveable.Saver<FolderDraft, List<Any>>(
     save = {
         listOf(
             it.id, it.label, it.path, ArrayList(it.devices), it.type, it.versioning.type, HashMap(it.versioning.params), it.ignoresFirst,
