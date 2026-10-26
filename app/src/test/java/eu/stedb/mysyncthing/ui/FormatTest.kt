@@ -101,4 +101,13 @@ class FormatTest {
         assertEquals("/storage/emulated/0/Sync", pathBase(eu.stedb.mysyncthing.core.Folder(path = "/storage/emulated/0/Sync/")))
         assertEquals("/storage/emulated/0/Sync/a_b", suggestedPath(" a/b ", "/storage/emulated/0/Sync"))
     }
+
+    @Test
+    fun untrustedShareRows() {
+        val untrusted = eu.stedb.mysyncthing.core.Device("D", untrusted = true)
+        assertEquals(null, encryptionText(untrusted.copy(untrusted = false), null))
+        assertEquals("Untrusted: needs a password to share", encryptionText(untrusted, null))
+        assertEquals("Encrypted · password set", encryptionText(untrusted, eu.stedb.mysyncthing.core.FolderDevice("D", encryptionPassword = "x")))
+        assertEquals("No password: Syncthing stops sharing it", encryptionText(untrusted, eu.stedb.mysyncthing.core.FolderDevice("D")))
+    }
 }

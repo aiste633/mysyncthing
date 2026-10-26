@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.Folder
+import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.RestClient
 import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.Settings
@@ -153,6 +154,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
     private fun patchDevice(id: String, label: String, fields: JsonObjectBuilder.() -> Unit) =
         act(label) { patchDevice(id, buildJsonObject(fields)) }
+    /** The core would refuse introducer and auto-accept for an untrusted device, so they go off with it. */
+    fun setUntrusted(id: String, on: Boolean) = patchDevice(id, "Untrusted") {
+        put("untrusted", on)
+        if (on) {
+            put("introducer", false)
+            put("autoAcceptFolders", false)
+        }
+    }
     fun setIntroducer(id: String, on: Boolean) = patchDevice(id, "Introducer") { put("introducer", on) }
     fun setAutoAccept(id: String, on: Boolean) = patchDevice(id, "Accept folders") { put("autoAcceptFolders", on) }
     fun setDeviceGroup(id: String, group: String) = patchDevice(id, "Group") { put("group", group.trim()) }
@@ -217,7 +226,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun addFolder(d: FolderDraft, paused: Boolean = false) = act("Add folder", done = "Added ${d.label.ifBlank { d.id }}") {
         val id = d.id.trim()
         val ignores = if (paused) emptyList() else runCatching { defaultIgnores() }.getOrDefault(emptyList())
-        addFolder(id, d.label.trim(), d.path.trim(), d.devices.toList(), d.type, d.versioning, paused || ignores.isNotEmpty())
+        val devices = d.devices.map { FolderDevice(it, encryptionPassword = d.passwords[it].orEmpty()) }
+        addFolder(id, d.label.trim(), d.path.trim(), devices, d.type, d.versioning, paused || ignores.isNotEmpty())
         if (paused || ignores.isEmpty()) return@act
         // The folder may take a moment to start after the config change.
         repeat(5) { attempt ->
@@ -257,10 +267,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }.onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
     }
 
-    /** Adds or removes one device from a folder's share list. */
-    fun setShared(folder: Folder, device: String, shared: Boolean) = act("Sharing") {
-        val ids = folder.devices.map { it.deviceID }
-        setFolderDevices(folder.id, if (shared) (ids + device).distinct() else ids - device)
+    /**
+     * Adds or removes one device from a folder's share list, or changes its
+     * encryption [password] (needed for an untrusted device).
+     */
+    fun setShared(folder: Folder, device: String, shared: Boolean, password: String = "") = act("Sharing") {
+        val others = folder.devices.filter { it.deviceID != device }
+        val entry = folder.devices.find { it.deviceID == device } ?: FolderDevice(device)
+        setFolderDevices(folder.id, if (shared) others + entry.copy(encryptionPassword = password) else others)
     }
 
     fun setRunConditions(transform: (RunConditions) -> RunConditions) {

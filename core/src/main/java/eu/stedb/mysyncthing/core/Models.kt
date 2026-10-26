@@ -98,6 +98,8 @@ data class Device(
     val numConnections: Int = 0,
     val group: String = "",
     val ignoredFolders: List<ObservedFolder> = emptyList(),
+    /** Only gets folders encrypted; the core drops introducer and auto-accept for it. */
+    val untrusted: Boolean = false,
 )
 
 /** A folder offer the user ignored, stored on the device that offered it. */
@@ -120,7 +122,12 @@ data class IgnoredRequests(
 data class Discovered(val addresses: List<String> = emptyList())
 
 @Serializable
-data class FolderDevice(val deviceID: String)
+data class FolderDevice(
+    val deviceID: String,
+    val introducedBy: String = "",
+    /** Set for an untrusted device: it gets the folder encrypted with this password. */
+    val encryptionPassword: String = "",
+)
 
 /** Upstream versioning config; `type` "" means off. Param values are strings, as upstream stores them. */
 @Serializable

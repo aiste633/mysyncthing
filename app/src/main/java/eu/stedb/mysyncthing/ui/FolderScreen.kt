@@ -71,6 +71,8 @@ fun FolderScreen(
     val status = folderStatus(f, st)
     val look = status.state.look()
     var dialog by rememberSaveable { mutableStateOf<FolderDialog?>(null) }
+    // The device whose password dialog is open, for an encrypted share.
+    var encrypt by rememberSaveable { mutableStateOf<String?>(null) }
     var ignores by remember { mutableStateOf<List<String>?>(null) }
     var errors by remember { mutableStateOf<List<FileError>>(emptyList()) }
     LaunchedEffect(id, st?.errors) { errors = if ((st?.errors ?: 0) > 0) vm.folderErrors(id) else emptyList() }
@@ -175,13 +177,13 @@ fun FolderScreen(
             SettingsGroup("Shared with") {
                 if (s.devices.isEmpty()) SettingRow("No devices added yet", "Add one on the Devices tab")
                 s.devices.forEach { dev ->
-                    val on = f.devices.any { it.deviceID == dev.deviceID }
+                    val entry = f.devices.find { it.deviceID == dev.deviceID }
                     // A device's sync state only means something for folders it shares.
-                    val state = if (on) deviceStatus(dev, s.connections[dev.deviceID], null).text else "Not shared"
+                    val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null).text else "Not shared"
                     SettingRow(
-                        dev.name.ifEmpty { shortId(dev.deviceID) }, state,
-                        trailing = { Checkbox(on, onCheckedChange = null) },
-                    ) { vm.setShared(f, dev.deviceID, !on) }
+                        dev.name.ifEmpty { shortId(dev.deviceID) }, listOfNotNull(state, encryptionText(dev, entry)).joinToString(" · "),
+                        trailing = { Checkbox(entry != null, onCheckedChange = null) },
+                    ) { if (sharesEncrypted(dev, entry)) encrypt = dev.deviceID else vm.setShared(f, dev.deviceID, entry == null) }
                 }
             }
 
@@ -249,6 +251,13 @@ fun FolderScreen(
             "Remove", onDismiss = { dialog = null },
         ) { vm.removeFolder(id); dialog = null; onBack() }
         null -> {}
+    }
+    s.devices.find { it.deviceID == encrypt }?.let { dev ->
+        val entry = f.devices.find { it.deviceID == dev.deviceID }
+        PasswordDialog(
+            f.label.ifEmpty { f.id }, dev.name.ifEmpty { shortId(dev.deviceID) }, entry?.encryptionPassword.orEmpty(), shared = entry != null,
+            onDismiss = { encrypt = null }, onUnshare = { vm.setShared(f, dev.deviceID, false); encrypt = null },
+        ) { vm.setShared(f, dev.deviceID, true, it); encrypt = null }
     }
 }
 

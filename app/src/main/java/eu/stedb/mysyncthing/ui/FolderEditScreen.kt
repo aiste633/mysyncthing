@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.Folder
+import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Versioning
 import java.util.UUID
@@ -48,6 +49,8 @@ data class FolderDraft(
     val versioning: Versioning = Versioning(),
     /** Add it paused and open the ignore patterns, so nothing syncs before they apply. */
     val ignoresFirst: Boolean = false,
+    /** Encryption passwords for the untrusted devices it is shared with. */
+    val passwords: Map<String, String> = emptyMap(),
 )
 
 /** The defaults' folder location, or Syncthing/ in shared storage while it is upstream's "~". */
@@ -80,6 +83,17 @@ fun FolderEditScreen(
         d = d.copy(path = it, label = d.label.ifEmpty { it.substringAfterLast('/') })
     }
     val isOffer = offeredBy != null
+    // The untrusted device whose password dialog is open.
+    var encrypt by rememberSaveable { mutableStateOf<String?>(null) }
+    s.devices.find { it.deviceID == encrypt }?.let { dev ->
+        PasswordDialog(
+            d.label.ifEmpty { d.id }, dev.name.ifEmpty { shortId(dev.deviceID) }, "", shared = false,
+            onDismiss = { encrypt = null }, onUnshare = {},
+        ) {
+            d = d.copy(devices = d.devices + dev.deviceID, passwords = d.passwords + (dev.deviceID to it))
+            encrypt = null
+        }
+    }
     val who = offeredBy?.let { id -> s.devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: shortId(id) }
     val valid = d.id.isNotBlank() && d.path.startsWith("/") && s.folders.none { it.id == d.id.trim() }
 
@@ -142,12 +156,20 @@ fun FolderEditScreen(
                 if (s.devices.isEmpty()) SettingRow("No devices added yet", "Add one on the Devices tab")
                 s.devices.forEach { dev ->
                     val on = dev.deviceID in d.devices
+                    val note = if (dev.deviceID == offeredBy) "Offered this folder"
+                    else encryptionText(dev, d.passwords[dev.deviceID]?.let { FolderDevice(dev.deviceID, encryptionPassword = it) }.takeIf { on })
                     ListItem(
-                        modifier = Modifier.clickable { d = d.copy(devices = if (on) d.devices - dev.deviceID else d.devices + dev.deviceID) },
+                        modifier = Modifier.clickable {
+                            when {
+                                on -> d = d.copy(devices = d.devices - dev.deviceID, passwords = d.passwords - dev.deviceID)
+                                dev.untrusted -> encrypt = dev.deviceID
+                                else -> d = d.copy(devices = d.devices + dev.deviceID)
+                            }
+                        },
                         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         leadingContent = { Checkbox(on, onCheckedChange = null) },
                         headlineContent = { Text(dev.name.ifEmpty { shortId(dev.deviceID) }) },
-                        supportingContent = if (dev.deviceID == offeredBy) ({ Text("Offered this folder") }) else null,
+                        supportingContent = note?.let { { Text(it) } },
                     )
                 }
             }
@@ -204,13 +226,16 @@ private fun newFolderId(): String = UUID.randomUUID().toString().replace("-", ""
 
 private val draftSaver = androidx.compose.runtime.saveable.Saver<FolderDraft, List<Any>>(
     save = {
-        listOf(it.id, it.label, it.path, ArrayList(it.devices), it.type, it.versioning.type, HashMap(it.versioning.params), it.ignoresFirst)
+        listOf(
+            it.id, it.label, it.path, ArrayList(it.devices), it.type, it.versioning.type, HashMap(it.versioning.params), it.ignoresFirst,
+            HashMap(it.passwords),
+        )
     },
     restore = {
         @Suppress("UNCHECKED_CAST")
         FolderDraft(
             it[0] as String, it[1] as String, it[2] as String, (it[3] as List<String>).toSet(), it[4] as String,
-            Versioning(it[5] as String, it[6] as Map<String, String>), it[7] as Boolean,
+            Versioning(it[5] as String, it[6] as Map<String, String>), it[7] as Boolean, it[8] as Map<String, String>,
         )
     },
 )
