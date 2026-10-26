@@ -180,8 +180,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setAddresses(id: String, addresses: List<String>) = patchDevice(id, "Addresses") {
         putJsonArray("addresses") { addresses.forEach { add(JsonPrimitive(it)) } }
     }
-    fun setDeviceRecvLimit(id: String, kib: Int) = patchDevice(id, "Download limit") { put("maxRecvKbps", kib) }
-    fun setDeviceSendLimit(id: String, kib: Int) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
+    fun setDeviceRecvLimit(id: String, kib: Long) = patchDevice(id, "Download limit") { put("maxRecvKbps", kib) }
+    fun setDeviceSendLimit(id: String, kib: Long) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
     fun setCompression(id: String, c: String) = patchDevice(id, "Compression") { put("compression", c) }
     fun setNumConnections(id: String, n: Int) = patchDevice(id, "Connections") { put("numConnections", n) }
 

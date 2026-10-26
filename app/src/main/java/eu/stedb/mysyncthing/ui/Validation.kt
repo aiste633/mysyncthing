@@ -9,32 +9,38 @@ package eu.stedb.mysyncthing.ui
 fun requiredError(s: String): String? = if (s.isBlank()) "Required" else null
 
 /**
- * [s] with every decimal digit as ASCII: the core reads numbers with Go's
- * strconv, which takes only 0-9, while keyboards for some languages type ٣ or ۳.
+ * Digits other than 0-9, as keyboards for some languages type them (٣, ۳, ३).
+ * The core reads numbers with Go's strconv, which takes only 0-9; Kotlin would
+ * read these too, so they are refused, not converted behind the user's back.
  */
-private fun asciiDigits(s: String): String =
-    if (s.all { it < '\u0080' }) s else buildString { s.forEach { append(if (it.isDigit()) '0' + it.digitToInt() else it) } }
+private fun otherDigits(s: String): Boolean = s.any { it.isDigit() && it !in '0'..'9' }
 
-/** A whole number as typed, in any script's digits, without sign or separators; null when it isn't one or doesn't fit an Int. */
-fun wholeNumber(s: String): Int? = asciiDigits(s.trim()).takeIf { WHOLE.matches(it) }?.toIntOrNull()
+private const val USE_ASCII_DIGITS = "Use the digits 0-9"
 
-private val WHOLE = Regex("\\d+")
+/** A whole number in 0-9 digits, without sign or separators; null when it isn't one or doesn't fit an Int. */
+fun wholeNumber(s: String): Int? = s.trim().takeIf { WHOLE.matches(it) }?.toIntOrNull()
 
-fun wholeNumberError(s: String, min: Int = 0): String? =
-    if ((wholeNumber(s) ?: Int.MIN_VALUE) >= min) null else "A whole number, $min or more"
+private val WHOLE = Regex("[0-9]+")
 
-/** A plain decimal typed with either separator; null when it isn't one. No signs, exponents, NaN or Infinity. */
+fun wholeNumberError(s: String, min: Int = 0): String? = when {
+    otherDigits(s) -> USE_ASCII_DIGITS
+    (wholeNumber(s) ?: Int.MIN_VALUE) >= min -> null
+    else -> "A whole number, $min or more"
+}
+
+/** A plain decimal in 0-9 digits, with either separator; null when it isn't one. No signs, exponents, NaN or Infinity. */
 fun decimal(s: String): Double? =
-    asciiDigits(s.trim()).takeIf { DECIMAL.matches(it) }?.replace(',', '.')?.toDoubleOrNull()?.takeIf { it.isFinite() }
+    s.trim().takeIf { DECIMAL.matches(it) }?.replace(',', '.')?.toDoubleOrNull()?.takeIf { it.isFinite() }
 
-private val DECIMAL = Regex("\\d+([.,]\\d*)?|[.,]\\d+")
+private val DECIMAL = Regex("[0-9]+([.,][0-9]*)?|[.,][0-9]+")
 
-/** The largest speed limit the core can store, 2 TB/s, as its KiB/s are an int32. */
+/** The largest speed limit taken, 2 TB/s: far beyond any link, and still exact as KiB/s in a Long. */
 const val MAX_LIMIT_BYTES = 2e12
 
 /** An amount in [unit]; [emptyOk] when empty means none, as for speed limits. */
 fun amountError(s: String, unit: String, emptyOk: Boolean = false): String? {
     if (emptyOk && s.isBlank()) return null
+    if (otherDigits(s)) return USE_ASCII_DIGITS
     val v = decimal(s) ?: return if (s.trim().startsWith("-")) "0 or more" else "Enter a number"
     return when {
         unit == "%" && v > 100 -> "Up to 100 %"
@@ -242,13 +248,14 @@ fun normalizeAddress(a: String): String = a.trim().let { if ("://" in it || it.i
 
 /**
  * An address to listen on (lib/connections/service.go): the core skips any
- * that isn't in its canonical form, and TCP and QUIC need a port (0 picks
- * one), on all interfaces when the host is left out.
+ * that isn't in its canonical form ("tcp://" with nothing after it isn't).
+ * TCP and QUIC take 22000 when the port is left out (lib/connections/util.go
+ * fixupPort; 0 picks one) and all interfaces when the host is.
  */
 fun isListenAddress(s: String): Boolean {
     val a = hostPort(s) ?: return false
     return when (a.scheme) {
-        "tcp", "tcp4", "tcp6", "quic", "quic4", "quic6" -> a.port != null && (a.rest.isEmpty() || a.rest == "/")
+        "tcp", "tcp4", "tcp6", "quic", "quic4", "quic6" -> (a.host.isNotEmpty() || "://:" in s) && (a.rest.isEmpty() || a.rest == "/")
         "relay" -> a.host.isNotEmpty() && a.port != null && a.port != 0 && a.rest.isRelayQuery()
         "dynamic+http", "dynamic+https" -> a.host.isNotEmpty() && a.port != 0
         else -> false

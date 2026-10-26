@@ -119,22 +119,22 @@ fun diskSizeText(d: DiskSize): String = "${number(d.value)} ${d.unit}"
  * A speed limit the core stores in KiB/s, as SI for people: 488 KiB/s is
  * "500 kB/s". kB/s are whole numbers, MB/s keep one decimal.
  */
-fun limitSi(kib: Int): Pair<Double, String> {
+fun limitSi(kib: Long): Pair<Double, String> {
     val b = kib * 1024.0
     return if (b >= 1_000_000) Math.round(b / 100_000) / 10.0 to "MB/s" else Math.round(b / 1000).toDouble() to "kB/s"
 }
 
 /**
  * Back to the core's KiB/s; anything above zero stays at least 1 so it is not
- * read as "no limit", and nothing passes the int the core stores it in.
+ * read as "no limit".
  */
-fun limitKib(value: Double, unit: String): Int {
+fun limitKib(value: Double, unit: String): Long {
     if (!(value > 0)) return 0
     val b = value * if (unit == "MB/s") 1_000_000 else 1000
-    return Math.round(b / 1024).coerceIn(1, Int.MAX_VALUE.toLong()).toInt()
+    return Math.round(b / 1024).coerceAtLeast(1)
 }
 
-fun limitText(kib: Int): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> "${number(v)} $u" }
+fun limitText(kib: Long): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> "${number(v)} $u" }
 
 val COMPRESSIONS = listOf("metadata" to "Metadata only", "always" to "All data", "never" to "Off")
 
@@ -213,7 +213,7 @@ fun versioningShown(type: String, raw: String?): String {
     return if (p.key == "maxAge") ((v.toLongOrNull() ?: 0) / 86_400).toString() else v
 }
 
-/** As the core's strconv reads it: plain ASCII digits, whatever the keyboard typed. */
+/** As the core's strconv reads it: plain ASCII digits. */
 fun versioningStored(type: String, shown: String): String {
     val n = (wholeNumber(shown) ?: 0).toLong()
     return (if (versioningParam(type)?.key == "maxAge") n * 86_400 else n).toString()

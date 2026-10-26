@@ -35,26 +35,25 @@ class ValidationTest {
             val v = decimal(s) ?: 0.0
             val kib = limitKib(v, unit)
             val bytes = v * if (unit == "MB/s") 1e6 else 1e3
-            if (v == 0.0) assertEquals(0, kib) else {
+            if (v == 0.0) assertEquals(0L, kib) else {
                 assertTrue("$kib KiB/s for $v $unit", kib >= 1)
                 // Rounded to the nearest KiB, except that the smallest limit is 1 KiB/s, never "none".
-                assertTrue("$kib KiB/s for $v $unit", abs(kib * 1024.0 - bytes) <= 512 || (kib == 1 && bytes < 1024))
+                assertTrue("$kib KiB/s for $v $unit", abs(kib * 1024.0 - bytes) <= 512 || (kib == 1L && bytes < 1024))
             }
         }
     }
 
     @Test
     fun overflowingLimitsWereSavedAsOneKiB() {
-        // 3,000,000 MB/s passed Int as KiB and wrapped to a negative number, then became 1 KiB/s.
+        // 3,000,000 MB/s passed the app's Int as KiB and wrapped to a negative number, then became 1 KiB/s.
         assertEquals("Up to 2000000 MB/s", amountError("3000000", "MB/s"))
-        assertEquals(Int.MAX_VALUE, limitKib(1e300, "MB/s"))
-        assertEquals(0, limitKib(Double.NaN, "kB/s"))
+        assertEquals(1_953_125_000L, limitKib(2e6, "MB/s"))
+        assertEquals(0L, limitKib(Double.NaN, "kB/s"))
         assertEquals("Enter a number", amountError("NaN", "%"))
         assertEquals("Enter a number", amountError("Infinity", "GB"))
         assertEquals("Enter a number", amountError("1e3", "GB"))
         assertEquals("0 or more", amountError("-1", "MB/s", emptyOk = true))
         assertEquals(null, amountError("2,5", "%"))
-        assertEquals(2.5, decimal("۲,۵")!!, 0.0)
     }
 
     @Test
@@ -65,7 +64,7 @@ class ValidationTest {
             val n = wholeNumber(s)!!
             assertTrue(n >= p.min)
             val stored = versioningStored(type, s)
-            // Go's strconv.Atoi reads only ASCII digits, without a sign.
+            // Go's strconv.Atoi reads only ASCII digits, without a sign: other digits never get this far.
             assertTrue("stored $stored", stored.all { it in '0'..'9' } && stored.isNotEmpty())
             assertEquals(n.toLong() * (if (p.key == "maxAge") 86_400 else 1), stored.toLong())
             assertEquals(n.toString(), versioningShown(type, stored))
@@ -78,7 +77,8 @@ class ValidationTest {
         assertEquals("A whole number, 1 or more", wholeNumberError("0", versioningParam("simple")!!.min))
         assertEquals(null, wholeNumberError("0", versioningParam("trashcan")!!.min))
         // Persian digits were stored as typed; Go then read them as an error and used its default.
-        assertEquals("30", versioningStored("trashcan", "۳۰"))
+        // Refused, with the reason: converting them silently would surprise.
+        assertEquals("Use the digits 0-9", wholeNumberError("۳۰"))
         assertEquals("A whole number, 0 or more", wholeNumberError("1.5"))
         assertEquals("A whole number, 0 or more", wholeNumberError("99999999999"))
     }
@@ -194,8 +194,8 @@ class ValidationTest {
         if (!isListenAddress(s)) return@forAll
         val p = parts(s)
         assertTrue(p.scheme in setOf("tcp", "tcp4", "tcp6", "quic", "quic4", "quic6", "relay", "dynamic+http", "dynamic+https"))
-        // TCP and QUIC listeners fail without a port (net.ResolveTCPAddr: "missing port").
-        if (p.scheme.startsWith("tcp") || p.scheme.startsWith("quic")) assertTrue("port", p.port != null && p.port in 0..65535)
+        // TCP and QUIC: a port the core can bind, or none (22000); "scheme://" alone isn't canonical.
+        if (p.scheme.startsWith("tcp") || p.scheme.startsWith("quic")) assertTrue("port", (p.port == null || p.port in 0..65535) && s != p.scheme + "://")
         else assertTrue("host", p.host.isNotEmpty())
         assertEquals("canonical: no spaces", s.trim(), s)
     }
@@ -221,8 +221,10 @@ class ValidationTest {
         assertFalse(isDeviceAddress("tcp://"))
         assertTrue(isListenAddress("tcp://0.0.0.0:22001"))
         assertTrue(isListenAddress("quic" + "://:22001"))
-        assertFalse(isListenAddress("tcp://0.0.0.0")) // the core: "missing port"
-        assertFalse(isListenAddress("tcp://")) // the old check allowed nothing after ://
+        assertTrue(isListenAddress("tcp://0.0.0.0")) // the core listens on 22000 (fixupPort)
+        assertTrue(isListenAddress("quic" + "://:"))
+        assertFalse(isListenAddress("tcp://")) // not canonical: Go writes it as "tcp:", and the core skips it
+        assertFalse(isListenAddress("tcp://0.0.0.0:99999"))
         assertFalse(isListenAddress("TCP://0.0.0.0:22001")) // not canonical: the core skips it
         assertTrue(isDiscoveryServer("${https}discovery.example.com/"))
         assertTrue(isDiscoveryServer("${https}example.com:8443/?id=AAFRMIJMG5BE2XWDDNZ4YJD42UWWYLXRWR3TT7F7I7ICMPCSNB7JJKQW"))
