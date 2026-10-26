@@ -120,6 +120,21 @@ class ValidationTest {
         assertNull(deviceId("MFZWI3DBONSGYCYLTMRWGC43ENR5QXGZDMMFZWI3DPNSGYCYLTMRWGCA"))
         assertNull(deviceId("MFZWI3DBONSGYCYLTMRWGC43ENR5QXGZDMMFZWI3DPNSGYCYLTMRWGCB"))
         assertNull(deviceId("MFZWI3DONSGYCYLTMRWGC43ENR5QXGZDMMFZWI3DPNSGYCYLTMRWGC")) // 54: incorrect length
+        assertEquals("A device ID has 56 characters", deviceIdError("AAFRMIJMG5BE2XWDDNZ4YJD42UWWYLXRWR3TT7F7I7ICMPCSNB7J"))
+    }
+
+    @Test
+    fun droppedCharactersAreCaught() = forAll(validId, runs = 3_000) { id ->
+        // Four dropped characters leave 52, the core's pre-2014 form without check characters:
+        // that would be a different device that never connects.
+        val r = Random(id.hashCode())
+        var short = id.replace("-", "")
+        repeat(4) {
+            val i = r.nextInt(short.length)
+            short = short.removeRange(i, i + 1)
+            assertNull(short, deviceId(short))
+            assertEquals("A device ID has 56 characters", deviceIdError(short))
+        }
     }
 
     @Test

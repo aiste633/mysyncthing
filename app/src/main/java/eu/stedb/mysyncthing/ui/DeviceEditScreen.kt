@@ -90,7 +90,7 @@ fun DeviceEditScreen(
                             Text(
                                 when {
                                     known -> "Already added"
-                                    id.isNotBlank() && !valid -> "Not a device ID. Check every character against the other device."
+                                    id.isNotBlank() && canonical == null -> deviceIdError(id)!!
                                     isRequest -> "Check it matches the other device"
                                     else -> "Scan its QR code, paste it, or pick a nearby device"
                                 },

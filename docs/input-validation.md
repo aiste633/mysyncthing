@@ -11,7 +11,7 @@ Go fuzz targets and tests in `go/bridge`.
 
 | Field (screen) | Expected | App check | Core check |
 |---|---|---|---|
-| Device ID (Add device) | 56 base32 characters in 8 groups, 4 Luhn check characters; dashes, spaces, case, `=` and 0/1/8 for O/I/B tolerated; old 52-character form | `deviceId()`: the core's parser ported, check characters included; saved in canonical form; "Already added" | `lib/protocol/deviceid.go`: refuses a wrong check character |
+| Device ID (Add device) | 56 base32 characters in 8 groups, 4 Luhn check characters; dashes, spaces, case, `=` and 0/1/8 for O/I/B tolerated | `deviceId()`: the core's parser ported, check characters included; the pre-2014 52-character form refused (4 dropped characters would make one); saved in canonical form; "Already added" | `lib/protocol/deviceid.go`: refuses a wrong check character |
 | Device name (Add device, Device, This phone) | Text; required when renaming | Required, trimmed | None |
 | Group (Device, Folder) | Text, local to this phone | Trimmed | None |
 | Addresses (Device, Defaults for new devices) | `dynamic`, or `tcp`/`quic` URL to a host with an optional port 1-65535 (22000 when left out), or a relay URL | `isDeviceAddress()`; a bare host:port is taken as TCP | None at save; a bad address fails at dial time |

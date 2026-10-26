@@ -138,24 +138,29 @@ private const val BASE32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
  * The device ID as the core writes it (8 groups of 7, check characters
  * included), or null when the core would refuse it. lib/protocol/deviceid.go,
  * plus surrounding whitespace as pasted: "=", dashes and spaces are dropped, case is ignored, 0, 1 and 8 are read as
- * O, I and B, and the check character ending every 14 must match; an old
- * 52-character ID without them still counts.
+ * O, I and B, and the check character ending every 14 must match. The core
+ * also takes the 52-character form without check characters (Syncthing before
+ * 2014); refused here, as 4 characters dropped while typing would make one.
  */
 fun deviceId(s: String): String? {
-    val id = s.trim().trim('=').uppercase().replace('0', 'O').replace('1', 'I').replace('8', 'B').replace("-", "").replace(" ", "")
-    if (id.any { it !in BASE32 }) return null
-    val data = when (id.length) {
-        56 -> {
-            val groups = id.chunked(14)
-            if (groups.any { luhn32(it.dropLast(1)) != it.last() }) return null
-            groups.joinToString("") { it.dropLast(1) }
-        }
-        52 -> id
-        else -> return null
-    }
+    val id = idCharacters(s)
+    if (id.length != 56 || id.any { it !in BASE32 }) return null
+    val groups = id.chunked(14)
+    if (groups.any { luhn32(it.dropLast(1)) != it.last() }) return null
+    val data = groups.joinToString("") { it.dropLast(1) }
     // Decoded and encoded again, as the core does: the last character's spare bits drop.
     val canonical = base32(unbase32(data))
     return (0 until 4).joinToString("") { g -> canonical.substring(g * 13, g * 13 + 13).let { it + luhn32(it) } }.chunked(7).joinToString("-")
+}
+
+private fun idCharacters(s: String): String =
+    s.trim().trim('=').uppercase().replace('0', 'O').replace('1', 'I').replace('8', 'B').replace("-", "").replace(" ", "")
+
+/** Why [s] is not a device ID, or null when it is one. */
+fun deviceIdError(s: String): String? = when {
+    deviceId(s) != null -> null
+    idCharacters(s).length != 56 -> "A device ID has 56 characters"
+    else -> "Not a device ID. Check every character against the other device."
 }
 
 /** lib/protocol/luhn.go: not the textbook Luhn mod N, but what every Syncthing ID uses. */
