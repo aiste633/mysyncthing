@@ -25,6 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,6 +42,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.SyncthingService
 import kotlinx.coroutines.flow.first
@@ -71,6 +73,9 @@ private object Routes {
     const val ADD_DEVICE = "add-device?id={id}&name={name}"
     const val WEB_GUI = "webgui"
     const val IGNORED = "ignored"
+    const val FOLDER_DEFAULTS = "defaults/folder"
+    const val DEFAULT_IGNORES = "defaults/ignores"
+    const val DEVICE_DEFAULTS = "defaults/device"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
     fun ignores(id: String, first: Boolean = false) = "folder/${Uri.encode(id)}/ignores?first=$first"
@@ -160,6 +165,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     SettingsScreen(
                         vm, snapshot, summary, core, permissions,
                         onOpenWebGui = { nav.navigate(Routes.WEB_GUI) }, onOpenIgnored = { nav.navigate(Routes.IGNORED) },
+                        onOpenFolderDefaults = { nav.navigate(Routes.FOLDER_DEFAULTS) },
+                        onOpenDeviceDefaults = { nav.navigate(Routes.DEVICE_DEFAULTS) },
                     )
                 }
                 composable(Routes.FOLDER) { entry ->
@@ -210,9 +217,12 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     val offer = entry.arguments?.getString("offer")?.ifEmpty { null }
                     val from = entry.arguments?.getString("from")?.ifEmpty { null }
                     CoreGate(core) {
-                        if (snapshot.loaded) {
-                            val initial = remember(offer, from) { draftFor(snapshot, offer, from) }
-                            FolderEditScreen(snapshot, initial, from, onBack = { nav.popBackStack() }) {
+                        // Null until read; a failed read falls back to the app's own defaults.
+                        val defaults by produceState<Folder?>(null) { value = vm.defaultFolder() ?: Folder() }
+                        val base = defaults
+                        if (snapshot.loaded && base != null) {
+                            val initial = remember(offer, from) { draftFor(snapshot, offer, from, base) }
+                            FolderEditScreen(snapshot, initial, from, pathBase(base), onBack = { nav.popBackStack() }) {
                                 vm.addFolder(it, paused = it.ignoresFirst)
                                 if (it.ignoresFirst) {
                                     nav.navigate(Routes.ignores(it.id.trim(), first = true)) { popUpTo(Routes.ADD_FOLDER) { inclusive = true } }
@@ -234,6 +244,17 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                             }
                         }
                     }
+                }
+                composable(Routes.FOLDER_DEFAULTS) {
+                    CoreGate(core) {
+                        DefaultFolderScreen(vm, onBack = { nav.popBackStack() }, onOpenIgnores = { nav.navigate(Routes.DEFAULT_IGNORES) })
+                    }
+                }
+                composable(Routes.DEFAULT_IGNORES) {
+                    CoreGate(core) { IgnoresScreen(snapshot, null, firstSync = false, vm, onBack = { nav.popBackStack() }) }
+                }
+                composable(Routes.DEVICE_DEFAULTS) {
+                    CoreGate(core) { DefaultDeviceScreen(vm, onBack = { nav.popBackStack() }) }
                 }
                 composable(Routes.IGNORED) {
                     CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }

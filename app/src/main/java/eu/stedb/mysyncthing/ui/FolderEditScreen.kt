@@ -33,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Versioning
 import java.util.UUID
@@ -49,15 +50,18 @@ data class FolderDraft(
     val ignoresFirst: Boolean = false,
 )
 
-/** Where accepted folders go unless the user picks another place. */
-fun suggestedPath(label: String): String =
-    "$INTERNAL_STORAGE/Syncthing/" + label.trim().replace('/', '_').ifEmpty { "Folder" }
+/** The defaults' folder location, or Syncthing/ in shared storage while it is upstream's "~". */
+fun pathBase(defaults: Folder): String = defaults.path.trimEnd('/').takeIf { it.startsWith("/") } ?: "$INTERNAL_STORAGE/Syncthing"
 
-/** Draft for a new local folder, or for an offer when [offerId] is set. */
-fun draftFor(s: Snapshot, offerId: String?, offerDevice: String?): FolderDraft {
-    if (offerId == null) return FolderDraft(newFolderId(), "")
+/** Where accepted folders go unless the user picks another place. */
+fun suggestedPath(label: String, base: String): String = "$base/" + label.trim().replace('/', '_').ifEmpty { "Folder" }
+
+/** Draft for a new local folder, or for an offer when [offerId] is set, starting from the [defaults]. */
+fun draftFor(s: Snapshot, offerId: String?, offerDevice: String?, defaults: Folder): FolderDraft {
+    val base = FolderDraft(newFolderId(), "", type = defaults.type, versioning = defaults.versioning)
+    if (offerId == null) return base
     val label = s.pendingFolders[offerId]?.offeredBy?.get(offerDevice)?.label?.ifEmpty { null } ?: offerId
-    return FolderDraft(offerId, label, suggestedPath(label), setOfNotNull(offerDevice))
+    return base.copy(id = offerId, label = label, path = suggestedPath(label, pathBase(defaults)), devices = setOfNotNull(offerDevice))
 }
 
 /**
@@ -65,7 +69,9 @@ fun draftFor(s: Snapshot, offerId: String?, offerDevice: String?): FolderDraft {
  * keeps its ID (it must match the other side) and gets a suggested path.
  */
 @Composable
-fun FolderEditScreen(s: Snapshot, initial: FolderDraft, offeredBy: String?, onBack: () -> Unit, onSave: (FolderDraft) -> Unit) {
+fun FolderEditScreen(
+    s: Snapshot, initial: FolderDraft, offeredBy: String?, pathBase: String, onBack: () -> Unit, onSave: (FolderDraft) -> Unit,
+) {
     var d by rememberSaveable(stateSaver = draftSaver) { mutableStateOf(initial) }
     // Follow the label into the suggested path until the user picks a place.
     var pathTouched by rememberSaveable { mutableStateOf(offeredBy == null) }
@@ -93,7 +99,7 @@ fun FolderEditScreen(s: Snapshot, initial: FolderDraft, offeredBy: String?, onBa
                 Column(Modifier.padding(16.dp)) {
                     OutlinedTextField(
                         d.label,
-                        { d = d.copy(label = it, path = if (pathTouched) d.path else suggestedPath(it)) },
+                        { d = d.copy(label = it, path = if (pathTouched) d.path else suggestedPath(it, pathBase)) },
                         label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(

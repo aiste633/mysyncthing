@@ -39,12 +39,13 @@ import kotlinx.coroutines.launch
 /**
  * The folder's .stignore as plain text, with chips for the syntax that is
  * awkward to type on a phone. With [firstSync] the folder was just added
- * paused, and saving starts its first sync. Leaving with unsaved edits, or
- * with the folder still paused, asks first.
+ * paused, starts with the default patterns, and saving starts its first sync.
+ * A null [id] edits the default patterns for new folders. Leaving with
+ * unsaved edits, or with the folder still paused, asks first.
  */
 @Composable
-fun IgnoresScreen(s: Snapshot, id: String, firstSync: Boolean, vm: MainViewModel, onBack: () -> Unit) {
-    val f = s.folders.find { it.id == id }
+fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewModel, onBack: () -> Unit) {
+    val f = id?.let { s.folders.find { f -> f.id == it } }
     var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
     var original by rememberSaveable { mutableStateOf("") }
     var loaded by rememberSaveable { mutableStateOf(false) }
@@ -54,14 +55,17 @@ fun IgnoresScreen(s: Snapshot, id: String, firstSync: Boolean, vm: MainViewModel
     val scope = rememberCoroutineScope()
     // A folder added a moment ago may not be in the config yet.
     LaunchedEffect(id, f != null) {
-        if (f == null || loaded) return@LaunchedEffect
-        vm.ignores(id)?.let { original = it.joinToString("\n"); text = TextFieldValue(original); loaded = true }
+        if (loaded || (id != null && f == null)) return@LaunchedEffect
+        // A new folder has no patterns yet; with "patterns first" it starts from the defaults.
+        val lines = if (id == null) vm.defaultIgnores()
+        else vm.ignores(id)?.let { own -> if (own.isEmpty() && firstSync) vm.defaultIgnores() ?: own else own }
+        lines?.let { original = it.joinToString("\n"); text = TextFieldValue(original); loaded = true }
     }
     val ask = firstSync || (loaded && text.text != original)
     BackHandler(enabled = ask) { leaving = true }
 
     AppScreen(
-        title = "Ignore patterns",
+        title = if (id == null) "Default ignore patterns" else "Ignore patterns",
         onBack = { if (ask) leaving = true else onBack() },
         actions = {
             IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Filled.HelpOutline, "How patterns work") }
@@ -69,14 +73,16 @@ fun IgnoresScreen(s: Snapshot, id: String, firstSync: Boolean, vm: MainViewModel
                 saving = true
                 scope.launch {
                     val lines = text.text.lines().map { it.trimEnd() }.dropLastWhile { it.isEmpty() }
-                    if (vm.saveIgnores(id, lines, resume = firstSync)) onBack() else saving = false
+                    val ok = if (id == null) vm.saveDefaultIgnores(lines) else vm.saveIgnores(id, lines, resume = firstSync)
+                    if (ok) onBack() else saving = false
                 }
             }) { Text(if (firstSync) "Save and sync" else "Save") }
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().imePadding().padding(horizontal = 16.dp)) {
             Text(
-                (f?.label?.ifEmpty { null } ?: id) +
+                if (id == null) "New folders start with these patterns, including folders accepted automatically."
+                else (f?.label?.ifEmpty { null } ?: id) +
                     if (firstSync) ". The folder stays paused until you save, so nothing is synced before the patterns apply." else "",
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),

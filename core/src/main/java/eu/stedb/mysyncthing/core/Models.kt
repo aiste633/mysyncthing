@@ -76,11 +76,14 @@ data class Options(
 )
 
 @Serializable
+data class DefaultIgnores(val lines: List<String> = emptyList())
+
+@Serializable
 data class RestartRequired(val requiresRestart: Boolean = false)
 
 @Serializable
 data class Device(
-    val deviceID: String,
+    val deviceID: String = "",
     val name: String = "",
     val paused: Boolean = false,
     val addresses: List<String> = listOf("dynamic"),
@@ -125,9 +128,9 @@ data class Versioning(val type: String = "", val params: Map<String, String> = e
 
 @Serializable
 data class Folder(
-    val id: String,
+    val id: String = "",
     val label: String = "",
-    val path: String,
+    val path: String = "",
     val type: String = "sendreceive",
     val paused: Boolean = false,
     val devices: List<FolderDevice> = emptyList(),

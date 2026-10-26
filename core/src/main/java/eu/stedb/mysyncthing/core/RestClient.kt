@@ -81,6 +81,16 @@ class RestClient(address: String, private val apiKey: String) {
 
     suspend fun removeDevice(id: String) = send("DELETE", "rest/config/devices/$id")
 
+    /** Settings new folders and devices start with; their IDs are empty. */
+    suspend fun defaultFolder(): Folder = get("rest/config/defaults/folder")
+    suspend fun defaultDevice(): Device = get("rest/config/defaults/device")
+    suspend fun patchDefaultFolder(fields: JsonObject) = send("PATCH", "rest/config/defaults/folder", fields)
+    suspend fun patchDefaultDevice(fields: JsonObject) = send("PATCH", "rest/config/defaults/device", fields)
+    suspend fun defaultIgnores(): List<String> = get<DefaultIgnores>("rest/config/defaults/ignores").lines
+    suspend fun setDefaultIgnores(lines: List<String>) = send("PUT", "rest/config/defaults/ignores", buildJsonObject {
+        putJsonArray("lines") { lines.forEach { add(JsonPrimitive(it)) } }
+    })
+
     /** Sets the new-folder defaults to [path] and ignorePerms while the path is still upstream's "~". */
     suspend fun adoptFolderDefaults(path: String) {
         val d = get<JsonObject>("rest/config/defaults/folder")
