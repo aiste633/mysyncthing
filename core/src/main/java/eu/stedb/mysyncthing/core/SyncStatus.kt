@@ -143,12 +143,14 @@ enum class SyncState { Stopped, Problem, Paused, NeedsInput, Syncing, UpToDate }
 /**
  * One-line status for the notification and the widget. [connected] holds the
  * names of connected devices; [progress] is 0..100 while syncing.
+ * [publicText] is [text] without folder names, for the lock screen.
  */
 data class Summary(
     val state: SyncState,
     val text: String,
     val progress: Int? = null,
     val connected: List<String> = emptyList(),
+    val publicText: String = text,
 )
 
 private val SYNCING_STATES = setOf("syncing", "sync-preparing")
@@ -200,7 +202,7 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean)
             f.type == "receiveonly" -> "Local changes in $name"
             else -> "$name is out of sync"
         }
-        return result(SyncState.NeedsInput, text)
+        return result(SyncState.NeedsInput, text).copy(publicText = if (f == null) text else "A folder needs review")
     }
     if (s.devices.isEmpty()) return result(SyncState.NeedsInput, "No devices added")
     if (s.folders.isEmpty()) return result(SyncState.NeedsInput, "No folders added")

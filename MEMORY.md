@@ -88,6 +88,23 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Batch G: Folders > ⋮ > Recent changes reads `/rest/events/disk` (the core's in-memory buffer, newest 500, reread when folder states change; nothing stored by the app, user's choice). Folder > File versioning > Restore versions uses `/rest/folder/versions` (GET, and POST `{file: versionTime}`; the core archives the current file first), with 7/30 days/All filters, search and Restore all. Settings > About replaces the core version row (versions, AGPL/MPL links, source, library licences).
 - `scripts/check-leaks.sh` also scans code: write URL-shaped literals so the scheme's "://" starts a new string literal (`"tcp" + "://..."`) or the host is `${...}`, and use 0.0.0.0 or RFC 5737 addresses in hints.
 
+## Nord 4 UX fixes (2026-10-26)
+- Accessibility: switch/checkbox rows are `SwitchRow`/`CheckRow` (`Modifier.toggleable` on the row, the control has `onCheckedChange = null`); never put a Switch or Checkbox in `SettingRow(trailing = ...)`. Add buttons use `AddFab`: Material's icon+text `ExtendedFloatingActionButton` clears the text's semantics (`clearAndSetSemantics`), so with a null icon description TalkBack said only "Button".
+- `SettingRow` supporting text has no line limit (hints were cut with "…").
+- Form checks return a reason (`requiredError`, `amountError`, `folderPathError`, ... in `Format.kt`) shown as supporting text; `TextDialog` takes `error` instead of `valid`.
+- Discovery entries failing with ENETUNREACH ("network is unreachable", e.g. the IPv6 server on IPv4-only Wi-Fi) are "Not used" (grey), not counted in "Discovery n of m" or the amber state (`unusedHere`).
+- Request notifications: channel `requests-high`, high importance (user's choice); the old `requests` channel is deleted at start (Android never raises an existing channel's importance).
+- Folders in state "error" (stopped: marker missing, path gone, below keep free) notify on the Problems channel, one per folder, gone when fixed; single failed files don't notify (user's choice).
+- An offer of a folder this phone already has (the core lists it as pending when not shared with that device) shows Share instead of Review.
+- Sync service notification: Android raises a foreground service's MIN channel to LOW, so it always shows in the shade. It has a lock-screen public version without device or folder names (`Summary.publicText`), and its own group (`service`) so Android's automatic group of the other notifications doesn't get an ongoing, unswipeable summary. Setup says how to hide it.
+- Wi-Fi only: new installs start with "Sync only on Wi-Fi" on and setup asks ("Sync on mobile data"); installs set up earlier keep "any network" (`wifiOnly` defaults to `SETUP_DONE != true`, frozen when setup finishes).
+- Lock screen: the status notification follows Android's setting (user's choice 2026-10-26): "show all content" shows device names, "hide sensitive" shows the public version.
+- Top-level screens pass `status = summary` to `AppScreen`: the chip sits in the title slot and takes only the width the title leaves (in the actions it cut the title to "Folde…").
+- Folders list scrolls to the top when a problem or request card is added while at the top (LazyColumn keeps the first visible item anchored, so the card landed off screen).
+- Request notification titles lead with the folder name (`"<label>" shared with you`); text in BigText.
+- Add folder and Add device ask "Discard changes?" on Back once edited (`rememberDiscardGuard`).
+- Add folder type is an inline radio list with hints. Numbers keep a space before % (SI style, user confirmed).
+
 ## Working rules
 - Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.
 - This file is public on purpose, so any session can resume the work. Nothing about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths, personal e-mail) may go into it, or into code, comments, commit messages or PR text. Use placeholders. Local test notes live in Claude's own memory folder, not in the repo.

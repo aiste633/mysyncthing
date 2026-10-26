@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -66,10 +65,9 @@ fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: ()
                 VersioningEditor(d.versioning) { v -> change(d.copy(versioning = v), "Versioning") { putVersioning(v) } }
             }
             SettingsGroup("Advanced") {
-                SettingRow(
-                    "Watch for changes", "Sync edits within seconds instead of at the next scan",
-                    trailing = { Switch(d.fsWatcherEnabled, onCheckedChange = null) },
-                ) { change(d.copy(fsWatcherEnabled = !d.fsWatcherEnabled), "Watch for changes") { put("fsWatcherEnabled", !d.fsWatcherEnabled) } }
+                SwitchRow("Watch for changes", "Sync edits within seconds instead of at the next scan", d.fsWatcherEnabled) { v ->
+                    change(d.copy(fsWatcherEnabled = v), "Watch for changes") { put("fsWatcherEnabled", v) }
+                }
                 SettingRow("Full rescan", rescanText(d.rescanIntervalS)) { dialog = DefaultsDialog.Rescan }
                 SettingRow("Download order", orderLabel(d.order)) { dialog = DefaultsDialog.Order }
                 SettingRow("Keep free on this phone", diskSizeText(d.minDiskFree)) { dialog = DefaultsDialog.DiskFree }
@@ -123,14 +121,12 @@ fun DefaultDeviceScreen(vm: MainViewModel, onBack: () -> Unit) {
             }
             Intro("Devices you add, and device requests you accept, start with these settings.")
             SettingsGroup("Trust") {
-                SettingRow(
-                    "Introducer", "Also add the devices it shares folders with",
-                    trailing = { Switch(d.introducer, onCheckedChange = null) },
-                ) { change(d.copy(introducer = !d.introducer), "Introducer") { put("introducer", !d.introducer) } }
-                SettingRow(
-                    "Accept its folders automatically", "Saved to Syncthing/<folder name> without asking",
-                    trailing = { Switch(d.autoAcceptFolders, onCheckedChange = null) },
-                ) { change(d.copy(autoAcceptFolders = !d.autoAcceptFolders), "Accept folders") { put("autoAcceptFolders", !d.autoAcceptFolders) } }
+                SwitchRow("Introducer", "Also add the devices it shares folders with", d.introducer) { v ->
+                    change(d.copy(introducer = v), "Introducer") { put("introducer", v) }
+                }
+                SwitchRow("Accept its folders automatically", "Saved to Syncthing/<folder name> without asking", d.autoAcceptFolders) { v ->
+                    change(d.copy(autoAcceptFolders = v), "Accept folders") { put("autoAcceptFolders", v) }
+                }
             }
             SettingsGroup("Advanced") {
                 SettingRow("Addresses", addressesText(d.addresses)) { dialog = DefaultsDialog.Addresses }

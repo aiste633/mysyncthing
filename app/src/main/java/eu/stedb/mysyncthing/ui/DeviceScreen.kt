@@ -16,8 +16,6 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.Switch
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -103,20 +101,15 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
             }
 
             SettingsGroup("Trust") {
-                SettingRow(
-                    "Untrusted", "Only receives encrypted data. Each shared folder needs a password.",
-                    trailing = { Switch(d.untrusted, onCheckedChange = null) },
-                ) { if (d.untrusted) vm.setUntrusted(id, false) else dialog = DeviceDialog.Untrusted }
+                SwitchRow("Untrusted", "Only receives encrypted data. Each shared folder needs a password.", d.untrusted) { v ->
+                    if (v) dialog = DeviceDialog.Untrusted else vm.setUntrusted(id, false)
+                }
                 // The core allows neither for an untrusted device.
                 if (!d.untrusted) {
-                    SettingRow(
-                        "Introducer", "Also add the devices it shares folders with",
-                        trailing = { Switch(d.introducer, onCheckedChange = null) },
-                    ) { vm.setIntroducer(id, !d.introducer) }
-                    SettingRow(
-                        "Accept its folders automatically", "Saved to Syncthing/<folder name> without asking",
-                        trailing = { Switch(d.autoAcceptFolders, onCheckedChange = null) },
-                    ) { vm.setAutoAccept(id, !d.autoAcceptFolders) }
+                    SwitchRow("Introducer", "Also add the devices it shares folders with", d.introducer) { vm.setIntroducer(id, it) }
+                    SwitchRow("Accept its folders automatically", "Saved to Syncthing/<folder name> without asking", d.autoAcceptFolders) {
+                        vm.setAutoAccept(id, it)
+                    }
                 }
             }
 
@@ -142,10 +135,9 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                 if (s.folders.isEmpty()) SettingRow("No folders yet", "Add one on the Folders tab")
                 s.folders.forEach { f ->
                     val entry = f.devices.find { it.deviceID == id }
-                    SettingRow(
-                        f.label.ifEmpty { f.id }, encryptionText(d, entry) ?: displayPath(f.path),
-                        trailing = { Checkbox(entry != null, onCheckedChange = null) },
-                    ) { if (sharesEncrypted(d, entry)) encrypt = f.id else vm.setShared(f, id, entry == null) }
+                    CheckRow(f.label.ifEmpty { f.id }, encryptionText(d, entry) ?: displayPath(f.path), entry != null) {
+                        if (sharesEncrypted(d, entry)) encrypt = f.id else vm.setShared(f, id, it)
+                    }
                 }
             }
 
@@ -169,7 +161,7 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
         DeviceDialog.Name -> TextDialog("Device name", d.name, "Name", onDismiss = close) { vm.renameDevice(id, it); close() }
         DeviceDialog.Group -> TextDialog(
             "Device group", d.group, "Group", supporting = "Devices in a group are listed together. Only on this phone.",
-            valid = { true }, onDismiss = close,
+            error = { null }, onDismiss = close,
         ) { vm.setDeviceGroup(id, it); close() }
         DeviceDialog.Addresses -> AddressesDialog(d.addresses, onDismiss = close) { vm.setAddresses(id, it); close() }
         DeviceDialog.Recv -> SpeedLimitDialog("Download limit", d.maxRecvKbps, onDismiss = close) { vm.setDeviceRecvLimit(id, it); close() }

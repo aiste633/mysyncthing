@@ -22,8 +22,11 @@ fun Snapshot.requests(): List<Request> {
     }
     val forFolders = pendingFolders.flatMap { (folder, p) ->
         p.offeredBy.map { (device, offer) ->
-            Request("folder:$folder:$device", "${name(device)} shares \"${offer.label.ifEmpty { folder }}\"",
-                "Tap Review to choose where to keep it", folder, device)
+            val have = folders.any { it.id == folder }
+            // The folder name leads: a heads-up shows one line of title and cut "<device> shares "…" before it.
+            Request("folder:$folder:$device", "\"${offer.label.ifEmpty { folder }}\" shared with you",
+                "From ${name(device)}. " + if (have) "You already have this folder; tap Review to share it." else "Tap Review to choose where to keep it.",
+                folder, device)
         }
     }
     return forDevices + forFolders
@@ -37,7 +40,12 @@ fun Snapshot.requests(): List<Request> {
  * Android groups several notifications from one app by itself.
  */
 object RequestNotifications {
-    private const val CHANNEL_ID = "requests"
+    /**
+     * Android keeps a channel's importance once created, so raising it to high
+     * (heads-up) needed a new ID; [OLD_CHANNEL_IDS] are removed at start.
+     */
+    private const val CHANNEL_ID = "requests-high"
+    private val OLD_CHANNEL_IDS = listOf("requests")
     private const val TAG = "request"
 
     /** Extras on the launch intent that open the review screen for one request. */
@@ -45,8 +53,11 @@ object RequestNotifications {
     const val EXTRA_REVIEW_DEVICE = "eu.stedb.mysyncthing.REVIEW_DEVICE"
 
     fun createChannel(context: Context) {
-        context.getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Requests", NotificationManager.IMPORTANCE_DEFAULT).apply {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        OLD_CHANNEL_IDS.forEach(nm::deleteNotificationChannel)
+        // High: a request waits on the user, and missed in the shade it blocks syncing for good.
+        nm.createNotificationChannel(
+            NotificationChannel(CHANNEL_ID, "Requests", NotificationManager.IMPORTANCE_HIGH).apply {
                 description = "New devices and shared folders waiting for your approval"
             }
         )
@@ -65,6 +76,7 @@ object RequestNotifications {
         .setSmallIcon(R.drawable.widget_ic_input)
         .setContentTitle(r.title)
         .setContentText(r.text)
+        .setStyle(NotificationCompat.BigTextStyle().bigText(r.text))
         .setContentIntent(review(context, r))
         .addAction(0, "Review", review(context, r))
         .addAction(0, "Ignore", ignore(context, r))

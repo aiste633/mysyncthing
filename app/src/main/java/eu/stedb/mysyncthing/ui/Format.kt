@@ -36,6 +36,13 @@ fun duration(seconds: Long): String {
 fun count(n: Int, word: String): String =
     String.format(Locale.getDefault(), "%,d", n) + " " + if (n == 1) word else word + "s"
 
+/** The Revert confirmation for [n] locally changed items, with the verbs agreeing. */
+fun revertText(n: Int): String {
+    val one = n == 1
+    return "${count(n, "item")} changed on this phone ${if (one) "is" else "are"} replaced with the version from your other devices, " +
+        "or deleted if ${if (one) "it doesn't" else "they don't"} exist there. This can't be undone."
+}
+
 /**
  * A REST time stamp (RFC 3339) for people, day before month, 24 h: "12:03" today,
  * "yesterday, 22:10", "25 Oct, 12:03" this year, else with the year.
@@ -220,4 +227,37 @@ fun versioningSummary(type: String, params: Map<String, String>): String {
 fun isDiscoveryServer(s: String): Boolean {
     val u = runCatching { java.net.URI(s.trim()) }.getOrNull() ?: return false
     return u.scheme == "https" && !u.host.isNullOrEmpty() && u.userInfo == null && (u.port == -1 || u.port in 1..65535)
+}
+
+// Form checks: each says why a value can't be saved, or returns null when it can.
+
+fun requiredError(s: String): String? = if (s.isBlank()) "Required" else null
+
+fun wholeNumberError(s: String): String? =
+    if (s.trim().toIntOrNull()?.let { it >= 0 } == true) null else "A whole number, 0 or more"
+
+/** A decimal typed with either separator; null when it isn't one. */
+fun decimal(s: String): Double? = s.replace(',', '.').trim().toDoubleOrNull()
+
+/** An amount in [unit]; [emptyOk] when empty means none, as for speed limits. */
+fun amountError(s: String, unit: String, emptyOk: Boolean = false): String? {
+    if (emptyOk && s.isBlank()) return null
+    val v = decimal(s) ?: return "Enter a number"
+    return when {
+        v < 0 -> "0 or more"
+        unit == "%" && v > 100 -> "Up to 100 %"
+        else -> null
+    }
+}
+
+fun folderPathError(path: String): String? = when {
+    path.isBlank() -> "Required"
+    !path.startsWith("/") -> "A full path, starting with /"
+    else -> null
+}
+
+fun folderIdError(id: String, existing: Collection<String>): String? = when {
+    id.isBlank() -> "Required"
+    id.trim() in existing -> "Another folder already has this ID"
+    else -> null
 }

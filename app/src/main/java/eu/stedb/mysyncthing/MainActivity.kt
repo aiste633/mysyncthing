@@ -6,13 +6,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.mutableStateOf
+import eu.stedb.mysyncthing.core.ProblemNotifications
 import eu.stedb.mysyncthing.core.RequestNotifications
 import eu.stedb.mysyncthing.core.StatusWidget
 import eu.stedb.mysyncthing.ui.App
 import eu.stedb.mysyncthing.ui.LaunchTarget
 
 class MainActivity : ComponentActivity() {
-    /** Where the widget or a request notification asked to go; cleared once shown. */
+    /** Where the widget or a request or problem notification asked to go; cleared once shown. */
     private val target = mutableStateOf<LaunchTarget?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,9 +32,11 @@ class MainActivity : ComponentActivity() {
         val folder = getStringExtra(RequestNotifications.EXTRA_REVIEW_FOLDER)
         val device = getStringExtra(RequestNotifications.EXTRA_REVIEW_DEVICE)
         val tab = getStringExtra(StatusWidget.EXTRA_TAB)
+        val open = getStringExtra(ProblemNotifications.EXTRA_OPEN_FOLDER)
         return when {
             folder != null && device != null -> LaunchTarget.ReviewFolder(folder, device)
             device != null -> LaunchTarget.ReviewDevice(device)
+            open != null -> LaunchTarget.OpenFolder(open)
             tab != null -> LaunchTarget.Tab(tab)
             else -> null
         }

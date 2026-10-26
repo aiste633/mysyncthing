@@ -17,13 +17,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.QrCode
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -58,9 +56,9 @@ fun DevicesScreen(
     val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
     AppScreen(
         title = "Devices",
-        actions = { StatusChip(summary) },
+        status = summary,
         fab = {
-            ExtendedFloatingActionButton(onClick = { onAdd("", "") }, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Add device") })
+            AddFab("Add device") { onAdd("", "") }
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {

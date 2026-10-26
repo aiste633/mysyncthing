@@ -3,6 +3,7 @@
 package eu.stedb.mysyncthing.ui
 
 import android.animation.ValueAnimator
+import androidx.activity.compose.BackHandler
 import android.net.Uri
 import android.provider.DocumentsContract
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -48,6 +49,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -58,6 +60,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -121,11 +124,15 @@ fun BusyIndicator() {
     else Icon(Icons.Default.HourglassTop, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
 }
 
-/** A screen with a top bar on the app's tinted background. [onBack] adds a back arrow. */
+/**
+ * A screen with a top bar on the app's tinted background. [onBack] adds a back
+ * arrow; [status] adds the status chip after the title.
+ */
 @Composable
 fun AppScreen(
     title: String,
     onBack: (() -> Unit)? = null,
+    status: Summary? = null,
     actions: @Composable () -> Unit = {},
     fab: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -136,7 +143,15 @@ fun AppScreen(
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
             TopAppBar(
-                title = { Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                title = {
+                    if (status == null) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    // In the title slot, not the actions: the bar sizes actions first, so a long
+                    // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
+                    else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        StatusChip(status, Modifier.weight(1f, fill = false).padding(start = 12.dp))
+                    }
+                },
                 navigationIcon = {
                     if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
                 },
@@ -169,7 +184,7 @@ fun ProgressBar(progress: Float, color: Color, modifier: Modifier = Modifier) {
 fun StatusChip(summary: Summary, modifier: Modifier = Modifier) {
     val look = summary.state.look()
     Surface(
-        modifier = modifier.padding(end = 8.dp),
+        modifier = modifier.padding(end = 4.dp),
         shape = MaterialTheme.shapes.small,
         color = MaterialTheme.colorScheme.surfaceContainerHighest,
     ) {
@@ -177,8 +192,7 @@ fun StatusChip(summary: Summary, modifier: Modifier = Modifier) {
             Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
             Spacer(Modifier.width(6.dp))
             Text(
-                summary.text, style = MaterialTheme.typography.labelLarge, maxLines = 1,
-                overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 180.dp),
+                summary.text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -267,16 +281,58 @@ fun SettingRow(
     trailing: @Composable (() -> Unit)? = null,
     danger: Boolean = false,
     onClick: (() -> Unit)? = null,
+) = SettingRowLayout(title, value, icon, trailing, if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier, danger)
+
+/**
+ * A row with a switch. The row is the toggle, so accessibility services read
+ * it as a switch with its on/off state; the switch itself only draws it.
+ */
+@Composable
+fun SwitchRow(title: String, value: String?, checked: Boolean, icon: ImageVector? = null, onChange: (Boolean) -> Unit) =
+    SettingRowLayout(
+        title, value, icon, trailing = { Switch(checked, onCheckedChange = null) },
+        modifier = Modifier.toggleable(checked, role = Role.Switch, onValueChange = onChange),
+    )
+
+/** Like [SwitchRow], with a checkbox: for picking items from a list. */
+@Composable
+fun CheckRow(title: String, value: String?, checked: Boolean, onChange: (Boolean) -> Unit) =
+    SettingRowLayout(
+        title, value, icon = null, trailing = { Checkbox(checked, onCheckedChange = null) },
+        modifier = Modifier.toggleable(checked, role = Role.Checkbox, onValueChange = onChange),
+    )
+
+@Composable
+private fun SettingRowLayout(
+    title: String,
+    value: String?,
+    icon: ImageVector?,
+    trailing: @Composable (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    danger: Boolean = false,
 ) {
     val color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     ListItem(
-        modifier = if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier,
+        modifier = modifier,
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = icon?.let { { Icon(it, null, tint = if (danger) color else MaterialTheme.colorScheme.onSurfaceVariant) } },
         headlineContent = { Text(title, color = color) },
-        supportingContent = value?.let { { Text(it, maxLines = 3, overflow = TextOverflow.Ellipsis) } },
+        // No line limit: hints are sentences, and a cut one can't be read anywhere else.
+        supportingContent = value?.let { { Text(it) } },
         trailingContent = trailing,
     )
+}
+
+/**
+ * The floating Add button of a tab. Built on the content overload: the
+ * icon-and-text one clears the text from accessibility (it expects the icon to
+ * carry the name), which left TalkBack saying only "Button".
+ */
+@Composable
+fun AddFab(label: String, onClick: () -> Unit) = ExtendedFloatingActionButton(onClick = onClick) {
+    Icon(Icons.Default.Add, null)
+    Spacer(Modifier.width(12.dp))
+    Text(label)
 }
 
 /** Shown instead of an empty list: what the list holds and how to fill it. */
@@ -317,29 +373,42 @@ fun <T> ChoiceDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                options.forEach { (value, label) ->
-                    Row(
-                        Modifier.fillMaxWidth().heightIn(min = 48.dp)
-                            .selectable(value == selected, role = Role.RadioButton) { onPick(value) },
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(value == selected, onClick = null)
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.padding(vertical = 8.dp)) {
-                            Text(label)
-                            describe(value)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                        }
-                    }
-                }
-            }
-        },
+        text = { ChoiceList(options, selected, Modifier.verticalScroll(rememberScrollState()), describe, onPick) },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
 
-/** Edits one text value; [valid] gates the Save button. */
+/** Radio rows with an optional explanation each; in [ChoiceDialog] and inline in forms. */
+@Composable
+fun <T> ChoiceList(
+    options: List<Pair<T, String>>,
+    selected: T,
+    modifier: Modifier = Modifier,
+    describe: (T) -> String? = { null },
+    onPick: (T) -> Unit,
+) {
+    Column(modifier) {
+        options.forEach { (value, label) ->
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 48.dp)
+                    .selectable(value == selected, role = Role.RadioButton) { onPick(value) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(value == selected, onClick = null)
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.padding(vertical = 8.dp)) {
+                    Text(label)
+                    describe(value)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Edits one text value. [error] says why a value can't be saved; it then
+ * replaces [supporting] under the field and Save is off.
+ */
 @Composable
 fun TextDialog(
     title: String,
@@ -347,25 +416,43 @@ fun TextDialog(
     label: String,
     singleLine: Boolean = true,
     supporting: String? = null,
-    valid: (String) -> Boolean = { it.isNotBlank() },
+    error: (String) -> String? = ::requiredError,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf(initial) }
+    val problem = error(text)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             OutlinedTextField(
                 text, { text = it }, label = { Text(label) }, singleLine = singleLine,
-                minLines = if (singleLine) 1 else 6,
-                supportingText = supporting?.let { { Text(it) } },
+                minLines = if (singleLine) 1 else 6, isError = problem != null,
+                supportingText = (problem ?: supporting)?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = valid(text)) { Text("Save") } },
+        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = problem == null) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+/**
+ * Back (system or arrow) that asks before dropping a form the user [changed].
+ * Returns the action for the top bar's arrow.
+ */
+@Composable
+fun rememberDiscardGuard(changed: Boolean, onBack: () -> Unit): () -> Unit {
+    var asking by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = changed) { asking = true }
+    if (asking) {
+        ConfirmDialog("Discard changes?", "What you entered here is lost.", "Discard", onDismiss = { asking = false }) {
+            asking = false
+            onBack()
+        }
+    }
+    return { if (changed) asking = true else onBack() }
 }
 
 @Composable
@@ -423,8 +510,7 @@ fun SpeedLimitDialog(title: String, kib: Int, onDismiss: () -> Unit, onSave: (In
     var value by rememberSaveable { mutableStateOf(if (kib > 0) number(v0) else "") }
     var unit by rememberSaveable { mutableStateOf(u0) }
     val units = listOf("kB/s", "MB/s")
-    val v = value.replace(',', '.').trim().let { if (it.isEmpty()) 0.0 else it.toDoubleOrNull() }
-    val valid = v != null && v >= 0
+    val error = amountError(value, unit, emptyOk = true)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -432,7 +518,7 @@ fun SpeedLimitDialog(title: String, kib: Int, onDismiss: () -> Unit, onSave: (In
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value, { value = it }, label = { Text("Limit") }, placeholder = { Text("No limit") },
-                    singleLine = true, isError = !valid,
+                    singleLine = true, isError = error != null, supportingText = error?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                 )
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -446,7 +532,7 @@ fun SpeedLimitDialog(title: String, kib: Int, onDismiss: () -> Unit, onSave: (In
                 Text("Leave empty or 0 for no limit.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(limitKib(v!!, unit)) }, enabled = valid) { Text("Save") } },
+        confirmButton = { TextButton(onClick = { onSave(limitKib(decimal(value) ?: 0.0, unit)) }, enabled = error == null) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }
@@ -499,8 +585,9 @@ fun ListEditDialog(
                 }
                 OutlinedTextField(
                     draft, { draft = it }, label = { Text("Add") }, singleLine = true,
-                    isError = draft.isNotBlank() && !draftValid,
-                    supportingText = { Text(addHint) },
+                    isError = (draft.isNotBlank() && !draftValid) || all.isEmpty(),
+                    // Save is off with nothing in the list, so say why instead of the format hint.
+                    supportingText = { Text(if (all.isEmpty()) "Add one, or tick \"$tokenTitle\"" else addHint) },
                     trailingIcon = {
                         IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, "Add") }
                     },

@@ -9,7 +9,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.QrCodeScanner
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,9 +65,11 @@ fun DeviceEditScreen(
     val added = remember(s.devices, s.myId) { (s.devices.map { it.deviceID } + s.myId).toSet() }
     val candidates = nearby.filterKeys { it !in added }
 
+    val back = rememberDiscardGuard(id != initialId || name != initialName || share.isNotEmpty(), onBack)
+
     AppScreen(
         title = if (isRequest) "Add \"${initialName.ifEmpty { shortId(initialId) }}\"" else "Add device",
-        onBack = onBack,
+        onBack = back,
         actions = {
             TextButton(enabled = valid, onClick = { onSave(id, name, s.folders.filter { it.id in share }) }) { Text("Save") }
         },
@@ -89,6 +90,7 @@ fun DeviceEditScreen(
                             Text(
                                 when {
                                     known -> "Already added"
+                                    id.isNotBlank() && !valid -> "Not a device ID: 8 groups of 7 letters and digits"
                                     isRequest -> "Check it matches the other device"
                                     else -> "Scan its QR code, paste it, or pick a nearby device"
                                 },
@@ -123,9 +125,7 @@ fun DeviceEditScreen(
                 if (s.folders.isEmpty()) SettingRow("No folders yet", "Add one on the Folders tab")
                 s.folders.forEach { f ->
                     val on = f.id in share
-                    SettingRow(f.label.ifEmpty { f.id }, displayPath(f.path), trailing = { Checkbox(on, onCheckedChange = null) }) {
-                        share = if (on) share - f.id else share + f.id
-                    }
+                    CheckRow(f.label.ifEmpty { f.id }, displayPath(f.path), on) { share = if (it) share + f.id else share - f.id }
                 }
             }
         }

@@ -14,6 +14,8 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning.
 - Run conditions: Wi-Fi only, unmetered only, while charging, not in battery saver.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.
+- Notifies you of new devices and shared folders (with Review and Ignore) and of folders that stop syncing.
+- Works with TalkBack: every button is named and every switch and checkbox reads as on or off.
 - Syncthing's own web GUI is built in for anything the app does not cover, signed in automatically and private to the app.
 - Reproducible builds: every build of a release gives a byte-identical APK, so anyone can check that a release APK was built from this source.
 - No tracking: no analytics or crash-reporting libraries. Syncthing's anonymous usage reporting is asked once and is off unless you say yes.
