@@ -1,8 +1,10 @@
 package eu.stedb.mysyncthing.core
 
+import android.os.Environment
 import eu.stedb.mysyncthing.stbridge.Stbridge
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,9 +37,26 @@ object SyncthingCore {
         _state.value = try {
             Stbridge.start(home.absolutePath, credentials.apiKey, credentials.guiUser, credentials.guiPassword)
             val address = Stbridge.guiAddress()
-            CoreState.Running(RestClient(address, credentials.apiKey), address, Stbridge.deviceID(), credentials)
+            val client = RestClient(address, credentials.apiKey)
+            adoptFolderDefaults(client)
+            CoreState.Running(client, address, Stbridge.deviceID(), credentials)
         } catch (e: Exception) {
             CoreState.Failed(e.message ?: e.toString())
+        }
+    }
+
+    /**
+     * Folders the core creates by itself (auto-accepted, or added in the web GUI)
+     * use its defaults, whose path "~" means the app's private directory here.
+     * Points them at Syncthing/ in shared storage, as the app's own forms do,
+     * unless the defaults were already changed. The API may need a moment to
+     * come up; a miss is retried at the next start.
+     */
+    private suspend fun adoptFolderDefaults(client: RestClient) {
+        val root = Environment.getExternalStorageDirectory().path + "/Syncthing"
+        repeat(5) {
+            if (runCatching { client.adoptFolderDefaults(root) }.isSuccess) return
+            delay(500)
         }
     }
 

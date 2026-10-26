@@ -34,7 +34,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.Folder
@@ -90,8 +89,7 @@ fun FoldersScreen(
                         }
                     }
                 }
-                // Ungrouped folders first, then each group under its name.
-                s.folders.groupBy { it.group.trim() }.toSortedMap(String.CASE_INSENSITIVE_ORDER.thenBy { it }).forEach { (group, folders) ->
+                grouped(s.folders) { it.group }.forEach { (group, folders) ->
                     if (group.isNotEmpty()) item("group-$group") { GroupTitle(group) }
                     items(folders, key = { it.id }) { f -> FolderCard(f, s.folderStatus[f.id], s) { onOpen(f.id) } }
                 }
@@ -99,13 +97,6 @@ fun FoldersScreen(
         }
     }
 }
-
-@Composable
-private fun GroupTitle(name: String) = Text(
-    name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
-    color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
-    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 20.dp, bottom = 6.dp),
-)
 
 @Composable
 private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onClick: () -> Unit) {

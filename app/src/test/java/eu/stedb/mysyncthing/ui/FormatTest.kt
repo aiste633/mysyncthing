@@ -64,4 +64,18 @@ class FormatTest {
         assertEquals(listOf(3_600, 21_600, 86_400, 0, 600), rescanChoices(600).map { it.first })
         assertEquals("Smallest first", orderLabel("smallestFirst"))
     }
+
+    @Test
+    fun speedLimitsRoundTripInSi() {
+        assertEquals("No limit", limitText(0))
+        assertEquals(488, limitKib(500.0, "kB/s"))
+        assertEquals("500 kB/s", limitText(488))
+        assertEquals(977, limitKib(1.0, "MB/s"))
+        assertEquals("1 MB/s", limitText(977))
+        assertEquals("2.5 MB/s", limitText(limitKib(2.5, "MB/s")))
+        assertEquals(1, limitKib(0.1, "kB/s"))
+        assertEquals(0, limitKib(0.0, "MB/s"))
+        assertEquals("Automatic", connectionsText(0))
+        assertEquals(listOf(0, 1, 2, 3, 4, 8, 6), connectionChoices(6).map { it.first })
+    }
 }

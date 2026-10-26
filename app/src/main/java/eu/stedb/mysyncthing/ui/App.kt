@@ -25,10 +25,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -71,12 +68,15 @@ private object Routes {
     const val DEVICE_NEEDS = "device/{id}/needs/{folder}"
     const val THIS_PHONE = "this-phone"
     const val ADD_FOLDER = "add-folder?offer={offer}&from={from}"
+    const val ADD_DEVICE = "add-device?id={id}&name={name}"
     const val WEB_GUI = "webgui"
+    const val IGNORED = "ignored"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
     fun ignores(id: String, first: Boolean = false) = "folder/${Uri.encode(id)}/ignores?first=$first"
     fun device(id: String) = "device/${Uri.encode(id)}"
     fun deviceNeeds(id: String, folder: String) = "device/${Uri.encode(id)}/needs/${Uri.encode(folder)}"
+    fun addDevice(id: String = "", name: String = "") = "add-device?id=${Uri.encode(id)}&name=${Uri.encode(name)}"
     fun addFolder(offer: String? = null, from: String? = null) =
         "add-folder?offer=${Uri.encode(offer.orEmpty())}&from=${Uri.encode(from.orEmpty())}"
 }
@@ -104,7 +104,6 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         val current by nav.currentBackStackEntryAsState()
         val route = current?.destination?.route
         val topLevel = Tab.entries.any { it.route == route }
-        var reviewDevice by rememberSaveable { mutableStateOf<String?>(null) }
         LaunchedEffect(target) {
             when (target) {
                 is LaunchTarget.Tab -> Tab.entries.find { it.route == target.route }?.let { nav.navigate(it.route) { launchSingleTop = true } }
@@ -116,8 +115,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     }
                 }
                 is LaunchTarget.ReviewDevice -> {
-                    reviewDevice = target.device
-                    nav.navigate(Tab.Devices.route) { launchSingleTop = true }
+                    val s = vm.snapshot.first { it.loaded }
+                    s.pendingDevices[target.device]?.let { nav.navigate(Routes.addDevice(target.device, it.name)) }
                 }
                 null -> return@LaunchedEffect
             }
@@ -153,12 +152,15 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         DevicesScreen(
                             snapshot, summary, vm, onOpen = { nav.navigate(Routes.device(it)) },
                             onOpenThisPhone = { nav.navigate(Routes.THIS_PHONE) },
-                            review = reviewDevice, onReviewShown = { reviewDevice = null },
+                            onAdd = { id, name -> nav.navigate(Routes.addDevice(id, name)) },
                         )
                     }
                 }
                 composable(Tab.Settings.route) {
-                    SettingsScreen(vm, snapshot, summary, core, permissions, onOpenWebGui = { nav.navigate(Routes.WEB_GUI) })
+                    SettingsScreen(
+                        vm, snapshot, summary, core, permissions,
+                        onOpenWebGui = { nav.navigate(Routes.WEB_GUI) }, onOpenIgnored = { nav.navigate(Routes.IGNORED) },
+                    )
                 }
                 composable(Routes.FOLDER) { entry ->
                     val id = entry.arguments?.getString("id").orEmpty()
@@ -220,6 +222,21 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                             }
                         }
                     }
+                }
+                composable(Routes.ADD_DEVICE) { entry ->
+                    val id = entry.arguments?.getString("id").orEmpty()
+                    val name = entry.arguments?.getString("name").orEmpty()
+                    CoreGate(core) {
+                        if (snapshot.loaded) {
+                            DeviceEditScreen(snapshot, id, name, vm, onBack = { nav.popBackStack() }) { newId, newName, folders ->
+                                vm.addDevice(newId, newName, folders)
+                                nav.popBackStack()
+                            }
+                        }
+                    }
+                }
+                composable(Routes.IGNORED) {
+                    CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
                 }
                 composable(Routes.WEB_GUI) {
                     (core as? CoreState.Running)?.let { WebGuiScreen(it, onClose = { nav.popBackStack() }) }

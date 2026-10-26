@@ -1,7 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
 import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -21,20 +20,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.QrCode
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,8 +41,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
 import eu.stedb.mysyncthing.core.Device
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
@@ -59,24 +52,15 @@ fun DevicesScreen(
     vm: MainViewModel,
     onOpen: (String) -> Unit,
     onOpenThisPhone: () -> Unit,
-    review: String? = null,
-    onReviewShown: () -> Unit = {},
+    onAdd: (id: String, name: String) -> Unit,
 ) {
-    // Pair of (id, name) for the add dialog; also used to accept a pending device.
-    var draft by rememberSaveable { mutableStateOf<List<String>?>(null) }
-    // A request notification's Review opens the add dialog for that device, if it is still waiting.
-    LaunchedEffect(review, s.loaded) {
-        if (review == null || !s.loaded) return@LaunchedEffect
-        s.pendingDevices[review]?.let { draft = listOf(review, it.name) }
-        onReviewShown()
-    }
     var showMyId by rememberSaveable { mutableStateOf(false) }
     val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
     AppScreen(
         title = "Devices",
         actions = { StatusChip(summary) },
         fab = {
-            ExtendedFloatingActionButton(onClick = { draft = listOf("", "") }, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Add device") })
+            ExtendedFloatingActionButton(onClick = { onAdd("", "") }, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Add device") })
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -86,11 +70,14 @@ fun DevicesScreen(
                     item("pending-$id") {
                         RequestCard("${p.name.ifEmpty { shortId(id) }} wants to connect", "Device ID ${shortId(id)} · ${p.address}") {
                             TextButton(onClick = { vm.ignoreDevice(id) }) { Text("Ignore") }
-                            TextButton(onClick = { draft = listOf(id, p.name) }) { Text("Review") }
+                            TextButton(onClick = { onAdd(id, p.name) }) { Text("Review") }
                         }
                     }
                 }
-                items(s.devices, key = { it.deviceID }) { d -> DeviceCard(d, s) { onOpen(d.deviceID) } }
+                grouped(s.devices) { it.group }.forEach { (group, devices) ->
+                    if (group.isNotEmpty()) item("group-$group") { GroupTitle(group) }
+                    items(devices, key = { it.deviceID }) { d -> DeviceCard(d, s) { onOpen(d.deviceID) } }
+                }
                 if (s.loaded && s.devices.isEmpty() && s.pendingDevices.isEmpty()) {
                     item("empty") {
                         EmptyState(
@@ -101,9 +88,6 @@ fun DevicesScreen(
                 }
             }
         }
-    }
-    draft?.let { (id, name) ->
-        DeviceDialog(id, name, onDismiss = { draft = null }) { newId, newName -> vm.addDevice(newId, newName); draft = null }
     }
     if (showMyId) MyIdDialog(s.myId) { showMyId = false }
 }
@@ -174,36 +158,6 @@ private fun DeviceCard(d: Device, s: Snapshot, onClick: () -> Unit) {
 }
 
 @Composable
-private fun DeviceDialog(initialId: String, initialName: String, onDismiss: () -> Unit, onConfirm: (String, String) -> Unit) {
-    var id by remember { mutableStateOf(initialId) }
-    var name by remember { mutableStateOf(initialName) }
-    val scan = rememberLauncherForActivityResult(ScanContract()) { r -> r.contents?.let { id = it.trim() } }
-    val valid = DEVICE_ID.matches(id.trim())
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add device") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    id, { id = it }, label = { Text("Device ID") }, readOnly = initialId.isNotEmpty(),
-                    isError = id.isNotBlank() && !valid,
-                    supportingText = { Text(if (initialId.isNotEmpty()) "Check it matches the other device" else "Scan its QR code or paste it") },
-                    trailingIcon = {
-                        if (initialId.isEmpty()) IconButton(onClick = {
-                            scan.launch(ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setBeepEnabled(false).setOrientationLocked(false)
-                                .setCaptureActivity(ScanActivity::class.java))
-                        }) { Icon(Icons.Default.QrCodeScanner, "Scan QR code") }
-                    },
-                )
-                OutlinedTextField(name, { name = it }, label = { Text("Name (optional)") }, singleLine = true)
-            }
-        },
-        confirmButton = { TextButton(onClick = { onConfirm(id, name) }, enabled = valid) { Text("Add") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
-    )
-}
-
-@Composable
 private fun MyIdDialog(id: String, onDismiss: () -> Unit) {
     val qr = remember(id) { qrCode(id) }
     AlertDialog(
@@ -218,6 +172,3 @@ private fun MyIdDialog(id: String, onDismiss: () -> Unit) {
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
 }
-
-/** 8 groups of 7 base32 chars, dashes optional (Syncthing accepts both). */
-private val DEVICE_ID = Regex("^[A-Za-z2-7]{7}(-?[A-Za-z2-7]{7}){7}$")

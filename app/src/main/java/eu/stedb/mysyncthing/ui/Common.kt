@@ -73,6 +73,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.text.input.KeyboardType
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.Summary
@@ -393,3 +399,50 @@ fun treeUriToPath(uri: Uri): String? {
 }
 
 const val INTERNAL_STORAGE = "/storage/emulated/0"
+
+/** Heading over a group of cards on a tab (folder or device groups). */
+@Composable
+fun GroupTitle(name: String) = Text(
+    name, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold,
+    color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 20.dp, bottom = 6.dp),
+)
+
+/** Items without a group first (key ""), then each group by name; groups differing only in case stay apart. */
+fun <T> grouped(items: List<T>, group: (T) -> String): Map<String, List<T>> =
+    items.groupBy { group(it).trim() }.toSortedMap(String.CASE_INSENSITIVE_ORDER.thenBy { it })
+
+/** A speed limit in kB/s or MB/s; empty or 0 means no limit. Returns KiB/s, as the core stores it. */
+@Composable
+fun SpeedLimitDialog(title: String, kib: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+    val (v0, u0) = limitSi(kib)
+    var value by rememberSaveable { mutableStateOf(if (kib > 0) number(v0) else "") }
+    var unit by rememberSaveable { mutableStateOf(u0) }
+    val units = listOf("kB/s", "MB/s")
+    val v = value.replace(',', '.').trim().let { if (it.isEmpty()) 0.0 else it.toDoubleOrNull() }
+    val valid = v != null && v >= 0
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value, { value = it }, label = { Text("Limit") }, placeholder = { Text("No limit") },
+                    singleLine = true, isError = !valid,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
+                )
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    units.forEachIndexed { i, u ->
+                        SegmentedButton(
+                            selected = unit == u, onClick = { unit = u }, icon = {},
+                            shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
+                        ) { Text(u) }
+                    }
+                }
+                Text("Leave empty or 0 for no limit.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        },
+        confirmButton = { TextButton(onClick = { onSave(limitKib(v!!, unit)) }, enabled = valid) { Text("Save") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+}
