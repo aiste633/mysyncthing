@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Environment
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
@@ -57,6 +58,16 @@ class SyncthingService : LifecycleService() {
             }
         }
         startForeground(NOTIFICATION_ID, notification("Starting"), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        // Without All files access the app still sees the files it wrote itself, .stfolder included, so the
+        // core's folder-marker check passes and every other file would be scanned as deleted and synced as such.
+        // Android kills the app when the access is taken away; this keeps the sticky restart (and boot) from
+        // starting the core again.
+        if (!Environment.isExternalStorageManager()) {
+            ProblemNotifications.noFileAccess(this, true)
+            stopSelf()
+            return
+        }
+        ProblemNotifications.noFileAccess(this, false)
 
         lifecycleScope.launch {
             val home = File(filesDir, "syncthing")
@@ -97,7 +108,7 @@ class SyncthingService : LifecycleService() {
     override fun onDestroy() {
         // Let the core flush its database before the process may be killed.
         runBlocking { SyncthingCore.stop() }
-        Summary(SyncState.Stopped, "Stopped").let {
+        Summary(SyncState.Stopped, if (Environment.isExternalStorageManager()) "Stopped" else "Stopped: no access to files").let {
             SyncStatus.publish(it)
             StatusWidget.render(this, it) // the collector above is already cancelled
         }

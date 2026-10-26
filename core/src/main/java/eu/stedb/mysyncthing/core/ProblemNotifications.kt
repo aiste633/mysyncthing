@@ -31,6 +31,7 @@ object ProblemNotifications {
     private const val CHANNEL_ID = "problems"
     private const val NOTIFICATION_ID = 3
     private const val FOLDER_TAG = "folder"
+    private const val NO_ACCESS_ID = 4
 
     /** Extra on the launch intent that opens one folder's screen. */
     const val EXTRA_OPEN_FOLDER = "eu.stedb.mysyncthing.OPEN_FOLDER"
@@ -82,6 +83,35 @@ object ProblemNotifications {
             )
             .build()
         nm.notify(NOTIFICATION_ID, n)
+    }
+
+    /**
+     * Syncing stopped because All files access is off; tapping opens the app,
+     * whose setup checklist asks for it again. Cleared once the service starts with it.
+     */
+    fun noFileAccess(context: Context, show: Boolean) {
+        val nm = context.getSystemService(NotificationManager::class.java)
+        if (!show) {
+            nm.cancel(NO_ACCESS_ID)
+            return
+        }
+        val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        val open = PendingIntent.getActivity(context, NO_ACCESS_ID, launch, PendingIntent.FLAG_IMMUTABLE)
+        val text = "MySyncthing has no access to your files. Allow All files access to sync again."
+        nm.notify(
+            NO_ACCESS_ID,
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.widget_ic_problem)
+                .setContentTitle("Syncing stopped")
+                .setContentText(text)
+                .setStyle(NotificationCompat.BigTextStyle().bigText(text))
+                .setContentIntent(open)
+                .setAutoCancel(true)
+                .setOnlyAlertOnce(true)
+                .setCategory(NotificationCompat.CATEGORY_ERROR)
+                .build(),
+        )
     }
 
     /**
