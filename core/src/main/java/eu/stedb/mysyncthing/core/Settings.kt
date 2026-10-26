@@ -65,8 +65,12 @@ class Settings(context: Context) {
     /** True once the user tapped Done on the setup checklist. */
     val setupDone: Flow<Boolean> = store.data.map { it[SETUP_DONE] ?: false }
 
+    /** Also stores the Wi-Fi choice, whose default depends on [SETUP_DONE] (see [runConditions]). */
     suspend fun setSetupDone() {
-        store.edit { it[SETUP_DONE] = true }
+        store.edit {
+            it[WIFI_ONLY] = it.runConditions().wifiOnly
+            it[SETUP_DONE] = true
+        }
     }
 
     /** True after a phone migration brought the identity along, until the user has seen the note. */
@@ -87,7 +91,9 @@ class Settings(context: Context) {
     }
 
     private fun Preferences.runConditions() = RunConditions(
-        wifiOnly = this[WIFI_ONLY] ?: false,
+        // Mobile data can cost money, so new installs start on Wi-Fi only (setup asks).
+        // Installs set up before that had no stored value and meant "any network".
+        wifiOnly = this[WIFI_ONLY] ?: (this[SETUP_DONE] != true),
         unmeteredOnly = this[UNMETERED_ONLY] ?: false,
         chargingOnly = this[CHARGING_ONLY] ?: false,
         respectBatterySaver = this[RESPECT_BATTERY_SAVER] ?: true,

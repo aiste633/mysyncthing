@@ -80,7 +80,7 @@ class SyncthingService : LifecycleService() {
                 summarize(core, snap, reason, d.online)
             }.collect { summary ->
                 SyncStatus.publish(summary)
-                updateNotification(summary.line())
+                updateNotification(summary.line(), summary.publicText)
             }
         }
     }
@@ -89,7 +89,7 @@ class SyncthingService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_STOP -> stopSelf()
-            ACTION_REFRESH -> lastText?.let { lastText = null; updateNotification(it) }
+            ACTION_REFRESH -> lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
         }
         return START_STICKY
     }
@@ -150,6 +150,11 @@ class SyncthingService : LifecycleService() {
         }
     }
 
+    /**
+     * Android raises a foreground service's MIN channel to LOW, so the
+     * notification shows in the shade on every phone; it stays out of the
+     * status bar. The user can hide it by turning the channel off.
+     */
     private fun createChannel() {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
@@ -159,7 +164,8 @@ class SyncthingService : LifecycleService() {
         )
     }
 
-    private fun notification(text: String): Notification {
+    /** [publicText] is for the lock screen: the state without device names. */
+    private fun notification(text: String, publicText: String = text): Notification {
         val launch = packageManager.getLaunchIntentForPackage(packageName)
         val content = launch?.let { PendingIntent.getActivity(this, 0, it, PendingIntent.FLAG_IMMUTABLE) }
         val stop = PendingIntent.getService(
@@ -173,20 +179,35 @@ class SyncthingService : LifecycleService() {
             .addAction(0, "Stop", stop)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            // Its own group keeps it out of Android's automatic group of our other
+            // notifications, whose summary would otherwise inherit "ongoing" and
+            // could not be swiped away while a request or problem shows.
+            .setGroup(SERVICE_GROUP)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
+            .setPublicVersion(
+                NotificationCompat.Builder(this, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.stat_notify_sync)
+                    .setContentTitle("Syncthing")
+                    .setContentText(publicText)
+                    .setGroup(SERVICE_GROUP)
+                    .build()
+            )
             .build()
     }
 
-    private var lastText: String? = null
+    /** The texts last posted, so an unchanged summary posts nothing. */
+    private var lastShown: Pair<String, String>? = null
 
-    private fun updateNotification(text: String) {
-        if (text == lastText) return
-        lastText = text
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text))
+    private fun updateNotification(text: String, publicText: String = text) {
+        if (text to publicText == lastShown) return
+        lastShown = text to publicText
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, publicText))
     }
 
     companion object {
         private const val CHANNEL_ID = "sync"
         private const val NOTIFICATION_ID = 1
+        private const val SERVICE_GROUP = "service"
         private const val ACTION_STOP = "eu.stedb.mysyncthing.STOP"
         private const val ACTION_REFRESH = "eu.stedb.mysyncthing.REFRESH_NOTIFICATION"
 

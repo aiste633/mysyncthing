@@ -96,6 +96,8 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Request notifications: channel `requests-high`, high importance (user's choice); the old `requests` channel is deleted at start (Android never raises an existing channel's importance).
 - Folders in state "error" (stopped: marker missing, path gone, below keep free) notify on the Problems channel, one per folder, gone when fixed; single failed files don't notify (user's choice).
 - An offer of a folder this phone already has (the core lists it as pending when not shared with that device) shows Share instead of Review.
+- Sync service notification: Android raises a foreground service's MIN channel to LOW, so it always shows in the shade. It has a lock-screen public version without device or folder names (`Summary.publicText`), and its own group (`service`) so Android's automatic group of the other notifications doesn't get an ongoing, unswipeable summary. Setup says how to hide it.
+- Wi-Fi only: new installs start with "Sync only on Wi-Fi" on and setup asks ("Sync on mobile data"); installs set up earlier keep "any network" (`wifiOnly` defaults to `SETUP_DONE != true`, frozen when setup finishes).
 - Add folder type is an inline radio list with hints. Numbers keep a space before % (SI style, user confirmed).
 
 ## Working rules

@@ -98,7 +98,10 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         val setupDone by vm.setupDone.collectAsStateWithLifecycle()
         // All files access is required, so losing it brings the checklist back.
         if (!permissions.storage || setupDone == false) {
-            SetupScreen(permissions, onDone = vm::finishSetup)
+            val rc by vm.runConditions.collectAsStateWithLifecycle()
+            SetupScreen(
+                permissions, rc.wifiOnly, onWifiOnly = { v -> vm.setRunConditions { it.copy(wifiOnly = v) } }, onDone = vm::finishSetup,
+            )
             return@AppTheme
         }
         if (setupDone == null) return@AppTheme

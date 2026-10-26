@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
@@ -118,7 +119,7 @@ fun rememberNotificationRequest(state: PermissionState): () -> Unit {
  * even after the required one is granted; Settings shows the same rows.
  */
 @Composable
-fun SetupScreen(state: PermissionState, onDone: () -> Unit) {
+fun SetupScreen(state: PermissionState, wifiOnly: Boolean, onWifiOnly: (Boolean) -> Unit, onDone: () -> Unit) {
     val requestNotifications = rememberNotificationRequest(state)
     // Surface sets the text colour for dark mode; there is no Scaffold here.
     Surface(Modifier.fillMaxSize(), color = AppColors.background) {
@@ -134,6 +135,12 @@ fun SetupScreen(state: PermissionState, onDone: () -> Unit) {
             )
             Card(colors = AppColors.card(), border = AppColors.cardBorder()) {
                 PermissionRows(state, requestNotifications, checklist = true)
+            }
+            Card(colors = AppColors.card(), border = AppColors.cardBorder()) {
+                SwitchRow(
+                    "Sync on mobile data", if (wifiOnly) "Off: only on Wi-Fi or Ethernet. You can change it in Settings." else "On: also uses mobile data",
+                    !wifiOnly, Icons.Default.SignalCellularAlt,
+                ) { onWifiOnly(!it) }
             }
             Button(onClick = onDone, enabled = state.storage, shape = ButtonShape, modifier = Modifier.fillMaxWidth()) { Text("Done") }
         }
@@ -151,7 +158,8 @@ fun PermissionRows(state: PermissionState, requestNotifications: () -> Unit, che
     if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     PermissionRow(
         Icons.Default.Notifications, "Notifications", "Optional".takeIf { checklist },
-        "Sync status and new device or folder requests.",
+        "Requests from new devices and folders, and problems. While Syncthing runs, Android also requires a small status notification; " +
+            "to hide it, turn off its \u201cSync service\u201d category.",
         state.notifications, "Allow", requestNotifications,
     )
     if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
