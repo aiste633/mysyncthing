@@ -1,12 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
 android {
     namespace = "eu.stedb.mysyncthing"
-    compileSdk = 36
+    compileSdk = 37
     // Also strips the Go .so files, so it must match the NDK go/build.sh uses.
     ndkVersion = providers.gradleProperty("mysyncthing.ndkVersion").get()
 
