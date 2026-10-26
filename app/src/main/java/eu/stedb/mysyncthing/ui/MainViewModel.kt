@@ -8,6 +8,8 @@ import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.RestClient
+import eu.stedb.mysyncthing.core.RestoreResult
+import eu.stedb.mysyncthing.core.restoreDatedNow
 import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.Snapshot
@@ -20,6 +22,8 @@ import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.Device
 import eu.stedb.mysyncthing.core.DeviceStats
+import eu.stedb.mysyncthing.core.DiskChange
+import eu.stedb.mysyncthing.core.FileVersion
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.IgnoredRequests
 import eu.stedb.mysyncthing.core.Options
@@ -42,6 +46,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -172,6 +177,39 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setDeviceSendLimit(id: String, kib: Int) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
     fun setCompression(id: String, c: String) = patchDevice(id, "Compression") { put("compression", c) }
     fun setNumConnections(id: String, n: Int) = patchDevice(id, "Connections") { put("numConnections", n) }
+
+    /** The core's latest file changes, newest first; nothing is stored by the app. */
+    suspend fun recentChanges(limit: Int): List<RecentChange>? = runCatching {
+        val c = client ?: return null
+        c.diskEvents(limit).mapNotNull { e ->
+            val d = e.data?.let { runCatching { c.json.decodeFromJsonElement<DiskChange>(it) }.getOrNull() } ?: return@mapNotNull null
+            RecentChange(e.id, e.time, fromThisPhone = e.type == "LocalChangeDetected", d)
+        }.asReversed()
+    }.getOrNull()
+
+    suspend fun versions(folder: String): Map<String, List<FileVersion>>? = runCatching { client?.versions(folder) }.getOrNull()
+
+    /** Restores files to the given version times; false when anything failed (the reason goes to the snackbar). */
+    suspend fun restoreVersions(folder: String, versions: Map<String, String>): Boolean {
+        val c = client ?: return false
+        val result = runCatching {
+            val f = c.folders().first { it.id == folder }
+            c.restoreDatedNow(f, versions)
+        }.getOrElse { RestoreResult(mapOf("" to (it.message ?: "error")), emptyList()) }
+        val (errors, undated) = result
+        when {
+            errors.isNotEmpty() -> {
+                val (file, error) = errors.entries.first()
+                _message.send("Restore failed${if (file.isNotEmpty()) " for $file" else ""}: $error" + if (errors.size > 1) " (and ${errors.size - 1} more)" else "")
+            }
+            undated.isNotEmpty() -> _message.send(
+                "Restored, but the date of ${undated.first()}" + (if (undated.size > 1) " (and ${undated.size - 1} more)" else "") +
+                    " could not be updated, so the restore may not sync",
+            )
+            else -> _message.send(if (versions.size == 1) "Restored" else "Restored ${count(versions.size, "file")}")
+        }
+        return errors.isEmpty()
+    }
 
     suspend fun defaultFolder(): Folder? = runCatching { client?.defaultFolder() }.getOrNull()
     suspend fun defaultDevice(): Device? = runCatching { client?.defaultDevice() }.getOrNull()

@@ -75,6 +75,24 @@ data class Options(
     val globalAnnounceServers: List<String> = listOf("default"),
 )
 
+/** The data of a LocalChangeDetected or RemoteChangeDetected event. */
+@Serializable
+data class DiskChange(
+    val folder: String = "",
+    val label: String = "",
+    /** "modified" or "deleted"; the core does not tell additions apart. */
+    val action: String = "",
+    /** "file", "dir" or "symlink". */
+    val type: String = "",
+    val path: String = "",
+    /** Short device ID of the device that made the change. */
+    val modifiedBy: String = "",
+)
+
+/** One archived copy of a file in a folder's versions. */
+@Serializable
+data class FileVersion(val versionTime: String = "", val modTime: String = "", val size: Long = 0)
+
 @Serializable
 data class DefaultIgnores(val lines: List<String> = emptyList())
 

@@ -60,6 +60,7 @@ fun FolderScreen(
     onOpenFailed: () -> Unit,
     onOpenChanges: () -> Unit,
     onOpenIgnores: () -> Unit,
+    onOpenVersions: () -> Unit,
 ) {
     val f = s.folders.find { it.id == id }
     if (f == null) {
@@ -189,6 +190,12 @@ fun FolderScreen(
 
             SettingsGroup("File versioning") {
                 VersioningEditor(f.versioning) { vm.setVersioning(id, it) }
+                if (f.versioning.type.isNotEmpty()) {
+                    SettingRow(
+                        "Restore versions", "Get back files changed or deleted by other devices",
+                        trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, onClick = onOpenVersions,
+                    )
+                }
             }
 
             SettingsGroup("Advanced") {

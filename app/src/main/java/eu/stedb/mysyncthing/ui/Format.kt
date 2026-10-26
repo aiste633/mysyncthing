@@ -54,6 +54,22 @@ fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: 
     }
 }
 
+/** Heading for a day of changes: "Today", "Yesterday", "3 Oct", "3 Oct 2025"; null for an unreadable time. */
+fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): String? {
+    val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
+    val day = t.toLocalDate()
+    return when {
+        day == now.toLocalDate() -> "Today"
+        day == now.toLocalDate().minusDays(1) -> "Yesterday"
+        t.year == now.year -> t.format(DateTimeFormatter.ofPattern("d MMM", locale))
+        else -> t.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale))
+    }
+}
+
+/** Just the 24 h clock time, for rows under a [dayText] heading. */
+fun clockText(rfc3339: String, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
+    runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(zone).format(DateTimeFormatter.ofPattern("HH:mm")) }.getOrDefault("")
+
 val PULL_ORDERS = listOf(
     "random" to "Random",
     "alphabetic" to "Alphabetical",

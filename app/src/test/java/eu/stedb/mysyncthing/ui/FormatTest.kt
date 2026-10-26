@@ -110,4 +110,14 @@ class FormatTest {
         assertEquals("Encrypted · password set", encryptionText(untrusted, eu.stedb.mysyncthing.core.FolderDevice("D", encryptionPassword = "x")))
         assertEquals("No password: Syncthing stops sharing it", encryptionText(untrusted, eu.stedb.mysyncthing.core.FolderDevice("D")))
     }
+
+    @Test
+    fun dayHeadingsAndClock() {
+        val now = java.time.ZonedDateTime.of(2026, 10, 25, 12, 0, 0, 0, java.time.ZoneOffset.UTC)
+        assertEquals("Today", dayText("2026-10-25T08:00:00Z", now, java.util.Locale.UK))
+        assertEquals("Yesterday", dayText("2026-10-24T23:59:00Z", now, java.util.Locale.UK))
+        assertEquals("3 Oct", dayText("2026-10-03T10:00:00Z", now, java.util.Locale.UK))
+        assertEquals("3 Oct 2025", dayText("2025-10-03T10:00:00Z", now, java.util.Locale.UK))
+        assertEquals("18:02", clockText("2026-10-24T18:02:12.123456789+00:00", java.time.ZoneOffset.UTC))
+    }
 }

@@ -56,7 +56,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
-import eu.stedb.mysyncthing.core.SyncthingCore
 import eu.stedb.mysyncthing.core.SyncthingService
 
 @Composable
@@ -70,6 +69,7 @@ fun SettingsScreen(
     onOpenIgnored: () -> Unit,
     onOpenFolderDefaults: () -> Unit,
     onOpenDeviceDefaults: () -> Unit,
+    onOpenAbout: () -> Unit,
 ) {
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
@@ -220,7 +220,7 @@ fun SettingsScreen(
                     "Web GUI", "Syncthing's full settings, for what this app does not show",
                     Icons.Default.Language, onClick = if (running) onOpenWebGui else null,
                 )
-                SettingRow("Syncthing core", SyncthingCore.version, Icons.Default.Info)
+                SettingRow("About", "Versions, licences and source code", Icons.Default.Info, onClick = onOpenAbout)
             }
         }
     }

@@ -72,6 +72,19 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun pendingDevices(): Map<String, PendingDevice> = get("rest/cluster/pending/devices")
     suspend fun pendingFolders(): Map<String, PendingFolder> = get("rest/cluster/pending/folders")
 
+    /** The core's last [limit] file changes, kept in memory since it started; returns at once. */
+    suspend fun diskEvents(limit: Int): List<Event> =
+        get("rest/events/disk", "since" to "0", "limit" to limit.toString(), "timeout" to "0")
+
+    /** Archived versions per file path. */
+    suspend fun versions(folder: String): Map<String, List<FileVersion>> = get("rest/folder/versions", "folder" to folder)
+
+    /** Restores each file to the version with the given time; returns errors by file. */
+    suspend fun restoreVersions(folder: String, versions: Map<String, String>): Map<String, String> {
+        val body = buildJsonObject { versions.forEach { (file, time) -> put(file, time) } }
+        return json.decodeFromString(send("POST", "rest/folder/versions", body, listOf("folder" to folder)).ifBlank { "{}" })
+    }
+
     suspend fun events(since: Long, timeoutS: Int = 60): List<Event> =
         get("rest/events", "since" to since.toString(), "timeout" to timeoutS.toString())
 
@@ -226,8 +239,9 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun setDevicePaused(id: String, paused: Boolean) =
         send("POST", if (paused) "rest/system/pause" else "rest/system/resume", query = listOf("device" to id))
 
-    suspend fun scan(folder: String? = null) =
-        send("POST", "rest/db/scan", query = listOfNotNull(folder?.let { "folder" to it }))
+    /** Scans all folders, one folder, or only [subs] (paths in the folder) of one folder. */
+    suspend fun scan(folder: String? = null, subs: List<String> = emptyList()) =
+        send("POST", "rest/db/scan", query = listOfNotNull(folder?.let { "folder" to it }) + subs.map { "sub" to it })
 
     // Written out by hand: the default serializer drops type = "" (off), which PATCH then ignores.
     private fun Versioning.toJson() = buildJsonObject {
@@ -240,10 +254,11 @@ class RestClient(address: String, private val apiKey: String) {
         return json.decodeFromString(body)
     }
 
-    private suspend fun send(method: String, path: String, body: JsonObject? = null, query: List<Pair<String, String>> = emptyList()) {
+    /** Returns the response body; most callers ignore it. */
+    private suspend fun send(method: String, path: String, body: JsonObject? = null, query: List<Pair<String, String>> = emptyList()): String {
         val rb: RequestBody? = body?.toString()?.toRequestBody(JSON)
             ?: if (method == "POST") ByteArray(0).toRequestBody(null) else null
-        call(request(path, query).method(method, rb).build())
+        return call(request(path, query).method(method, rb).build())
     }
 
     private fun request(path: String, query: List<Pair<String, String>>): Request.Builder {

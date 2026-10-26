@@ -73,6 +73,9 @@ private object Routes {
     const val ADD_DEVICE = "add-device?id={id}&name={name}"
     const val WEB_GUI = "webgui"
     const val IGNORED = "ignored"
+    const val RECENT = "recent"
+    const val ABOUT = "about"
+    const val FOLDER_VERSIONS = "folder/{id}/versions"
     const val FOLDER_DEFAULTS = "defaults/folder"
     const val DEFAULT_IGNORES = "defaults/ignores"
     const val DEVICE_DEFAULTS = "defaults/device"
@@ -149,6 +152,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                             onOpen = { nav.navigate(Routes.folder(it)) },
                             onAdd = { nav.navigate(Routes.addFolder()) },
                             onAccept = { folder, device -> nav.navigate(Routes.addFolder(folder, device)) },
+                            onOpenRecent = { nav.navigate(Routes.RECENT) },
                         )
                     }
                 }
@@ -167,6 +171,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         onOpenWebGui = { nav.navigate(Routes.WEB_GUI) }, onOpenIgnored = { nav.navigate(Routes.IGNORED) },
                         onOpenFolderDefaults = { nav.navigate(Routes.FOLDER_DEFAULTS) },
                         onOpenDeviceDefaults = { nav.navigate(Routes.DEVICE_DEFAULTS) },
+                        onOpenAbout = { nav.navigate(Routes.ABOUT) },
                     )
                 }
                 composable(Routes.FOLDER) { entry ->
@@ -178,6 +183,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                             onOpenFailed = { nav.navigate("${Routes.folder(id)}/failed") },
                             onOpenChanges = { nav.navigate("${Routes.folder(id)}/changes") },
                             onOpenIgnores = { nav.navigate(Routes.ignores(id)) },
+                            onOpenVersions = { nav.navigate("${Routes.folder(id)}/versions") },
                         )
                     }
                 }
@@ -256,6 +262,13 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 composable(Routes.DEVICE_DEFAULTS) {
                     CoreGate(core) { DefaultDeviceScreen(vm, onBack = { nav.popBackStack() }) }
                 }
+                composable(Routes.RECENT) {
+                    CoreGate(core) { RecentChangesScreen(snapshot, vm, onBack = { nav.popBackStack() }) }
+                }
+                composable(Routes.FOLDER_VERSIONS) { entry ->
+                    CoreGate(core) { VersionsScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                }
+                composable(Routes.ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
                 composable(Routes.IGNORED) {
                     CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
                 }
