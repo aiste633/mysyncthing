@@ -80,6 +80,21 @@ class Settings(context: Context) {
         store.edit { it[MOVED] = moved }
     }
 
+    /** Set by an import: the next start finds no database, and the import screen has explained why. */
+    suspend fun setFreshDatabaseExpected(expected: Boolean) {
+        store.edit { it[FRESH_DATABASE] = expected }
+    }
+
+    /** Whether [setFreshDatabaseExpected] was set, clearing it. */
+    suspend fun takeFreshDatabaseExpected(): Boolean {
+        var expected = false
+        store.edit {
+            expected = it[FRESH_DATABASE] ?: false
+            it.remove(FRESH_DATABASE)
+        }
+        return expected
+    }
+
     /**
      * Devices the user had paused before a run condition paused everything,
      * so resuming does not undo the user's own choice. Null when not paused by us.
@@ -121,6 +136,7 @@ class Settings(context: Context) {
         val CONDITION_PAUSE = stringSetPreferencesKey("condition_pause")
         val SETUP_DONE = booleanPreferencesKey("setup_done")
         val MOVED = booleanPreferencesKey("moved_from_other_phone")
+        val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
 
         /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */
         const val TOKEN_CHARS = 64

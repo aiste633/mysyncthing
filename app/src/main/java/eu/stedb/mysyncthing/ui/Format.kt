@@ -6,14 +6,17 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
+/** [value] and its [unit] with a no-break space, so a line never ends between them. */
+fun withUnit(value: Any, unit: String): String = "$value\u00A0$unit"
+
 /** SI (base-1000) byte sizes. */
 fun bytes(n: Long): String {
-    if (n < 1000) return "$n B"
+    if (n < 1000) return withUnit(n, "B")
     val units = "kMGTPE"
     var v = n.toDouble()
     var i = -1
     while (v >= 1000 && i < units.length - 1) { v /= 1000; i++ }
-    return String.format(Locale.ROOT, "%.1f %sB", v, units[i])
+    return withUnit(String.format(Locale.ROOT, "%.1f", v), "${units[i]}B")
 }
 
 /** A transfer speed with its unit, e.g. "1.2 MB/s". */
@@ -25,10 +28,10 @@ fun duration(seconds: Long): String {
     val h = seconds % 86_400 / 3_600
     val m = seconds % 3_600 / 60
     return when {
-        d > 0 -> if (h > 0) "$d d $h h" else "$d d"
-        h > 0 -> if (m > 0) "$h h $m min" else "$h h"
-        m > 0 -> "$m min"
-        else -> "$seconds s"
+        d > 0 -> if (h > 0) "${withUnit(d, "d")} ${withUnit(h, "h")}" else withUnit(d, "d")
+        h > 0 -> if (m > 0) "${withUnit(h, "h")} ${withUnit(m, "min")}" else withUnit(h, "h")
+        m > 0 -> withUnit(m, "min")
+        else -> withUnit(seconds, "s")
     }
 }
 
@@ -61,6 +64,10 @@ fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: 
     }
 }
 
+/** An absolute day-first time, e.g. "26 Oct 2026, 19:27", for a file's date. */
+fun dateTimeText(epochMillis: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
+    java.time.Instant.ofEpochMilli(epochMillis).atZone(zone).format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
+
 /** Heading for a day of changes: "Today", "Yesterday", "3 Oct", "3 Oct 2025"; null for an unreadable time. */
 fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): String? {
     val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
@@ -92,11 +99,11 @@ fun orderLabel(order: String): String = PULL_ORDERS.find { it.first == order }?.
 fun rescanText(seconds: Int): String = when {
     seconds <= 0 -> "Never"
     seconds == 86_400 -> "Once a day"
-    seconds % 86_400 == 0 -> "Every ${seconds / 86_400} days"
+    seconds % 86_400 == 0 -> "Every ${withUnit(seconds / 86_400, "days")}"
     seconds == 3_600 -> "Every hour"
-    seconds % 3_600 == 0 -> "Every ${seconds / 3_600} hours"
-    seconds % 60 == 0 -> "Every ${seconds / 60} min"
-    else -> "Every $seconds s"
+    seconds % 3_600 == 0 -> "Every ${withUnit(seconds / 3_600, "hours")}"
+    seconds % 60 == 0 -> "Every ${withUnit(seconds / 60, "min")}"
+    else -> "Every ${withUnit(seconds, "s")}"
 }
 
 /** The usual choices, plus the current value when it is something else. */
@@ -113,7 +120,7 @@ fun rescanHint(seconds: Int): String? = when (seconds) {
 fun number(v: Double): String = if (v == Math.floor(v) && v < 1e15) v.toLong().toString() else v.toString()
 
 /** "1 %", "5 GB": upstream's units are SI. */
-fun diskSizeText(d: DiskSize): String = "${number(d.value)} ${d.unit}"
+fun diskSizeText(d: DiskSize): String = withUnit(number(d.value), d.unit)
 
 /**
  * A speed limit the core stores in KiB/s, as SI for people: 488 KiB/s is
@@ -131,7 +138,7 @@ fun limitKib(value: Double, unit: String): Int {
     return Math.round(b / 1024).toInt().coerceAtLeast(1)
 }
 
-fun limitText(kib: Int): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> "${number(v)} $u" }
+fun limitText(kib: Int): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> withUnit(number(v), u) }
 
 val COMPRESSIONS = listOf("metadata" to "Metadata only", "always" to "All data", "never" to "Off")
 
@@ -153,6 +160,12 @@ fun connectionChoices(current: Int): List<Pair<Int, String>> =
 
 /** Syncthing's grouped display form, e.g. ABCDEFG-HIJKLMN. Only the first group is shown in lists. */
 fun shortId(id: String): String = id.substringBefore('-')
+
+/**
+ * [path] with its leading "/" glued to the first name (U+2060 word joiner): at
+ * large font sizes the line breaker would otherwise leave the "/" alone on a line.
+ */
+fun wrapPath(path: String): String = if (path.length > 1 && path[0] == '/') "/\u2060" + path.substring(1) else path
 
 /** Paths in internal storage are shown relative to it, as the Files app does. */
 fun displayPath(path: String): String = when {

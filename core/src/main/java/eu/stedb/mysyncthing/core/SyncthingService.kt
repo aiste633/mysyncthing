@@ -72,7 +72,9 @@ class SyncthingService : LifecycleService() {
         lifecycleScope.launch {
             val home = File(filesDir, "syncthing")
             // A phone migration copies the identity and config but not the database (data_extraction_rules.xml).
-            if (File(home, "config.xml").exists() && !File(home, "index-v2").exists()) settings.setMovedFromOtherPhone(true)
+            // A Fork import leaves no database either, but explains that itself (ForkImport).
+            val fresh = settings.takeFreshDatabaseExpected()
+            if (File(home, "config.xml").exists() && !File(home, "index-v2").exists() && !fresh) settings.setMovedFromOtherPhone(true)
             SyncthingCore.start(home, settings.credentials())
             val running = SyncthingCore.state.first { it !is CoreState.Starting }
             if (running !is CoreState.Running) {

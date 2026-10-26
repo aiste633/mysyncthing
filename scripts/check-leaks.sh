@@ -20,7 +20,7 @@ pathspec=(. ':(exclude)gradle/verification-metadata.xml' ':(exclude)go/bridge/go
 public_hosts=(
   github.com githubusercontent.com gitlab.com f-droid.org
   syncthing.net
-  android.com google.com gradle.org
+  android.com google.com gradle.org maven.org
   anthropic.com claude.ai claude.com
   gnu.org fsf.org apache.org mozilla.org
   example.com example.org example.net

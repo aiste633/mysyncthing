@@ -8,10 +8,10 @@ import org.junit.Test
 class FormatTest {
     @Test
     fun siBytes() {
-        assertEquals("999 B", bytes(999))
-        assertEquals("1.0 kB", bytes(1000))
-        assertEquals("1.5 MB", bytes(1_500_000))
-        assertEquals("2.0 GB", bytes(2_000_000_000))
+        assertEquals("999\u00A0B", bytes(999))
+        assertEquals("1.0\u00A0kB", bytes(1000))
+        assertEquals("1.5\u00A0MB", bytes(1_500_000))
+        assertEquals("2.0\u00A0GB", bytes(2_000_000_000))
     }
 
     @Test
@@ -36,11 +36,11 @@ class FormatTest {
 
     @Test
     fun ratesAndDurationsCarryUnits() {
-        assertEquals("1.2 MB/s", rate(1_200_000))
-        assertEquals("45 s", duration(45))
-        assertEquals("12 min", duration(720))
-        assertEquals("3 h 5 min", duration(3 * 3600 + 300))
-        assertEquals("2 d 4 h", duration(2 * 86_400 + 4 * 3600 + 59))
+        assertEquals("1.2\u00A0MB/s", rate(1_200_000))
+        assertEquals("45\u00A0s", duration(45))
+        assertEquals("12\u00A0min", duration(720))
+        assertEquals("3\u00A0h 5\u00A0min", duration(3 * 3600 + 300))
+        assertEquals("2\u00A0d 4\u00A0h", duration(2 * 86_400 + 4 * 3600 + 59))
     }
 
     @Test
@@ -55,12 +55,49 @@ class FormatTest {
         assertEquals(null, whenText("garbage", now, en))
     }
 
+    /** A line can't end between a number and its unit: every unit follows a no-break space. */
+    @Test
+    fun unitsNeverWrapAlone() {
+        val r = kotlin.random.Random(4)
+        repeat(5_000) {
+            val texts = listOf(
+                bytes(r.nextLong(0, Long.MAX_VALUE) shr r.nextInt(63)), rate(r.nextLong(0, 1L shl 40)),
+                duration(r.nextLong(0, 1L shl 30)), rescanText(r.nextInt(-10, 1 shl 20)), limitText(r.nextInt(-5, 1 shl 20)),
+            )
+            texts.forEach { assertFalse(it, Regex("\\d [a-zA-Z%]").containsMatchIn(it)) }
+        }
+    }
+
+    @Test
+    fun fileDatesAreAbsolute() {
+        val utc = java.time.ZoneOffset.UTC
+        val en = java.util.Locale.ENGLISH
+        // Never relative ("yesterday"): a file's date is compared with when the backup was made.
+        assertEquals("26 Oct 2026, 19:27", dateTimeText(java.time.Instant.parse("2026-10-26T19:27:59Z").toEpochMilli(), utc, en))
+        assertEquals("3 Jan 2025, 07:05", dateTimeText(java.time.Instant.parse("2025-01-03T07:05:00Z").toEpochMilli(), utc, en))
+    }
+
+    /** Only a leading "/" gets glued to the next character; removing the joiner gives the path back. */
+    @Test
+    fun wrapPathProperty() {
+        val r = kotlin.random.Random(3)
+        val pool = "/ab-._ é😀"
+        repeat(5_000) {
+            val p = buildString { repeat(r.nextInt(12)) { append(pool[r.nextInt(pool.length)]) } }
+            val w = wrapPath(p)
+            assertEquals(p, w.replace("\u2060", ""))
+            assertEquals(p.length > 1 && p[0] == '/', w.startsWith("/\u2060"))
+            assertTrue(w.count { it == '\u2060' } <= 1)
+        }
+        assertEquals("/", wrapPath("/"))
+    }
+
     @Test
     fun folderSettingTexts() {
-        assertEquals("1 %", diskSizeText(eu.stedb.mysyncthing.core.DiskSize()))
-        assertEquals("2.5 GB", diskSizeText(eu.stedb.mysyncthing.core.DiskSize(2.5, "GB")))
+        assertEquals("1\u00A0%", diskSizeText(eu.stedb.mysyncthing.core.DiskSize()))
+        assertEquals("2.5\u00A0GB", diskSizeText(eu.stedb.mysyncthing.core.DiskSize(2.5, "GB")))
         assertEquals("Every hour", rescanText(3600))
-        assertEquals("Every 6 hours", rescanText(21_600))
+        assertEquals("Every 6\u00A0hours", rescanText(21_600))
         assertEquals("Once a day", rescanText(86_400))
         assertEquals("Never", rescanText(0))
         assertEquals(listOf(3_600, 21_600, 86_400, 0, 600), rescanChoices(600).map { it.first })
@@ -71,10 +108,10 @@ class FormatTest {
     fun speedLimitsRoundTripInSi() {
         assertEquals("No limit", limitText(0))
         assertEquals(488, limitKib(500.0, "kB/s"))
-        assertEquals("500 kB/s", limitText(488))
+        assertEquals("500\u00A0kB/s", limitText(488))
         assertEquals(977, limitKib(1.0, "MB/s"))
-        assertEquals("1 MB/s", limitText(977))
-        assertEquals("2.5 MB/s", limitText(limitKib(2.5, "MB/s")))
+        assertEquals("1\u00A0MB/s", limitText(977))
+        assertEquals("2.5\u00A0MB/s", limitText(limitKib(2.5, "MB/s")))
         assertEquals(1, limitKib(0.1, "kB/s"))
         assertEquals(0, limitKib(0.0, "MB/s"))
         assertEquals("Automatic", connectionsText(0))

@@ -1,0 +1,38 @@
+{
+  "deviceID": "SELF-ID",
+  "deviceName": "Old phone",
+  "configVersion": 37,
+  "folders": [
+    {
+      "id": "photo_backup_01",
+      "label": "Photos",
+      "path": "/storage/emulated/0/DCIM/Camera",
+      "type": "sendonly",
+      "exists": true,
+      "marker": false
+    }
+  ],
+  "devices": [
+    {
+      "id": "PEER-ID",
+      "name": "Example peer"
+    }
+  ],
+  "conditions": {
+    "wifiOnly": false,
+    "unmeteredOnly": true,
+    "chargingOnly": false,
+    "respectBatterySaver": true,
+    "startOnBoot": false,
+    "pausedByUser": false
+  },
+  "notImported": [
+    {
+      "key": "networks"
+    },
+    {
+      "key": "folder_conditions",
+      "subject": "Photos"
+    }
+  ]
+}
