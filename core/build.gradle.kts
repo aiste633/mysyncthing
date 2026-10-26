@@ -28,6 +28,7 @@ val buildGoBridge by tasks.registering(Exec::class) {
     workingDir = goDir.asFile
     commandLine("./build.sh")
     inputs.dir(goDir.dir("bridge"))
+    inputs.dir(goDir.dir("patches"))
     inputs.file(goDir.file("syncthing/go.mod")).optional()
     inputs.file(goDir.file("syncthing.version"))
     outputs.file(bridgeAar)

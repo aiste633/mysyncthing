@@ -23,6 +23,9 @@ version="$(cat "$here/syncthing.version")"
 # Reproducible builds (F-Droid): fixed timestamp from the pinned commit.
 export SOURCE_DATE_EPOCH="$(git -C "$st" log -1 --format=%ct)"
 
+# Our fixes to the core, until upstream has them.
+"$here/patch.sh"
+
 # Web GUI assets are generated, not committed upstream.
 (cd "$st" && go generate ./lib/api/auto)
 
