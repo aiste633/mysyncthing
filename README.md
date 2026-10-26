@@ -26,6 +26,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 | `core/` | `specialUse` foreground service, run conditions, REST/event client |
 | `go/bridge/` | Go package `stbridge`; runs Syncthing in-process, exposes start/stop/identity |
 | `go/syncthing/` | Upstream Syncthing, git submodule pinned to a release tag |
+| `go/patches/` | Our fixes to upstream Syncthing, applied to the submodule by `go/patch.sh` at build time |
 
 The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, authenticated with a per-install API key. The web GUI is protected by a random 64-character user and password that only the app knows, because other apps can reach loopback; the core refuses any change to them.
 
@@ -38,7 +39,9 @@ git submodule update --init
 ./gradlew :app:assembleDebug   # runs go/build.sh first; :core alone cannot be bundled as an AAR
 ```
 
-`cd go/bridge && go test .` starts and stops the real core on the host. Run `go generate ./lib/api/auto` in `go/syncthing` once first.
+`cd go/bridge && go test .` starts and stops the real core on the host. Run `go/patch.sh` and then `go generate ./lib/api/auto` in `go/syncthing` once first.
+
+`go/build.sh` applies `go/patches/*.patch` to the submodule (`go/patch.sh`, idempotent), so the submodule shows as modified after a build. Each patch is a fix we also report upstream; drop it once a Syncthing release has it. To change one, commit the change in the submodule and export it with `git format-patch -1 --no-signature --zero-commit -o ../patches/`, then check out the pinned commit again.
 
 ## Reproducible builds and releases
 
@@ -65,8 +68,9 @@ F-Droid: `fdroid/eu.stedb.mysyncthing.yml` is the draft recipe for fdroiddata. I
 ## Updating Syncthing
 
 ```sh
-cd go/syncthing && git fetch --tags && git checkout vX.Y.Z
+cd go/syncthing && git checkout . && git clean -fd lib && git fetch --tags && git checkout vX.Y.Z
 echo vX.Y.Z > ../syncthing.version
+../patch.sh   # a patch that no longer applies: drop it if the release has the fix, else rebase it
 cd ../bridge && go mod tidy && go test .
 ```
 

@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
@@ -14,7 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import eu.stedb.mysyncthing.core.CoreState
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.util.Base64
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * Upstream web GUI as a fallback for settings the native UI lacks. The first
@@ -39,11 +43,28 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                     webViewClient = object : WebViewClient() {
                         private var retries = 0
                         private var failed = false
+                        private val refused = AtomicInteger()
 
                         // Stay on the local GUI; never send credentials elsewhere.
                         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                             val u = request.url
                             return "${u.scheme}://${u.authority}" != origin
+                        }
+
+                        // Some settings (e.g. the theme) restart the GUI listener, and the GUI reloads
+                        // into that gap of about 0.1 s. Chromium would draw its error page before
+                        // onReceivedError below runs, so check the port first, on this background
+                        // thread, and answer a refused page load with a blank page that retries
+                        // itself. After about 30 s the load goes ahead and shows the real error.
+                        override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
+                            val u = request.url
+                            if (!request.isForMainFrame || request.method != "GET" || "${u.scheme}://${u.authority}" != origin) return null
+                            if (listening(u.host ?: return null, u.port)) {
+                                refused.set(0)
+                                return null
+                            }
+                            if (refused.incrementAndGet() > 120) return null
+                            return WebResourceResponse("text/html", "utf-8", RETRY_PAGE.byteInputStream())
                         }
 
                         override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -55,8 +76,8 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                             if (url.startsWith("$origin/")) view.evaluateJavascript(HIDE_APP_MANAGED, null)
                         }
 
-                        // Some settings (e.g. the theme) restart the GUI listener, and the page reloads
-                        // into that gap: retry for a while instead of staying on the error page.
+                        // The port went away between the check above and the load: retry for a while
+                        // instead of staying on the error page.
                         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                             val u = request.url
                             if (!request.isForMainFrame || "${u.scheme}://${u.authority}" != origin) return
@@ -82,6 +103,14 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
         )
     }
 }
+
+/** Whether something accepts connections on the loopback [port]. */
+private fun listening(host: String, port: Int): Boolean =
+    runCatching { Socket().use { it.connect(InetSocketAddress(host, port), 500) } }.isSuccess
+
+/** Shown while the GUI listener restarts: blank, in the system's light or dark, retrying every 250 ms. */
+private const val RETRY_PAGE = """<!doctype html><meta name="color-scheme" content="light dark">
+<script>setTimeout(function () { location.reload(); }, 250);</script>"""
 
 /**
  * Hides what only the app may manage: Log Out (it would reload into the login

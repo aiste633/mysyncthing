@@ -1,0 +1,262 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 07:11:03 +0000
+Subject: [PATCH] lib/api: let a GUI change answer before the listener restarts
+
+A change to the GUI settings restarts the GUI/API listener. The restart
+gives in-flight requests shutdownTimeout (100 ms) and then closes their
+connections. The request that made the change is still in flight: after
+the change is committed it saves config.xml. When saving takes longer
+than 100 ms (slow storage, busy device) the client gets EOF instead of a
+response, although the change was applied and saved.
+
+Count the requests that may change the config from the moment they
+arrive, and let the restart wait until they have answered. The restart
+signal no longer blocks, because the request that caused it is now
+waited for; a restart already pending picks up a later change.
+---
+ lib/api/api.go              |  62 +++++++++++++++++-
+ lib/api/api_restart_test.go | 126 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 185 insertions(+), 3 deletions(-)
+ create mode 100644 lib/api/api_restart_test.go
+
+diff --git a/lib/api/api.go b/lib/api/api.go
+index 5fa3e43..1b6339f 100644
+--- a/lib/api/api.go
++++ b/lib/api/api.go
+@@ -87,6 +87,7 @@ type service struct {
+ 	noUpgrade            bool
+ 	tlsDefaultCommonName string
+ 	configChanged        chan struct{} // signals intentional listener close due to config change
++	configWrites         *inFlight     // config changing requests being served; a restart lets them finish
+ 	started              chan string   // signals startup complete by sending the listener address, for testing only
+ 	startedOnce          chan struct{} // the service has started successfully at least once
+ 	startupErr           error
+@@ -126,7 +127,8 @@ func New(id protocol.DeviceID, cfg config.Wrapper, assetDir, tlsDefaultCommonNam
+ 		systemLog:            systemLog,
+ 		noUpgrade:            noUpgrade,
+ 		tlsDefaultCommonName: tlsDefaultCommonName,
+-		configChanged:        make(chan struct{}),
++		configChanged:        make(chan struct{}, 1),
++		configWrites:         newInFlight(),
+ 		startedOnce:          make(chan struct{}),
+ 		exitChan:             make(chan *svcutil.FatalErr, 1),
+ 		miscDB:               miscDB,
+@@ -394,6 +396,7 @@ func (s *service) Serve(ctx context.Context) error {
+ 	}
+ 
+ 	handler = debugMiddleware(handler)
++	handler = s.configWritesMiddleware(handler)
+ 
+ 	srv := http.Server{
+ 		Handler: handler,
+@@ -446,6 +449,9 @@ func (s *service) Serve(ctx context.Context) error {
+ 	case <-s.configChanged:
+ 		// Soft restart due to configuration change
+ 		slog.DebugContext(ctx, "Restarting (config changed)")
++		// The request that made the change is still saving the config. Let it, and any
++		// other config change in flight, answer first, however long saving takes.
++		s.configWrites.wait()
+ 	case err = <-s.exitChan:
+ 	case err = <-serveError:
+ 		// Restart due to listen/serve failure
+@@ -495,8 +501,13 @@ func (s *service) CommitConfiguration(from, to config.Configuration) bool {
+ 		s.statics.setTheme(to.GUI.Theme)
+ 	}
+ 
+-	// Tell the serve loop to restart
+-	s.configChanged <- struct{}{}
++	// Tell the serve loop to restart. Without blocking: the restart waits for the
++	// request that made this change, so that request must not wait for the restart.
++	// A restart already pending picks up this change too.
++	select {
++	case s.configChanged <- struct{}{}:
++	default:
++	}
+ 
+ 	return true
+ }
+@@ -509,6 +520,51 @@ func (s *service) fatal(err *svcutil.FatalErr) {
+ 	}
+ }
+ 
++// configWritesMiddleware counts the requests that may change the config, from the
++// moment they arrive, so that a listener restart can let them finish.
++func (s *service) configWritesMiddleware(h http.Handler) http.Handler {
++	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
++		if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions &&
++			(strings.HasPrefix(r.URL.Path, "/rest/config") || strings.HasPrefix(r.URL.Path, "/rest/system/config")) {
++			s.configWrites.add(1)
++			defer s.configWrites.add(-1)
++		}
++		h.ServeHTTP(w, r)
++	})
++}
++
++// inFlight counts requests being served. Unlike a sync.WaitGroup, requests may start
++// while someone waits, and are then waited for too.
++type inFlight struct {
++	mut  sync.Mutex
++	n    int
++	idle *sync.Cond
++}
++
++func newInFlight() *inFlight {
++	f := &inFlight{}
++	f.idle = sync.NewCond(&f.mut)
++	return f
++}
++
++func (f *inFlight) add(delta int) {
++	f.mut.Lock()
++	f.n += delta
++	if f.n == 0 {
++		f.idle.Broadcast()
++	}
++	f.mut.Unlock()
++}
++
++// wait returns once no request is being served.
++func (f *inFlight) wait() {
++	f.mut.Lock()
++	for f.n > 0 {
++		f.idle.Wait()
++	}
++	f.mut.Unlock()
++}
++
+ func debugMiddleware(h http.Handler) http.Handler {
+ 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+ 		t0 := time.Now()
+diff --git a/lib/api/api_restart_test.go b/lib/api/api_restart_test.go
+new file mode 100644
+index 0000000..3b6c06c
+--- /dev/null
++++ b/lib/api/api_restart_test.go
+@@ -0,0 +1,126 @@
++// Copyright (C) 2026 The Syncthing Authors.
++//
++// This Source Code Form is subject to the terms of the Mozilla Public
++// License, v. 2.0. If a copy of the MPL was not distributed with this file,
++// You can obtain one at https://mozilla.org/MPL/2.0/.
++
++package api
++
++import (
++	"bytes"
++	"context"
++	"fmt"
++	"net/http"
++	"os"
++	"path/filepath"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	"github.com/syncthing/syncthing/lib/config"
++	"github.com/syncthing/syncthing/lib/events"
++	"github.com/syncthing/syncthing/lib/protocol"
++)
++
++// slowSave makes saving config.xml slower than the listener's shutdown timeout
++// (100 ms), and saving starts only once the expected number of changes has arrived.
++type slowSave struct {
++	config.Wrapper
++	delay   time.Duration
++	changes atomic.Int32
++	arrived chan struct{} // closed once changes reaches the expected number
++	expect  int32
++}
++
++func (w *slowSave) Modify(fn config.ModifyFunction) (config.Waiter, error) {
++	if w.changes.Add(1) == w.expect {
++		close(w.arrived)
++	}
++	return w.Wrapper.Modify(fn)
++}
++
++func (w *slowSave) Save() error {
++	select {
++	case <-w.arrived:
++	case <-time.After(10 * time.Second):
++	}
++	time.Sleep(w.delay)
++	return w.Wrapper.Save()
++}
++
++// startSlowSave starts the API on a real config whose saves take delay and wait for
++// the given number of changes.
++func startSlowSave(t *testing.T, delay time.Duration, changes int) (config.Wrapper, string) {
++	t.Helper()
++	cfg := config.Configuration{GUI: config.GUIConfiguration{RawAddress: "127.0.0.1:0", APIKey: testAPIKey}}
++	w := config.Wrap(filepath.Join(t.TempDir(), "config.xml"), cfg, protocol.LocalDeviceID, events.NoopLogger)
++	ctx, cancel := context.WithCancel(context.Background())
++	served := make(chan struct{})
++	go func() {
++		w.Serve(ctx)
++		close(served)
++	}()
++	// Serve saves once more when it stops, so it must stop before the temp dir goes.
++	t.Cleanup(func() {
++		cancel()
++		<-served
++	})
++	return w, startHTTP(t, &slowSave{Wrapper: w, delay: delay, arrived: make(chan struct{}), expect: int32(changes)})
++}
++
++func patchTheme(baseURL, theme string) error {
++	req, err := http.NewRequest(http.MethodPatch, baseURL+"/rest/config/gui", bytes.NewBufferString(`{"theme":"`+theme+`"}`))
++	if err != nil {
++		return err
++	}
++	req.Header.Set("X-API-Key", testAPIKey)
++	resp, err := http.DefaultClient.Do(req)
++	if err != nil {
++		return fmt.Errorf("no response to the GUI change: %w", err)
++	}
++	resp.Body.Close()
++	if resp.StatusCode != http.StatusOK {
++		return fmt.Errorf("unexpected status %d", resp.StatusCode)
++	}
++	return nil
++}
++
++// A GUI setting change restarts the listener. The request that made the change must
++// still get its response, however long saving the config takes.
++func TestGUIChangeAnsweredDespiteSlowSave(t *testing.T) {
++	t.Parallel()
++
++	w, baseURL := startSlowSave(t, 300*time.Millisecond, 1)
++	if err := patchTheme(baseURL, "dark"); err != nil {
++		t.Fatal(err)
++	}
++	if w.GUI().Theme != "dark" {
++		t.Fatal("change not applied")
++	}
++	if _, err := os.Stat(w.ConfigPath()); err != nil {
++		t.Fatal("config not saved:", err)
++	}
++}
++
++// Concurrent GUI changes each get their response, and none waits on another's restart.
++func TestConcurrentGUIChangesAnswered(t *testing.T) {
++	t.Parallel()
++
++	themes := []string{"dark", "black", "light", "default"}
++	// All changes are in flight before the first one has saved, so before any restart.
++	_, baseURL := startSlowSave(t, 150*time.Millisecond, len(themes))
++	errs := make(chan error, len(themes))
++	for _, theme := range themes {
++		go func() { errs <- patchTheme(baseURL, theme) }()
++	}
++	for range themes {
++		select {
++		case err := <-errs:
++			if err != nil {
++				t.Error(err)
++			}
++		case <-time.After(10 * time.Second):
++			t.Fatal("GUI changes deadlocked")
++		}
++	}
++}
