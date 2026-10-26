@@ -58,6 +58,7 @@ sealed interface LaunchTarget {
     data class Tab(val route: String) : LaunchTarget
     data class ReviewFolder(val folder: String, val device: String) : LaunchTarget
     data class ReviewDevice(val device: String) : LaunchTarget
+    data class OpenFolder(val id: String) : LaunchTarget
 }
 
 private object Routes {
@@ -119,8 +120,14 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 is LaunchTarget.ReviewFolder -> {
                     val s = vm.snapshot.first { it.loaded }
                     if (s.pendingFolders[target.folder]?.offeredBy?.containsKey(target.device) == true) {
-                        nav.navigate(Routes.addFolder(target.folder, target.device))
+                        // A folder this phone already has is shared from its card on the Folders tab.
+                        if (s.folders.any { it.id == target.folder }) nav.navigate(Tab.Folders.route) { launchSingleTop = true }
+                        else nav.navigate(Routes.addFolder(target.folder, target.device))
                     }
+                }
+                is LaunchTarget.OpenFolder -> {
+                    val s = vm.snapshot.first { it.loaded }
+                    if (s.folders.any { it.id == target.id }) nav.navigate(Routes.folder(target.id))
                 }
                 is LaunchTarget.ReviewDevice -> {
                     val s = vm.snapshot.first { it.loaded }

@@ -65,6 +65,7 @@ fun PasswordDialog(
                 Text("$device gets \"$folder\" encrypted and can't read it.")
                 OutlinedTextField(
                     password, { password = it }, label = { Text("Password") }, singleLine = true,
+                    supportingText = requiredError(password)?.let { { Text(it) } },
                     visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { show = !show }) {

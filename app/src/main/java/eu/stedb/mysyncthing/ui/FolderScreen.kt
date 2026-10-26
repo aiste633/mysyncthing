@@ -17,11 +17,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -181,10 +179,9 @@ fun FolderScreen(
                     val entry = f.devices.find { it.deviceID == dev.deviceID }
                     // A device's sync state only means something for folders it shares.
                     val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null).text else "Not shared"
-                    SettingRow(
-                        dev.name.ifEmpty { shortId(dev.deviceID) }, listOfNotNull(state, encryptionText(dev, entry)).joinToString(" · "),
-                        trailing = { Checkbox(entry != null, onCheckedChange = null) },
-                    ) { if (sharesEncrypted(dev, entry)) encrypt = dev.deviceID else vm.setShared(f, dev.deviceID, entry == null) }
+                    CheckRow(
+                        dev.name.ifEmpty { shortId(dev.deviceID) }, listOfNotNull(state, encryptionText(dev, entry)).joinToString(" · "), entry != null,
+                    ) { if (sharesEncrypted(dev, entry)) encrypt = dev.deviceID else vm.setShared(f, dev.deviceID, it) }
                 }
             }
 
@@ -199,10 +196,7 @@ fun FolderScreen(
             }
 
             SettingsGroup("Advanced") {
-                SettingRow(
-                    "Watch for changes", "Sync edits within seconds instead of at the next scan",
-                    trailing = { Switch(f.fsWatcherEnabled, onCheckedChange = null) },
-                ) { vm.setWatcher(id, !f.fsWatcherEnabled) }
+                SwitchRow("Watch for changes", "Sync edits within seconds instead of at the next scan", f.fsWatcherEnabled) { vm.setWatcher(id, it) }
                 SettingRow("Full rescan", "${rescanText(f.rescanIntervalS)}. Catches what watching misses.") { dialog = FolderDialog.Rescan }
                 SettingRow(
                     "Ignore patterns",
@@ -230,7 +224,7 @@ fun FolderScreen(
         }
         FolderDialog.Group -> TextDialog(
             "Folder group", f.group, "Group", supporting = "Folders in a group are listed together. Only on this phone.",
-            valid = { true }, onDismiss = { dialog = null },
+            error = { null }, onDismiss = { dialog = null },
         ) { vm.setFolderGroup(id, it); dialog = null }
         FolderDialog.Rescan -> ChoiceDialog("Full rescan", rescanChoices(f.rescanIntervalS), f.rescanIntervalS, ::rescanHint, onDismiss = { dialog = null }) {
             vm.setRescanInterval(id, it); dialog = null
@@ -243,8 +237,7 @@ fun FolderScreen(
         }
         FolderDialog.Revert -> ConfirmDialog(
             "Revert local changes?",
-            "${count(st?.receiveOnlyTotalItems ?: 0, "item")} changed on this phone are replaced with the version from your other devices, " +
-                "or deleted if they don't exist there. This can't be undone.",
+            revertText(st?.receiveOnlyTotalItems ?: 0),
             "Revert", onDismiss = { dialog = null },
         ) { vm.revert(id); dialog = null }
         FolderDialog.Override -> ConfirmDialog(
@@ -280,15 +273,15 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
     var unit by rememberSaveable { mutableStateOf(initial.unit) }
     val units = (listOf("%", "MB", "GB") + initial.unit).distinct()
     val free = remember(path) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
-    val v = value.replace(',', '.').toDoubleOrNull()
-    val valid = v != null && v >= 0 && (unit != "%" || v <= 100)
+    val error = amountError(value, unit)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Keep free on this phone") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value, { value = it }, label = { Text("Amount") }, singleLine = true, isError = !valid,
+                    value, { value = it }, label = { Text("Amount") }, singleLine = true, isError = error != null,
+                    supportingText = error?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                 )
                 SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
@@ -306,7 +299,7 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(DiskSize(v!!, unit)) }, enabled = valid) { Text("Save") } },
+        confirmButton = { TextButton(onClick = { onSave(DiskSize(decimal(value)!!, unit)) }, enabled = error == null) { Text("Save") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

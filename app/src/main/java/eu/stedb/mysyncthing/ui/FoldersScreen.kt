@@ -15,12 +15,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,7 +63,7 @@ fun FoldersScreen(
                 DropdownMenuItem(text = { Text("Recent changes") }, onClick = { menu = false; onOpenRecent() })
             }
         },
-        fab = { ExtendedFloatingActionButton(onClick = onAdd, icon = { Icon(Icons.Default.Add, null) }, text = { Text("Add folder") }) },
+        fab = { AddFab("Add folder", onAdd) },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             if (s.loaded && s.folders.isEmpty() && s.pendingFolders.isEmpty()) {
@@ -83,10 +81,24 @@ fun FoldersScreen(
                 s.pendingFolders.forEach { (id, pending) ->
                     pending.offeredBy.forEach { (device, offer) ->
                         item("pending-$id-$device") {
-                            val who = s.devices.find { it.deviceID == device }?.name?.ifEmpty { null } ?: shortId(device)
-                            RequestCard("$who shares \"${offer.label.ifEmpty { id }}\"", "Choose where to keep it on this phone") {
-                                TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text("Ignore") }
-                                TextButton(onClick = { onAccept(id, device) }) { Text("Review") }
+                            val dev = s.devices.find { it.deviceID == device }
+                            val who = dev?.name?.ifEmpty { null } ?: shortId(device)
+                            // The core also lists a folder this phone has but doesn't share with that device yet.
+                            val existing = s.folders.find { it.id == id }
+                            val title = "$who shares \"${offer.label.ifEmpty { id }}\""
+                            if (existing == null) {
+                                RequestCard(title, "Choose where to keep it on this phone") {
+                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text("Ignore") }
+                                    TextButton(onClick = { onAccept(id, device) }) { Text("Review") }
+                                }
+                            } else {
+                                RequestCard(title, "You already have it in ${displayPath(existing.path)}. Share it with $who too?") {
+                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text("Ignore") }
+                                    TextButton(onClick = {
+                                        // An untrusted device needs a password, asked on the folder's screen.
+                                        if (dev != null && sharesEncrypted(dev, null)) onOpen(id) else vm.setShared(existing, device, true)
+                                    }) { Text("Share") }
+                                }
                             }
                         }
                     }

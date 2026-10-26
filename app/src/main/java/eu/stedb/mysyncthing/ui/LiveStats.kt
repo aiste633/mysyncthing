@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing.ui
 
 import eu.stedb.mysyncthing.core.Connection
 import eu.stedb.mysyncthing.core.Connections
+import eu.stedb.mysyncthing.core.ServiceStatus
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.SystemStatus
 
@@ -18,17 +19,20 @@ data class LiveStats(
     val listeners get() = status.connectionServiceStatus
     val discovery get() = if (status.discoveryEnabled) status.discoveryStatus else emptyMap()
 
-    /** "Listening 3 of 3 · Discovery 4 of 5". */
+    /** Discovery methods this network can use at all; see [unusedHere]. */
+    private val usableDiscovery get() = discovery.values.filter { unusedHere(it) == null }
+
+    /** "Listening 3 of 3 · Discovery 4 of 4"; methods this network can't use are not counted. */
     val healthText: String get() {
         val l = "Listening ${listeners.values.count { it.error == null }} of ${listeners.size}"
         if (!status.discoveryEnabled) return "$l · Discovery off"
-        return "$l · Discovery ${discovery.values.count { it.error == null }} of ${discovery.size}"
+        return "$l · Discovery ${usableDiscovery.count { it.error == null }} of ${usableDiscovery.size}"
     }
 
-    /** Red when nothing listens, amber when a part fails: one failing discovery server is common. */
+    /** Red when nothing listens, amber when a part fails that this network could use. */
     val health: SyncState get() = when {
         listeners.isNotEmpty() && listeners.values.all { it.error != null } -> SyncState.Problem
-        (listeners.values + discovery.values).any { it.error != null } -> SyncState.Paused
+        (listeners.values + usableDiscovery).any { it.error != null } -> SyncState.Paused
         else -> SyncState.UpToDate
     }
 
@@ -48,5 +52,20 @@ data class LiveStats(
         }
     }
 }
+
+/**
+ * Why a method can't work on this network at all, or null. The default
+ * servers include an IPv6-only one, which on the many networks without IPv6
+ * fails with ENETUNREACH ("network is unreachable"): no route for that
+ * address family, not a fault of this phone or the server.
+ */
+fun unusedHere(st: ServiceStatus): String? {
+    val e = st.error ?: return null
+    if (!e.contains("network is unreachable")) return null
+    return if (IPV6_LITERAL.containsMatchIn(e)) "Not used: this network has no IPv6" else "Not used: no route on this network"
+}
+
+/** An IPv6 address as Go writes it in dial errors: "[2001:db8::1]:443". */
+private val IPV6_LITERAL = Regex("""\[[0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*]""")
 
 fun speedText(s: Speed) = "↓ ${rate(s.down)} · ↑ ${rate(s.up)}"

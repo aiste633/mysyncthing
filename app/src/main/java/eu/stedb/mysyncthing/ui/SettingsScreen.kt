@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material3.Switch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -200,12 +199,12 @@ fun SettingsScreen(
                 var usage by remember { mutableStateOf<UsageConsent?>(null) }
                 LaunchedEffect(running) { usage = vm.usageConsent() }
                 usage?.let { u ->
-                    SettingRow(
+                    SwitchRow(
                         "Anonymous usage reporting", "Helps Syncthing's developers; statistics at data.syncthing.net",
-                        Icons.Default.QueryStats, trailing = { Switch(u.enabled, onCheckedChange = null) },
-                    ) {
-                        vm.setUsageReporting(!u.enabled)
-                        usage = u.copy(enabled = !u.enabled)
+                        u.enabled, Icons.Default.QueryStats,
+                    ) { v ->
+                        vm.setUsageReporting(v)
+                        usage = u.copy(enabled = v)
                     }
                 }
                 opts?.let { o ->
@@ -258,7 +257,7 @@ fun SettingsScreen(
 
 @Composable
 private fun Toggle(title: String, hint: String, icon: ImageVector, value: Boolean, onChange: (Boolean) -> Unit) =
-    SettingRow(title, hint, icon, trailing = { Switch(value, onCheckedChange = null) }) { onChange(!value) }
+    SwitchRow(title, hint, value, icon, onChange)
 
 private enum class NetDialog { Recv, Send, Listen, Servers }
 

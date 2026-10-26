@@ -120,4 +120,34 @@ class FormatTest {
         assertEquals("3 Oct 2025", dayText("2025-10-03T10:00:00Z", now, java.util.Locale.UK))
         assertEquals("18:02", clockText("2026-10-24T18:02:12.123456789+00:00", java.time.ZoneOffset.UTC))
     }
+
+    @Test
+    fun revertVerbsAgree() {
+        assertEquals(
+            "1 item changed on this phone is replaced with the version from your other devices, " +
+                "or deleted if it doesn't exist there. This can't be undone.",
+            revertText(1),
+        )
+        assertEquals(true, revertText(2).startsWith("2 items changed on this phone are replaced"))
+        assertEquals(true, revertText(2).contains("if they don't exist"))
+    }
+
+    @Test
+    fun formChecksSayWhy() {
+        assertEquals("Required", requiredError(" "))
+        assertEquals(null, requiredError("a"))
+        assertEquals("A whole number, 0 or more", wholeNumberError("1.5"))
+        assertEquals(null, wholeNumberError(" 30 "))
+        assertEquals("Up to 100 %", amountError("101", "%"))
+        assertEquals(null, amountError("101", "GB"))
+        assertEquals(null, amountError("2,5", "%"))
+        assertEquals("Enter a number", amountError("", "%"))
+        assertEquals(null, amountError("", "kB/s", emptyOk = true))
+        assertEquals("0 or more", amountError("-1", "MB/s", emptyOk = true))
+        assertEquals("Required", folderPathError(""))
+        assertEquals("A full path, starting with /", folderPathError("DCIM"))
+        assertEquals(null, folderPathError("/storage/emulated/0/DCIM"))
+        assertEquals("Another folder already has this ID", folderIdError("abcde-12345 ", listOf("abcde-12345")))
+        assertEquals("Required", folderIdError("", emptyList()))
+    }
 }

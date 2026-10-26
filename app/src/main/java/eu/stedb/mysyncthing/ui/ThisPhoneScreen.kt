@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -53,7 +55,7 @@ fun ThisPhoneScreen(s: Snapshot, vm: MainViewModel, onBack: () -> Unit) {
                 }
                 SettingsGroup("Discovery") {
                     if (!l.status.discoveryEnabled) SettingRow("Off", "Other devices find this phone only through the addresses they have for it")
-                    l.discovery.toSortedMap().forEach { (method, st) -> ServiceRow(method, st) }
+                    l.discovery.toSortedMap().forEach { (method, st) -> ServiceRow(method, st, unusedHere(st)) }
                 }
             }
         }
@@ -61,7 +63,12 @@ fun ThisPhoneScreen(s: Snapshot, vm: MainViewModel, onBack: () -> Unit) {
 }
 
 @Composable
-private fun ServiceRow(name: String, st: ServiceStatus) {
-    val look = (if (st.error == null) SyncState.UpToDate else SyncState.Problem).look()
-    SettingRow(name, st.error ?: "Working", trailing = { Icon(look.icon, null, Modifier.size(20.dp), tint = look.color) })
+private fun ServiceRow(name: String, st: ServiceStatus, unused: String? = null) {
+    // Grey: nothing to fix while on this network.
+    val (icon, tint) = when {
+        st.error == null -> SyncState.UpToDate.look().let { it.icon to it.color }
+        unused != null -> Icons.Default.RemoveCircleOutline to AppColors.neutral
+        else -> SyncState.Problem.look().let { it.icon to it.color }
+    }
+    SettingRow(name, unused ?: st.error ?: "Working", trailing = { Icon(icon, null, Modifier.size(20.dp), tint = tint) })
 }

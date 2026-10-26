@@ -3,23 +3,14 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,11 +18,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.foundation.clickable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderDevice
@@ -95,7 +83,9 @@ fun FolderEditScreen(
         }
     }
     val who = offeredBy?.let { id -> s.devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: shortId(id) }
-    val valid = d.id.isNotBlank() && d.path.startsWith("/") && s.folders.none { it.id == d.id.trim() }
+    val pathError = folderPathError(d.path)
+    val idError = folderIdError(d.id, s.folders.map { it.id })
+    val valid = pathError == null && idError == null
 
     AppScreen(
         title = if (isOffer) "Add \"${initial.label}\"" else "Add folder",
@@ -119,38 +109,31 @@ fun FolderEditScreen(
                     OutlinedTextField(
                         d.path, { pathTouched = true; d = d.copy(path = it) },
                         label = { Text("Folder on this phone") }, maxLines = 3, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        supportingText = { Text(if (isOffer && !pathTouched) "Suggested. It is created if missing." else "Full path, or choose one") },
+                        // An empty path on a new form is not yet a mistake: no red, but say it's needed.
+                        isError = d.path.isNotBlank() && pathError != null,
+                        supportingText = {
+                            Text(
+                                when {
+                                    d.path.isBlank() -> "Required. Full path, or choose one"
+                                    pathError != null -> pathError
+                                    isOffer && !pathTouched -> "Suggested. It is created if missing."
+                                    else -> "Full path, or choose one"
+                                },
+                            )
+                        },
                     )
                     TextButton(onClick = pick) { Text("Choose folder") }
                     if (!isOffer) {
                         OutlinedTextField(
-                            d.id, { d = d.copy(id = it) }, label = { Text("Folder ID") }, singleLine = true,
-                            supportingText = { Text("Must be the same on every device sharing this folder") },
+                            d.id, { d = d.copy(id = it) }, label = { Text("Folder ID") }, singleLine = true, isError = idError != null,
+                            supportingText = { Text(idError ?: "Must be the same on every device sharing this folder") },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
             }
             SettingsGroup("Type") {
-                Column(Modifier.padding(16.dp)) {
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
-                        FOLDER_TYPES.forEachIndexed { i, (value, label) ->
-                            SegmentedButton(
-                                selected = d.type == value, onClick = { d = d.copy(type = value) },
-                                modifier = Modifier.fillMaxHeight(),
-                                shape = SegmentedButtonDefaults.itemShape(i, FOLDER_TYPES.size, MaterialTheme.shapes.extraSmall),
-                                icon = {}, // the check mark would not leave room for the labels on a phone
-                                colors = SegmentedButtonDefaults.colors(inactiveContainerColor = Color.Transparent),
-                            ) {
-                                // Two lines: with a larger display size "Send & receive" no longer fits in one.
-                                Text(label, maxLines = 2, textAlign = TextAlign.Center, style = MaterialTheme.typography.labelMedium)
-                            }
-                        }
-                    }
-                    folderTypeHint(d.type)?.let {
-                        Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 8.dp))
-                    }
-                }
+                ChoiceList(FOLDER_TYPES, d.type, Modifier.padding(horizontal = 16.dp, vertical = 8.dp), ::folderTypeHint) { d = d.copy(type = it) }
             }
             SettingsGroup("Share with") {
                 if (s.devices.isEmpty()) SettingRow("No devices added yet", "Add one on the Devices tab")
@@ -158,29 +141,22 @@ fun FolderEditScreen(
                     val on = dev.deviceID in d.devices
                     val note = if (dev.deviceID == offeredBy) "Offered this folder"
                     else encryptionText(dev, d.passwords[dev.deviceID]?.let { FolderDevice(dev.deviceID, encryptionPassword = it) }.takeIf { on })
-                    ListItem(
-                        modifier = Modifier.clickable {
-                            when {
-                                on -> d = d.copy(devices = d.devices - dev.deviceID, passwords = d.passwords - dev.deviceID)
-                                dev.untrusted -> encrypt = dev.deviceID
-                                else -> d = d.copy(devices = d.devices + dev.deviceID)
-                            }
-                        },
-                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-                        leadingContent = { Checkbox(on, onCheckedChange = null) },
-                        headlineContent = { Text(dev.name.ifEmpty { shortId(dev.deviceID) }) },
-                        supportingContent = note?.let { { Text(it) } },
-                    )
+                    CheckRow(dev.name.ifEmpty { shortId(dev.deviceID) }, note, on) { share ->
+                        when {
+                            !share -> d = d.copy(devices = d.devices - dev.deviceID, passwords = d.passwords - dev.deviceID)
+                            dev.untrusted -> encrypt = dev.deviceID
+                            else -> d = d.copy(devices = d.devices + dev.deviceID)
+                        }
+                    }
                 }
             }
             SettingsGroup("File versioning") {
                 VersioningEditor(d.versioning) { d = d.copy(versioning = it) }
             }
             SettingsGroup("Ignore patterns") {
-                SettingRow(
-                    "Set ignore patterns first", "The folder stays paused until you save them",
-                    trailing = { Checkbox(d.ignoresFirst, onCheckedChange = null) },
-                ) { d = d.copy(ignoresFirst = !d.ignoresFirst) }
+                CheckRow("Set ignore patterns first", "The folder stays paused until you save them", d.ignoresFirst) {
+                    d = d.copy(ignoresFirst = it)
+                }
             }
         }
     }
@@ -212,7 +188,7 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
     if (editParam && param != null) {
         TextDialog(
             param.label, versioningShown(v.type, v.params[param.key]), param.unit.replaceFirstChar { it.uppercase() },
-            valid = { it.toIntOrNull()?.let { n -> n >= 0 } == true },
+            error = ::wholeNumberError,
             onDismiss = { editParam = false },
         ) {
             editParam = false
