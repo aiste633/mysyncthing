@@ -34,13 +34,16 @@ fun deviceStatus(d: Device, conn: Connection?, completion: Completion?): ItemSta
     else -> ItemStatus(SyncState.UpToDate, "Up to date")
 }
 
-/** "LAN" or "Relay" plus the address, since relayed connections are much slower. */
-fun connectionText(conn: Connection?): String? {
+/**
+ * "LAN", "Internet" or "Relay" (relayed connections are much slower), plus the address when
+ * [withAddress]: on the device's own screen, not on its card.
+ */
+fun connectionText(conn: Connection?, withAddress: Boolean = true): String? {
     if (conn?.connected != true) return null
     val via = when {
         conn.type.startsWith("relay") -> "Relay"
         conn.isLocal -> "LAN"
         else -> "Internet"
     }
-    return "$via · ${conn.address}"
+    return if (withAddress) "$via · ${conn.address}" else via
 }

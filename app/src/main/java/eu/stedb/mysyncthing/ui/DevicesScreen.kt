@@ -145,7 +145,7 @@ private fun DeviceCard(d: Device, s: Snapshot, onClick: () -> Unit) {
                 Text(status.text, style = MaterialTheme.typography.labelLarge, color = look.color)
             }
             Text(
-                listOfNotNull(connectionText(conn), "$folders ${if (folders == 1) "folder" else "folders"}").joinToString(" · "),
+                listOfNotNull(connectionText(conn, withAddress = false), "$folders ${if (folders == 1) "folder" else "folders"}").joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             status.progress?.let {
