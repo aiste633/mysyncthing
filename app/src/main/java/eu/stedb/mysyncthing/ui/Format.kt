@@ -126,19 +126,22 @@ fun diskSizeText(d: DiskSize): String = withUnit(number(d.value), d.unit)
  * A speed limit the core stores in KiB/s, as SI for people: 488 KiB/s is
  * "500 kB/s". kB/s are whole numbers, MB/s keep one decimal.
  */
-fun limitSi(kib: Int): Pair<Double, String> {
+fun limitSi(kib: Long): Pair<Double, String> {
     val b = kib * 1024.0
     return if (b >= 1_000_000) Math.round(b / 100_000) / 10.0 to "MB/s" else Math.round(b / 1000).toDouble() to "kB/s"
 }
 
-/** Back to the core's KiB/s; anything above zero stays at least 1 so it is not read as "no limit". */
-fun limitKib(value: Double, unit: String): Int {
-    if (value <= 0) return 0
+/**
+ * Back to the core's KiB/s; anything above zero stays at least 1 so it is not
+ * read as "no limit".
+ */
+fun limitKib(value: Double, unit: String): Long {
+    if (!(value > 0)) return 0
     val b = value * if (unit == "MB/s") 1_000_000 else 1000
-    return Math.round(b / 1024).toInt().coerceAtLeast(1)
+    return Math.round(b / 1024).coerceAtLeast(1)
 }
 
-fun limitText(kib: Int): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> withUnit(number(v), u) }
+fun limitText(kib: Long): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> withUnit(number(v), u) }
 
 val COMPRESSIONS = listOf("metadata" to "Metadata only", "always" to "All data", "never" to "Off")
 
@@ -205,12 +208,13 @@ fun versioningHint(type: String): String? = when (type) {
     else -> null
 }
 
-/** The one number each method asks for: its param key, label and upstream default. */
-data class VersioningParam(val key: String, val label: String, val default: String, val unit: String)
+/** The one number each method asks for: its param key, label, upstream default and smallest value (upstream web GUI's min). */
+data class VersioningParam(val key: String, val label: String, val default: String, val unit: String, val min: Int = 0)
 
 fun versioningParam(type: String): VersioningParam? = when (type) {
     "trashcan" -> VersioningParam("cleanoutDays", "Keep for (days, 0 = forever)", "0", "days")
-    "simple" -> VersioningParam("keep", "Versions to keep", "5", "versions")
+    // 0 would delete every version as soon as it is made.
+    "simple" -> VersioningParam("keep", "Versions to keep", "5", "versions", min = 1)
     "staggered" -> VersioningParam("maxAge", "Keep for (days, 0 = forever)", "365", "days")
     else -> null
 }
@@ -222,8 +226,11 @@ fun versioningShown(type: String, raw: String?): String {
     return if (p.key == "maxAge") ((v.toLongOrNull() ?: 0) / 86_400).toString() else v
 }
 
-fun versioningStored(type: String, shown: String): String =
-    if (versioningParam(type)?.key == "maxAge") ((shown.toLongOrNull() ?: 0) * 86_400).toString() else shown
+/** As the core's strconv reads it: plain ASCII digits. */
+fun versioningStored(type: String, shown: String): String {
+    val n = (wholeNumber(shown) ?: 0).toLong()
+    return (if (versioningParam(type)?.key == "maxAge") n * 86_400 else n).toString()
+}
 
 fun versioningSummary(type: String, params: Map<String, String>): String {
     val label = VERSIONING_TYPES.find { it.first == type }?.second ?: type
@@ -234,43 +241,4 @@ fun versioningSummary(type: String, params: Map<String, String>): String {
         p.unit == "days" -> "$label · $n days"
         else -> "$label · $n ${p.unit}"
     }
-}
-
-/** A global discovery server Syncthing can use: https with a host, an optional port and ?id=… or ?insecure. */
-fun isDiscoveryServer(s: String): Boolean {
-    val u = runCatching { java.net.URI(s.trim()) }.getOrNull() ?: return false
-    return u.scheme == "https" && !u.host.isNullOrEmpty() && u.userInfo == null && (u.port == -1 || u.port in 1..65535)
-}
-
-// Form checks: each says why a value can't be saved, or returns null when it can.
-
-fun requiredError(s: String): String? = if (s.isBlank()) "Required" else null
-
-fun wholeNumberError(s: String): String? =
-    if (s.trim().toIntOrNull()?.let { it >= 0 } == true) null else "A whole number, 0 or more"
-
-/** A decimal typed with either separator; null when it isn't one. */
-fun decimal(s: String): Double? = s.replace(',', '.').trim().toDoubleOrNull()
-
-/** An amount in [unit]; [emptyOk] when empty means none, as for speed limits. */
-fun amountError(s: String, unit: String, emptyOk: Boolean = false): String? {
-    if (emptyOk && s.isBlank()) return null
-    val v = decimal(s) ?: return "Enter a number"
-    return when {
-        v < 0 -> "0 or more"
-        unit == "%" && v > 100 -> "Up to 100 %"
-        else -> null
-    }
-}
-
-fun folderPathError(path: String): String? = when {
-    path.isBlank() -> "Required"
-    !path.startsWith("/") -> "A full path, starting with /"
-    else -> null
-}
-
-fun folderIdError(id: String, existing: Collection<String>): String? = when {
-    id.isBlank() -> "Required"
-    id.trim() in existing -> "Another folder already has this ID"
-    else -> null
 }

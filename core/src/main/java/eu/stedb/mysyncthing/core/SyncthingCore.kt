@@ -34,6 +34,10 @@ object SyncthingCore {
     /** Held by the service while it starts the core, and by an import while it replaces the setup. */
     internal val homeLock = HomeLock()
 
+    /** Why the core would fail on these ignore patterns, or null; [folderPath] "" for the defaults (go/bridge CheckIgnores). */
+    fun checkIgnores(folderPath: String, lines: List<String>): String? =
+        Stbridge.checkIgnores(folderPath, lines.joinToString("\n")).ifEmpty { null }
+
     internal suspend fun start(home: File, credentials: Credentials) = withContext(serial) {
         if (Stbridge.isRunning()) return@withContext
         _state.value = CoreState.Starting

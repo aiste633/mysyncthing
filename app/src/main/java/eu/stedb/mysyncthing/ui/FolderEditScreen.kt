@@ -44,15 +44,12 @@ data class FolderDraft(
 /** The defaults' folder location, or Syncthing/ in shared storage while it is upstream's "~". */
 fun pathBase(defaults: Folder): String = defaults.path.trimEnd('/').takeIf { it.startsWith("/") } ?: "$INTERNAL_STORAGE/Syncthing"
 
-/** Where accepted folders go unless the user picks another place. */
-fun suggestedPath(label: String, base: String): String = "$base/" + label.trim().replace('/', '_').ifEmpty { "Folder" }
-
 /** Draft for a new local folder, or for an offer when [offerId] is set, starting from the [defaults]. */
 fun draftFor(s: Snapshot, offerId: String?, offerDevice: String?, defaults: Folder): FolderDraft {
     val base = FolderDraft(newFolderId(), "", type = defaults.type, versioning = defaults.versioning)
     if (offerId == null) return base
     val label = s.pendingFolders[offerId]?.offeredBy?.get(offerDevice)?.label?.ifEmpty { null } ?: offerId
-    return base.copy(id = offerId, label = label, path = suggestedPath(label, pathBase(defaults)), devices = setOfNotNull(offerDevice))
+    return base.copy(id = offerId, label = label, path = suggestedPath(label, pathBase(defaults), offerId), devices = setOfNotNull(offerDevice))
 }
 
 /**
@@ -83,8 +80,9 @@ fun FolderEditScreen(
         }
     }
     val who = offeredBy?.let { id -> s.devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: shortId(id) }
-    val pathError = folderPathError(d.path)
-    val idError = folderIdError(d.id, s.folders.map { it.id })
+    val pathError = folderPathError(d.path, s.folders.map { it.path })
+    // An offer's ID is the other device's; only a typed one must also work in REST paths.
+    val idError = if (isOffer) "Already added".takeIf { s.folders.any { it.id == d.id } } else folderIdError(d.id, s.folders.map { it.id })
     val valid = pathError == null && idError == null
 
     val back = rememberDiscardGuard(d != initial, onBack)
@@ -105,7 +103,7 @@ fun FolderEditScreen(
                 Column(Modifier.padding(16.dp)) {
                     OutlinedTextField(
                         d.label,
-                        { d = d.copy(label = it, path = if (pathTouched) d.path else suggestedPath(it, pathBase)) },
+                        { d = d.copy(label = it, path = if (pathTouched) d.path else suggestedPath(it, pathBase, d.id)) },
                         label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
@@ -190,11 +188,11 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
     if (editParam && param != null) {
         TextDialog(
             param.label, versioningShown(v.type, v.params[param.key]), param.unit.replaceFirstChar { it.uppercase() },
-            error = ::wholeNumberError,
+            error = { wholeNumberError(it, param.min) },
             onDismiss = { editParam = false },
         ) {
             editParam = false
-            onChange(v.copy(params = v.params + (param.key to versioningStored(v.type, it.trim()))))
+            onChange(v.copy(params = v.params + (param.key to versioningStored(v.type, it))))
         }
     }
 }

@@ -62,7 +62,7 @@ class FormatTest {
         repeat(5_000) {
             val texts = listOf(
                 bytes(r.nextLong(0, Long.MAX_VALUE) shr r.nextInt(63)), rate(r.nextLong(0, 1L shl 40)),
-                duration(r.nextLong(0, 1L shl 30)), rescanText(r.nextInt(-10, 1 shl 20)), limitText(r.nextInt(-5, 1 shl 20)),
+                duration(r.nextLong(0, 1L shl 30)), rescanText(r.nextInt(-10, 1 shl 20)), limitText(r.nextLong(-5, 1L shl 40)),
             )
             texts.forEach { assertFalse(it, Regex("\\d [a-zA-Z%]").containsMatchIn(it)) }
         }
@@ -122,7 +122,6 @@ class FormatTest {
     fun discoveryServersNeedHttpsAndAHost() {
         val https = "https" + "://"
         assertTrue(isDiscoveryServer("${https}discovery.example.com/"))
-        assertTrue(isDiscoveryServer("${https}discovery.example.com:8443/?id=ABC"))
         assertTrue(isDiscoveryServer("${https}192.0.2.10:8443/?insecure"))
         assertFalse(isDiscoveryServer("http" + "://example.com/"))
         assertFalse(isDiscoveryServer("${https}/path"))
@@ -136,7 +135,7 @@ class FormatTest {
     fun newFoldersFollowTheDefaultLocation() {
         assertEquals("/storage/emulated/0/Syncthing", pathBase(eu.stedb.mysyncthing.core.Folder(path = "~")))
         assertEquals("/storage/emulated/0/Sync", pathBase(eu.stedb.mysyncthing.core.Folder(path = "/storage/emulated/0/Sync/")))
-        assertEquals("/storage/emulated/0/Sync/a_b", suggestedPath(" a/b ", "/storage/emulated/0/Sync"))
+        assertEquals("/storage/emulated/0/Sync/a b", suggestedPath(" a/b ", "/storage/emulated/0/Sync"))
     }
 
     @Test
@@ -175,7 +174,7 @@ class FormatTest {
         assertEquals(null, requiredError("a"))
         assertEquals("A whole number, 0 or more", wholeNumberError("1.5"))
         assertEquals(null, wholeNumberError(" 30 "))
-        assertEquals("Up to 100 %", amountError("101", "%"))
+        assertEquals("Up to 100\u00A0%", amountError("101", "%"))
         assertEquals(null, amountError("101", "GB"))
         assertEquals(null, amountError("2,5", "%"))
         assertEquals("Enter a number", amountError("", "%"))

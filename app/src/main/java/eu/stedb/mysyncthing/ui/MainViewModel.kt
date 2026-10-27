@@ -180,8 +180,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setAddresses(id: String, addresses: List<String>) = patchDevice(id, "Addresses") {
         putJsonArray("addresses") { addresses.forEach { add(JsonPrimitive(it)) } }
     }
-    fun setDeviceRecvLimit(id: String, kib: Int) = patchDevice(id, "Download limit") { put("maxRecvKbps", kib) }
-    fun setDeviceSendLimit(id: String, kib: Int) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
+    fun setDeviceRecvLimit(id: String, kib: Long) = patchDevice(id, "Download limit") { put("maxRecvKbps", kib) }
+    fun setDeviceSendLimit(id: String, kib: Long) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
     fun setCompression(id: String, c: String) = patchDevice(id, "Compression") { put("compression", c) }
     fun setNumConnections(id: String, n: Int) = patchDevice(id, "Connections") { put("numConnections", n) }
 
@@ -232,7 +232,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun saveDefaultIgnores(lines: List<String>): Boolean = write {
         val c = client ?: return@write false
-        runCatching { c.setDefaultIgnores(lines) }
+        runCatching { checked("", lines); c.setDefaultIgnores(lines) }
             .onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
     }
 
@@ -272,7 +272,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val id = d.id.trim()
         val ignores = if (paused) emptyList() else runCatching { defaultIgnores() }.getOrDefault(emptyList())
         val devices = d.devices.map { FolderDevice(it, encryptionPassword = d.passwords[it].orEmpty()) }
-        addFolder(id, d.label.trim(), d.path.trim(), devices, d.type, d.versioning, paused || ignores.isNotEmpty())
+        addFolder(id, d.label.trim(), folderPath(d.path), devices, d.type, d.versioning, paused || ignores.isNotEmpty())
         if (paused || ignores.isEmpty()) return@act
         // The folder may take a moment to start after the config change.
         repeat(5) { attempt ->
@@ -303,10 +303,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setWatcher(id: String, on: Boolean) = act("Watch for changes") { patchFolder(id, buildJsonObject { put("fsWatcherEnabled", on) }) }
     fun setVersioning(id: String, v: Versioning) = act("Versioning") { setVersioning(id, v) }
 
+    /** Refuses patterns the core would save and then fail on, before anything is written. */
+    private fun checked(folderPath: String, lines: List<String>) {
+        SyncthingCore.checkIgnores(folderPath, lines)?.let { throw IllegalArgumentException(it) }
+    }
+
     /** Saves ignore patterns; [resume] unpauses a folder that waited for them. False when it failed. */
     suspend fun saveIgnores(id: String, lines: List<String>, resume: Boolean): Boolean = write {
         val c = client ?: return@write false
         runCatching {
+            checked(snapshot.value.folders.find { it.id == id }?.path.orEmpty(), lines)
             c.setIgnores(id, lines)
             if (resume) c.setFolderPaused(id, false)
         }.onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
