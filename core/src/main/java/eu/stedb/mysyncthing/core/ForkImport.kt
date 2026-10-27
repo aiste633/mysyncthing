@@ -122,13 +122,13 @@ object ForkImport {
                 }
             }
 
-            override suspend fun applySettings() {
-                settings.update { conditions.applyTo(it) }
-                settings.setConditionPause(null) // the paused devices it remembers are the old setup's
+            override suspend fun applySettings() = listOf(
+                settings.update { conditions.applyTo(it) },
+                settings.setConditionPause(null), // the paused devices it remembers are the old setup's
                 // Without this the service takes the config without a database for a move from another
                 // phone and says so; the import screen already tells what the import means.
-                settings.setFreshDatabaseExpected(true)
-            }
+                settings.setFreshDatabaseExpected(true),
+            ).all { it }
 
             override fun removeBackup() = !deleteBackup || delete(context.contentResolver, uri)
 
@@ -151,7 +151,8 @@ object ForkImport {
 internal interface SetupReplacement {
     suspend fun stopCore()
     fun install()
-    suspend fun applySettings()
+    /** False if a setting could not be stored (storage full). */
+    suspend fun applySettings(): Boolean
     /** False if the backup should have been deleted and wasn't. */
     fun removeBackup(): Boolean
     fun startCore()
@@ -171,8 +172,12 @@ internal suspend fun replaceSetup(lock: HomeLock, r: SetupReplacement): String? 
         } catch (e: Exception) {
             return@use sentence(e.message ?: e.toString())
         }
-        r.applySettings()
-        if (r.removeBackup()) null else "Imported, but the backup file could not be deleted. Delete it yourself: it holds the device's private key."
+        val saved = r.applySettings()
+        val removed = r.removeBackup()
+        listOfNotNull(
+            if (saved) null else "The sync settings could not all be saved, probably because the storage is full. Check them in Settings.",
+            if (removed) null else "The backup file could not be deleted. Delete it yourself: it holds the device's private key.",
+        ).joinToString(" ").ifEmpty { null }
     }
     r.startCore()
     return outcome

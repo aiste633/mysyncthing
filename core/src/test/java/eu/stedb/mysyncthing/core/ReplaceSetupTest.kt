@@ -37,6 +37,7 @@ class ReplaceSetupTest {
         val pause: () -> Long = { 0 },
         val failInstall: String? = null,
         val removed: Boolean = true,
+        val saved: Boolean = true,
         val onInstall: () -> Unit = {},
     ) : SetupReplacement {
         override suspend fun stopCore() { delay(pause()); step(STOPPED, "stop") }
@@ -46,7 +47,7 @@ class ReplaceSetupTest {
             failInstall?.let { error(it) }
             step(INSTALLED, "install")
         }
-        override suspend fun applySettings() { delay(pause()); step(SETTINGS, "settings") }
+        override suspend fun applySettings(): Boolean { delay(pause()); step(SETTINGS, "settings"); return saved }
         override fun removeBackup(): Boolean { step(DONE, "remove"); return removed }
         override fun startCore() { events += "start requested" }
         private fun step(p: Int, name: String) { phase.set(p); events += name }
@@ -105,6 +106,15 @@ class ReplaceSetupTest {
     fun undeletedBackupIsReported() = runBlocking(Dispatchers.Default) {
         val problem = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), Collections.synchronizedList(mutableListOf()), removed = false))
         assertTrue(problem!!.contains("could not be deleted"))
+    }
+
+    @Test
+    fun unsavedSettingsAreReportedAndTheCoreStillStarts() = runBlocking(Dispatchers.Default) {
+        val events = Collections.synchronizedList(mutableListOf<String>())
+        val problem = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), events, saved = false, removed = false))!!
+        assertTrue(problem.contains("could not all be saved"))
+        assertTrue(problem.contains("could not be deleted"))
+        assertEquals(listOf("stop", "install", "settings", "remove", "start requested"), events.toList())
     }
 
     /** Starts at random moments around imports with random step lengths only ever see a whole setup. */

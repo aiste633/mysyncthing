@@ -118,18 +118,15 @@ class Settings internal constructor(
     suspend fun setMovedFromOtherPhone(moved: Boolean): Boolean = write { it[MOVED] = moved }
 
     /** Set by an import: the next start finds no database, and the import screen has explained why. */
-    suspend fun setFreshDatabaseExpected(expected: Boolean) {
-        store.edit { it[FRESH_DATABASE] = expected }
-    }
+    suspend fun setFreshDatabaseExpected(expected: Boolean): Boolean = write { it[FRESH_DATABASE] = expected }
 
-    /** Whether [setFreshDatabaseExpected] was set, clearing it. */
+    /** Whether [setFreshDatabaseExpected] was set, clearing it; false when it can't be cleared. */
     suspend fun takeFreshDatabaseExpected(): Boolean {
         var expected = false
-        store.edit {
+        return write {
             expected = it[FRESH_DATABASE] ?: false
             it.remove(FRESH_DATABASE)
-        }
-        return expected
+        } && expected
     }
 
     /**
