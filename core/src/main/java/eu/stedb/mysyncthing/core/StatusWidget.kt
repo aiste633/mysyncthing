@@ -7,6 +7,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
+import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
 import kotlinx.coroutines.CoroutineScope
@@ -14,9 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /**
- * 4x1 home-screen widget: status icon and colour, connected devices, progress
- * and a pause button. It never polls; [SyncthingService] pushes [render] when
- * the summary changes, so an idle phone costs nothing.
+ * 4x1 home-screen widget: app mark (when wide enough), status icon and colour,
+ * connected devices, progress and a pause button. It never polls;
+ * [SyncthingService] pushes [render] when the summary changes, so an idle
+ * phone costs nothing.
  */
 class StatusWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
@@ -46,11 +48,19 @@ class StatusWidget : AppWidgetProvider() {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, StatusWidget::class.java))
             if (ids.isEmpty()) return
-            manager.updateAppWidget(ids, views(context, summary))
+            // The launcher picks the widest that fits: the app mark only where the text keeps its room.
+            manager.updateAppWidget(ids, RemoteViews(mapOf(NARROW to views(context, summary, mark = false), WITH_MARK to views(context, summary, mark = true))))
         }
 
-        private fun views(context: Context, s: Summary): RemoteViews {
+        /** Below this width the mark would leave the status about four characters; the narrowest widget is 180 dp. */
+        private val NARROW = SizeF(180f, 40f)
+        private val WITH_MARK = SizeF(220f, 40f)
+
+        private fun views(context: Context, s: Summary, mark: Boolean): RemoteViews {
             val v = RemoteViews(context.packageName, R.layout.widget_status)
+            val markVisibility = if (mark) View.VISIBLE else View.GONE
+            v.setViewVisibility(R.id.widget_app_mark, markVisibility)
+            v.setViewVisibility(R.id.widget_app_rule, markVisibility)
             val (icon, light, dark) = when (s.state) {
                 SyncState.UpToDate -> Triple(R.drawable.widget_ic_ok, 0xFF1E7B34.toInt(), 0xFF81C995.toInt())
                 SyncState.Syncing -> Triple(R.drawable.widget_ic_syncing, AMBER_LIGHT, AMBER_DARK)
