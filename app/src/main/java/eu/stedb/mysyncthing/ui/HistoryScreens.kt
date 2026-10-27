@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -66,32 +70,32 @@ fun RecentChangesScreen(s: Snapshot, vm: MainViewModel, onBack: () -> Unit) {
     var folder by rememberSaveable { mutableStateOf<String?>(null) }
     val shown = changes.orEmpty().filter { folder == null || it.change.folder == folder }
 
-    AppScreen(title = "Recent changes", onBack = onBack) { padding ->
+    AppScreen(title = stringResource(R.string.recent_changes), onBack = onBack) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(top = 4.dp, bottom = 32.dp)) {
             item("chips") {
                 Row(
                     Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    FilterChip(folder == null, { folder = null }, { Text("All folders") }, shape = ButtonShape)
+                    FilterChip(folder == null, { folder = null }, { Text(stringResource(R.string.all_folders)) }, shape = ButtonShape)
                     s.folders.forEach { f ->
                         FilterChip(folder == f.id, { folder = f.id }, { Text(f.label.ifEmpty { f.id }) }, shape = ButtonShape)
                     }
                 }
             }
             when {
-                changes == null -> item("loading") { Hint("Loading") }
-                shown.isEmpty() -> item("none") { Hint("No changes since Syncthing started.") }
+                changes == null -> item("loading") { Hint(stringResource(R.string.loading)) }
+                shown.isEmpty() -> item("none") { Hint(stringResource(R.string.recent_none)) }
             }
-            shown.groupBy { dayText(it.time) ?: "" }.forEach { (day, list) ->
-                item("day-$day") { GroupTitle(day) }
+            shown.groupBy { dayText(it.time) }.forEach { (day, list) ->
+                item("day-$day") { GroupTitle(day?.asString().orEmpty()) }
                 item("list-$day") {
                     ListCard {
                         list.forEach { ChangeRow(it, s) }
                     }
                 }
             }
-            if (shown.isNotEmpty()) item("note") { Hint("Syncthing keeps its latest ${RECENT_LIMIT} changes in memory until it restarts.") }
+            if (shown.isNotEmpty()) item("note") { Hint(pluralStringResource(R.plurals.recent_note, RECENT_LIMIT, grouped(RECENT_LIMIT))) }
         }
     }
 }
@@ -102,11 +106,12 @@ private const val RECENT_LIMIT = 500
 private fun ChangeRow(r: RecentChange, s: Snapshot) {
     val c = r.change
     val deleted = c.action == "deleted"
-    val who = when {
-        r.fromThisPhone || c.modifiedBy == shortId(s.myId) -> "on this phone"
-        else -> "by " + (s.devices.find { shortId(it.deviceID) == c.modifiedBy }?.name?.ifEmpty { null } ?: c.modifiedBy)
+    val what = if (r.fromThisPhone || c.modifiedBy == shortId(s.myId)) {
+        stringResource(if (deleted) R.string.change_deleted_here else R.string.change_changed_here)
+    } else {
+        val by = s.devices.find { shortId(it.deviceID) == c.modifiedBy }?.name?.ifEmpty { null } ?: c.modifiedBy
+        stringResource(if (deleted) R.string.change_deleted_by else R.string.change_changed_by, by)
     }
-    val what = (if (deleted) "deleted " else "changed ") + who
     val folder = s.folders.find { it.id == c.folder }?.label?.ifEmpty { null } ?: c.label.ifEmpty { c.folder }
     val dir = c.path.substringBeforeLast('/', "")
     SettingRow(
@@ -121,7 +126,11 @@ private fun ChangeRow(r: RecentChange, s: Snapshot) {
     )
 }
 
-private enum class Range(val label: String, val days: Long?) { Week("Last 7 days", 7), Month("Last 30 days", 30), All("All", null) }
+private enum class Range(@StringRes val label: Int, @StringRes val newest: Int, val days: Long?) {
+    Week(R.string.range_week, R.string.restore_all_newest_week, 7),
+    Month(R.string.range_month, R.string.restore_all_newest_month, 30),
+    All(R.string.range_all, R.string.restore_all_newest, null),
+}
 
 /**
  * A folder's archived versions: searchable, filtered by when they were
@@ -148,26 +157,26 @@ fun VersionsScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () ->
     }.sortedByDescending { instant(it.third.first().versionTime) }
 
     AppScreen(
-        title = "Restore versions",
+        title = stringResource(R.string.restore_versions),
         onBack = onBack,
-        actions = { TextButton(enabled = files.isNotEmpty(), onClick = { confirmAll = true }) { Text("Restore all") } },
+        actions = { TextButton(enabled = files.isNotEmpty(), onClick = { confirmAll = true }) { Text(stringResource(R.string.restore_all)) } },
     ) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(top = 4.dp, bottom = 32.dp)) {
             item("filters") {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(f?.label?.ifEmpty { null } ?: folder, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(horizontal = 16.dp))
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Range.entries.forEach { r -> FilterChip(range == r, { range = r }, { Text(r.label) }, shape = ButtonShape) }
+                        Range.entries.forEach { r -> FilterChip(range == r, { range = r }, { Text(stringResource(r.label)) }, shape = ButtonShape) }
                     }
                     OutlinedTextField(
-                        query, { query = it }, singleLine = true, label = { Text("Search") },
+                        query, { query = it }, singleLine = true, label = { Text(stringResource(R.string.search)) },
                         leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }
             when {
-                versions == null -> item("loading") { Hint("Loading") }
-                files.isEmpty() -> item("none") { Hint(if (versions!!.isEmpty()) "No old versions kept in this folder." else "No versions match.") }
+                versions == null -> item("loading") { Hint(stringResource(R.string.loading)) }
+                files.isEmpty() -> item("none") { Hint(stringResource(if (versions!!.isEmpty()) R.string.versions_none else R.string.versions_no_match)) }
             }
             items(files, key = { it.first }) { (path, all, inRange) ->
                 ListCard {
@@ -175,8 +184,8 @@ fun VersionsScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () ->
                         path.substringAfterLast('/'),
                         listOfNotNull(
                             path.substringBeforeLast('/', "").ifEmpty { null },
-                            count(all.size, "version"),
-                            whenText(inRange.first().versionTime)?.let { "latest $it" },
+                            count(R.plurals.count_versions, all.size).asString(),
+                            whenText(inRange.first().versionTime)?.let { stringResource(R.string.versions_latest, it.asString()) },
                         ).joinToString(" · "),
                         icon = Icons.Default.History,
                     ) { open = if (open == path) null else path }
@@ -191,10 +200,9 @@ fun VersionsScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () ->
     }
     if (confirmAll) {
         ConfirmDialog(
-            "Restore ${count(files.size, "file")}?",
-            "Each goes back to its newest version" + (if (range.days == null) "" else " from the ${range.label.lowercase()}") +
-                ". The current files are kept as versions. " + restoreNote(f?.type, plural = true),
-            "Restore", onDismiss = { confirmAll = false },
+            stringResource(R.string.restore_all_title, count(R.plurals.count_files, files.size).asString()),
+            stringResource(R.string.restore_all_text, stringResource(range.newest), restoreNote(f?.type, plural = true)),
+            stringResource(R.string.action_restore), onDismiss = { confirmAll = false },
         ) {
             confirmAll = false
             val pick = files.associate { (path, _, inRange) -> path to inRange.first().versionTime }
@@ -214,16 +222,16 @@ private fun VersionPicker(versions: List<FileVersion>, initial: FileVersion, fol
             ) {
                 RadioButton(picked == v.versionTime, onClick = null)
                 Spacer(Modifier.width(8.dp))
-                Text("${whenText(v.versionTime) ?: v.versionTime} · ${bytes(v.size)}", style = MaterialTheme.typography.bodyMedium)
+                Text("${whenText(v.versionTime)?.asString() ?: v.versionTime} · ${bytes(v.size)}", style = MaterialTheme.typography.bodyMedium)
             }
         }
         FilledTonalButton(shape = ButtonShape, onClick = { versions.find { it.versionTime == picked }?.let(onRestore) }, modifier = Modifier.padding(top = 4.dp)) {
             Icon(Icons.AutoMirrored.Filled.Undo, null, Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
-            Text("Restore")
+            Text(stringResource(R.string.action_restore))
         }
         Text(
-            "The current file is kept as a version. " + restoreNote(folderType, plural = false),
+            stringResource(R.string.restore_one_text, restoreNote(folderType, plural = false)),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
         )
     }
@@ -238,8 +246,8 @@ private fun Hint(text: String) = Text(
 )
 
 /** A restore dates the files now (so it always syncs); says so, and where they go. */
-private fun restoreNote(folderType: String?, plural: Boolean): String {
-    val what = if (plural) "Restored files are" else "The restored file is"
-    return if (folderType == "receiveonly") "$what dated now and stay${if (plural) "" else "s"} a local change: this folder is receive only."
-    else "$what dated now and sync${if (plural) "" else "s"} to every device that shares this folder."
-}
+@Composable
+private fun restoreNote(folderType: String?, plural: Boolean): String = stringResource(
+    if (folderType == "receiveonly") if (plural) R.string.restore_note_local_many else R.string.restore_note_local_one
+    else if (plural) R.string.restore_note_many else R.string.restore_note_one,
+)

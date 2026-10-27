@@ -1,5 +1,12 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.annotation.StringRes
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.UiTextException
+import eu.stedb.mysyncthing.core.messageText
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.text
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -81,19 +88,22 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val snapshot: StateFlow<Snapshot> = SyncStatus.snapshot
     val summary: StateFlow<Summary> = SyncStatus.summary
 
-    private val _message = Channel<String>(Channel.BUFFERED)
+    private val _message = Channel<UiText>(Channel.BUFFERED)
     val messages = _message.receiveAsFlow()
 
     private val client: RestClient? get() = (core.value as? CoreState.Running)?.client
 
-    private fun act(label: String, done: String? = null, block: suspend RestClient.() -> Unit) {
+    /** [label] names what failed: "Rename failed: <reason>". */
+    private fun act(@StringRes label: Int, done: UiText? = null, block: suspend RestClient.() -> Unit) {
         val c = client ?: return
         viewModelScope.launch {
             runCatching { c.block() }
                 .onSuccess { done?.let { _message.send(it) } }
-                .onFailure { _message.send("$label failed: ${it.message}") }
+                .onFailure { _message.send(failed(label, it)) }
         }
     }
+
+    private fun failed(@StringRes label: Int, e: Throwable) = text(R.string.op_failed, text(label), e.messageText())
 
     /**
      * Runs a write that a screen waits for in the ViewModel's scope, so leaving the
@@ -149,7 +159,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun clearErrors() = act("Clear") { SyncStatus.clearErrors(this) }
+    fun clearErrors() = act(R.string.op_clear) { SyncStatus.clearErrors(this) }
 
     suspend fun usageConsent(): UsageConsent? = runCatching {
         val c = client ?: return null
@@ -159,35 +169,35 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }.getOrNull()
 
     suspend fun usageReport(): String? = runCatching { client?.usageReport() }.getOrNull()
-    fun answerUsagePrompt(accept: Boolean) = act("Usage reporting") { answerUsagePrompt(accept) }
-    fun setUsageReporting(on: Boolean) = act("Usage reporting") { setUsageReporting(on) }
+    fun answerUsagePrompt(accept: Boolean) = act(R.string.op_usage_reporting) { answerUsagePrompt(accept) }
+    fun setUsageReporting(on: Boolean) = act(R.string.op_usage_reporting) { setUsageReporting(on) }
 
     /** Adds the device and shares [folders] with it in the same step. */
-    fun addDevice(id: String, name: String, folders: List<Folder> = emptyList()) = act("Add device") {
+    fun addDevice(id: String, name: String, folders: List<Folder> = emptyList()) = act(R.string.op_add_device) {
         val device = id.trim().uppercase()
         addDevice(device, name.trim())
         folders.forEach { shareFolder(it, device) }
     }
-    private fun patchDevice(id: String, label: String, fields: JsonObjectBuilder.() -> Unit) =
+    private fun patchDevice(id: String, @StringRes label: Int, fields: JsonObjectBuilder.() -> Unit) =
         act(label) { patchDevice(id, buildJsonObject(fields)) }
     /** The core would refuse introducer and auto-accept for an untrusted device, so they go off with it. */
-    fun setUntrusted(id: String, on: Boolean) = patchDevice(id, "Untrusted") {
+    fun setUntrusted(id: String, on: Boolean) = patchDevice(id, R.string.op_untrusted) {
         put("untrusted", on)
         if (on) {
             put("introducer", false)
             put("autoAcceptFolders", false)
         }
     }
-    fun setIntroducer(id: String, on: Boolean) = patchDevice(id, "Introducer") { put("introducer", on) }
-    fun setAutoAccept(id: String, on: Boolean) = patchDevice(id, "Accept folders") { put("autoAcceptFolders", on) }
-    fun setDeviceGroup(id: String, group: String) = patchDevice(id, "Group") { put("group", group.trim()) }
-    fun setAddresses(id: String, addresses: List<String>) = patchDevice(id, "Addresses") {
+    fun setIntroducer(id: String, on: Boolean) = patchDevice(id, R.string.op_introducer) { put("introducer", on) }
+    fun setAutoAccept(id: String, on: Boolean) = patchDevice(id, R.string.op_accept_folders) { put("autoAcceptFolders", on) }
+    fun setDeviceGroup(id: String, group: String) = patchDevice(id, R.string.op_group) { put("group", group.trim()) }
+    fun setAddresses(id: String, addresses: List<String>) = patchDevice(id, R.string.op_addresses) {
         putJsonArray("addresses") { addresses.forEach { add(JsonPrimitive(it)) } }
     }
-    fun setDeviceRecvLimit(id: String, kib: Long) = patchDevice(id, "Download limit") { put("maxRecvKbps", kib) }
-    fun setDeviceSendLimit(id: String, kib: Long) = patchDevice(id, "Upload limit") { put("maxSendKbps", kib) }
-    fun setCompression(id: String, c: String) = patchDevice(id, "Compression") { put("compression", c) }
-    fun setNumConnections(id: String, n: Int) = patchDevice(id, "Connections") { put("numConnections", n) }
+    fun setDeviceRecvLimit(id: String, kib: Long) = patchDevice(id, R.string.op_download_limit) { put("maxRecvKbps", kib) }
+    fun setDeviceSendLimit(id: String, kib: Long) = patchDevice(id, R.string.op_upload_limit) { put("maxSendKbps", kib) }
+    fun setCompression(id: String, c: String) = patchDevice(id, R.string.op_compression) { put("compression", c) }
+    fun setNumConnections(id: String, n: Int) = patchDevice(id, R.string.op_connections) { put("numConnections", n) }
 
     /** The core's latest file changes, newest first; nothing is stored by the app. */
     suspend fun recentChanges(limit: Int): List<RecentChange>? = runCatching {
@@ -206,18 +216,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val result = runCatching {
             val f = c.folders().first { it.id == folder }
             c.restoreDatedNow(f, versions)
-        }.getOrElse { RestoreResult(mapOf("" to (it.message ?: "error")), emptyList()) }
+        }.getOrElse { RestoreResult(mapOf("" to (it.message ?: it.toString())), emptyList()) }
         val (errors, undated) = result
         when {
             errors.isNotEmpty() -> {
                 val (file, error) = errors.entries.first()
-                _message.send("Restore failed${if (file.isNotEmpty()) " for $file" else ""}: $error" + if (errors.size > 1) " (and ${errors.size - 1} more)" else "")
+                val first = if (file.isEmpty()) text(R.string.restore_failed, error) else text(R.string.restore_failed_file, file, error)
+                _message.send(if (errors.size > 1) plural(R.plurals.and_more, errors.size - 1, first, errors.size - 1) else first)
             }
             undated.isNotEmpty() -> _message.send(
-                "Restored, but the date of ${undated.first()}" + (if (undated.size > 1) " (and ${undated.size - 1} more)" else "") +
-                    " could not be updated, so the restore may not sync",
+                if (undated.size > 1) plural(R.plurals.restore_undated_more, undated.size - 1, undated.first(), undated.size - 1)
+                else text(R.string.restore_undated, undated.first()),
             )
-            else -> _message.send(if (versions.size == 1) "Restored" else "Restored ${count(versions.size, "file")}")
+            else -> _message.send(if (versions.size == 1) text(R.string.restore_done) else plural(R.plurals.restore_done_files, versions.size, grouped(versions.size)))
         }
         errors.isEmpty()
     }
@@ -227,30 +238,30 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun defaultIgnores(): List<String>? = runCatching { client?.defaultIgnores() }.getOrNull()
 
     /** Changes the defaults for new folders or devices; false when it failed. */
-    suspend fun patchDefaults(device: Boolean, label: String, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
+    suspend fun patchDefaults(device: Boolean, @StringRes label: Int, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
         val c = client ?: return@write false
         val body = buildJsonObject(fields)
         runCatching { if (device) c.patchDefaultDevice(body) else c.patchDefaultFolder(body) }
-            .onFailure { _message.send("$label failed: ${it.message}") }.isSuccess
+            .onFailure { _message.send(failed(label, it)) }.isSuccess
     }
 
     suspend fun saveDefaultIgnores(lines: List<String>): Boolean = write {
         val c = client ?: return@write false
         runCatching { checked("", lines); c.setDefaultIgnores(lines) }
-            .onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
+            .onFailure { _message.send(failed(R.string.op_ignore_patterns, it)) }.isSuccess
     }
 
     suspend fun options(): Options? = runCatching { client?.options() }.getOrNull()
     suspend fun restartRequired(): Boolean = runCatching { client?.restartRequired() }.getOrNull() == true
 
     /** Changes Syncthing's global options; false when it failed (the reason goes to the snackbar). */
-    suspend fun patchOptions(label: String, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
+    suspend fun patchOptions(@StringRes label: Int, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
         val c = client ?: return@write false
         runCatching { c.patchOptions(buildJsonObject(fields)) }
-            .onFailure { _message.send("$label failed: ${it.message}") }.isSuccess
+            .onFailure { _message.send(failed(label, it)) }.isSuccess
     }
 
-    fun restartCore() = act("Restart", done = "Restarting Syncthing") { restart() }
+    fun restartCore() = act(R.string.op_restart, done = text(R.string.done_restarting)) { restart() }
 
     suspend fun discovery(): Map<String, Discovered> = runCatching { client?.discovery() }.getOrNull().orEmpty()
     suspend fun ignoredRequests(): IgnoredRequests? = runCatching { client?.ignoredRequests() }.getOrNull()
@@ -259,20 +270,20 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun unignore(device: String, folder: String? = null): Boolean = write {
         val c = client ?: return@write false
         runCatching { if (folder == null) c.unignoreDevice(device) else c.unignoreFolder(folder, device) }
-            .onFailure { _message.send("Unignore failed: ${it.message}") }.isSuccess
+            .onFailure { _message.send(failed(R.string.op_unignore, it)) }.isSuccess
     }
-    fun removeDevice(id: String) = act("Remove device") { removeDevice(id) }
-    fun renameDevice(id: String, name: String) = act("Rename") { setDeviceName(id, name.trim()) }
-    fun setDevicePaused(id: String, paused: Boolean) = act("Pause") { setDevicePaused(id, paused) }
-    fun ignoreDevice(id: String) = act("Ignore") { ignoreDevice(id) }
-    fun ignoreFolder(folder: String, device: String) = act("Ignore") { ignoreFolder(folder, device) }
+    fun removeDevice(id: String) = act(R.string.op_remove_device) { removeDevice(id) }
+    fun renameDevice(id: String, name: String) = act(R.string.op_rename) { setDeviceName(id, name.trim()) }
+    fun setDevicePaused(id: String, paused: Boolean) = act(R.string.op_pause) { setDevicePaused(id, paused) }
+    fun ignoreDevice(id: String) = act(R.string.op_ignore) { ignoreDevice(id) }
+    fun ignoreFolder(folder: String, device: String) = act(R.string.op_ignore) { ignoreFolder(folder, device) }
 
     /**
      * [paused] keeps a new folder from syncing until its ignore patterns are set.
      * Otherwise the default ignore patterns, if any, are written while it is
      * still paused, so nothing they exclude is synced first.
      */
-    fun addFolder(d: FolderDraft, paused: Boolean = false) = act("Add folder", done = "Added ${d.label.ifBlank { d.id }}") {
+    fun addFolder(d: FolderDraft, paused: Boolean = false) = act(R.string.op_add_folder, done = text(R.string.done_added, d.label.ifBlank { d.id })) {
         val id = d.id.trim()
         val ignores = if (paused) emptyList() else runCatching { defaultIgnores() }.getOrDefault(emptyList())
         val devices = d.devices.map { FolderDevice(it, encryptionPassword = d.passwords[it].orEmpty()) }
@@ -285,27 +296,27 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 setFolderPaused(id, false)
                 return@act
             }
-            if (attempt == 4) throw IllegalStateException("added paused, default ignore patterns not set (${failure.message})")
+            if (attempt == 4) throw UiTextException(text(R.string.folder_added_paused, failure.messageText()))
             delay(500)
         }
     }
 
-    fun removeFolder(id: String) = act("Remove folder") { removeFolder(id) }
-    fun setFolderPaused(id: String, paused: Boolean) = act("Pause") { setFolderPaused(id, paused) }
-    fun rescan(id: String) = act("Rescan", done = "Rescanning") { scan(id) }
-    fun rescanAll() = act("Rescan", done = "Rescanning all folders") { scan(null) }
-    fun revert(id: String) = act("Revert", done = "Reverting local changes") { revert(id) }
-    fun override(id: String) = act("Override", done = "Overriding changes") { override(id) }
-    fun setFolderGroup(id: String, group: String) = act("Group") { patchFolder(id, buildJsonObject { put("group", group.trim()) }) }
-    fun setRescanInterval(id: String, seconds: Int) = act("Full rescan") { patchFolder(id, buildJsonObject { put("rescanIntervalS", seconds) }) }
-    fun setPullOrder(id: String, order: String) = act("Download order") { patchFolder(id, buildJsonObject { put("order", order) }) }
-    fun setMinDiskFree(id: String, size: DiskSize) = act("Keep free") {
+    fun removeFolder(id: String) = act(R.string.op_remove_folder) { removeFolder(id) }
+    fun setFolderPaused(id: String, paused: Boolean) = act(R.string.op_pause) { setFolderPaused(id, paused) }
+    fun rescan(id: String) = act(R.string.op_rescan, done = text(R.string.done_rescanning)) { scan(id) }
+    fun rescanAll() = act(R.string.op_rescan, done = text(R.string.done_rescanning_all)) { scan(null) }
+    fun revert(id: String) = act(R.string.op_revert, done = text(R.string.done_reverting)) { revert(id) }
+    fun override(id: String) = act(R.string.op_override, done = text(R.string.done_overriding)) { override(id) }
+    fun setFolderGroup(id: String, group: String) = act(R.string.op_group) { patchFolder(id, buildJsonObject { put("group", group.trim()) }) }
+    fun setRescanInterval(id: String, seconds: Int) = act(R.string.op_full_rescan) { patchFolder(id, buildJsonObject { put("rescanIntervalS", seconds) }) }
+    fun setPullOrder(id: String, order: String) = act(R.string.op_download_order) { patchFolder(id, buildJsonObject { put("order", order) }) }
+    fun setMinDiskFree(id: String, size: DiskSize) = act(R.string.op_keep_free) {
         patchFolder(id, buildJsonObject { putJsonObject("minDiskFree") { put("value", size.value); put("unit", size.unit) } })
     }
-    fun setFolderLabel(id: String, label: String) = act("Rename") { patchFolder(id, buildJsonObject { put("label", label.trim()) }) }
-    fun setFolderType(id: String, type: String) = act("Change type") { patchFolder(id, buildJsonObject { put("type", type) }) }
-    fun setWatcher(id: String, on: Boolean) = act("Watch for changes") { patchFolder(id, buildJsonObject { put("fsWatcherEnabled", on) }) }
-    fun setVersioning(id: String, v: Versioning) = act("Versioning") { setVersioning(id, v) }
+    fun setFolderLabel(id: String, label: String) = act(R.string.op_rename) { patchFolder(id, buildJsonObject { put("label", label.trim()) }) }
+    fun setFolderType(id: String, type: String) = act(R.string.op_change_type) { patchFolder(id, buildJsonObject { put("type", type) }) }
+    fun setWatcher(id: String, on: Boolean) = act(R.string.op_watch) { patchFolder(id, buildJsonObject { put("fsWatcherEnabled", on) }) }
+    fun setVersioning(id: String, v: Versioning) = act(R.string.op_versioning) { setVersioning(id, v) }
 
     /** Refuses patterns the core would save and then fail on, before anything is written. */
     private fun checked(folderPath: String, lines: List<String>) {
@@ -319,14 +330,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             checked(snapshot.value.folders.find { it.id == id }?.path.orEmpty(), lines)
             c.setIgnores(id, lines)
             if (resume) c.setFolderPaused(id, false)
-        }.onFailure { _message.send("Ignore patterns failed: ${it.message}") }.isSuccess
+        }.onFailure { _message.send(failed(R.string.op_ignore_patterns, it)) }.isSuccess
     }
 
     /**
      * Adds or removes one device from a folder's share list, or changes its
      * encryption [password] (needed for an untrusted device).
      */
-    fun setShared(folder: Folder, device: String, shared: Boolean, password: String = "") = act("Sharing") {
+    fun setShared(folder: Folder, device: String, shared: Boolean, password: String = "") = act(R.string.op_sharing) {
         val others = folder.devices.filter { it.deviceID != device }
         val entry = folder.devices.find { it.deviceID == device } ?: FolderDevice(device)
         setFolderDevices(folder.id, if (shared) others + entry.copy(encryptionPassword = password) else others)
@@ -358,7 +369,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun setProxy(p: ProxySettings): Boolean {
         // The bridge waits for a start or stop in progress.
         runCatching { withContext(Dispatchers.IO) { SyncthingCore.setProxy(p) } }.onFailure {
-            _message.send("Proxy not saved: ${it.message}")
+            _message.send(text(R.string.proxy_not_saved, it.messageText()))
             return false
         }
         if (!settings.setProxy(p)) {
@@ -373,4 +384,4 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 }
 
 /** Snackbar text for a settings write that failed. */
-const val NOT_SAVED = "Not saved: the phone's storage may be full"
+val NOT_SAVED = text(R.string.not_saved)

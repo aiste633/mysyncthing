@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -68,31 +70,31 @@ fun DeviceEditScreen(
     val back = rememberDiscardGuard(id != initialId || name != initialName || share.isNotEmpty(), onBack)
 
     AppScreen(
-        title = if (isRequest) "Add \"${initialName.ifEmpty { shortId(initialId) }}\"" else "Add device",
+        title = if (isRequest) stringResource(R.string.device_add_named, initialName.ifEmpty { shortId(initialId) }) else stringResource(R.string.devices_add),
         onBack = back,
         actions = {
-            TextButton(enabled = valid, onClick = { onSave(canonical!!, name, s.folders.filter { it.id in share }) }) { Text("Save") }
+            TextButton(enabled = valid, onClick = { onSave(canonical!!, name, s.folders.filter { it.id in share }) }) { Text(stringResource(R.string.action_save)) }
         },
     ) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             s.pendingDevices[initialId]?.address?.ifEmpty { null }?.let {
                 Text(
-                    "Wants to connect from $it", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    stringResource(R.string.device_wants_to_connect, it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                 )
             }
-            SettingsGroup("Device") {
+            SettingsGroup(stringResource(R.string.device)) {
                 Column(Modifier.padding(16.dp)) {
                     OutlinedTextField(
-                        id, { id = it }, label = { Text("Device ID") }, readOnly = isRequest,
+                        id, { id = it }, label = { Text(stringResource(R.string.device_id)) }, readOnly = isRequest,
                         isError = id.isNotBlank() && !valid,
                         supportingText = {
                             Text(
                                 when {
-                                    known -> "Already added"
-                                    id.isNotBlank() && canonical == null -> deviceIdError(id)!!
-                                    isRequest -> "Check it matches the other device"
-                                    else -> "Scan its QR code, paste it, or pick a nearby device"
+                                    known -> stringResource(R.string.folder_already_added)
+                                    id.isNotBlank() && canonical == null -> deviceIdError(id)!!.asString()
+                                    isRequest -> stringResource(R.string.device_id_check)
+                                    else -> stringResource(R.string.device_id_hint)
                                 },
                             )
                         },
@@ -102,30 +104,30 @@ fun DeviceEditScreen(
                                     ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setBeepEnabled(false).setOrientationLocked(false)
                                         .setCaptureActivity(ScanActivity::class.java),
                                 )
-                            }) { Icon(Icons.Default.QrCodeScanner, "Scan QR code") }
+                            }) { Icon(Icons.Default.QrCodeScanner, stringResource(R.string.scan_qr_code)) }
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
-                        name, { name = it }, label = { Text("Name (optional)") }, singleLine = true,
+                        name, { name = it }, label = { Text(stringResource(R.string.name_optional)) }, singleLine = true,
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     )
                 }
             }
             if (candidates.isNotEmpty()) {
-                SettingsGroup("Nearby on this network") {
+                SettingsGroup(stringResource(R.string.device_nearby)) {
                     candidates.forEach { (device, entry) ->
                         SettingRow(
-                            shortId(device), entry.addresses.firstOrNull()?.substringAfter("://") ?: "Tap to use", icon = Icons.Default.Devices,
+                            shortId(device), entry.addresses.firstOrNull()?.substringAfter("://") ?: stringResource(R.string.device_nearby_tap), icon = Icons.Default.Devices,
                         ) { id = device }
                     }
                 }
             }
-            SettingsGroup("Share folders") {
-                if (s.folders.isEmpty()) SettingRow("No folders yet", "Add one on the Folders tab")
+            SettingsGroup(stringResource(R.string.device_share_folders)) {
+                if (s.folders.isEmpty()) SettingRow(stringResource(R.string.folders_empty), stringResource(R.string.device_no_folders_hint))
                 s.folders.forEach { f ->
                     val on = f.id in share
-                    CheckRow(f.label.ifEmpty { f.id }, displayPath(f.path), on) { share = if (it) share + f.id else share - f.id }
+                    CheckRow(f.label.ifEmpty { f.id }, displayPath(f.path).asString(), on) { share = if (it) share + f.id else share - f.id }
                 }
             }
         }

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Texts of the core module: sync status, notifications, the widget and the
+    run conditions. Source language: English (en-GB). Translations go in
+    values-<language>/strings.xml with the same names.
+    Placeholders: %1$s, %2$d… keep their number; their order may change.
+    Units (kB, MB/s, %) and the name Syncthing are never translated.
+-->
+<resources>
+    <string name="syncthing" translatable="false">Syncthing</string>
+
+    <!-- Actions on notifications -->
+    <string name="action_clear">Clear</string>
+    <string name="action_review">Review</string>
+    <string name="action_ignore">Ignore</string>
+    <!-- Stops Syncthing, from its status notification -->
+    <string name="action_stop">Stop</string>
+
+    <!-- Sync status: one short line, in the notification, the widget and the app's top bar -->
+    <string name="status_stopped">Stopped</string>
+    <string name="status_stopped_error">Stopped with an error</string>
+    <string name="status_stopped_no_access">Stopped: no access to files</string>
+    <string name="status_failed_to_start">Failed to start</string>
+    <string name="status_starting">Starting</string>
+    <!-- %1$s: why syncing is paused, one of the pause_reason_* texts -->
+    <string name="status_paused_because">Paused: %1$s</string>
+    <string name="status_paused">Paused</string>
+    <string name="status_no_network">No network</string>
+    <string name="status_not_connected">Not connected</string>
+    <!-- The core's notices (warnings) waiting to be read -->
+    <plurals name="status_problems">
+        <item quantity="one">%1$d problem</item>
+        <item quantity="other">%1$d problems</item>
+    </plurals>
+    <!-- Files or directories that failed to sync -->
+    <plurals name="status_items_failed">
+        <item quantity="one">%1$d item failed to sync</item>
+        <item quantity="other">%1$d items failed to sync</item>
+    </plurals>
+    <string name="status_folder_error">Folder error</string>
+    <!-- Device and folder requests waiting for the user; only used for 2 or more -->
+    <plurals name="status_requests">
+        <item quantity="one">%1$d request waiting</item>
+        <item quantity="other">%1$d requests waiting</item>
+    </plurals>
+    <string name="status_new_device">New device wants to connect</string>
+    <string name="status_new_folder">New folder shared with you</string>
+    <!-- Only used for 2 or more -->
+    <plurals name="status_folders_review">
+        <item quantity="one">%1$d folder needs review</item>
+        <item quantity="other">%1$d folders need review</item>
+    </plurals>
+    <!-- %1$s: folder name. A receive-only folder has changes made on this phone. -->
+    <string name="status_local_changes">Local changes in %1$s</string>
+    <!-- %1$s: folder name. A send-only folder differs from the other devices. -->
+    <string name="status_out_of_sync">%1$s is out of sync</string>
+    <!-- On the lock screen, without the folder name -->
+    <string name="status_folder_review_public">A folder needs review</string>
+    <string name="status_no_devices">No devices added</string>
+    <string name="status_no_folders">No folders added</string>
+    <string name="status_syncing">Syncing</string>
+    <!-- %1$d: percentage done. %% is the percent sign, with a space before it -->
+    <string name="status_syncing_percent">Syncing %1$d %%</string>
+    <string name="status_up_to_date">Up to date</string>
+    <!-- Status line plus the one connected device. %1$s: status, %2$s: device name -->
+    <string name="status_line_device">%1$s · %2$s</string>
+    <!-- Status line plus how many devices are connected. %1$s: status, %2$d: number of devices -->
+    <plurals name="status_line_devices">
+        <item quantity="one">%1$s · %2$d device</item>
+        <item quantity="other">%1$s · %2$d devices</item>
+    </plurals>
+    <!-- Joins two full sentences -->
+    <string name="two_sentences">%1$s %2$s</string>
+
+    <!-- Why syncing is paused (run conditions); shown after "Paused: " -->
+    <string name="pause_reason_user">Paused by you</string>
+    <string name="pause_reason_no_network">No network</string>
+    <string name="pause_reason_mobile_data">On mobile data</string>
+    <string name="pause_reason_roaming">Roaming</string>
+    <string name="pause_reason_metered_wifi">Wi-Fi is metered</string>
+    <string name="pause_reason_metered_network">Network is metered</string>
+    <string name="pause_reason_not_charging">Not charging</string>
+    <string name="pause_reason_charging">Charging</string>
+    <string name="pause_reason_battery_saver">Battery saver on</string>
+
+    <!-- Sync times: windows of the week in which syncing may run -->
+    <string name="schedule_outside">Outside sync times</string>
+    <!-- %1$s: time the next window opens today, e.g. 22:00 -->
+    <string name="schedule_outside_next">Outside sync times · next %1$s</string>
+    <!-- %1$s: short weekday, %2$s: time, when the next window opens on another day -->
+    <string name="schedule_outside_next_day">Outside sync times · next %1$s %2$s</string>
+    <string name="schedule_error_no_window">Add a time window</string>
+    <string name="schedule_error_times">Times from 00:00 to 23:59</string>
+    <string name="schedule_error_same_times">Start and end must differ</string>
+    <string name="schedule_error_no_day">Pick at least one day</string>
+    <string name="schedule_error_days">Days are 1 (Monday) to 7</string>
+    <plurals name="schedule_error_too_many">
+        <item quantity="one">At most %1$d time window</item>
+        <item quantity="other">At most %1$d time windows</item>
+    </plurals>
+
+    <!-- Problems: the core's errors in plain words -->
+    <string name="problem_storage_almost_full">The phone\'s storage is almost full. Free some space: syncing goes on by itself.</string>
+    <!-- %1$s: the free space Syncthing keeps, e.g. "1 %" or "2 GB" -->
+    <string name="problem_storage_almost_full_keeps">The phone\'s storage is almost full (Syncthing keeps %1$s free). Free some space: syncing goes on by itself.</string>
+    <string name="problem_folder_space">Too little free space where this folder is. Free some space, or lower \"Keep free\" in the folder\'s settings.</string>
+    <!-- %1$s: the free space Syncthing keeps, e.g. "1 %" or "2 GB". "Keep free" is a folder setting. -->
+    <string name="problem_folder_space_keeps">Too little free space where this folder is (Syncthing keeps %1$s free). Free some space, or lower \"Keep free\" in the folder\'s settings.</string>
+    <string name="problem_storage_full">The phone\'s storage is full. Free some space, then try again.</string>
+    <!-- Notification title. %1$d: number of the core's notices -->
+    <plurals name="problems_title">
+        <item quantity="one">Syncthing has a problem</item>
+        <item quantity="other">Syncthing has %1$d problems</item>
+    </plurals>
+    <!-- "All files access" is Android's name for the permission -->
+    <string name="problem_no_file_access">MySyncthing has no access to your files. Allow All files access to sync again.</string>
+    <string name="problem_no_file_access_title">Syncing stopped</string>
+    <!-- %1$s: folder name -->
+    <string name="problem_folder_stopped">%1$s stopped syncing</string>
+    <!-- On the lock screen, without the folder name -->
+    <string name="problem_folder_stopped_public">A folder stopped syncing</string>
+
+    <!-- Notification channels, as listed in Android's notification settings -->
+    <string name="channel_service">Sync service</string>
+    <string name="channel_problems">Problems</string>
+    <string name="channel_problems_description">Errors that stop Syncthing from syncing</string>
+    <string name="channel_requests">Requests</string>
+    <string name="channel_requests_description">New devices and shared folders waiting for your approval</string>
+
+    <!-- Request notifications. %1$s: device name -->
+    <string name="request_device_title">%1$s wants to connect</string>
+    <!-- %1$s: first part of the device ID, e.g. ABC1234 -->
+    <string name="request_device_text">Device ID %1$s</string>
+    <!-- %1$s: folder name -->
+    <string name="request_folder_title">\"%1$s\" shared with you</string>
+    <!-- %1$s: device name -->
+    <string name="request_folder_text">From %1$s. Tap Review to choose where to keep it.</string>
+    <!-- %1$s: device name -->
+    <string name="request_folder_text_have">From %1$s. You already have this folder; tap Review to share it.</string>
+    <string name="request_folder_public">A folder was shared with you</string>
+    <string name="request_device_public">A device wants to connect</string>
+
+    <!-- Home-screen widget -->
+    <string name="widget_name" translatable="false">Syncthing</string>
+    <string name="widget_description">Sync status, connected devices and a pause button</string>
+    <string name="widget_pause">Pause syncing</string>
+    <string name="widget_resume">Resume syncing</string>
+    <string name="widget_start">Start Syncthing</string>
+    <string name="widget_not_running">Not running</string>
+    <string name="widget_no_device">No device connected</string>
+    <plurals name="widget_devices_connected">
+        <item quantity="one">%1$d device connected</item>
+        <item quantity="other">%1$d devices connected</item>
+    </plurals>
+
+    <!-- Import and export of a backup -->
+    <string name="import_cannot_open">Cannot open the backup</string>
+    <string name="import_settings_not_saved">The sync settings could not all be saved, probably because the storage is full. Check them in Settings.</string>
+    <string name="import_backup_not_deleted">The backup file could not be deleted. Delete it yourself: it holds the device\'s private key.</string>
+    <string name="export_cannot_write">Cannot write the file</string>
+</resources>

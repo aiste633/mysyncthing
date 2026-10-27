@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -43,36 +45,36 @@ fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: ()
     var dialog by rememberSaveable { mutableStateOf<DefaultsDialog?>(null) }
     val scope = rememberCoroutineScope()
     // Shows the change at once; on failure rereads what the core has.
-    val change = { new: Folder, label: String, fields: JsonObjectBuilder.() -> Unit ->
+    val change = { new: Folder, label: Int, fields: JsonObjectBuilder.() -> Unit ->
         f = new
         scope.launch { if (!vm.patchDefaults(device = false, label, fields)) f = vm.defaultFolder() }
         Unit
     }
 
-    AppScreen(title = "Default settings for new folders", onBack = onBack) { padding ->
+    AppScreen(title = stringResource(R.string.defaults_folders), onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             val d = f
             if (d == null) {
-                Intro("Loading")
+                Intro(stringResource(R.string.loading))
                 return@Column
             }
-            Intro("Folders you add, and folders you accept from other devices, start with these settings.")
-            SettingsGroup("General") {
-                SettingRow("Type", "${folderTypeLabel(d.type)}. ${folderTypeHint(d.type).orEmpty()}") { dialog = DefaultsDialog.Type }
-                SettingRow("Location", "${displayPath(d.path)}/<folder name>")
+            Intro(stringResource(R.string.defaults_folders_intro))
+            SettingsGroup(stringResource(R.string.group_general)) {
+                SettingRow(stringResource(R.string.type), folderTypeText(d.type).asString()) { dialog = DefaultsDialog.Type }
+                SettingRow(stringResource(R.string.defaults_location), stringResource(R.string.defaults_location_value, displayPath(d.path).asString()))
             }
-            SettingsGroup("File versioning") {
-                VersioningEditor(d.versioning) { v -> change(d.copy(versioning = v), "Versioning") { putVersioning(v) } }
+            SettingsGroup(stringResource(R.string.file_versioning)) {
+                VersioningEditor(d.versioning) { v -> change(d.copy(versioning = v), R.string.op_versioning) { putVersioning(v) } }
             }
-            SettingsGroup("Advanced") {
-                SwitchRow("Watch for changes", "Sync edits within seconds instead of at the next scan", d.fsWatcherEnabled) { v ->
-                    change(d.copy(fsWatcherEnabled = v), "Watch for changes") { put("fsWatcherEnabled", v) }
+            SettingsGroup(stringResource(R.string.settings_group_advanced)) {
+                SwitchRow(stringResource(R.string.folder_watch), stringResource(R.string.folder_watch_hint), d.fsWatcherEnabled) { v ->
+                    change(d.copy(fsWatcherEnabled = v), R.string.op_watch) { put("fsWatcherEnabled", v) }
                 }
-                SettingRow("Full rescan", rescanText(d.rescanIntervalS)) { dialog = DefaultsDialog.Rescan }
-                SettingRow("Download order", orderLabel(d.order)) { dialog = DefaultsDialog.Order }
-                SettingRow("Keep free on this phone", diskSizeText(d.minDiskFree)) { dialog = DefaultsDialog.DiskFree }
+                SettingRow(stringResource(R.string.full_rescan), rescanText(d.rescanIntervalS).asString()) { dialog = DefaultsDialog.Rescan }
+                SettingRow(stringResource(R.string.download_order), orderLabel(d.order).asString()) { dialog = DefaultsDialog.Order }
+                SettingRow(stringResource(R.string.keep_free), diskSizeText(d.minDiskFree)) { dialog = DefaultsDialog.DiskFree }
                 SettingRow(
-                    "Ignore patterns", ignores?.let { if (it.isEmpty()) "None" else count(it.size, "rule") } ?: "Loading",
+                    stringResource(R.string.ignore_patterns), ignoresText(ignores).asString(),
                     onClick = onOpenIgnores,
                 )
             }
@@ -82,18 +84,18 @@ fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: ()
     val d = f ?: return
     val close = { dialog = null }
     when (dialog) {
-        DefaultsDialog.Type -> ChoiceDialog("Folder type", FOLDER_TYPES, d.type, ::folderTypeHint, onDismiss = close) { t ->
-            close(); change(d.copy(type = t), "Type") { put("type", t) }
+        DefaultsDialog.Type -> ChoiceDialog(stringResource(R.string.folder_type), FOLDER_TYPES, d.type, ::folderTypeHint, onDismiss = close) { t ->
+            close(); change(d.copy(type = t), R.string.op_type) { put("type", t) }
         }
-        DefaultsDialog.Rescan -> ChoiceDialog("Full rescan", rescanChoices(d.rescanIntervalS), d.rescanIntervalS, ::rescanHint, onDismiss = close) { n ->
-            close(); change(d.copy(rescanIntervalS = n), "Full rescan") { put("rescanIntervalS", n) }
+        DefaultsDialog.Rescan -> ChoiceDialog(stringResource(R.string.full_rescan), rescanChoices(d.rescanIntervalS), d.rescanIntervalS, ::rescanHint, onDismiss = close) { n ->
+            close(); change(d.copy(rescanIntervalS = n), R.string.op_full_rescan) { put("rescanIntervalS", n) }
         }
-        DefaultsDialog.Order -> ChoiceDialog("Download order", PULL_ORDERS, d.order, onDismiss = close) { o ->
-            close(); change(d.copy(order = o), "Download order") { put("order", o) }
+        DefaultsDialog.Order -> ChoiceDialog(stringResource(R.string.download_order), PULL_ORDERS, d.order, onDismiss = close) { o ->
+            close(); change(d.copy(order = o), R.string.op_download_order) { put("order", o) }
         }
         DefaultsDialog.DiskFree -> DiskFreeDialog(d.minDiskFree, INTERNAL_STORAGE, onDismiss = close) { size ->
             close()
-            change(d.copy(minDiskFree = size), "Keep free") { putJsonObject("minDiskFree") { put("value", size.value); put("unit", size.unit) } }
+            change(d.copy(minDiskFree = size), R.string.op_keep_free) { putJsonObject("minDiskFree") { put("value", size.value); put("unit", size.unit) } }
         }
         else -> {}
     }
@@ -106,34 +108,34 @@ fun DefaultDeviceScreen(vm: MainViewModel, onBack: () -> Unit) {
     LaunchedEffect(Unit) { dev = vm.defaultDevice() }
     var dialog by rememberSaveable { mutableStateOf<DefaultsDialog?>(null) }
     val scope = rememberCoroutineScope()
-    val change = { new: Device, label: String, fields: JsonObjectBuilder.() -> Unit ->
+    val change = { new: Device, label: Int, fields: JsonObjectBuilder.() -> Unit ->
         dev = new
         scope.launch { if (!vm.patchDefaults(device = true, label, fields)) dev = vm.defaultDevice() }
         Unit
     }
 
-    AppScreen(title = "Default settings for new devices", onBack = onBack) { padding ->
+    AppScreen(title = stringResource(R.string.defaults_devices), onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             val d = dev
             if (d == null) {
-                Intro("Loading")
+                Intro(stringResource(R.string.loading))
                 return@Column
             }
-            Intro("Devices you add, and device requests you accept, start with these settings.")
-            SettingsGroup("Trust") {
-                SwitchRow("Introducer", "Also add the devices it shares folders with", d.introducer) { v ->
-                    change(d.copy(introducer = v), "Introducer") { put("introducer", v) }
+            Intro(stringResource(R.string.defaults_devices_intro))
+            SettingsGroup(stringResource(R.string.group_trust)) {
+                SwitchRow(stringResource(R.string.device_introducer), stringResource(R.string.device_introducer_hint), d.introducer) { v ->
+                    change(d.copy(introducer = v), R.string.op_introducer) { put("introducer", v) }
                 }
-                SwitchRow("Accept its folders automatically", "Saved to Syncthing/<folder name> without asking", d.autoAcceptFolders) { v ->
-                    change(d.copy(autoAcceptFolders = v), "Accept folders") { put("autoAcceptFolders", v) }
+                SwitchRow(stringResource(R.string.device_auto_accept), stringResource(R.string.device_auto_accept_hint), d.autoAcceptFolders) { v ->
+                    change(d.copy(autoAcceptFolders = v), R.string.op_accept_folders) { put("autoAcceptFolders", v) }
                 }
             }
-            SettingsGroup("Advanced") {
-                SettingRow("Addresses", addressesText(d.addresses)) { dialog = DefaultsDialog.Addresses }
-                SettingRow("Download limit", limitText(d.maxRecvKbps)) { dialog = DefaultsDialog.Recv }
-                SettingRow("Upload limit", limitText(d.maxSendKbps)) { dialog = DefaultsDialog.Send }
-                SettingRow("Compression", COMPRESSIONS.find { it.first == d.compression }?.second ?: d.compression) { dialog = DefaultsDialog.Compression }
-                SettingRow("Connections", connectionsText(d.numConnections)) { dialog = DefaultsDialog.Connections }
+            SettingsGroup(stringResource(R.string.settings_group_advanced)) {
+                SettingRow(stringResource(R.string.device_addresses), addressesText(d.addresses)) { dialog = DefaultsDialog.Addresses }
+                SettingRow(stringResource(R.string.download_limit), limitText(d.maxRecvKbps).asString()) { dialog = DefaultsDialog.Recv }
+                SettingRow(stringResource(R.string.upload_limit), limitText(d.maxSendKbps).asString()) { dialog = DefaultsDialog.Send }
+                SettingRow(stringResource(R.string.compression), compressionLabel(d.compression).asString()) { dialog = DefaultsDialog.Compression }
+                SettingRow(stringResource(R.string.connections), connectionsText(d.numConnections).asString()) { dialog = DefaultsDialog.Connections }
             }
         }
     }
@@ -143,20 +145,20 @@ fun DefaultDeviceScreen(vm: MainViewModel, onBack: () -> Unit) {
     when (dialog) {
         DefaultsDialog.Addresses -> AddressesDialog(d.addresses, onDismiss = close) { list ->
             close()
-            change(d.copy(addresses = list), "Addresses") { putJsonArray("addresses") { list.forEach { add(JsonPrimitive(it)) } } }
+            change(d.copy(addresses = list), R.string.op_addresses) { putJsonArray("addresses") { list.forEach { add(JsonPrimitive(it)) } } }
         }
-        DefaultsDialog.Recv -> SpeedLimitDialog("Download limit", d.maxRecvKbps, onDismiss = close) { kib ->
-            close(); change(d.copy(maxRecvKbps = kib), "Download limit") { put("maxRecvKbps", kib) }
+        DefaultsDialog.Recv -> SpeedLimitDialog(stringResource(R.string.download_limit), d.maxRecvKbps, onDismiss = close) { kib ->
+            close(); change(d.copy(maxRecvKbps = kib), R.string.op_download_limit) { put("maxRecvKbps", kib) }
         }
-        DefaultsDialog.Send -> SpeedLimitDialog("Upload limit", d.maxSendKbps, onDismiss = close) { kib ->
-            close(); change(d.copy(maxSendKbps = kib), "Upload limit") { put("maxSendKbps", kib) }
+        DefaultsDialog.Send -> SpeedLimitDialog(stringResource(R.string.upload_limit), d.maxSendKbps, onDismiss = close) { kib ->
+            close(); change(d.copy(maxSendKbps = kib), R.string.op_upload_limit) { put("maxSendKbps", kib) }
         }
-        DefaultsDialog.Compression -> ChoiceDialog("Compression", COMPRESSIONS, d.compression, ::compressionHint, onDismiss = close) { c ->
-            close(); change(d.copy(compression = c), "Compression") { put("compression", c) }
+        DefaultsDialog.Compression -> ChoiceDialog(stringResource(R.string.compression), COMPRESSIONS, d.compression, ::compressionHint, onDismiss = close) { c ->
+            close(); change(d.copy(compression = c), R.string.op_compression) { put("compression", c) }
         }
         DefaultsDialog.Connections -> ChoiceDialog(
-            "Connections", connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0), onDismiss = close,
-        ) { n -> close(); change(d.copy(numConnections = n), "Connections") { put("numConnections", n) } }
+            stringResource(R.string.connections), connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0), onDismiss = close,
+        ) { n -> close(); change(d.copy(numConnections = n), R.string.op_connections) { put("numConnections", n) } }
         else -> {}
     }
 }

@@ -28,7 +28,7 @@ class SummaryTest {
     )
 
     private fun line(s: Snapshot, blockedBy: String? = null, online: Boolean = true) =
-        summarize(running, s, blockedBy, online).let { it.state to it.line() }
+        summarize(running, s, blockedBy?.let(::raw), online).let { it.state to it.line().en() }
 
     @Test
     fun upToDateNamesTheOnlyDevice() {
@@ -100,7 +100,7 @@ class SummaryTest {
         val outOfSync = snap().copy(folders = listOf(camera), folderStatus = mapOf(photos.id to idle.copy(needBytes = 500, needTotalItems = 2)))
         assertEquals(SyncState.NeedsInput to "Camera is out of sync · server", line(outOfSync))
         // The lock screen gets neither folder nor device names.
-        assertEquals("A folder needs review", summarize(running, outOfSync, null, true).publicText)
-        assertEquals("Up to date", summarize(running, snap(), null, true).publicText)
+        assertEquals("A folder needs review", summarize(running, outOfSync, null, true).publicText.en())
+        assertEquals("Up to date", summarize(running, snap(), null, true).publicText.en())
     }
 }

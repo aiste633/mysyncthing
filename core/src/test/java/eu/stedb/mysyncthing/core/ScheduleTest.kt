@@ -50,10 +50,10 @@ class ScheduleTest {
 
     @Test
     fun theReasonSaysWhenSyncingResumes() {
-        assertEquals("Outside sync times · next 22:00", outsideText(listOf(night), at(1, 13, 5)))
-        assertEquals("Outside sync times · next Mon 22:00", outsideText(listOf(night), at(6, 12)))
-        assertEquals("Outside sync times · next 09:05", outsideText(listOf(SyncWindow(9 * 60 + 5, 10 * 60, setOf(2))), at(2, 8)))
-        assertEquals("Outside sync times", outsideText(emptyList(), at(2, 8)))
+        assertEquals("Outside sync times · next 22:00", outsideText(listOf(night), at(1, 13, 5)).en())
+        assertEquals("Outside sync times · next Mon 22:00", outsideText(listOf(night), at(6, 12)).en())
+        assertEquals("Outside sync times · next 09:05", outsideText(listOf(SyncWindow(9 * 60 + 5, 10 * 60, setOf(2))), at(2, 8)).en())
+        assertEquals("Outside sync times", outsideText(emptyList(), at(2, 8)).en())
     }
 
     @Test
@@ -61,11 +61,11 @@ class ScheduleTest {
         val c = RunConditions(timeSchedule = true, windows = listOf(night))
         val online = DeviceState(online = true, wifi = true, unmetered = true)
         assertNull(c.blockedBy(online, at(1, 23)))
-        assertEquals("Outside sync times · next 22:00", c.blockedBy(online, at(1, 12)))
+        assertEquals("Outside sync times · next 22:00", c.blockedBy(online, at(1, 12)).en())
         assertNull(c.copy(timeSchedule = false).blockedBy(online, at(1, 12)))
         assertEquals(PAUSED_BY_USER, c.copy(pausedByUser = true).blockedBy(online, at(1, 23)))
         // Turned on without a window, nothing goes through.
-        assertEquals("Outside sync times", RunConditions(timeSchedule = true).blockedBy(online, at(1, 23)))
+        assertEquals("Outside sync times", RunConditions(timeSchedule = true).blockedBy(online, at(1, 23)).en())
     }
 
     @Test
@@ -83,10 +83,10 @@ class ScheduleTest {
 
     @Test
     fun scheduleChecks() {
-        assertEquals("Add a time window", scheduleError(true, emptyList()))
+        assertEquals("Add a time window", scheduleError(true, emptyList()).en())
         assertNull(scheduleError(false, emptyList()))
-        assertEquals("At most 8 time windows", scheduleError(false, List(9) { night }))
-        assertEquals("Pick at least one day", scheduleError(true, listOf(night, night.copy(days = emptySet()))))
+        assertEquals("At most 8 time windows", scheduleError(false, List(9) { night }).en())
+        assertEquals("Pick at least one day", scheduleError(true, listOf(night, night.copy(days = emptySet()))).en())
         assertNull(scheduleError(true, List(8) { night }))
     }
 

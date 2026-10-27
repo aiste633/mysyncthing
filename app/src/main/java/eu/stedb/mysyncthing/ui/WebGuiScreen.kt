@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.webkit.RenderProcessGoneDetail
@@ -33,7 +35,7 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
         .encodeToString("${core.credentials.guiUser}:${core.credentials.guiPassword}".toByteArray())
     var webView: WebView? = null
     BackHandler { webView?.takeIf { it.canGoBack() }?.goBack() ?: onClose() }
-    AppScreen(title = "Web GUI", onBack = onClose) { padding ->
+    AppScreen(title = stringResource(R.string.settings_web_gui), onBack = onClose) { padding ->
         AndroidView(
             modifier = Modifier.fillMaxSize().padding(padding),
             factory = { ctx ->

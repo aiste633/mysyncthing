@@ -21,7 +21,7 @@ class ValidationTest {
     @Test
     fun acceptedAmountsAreFiniteAndInRange() = forAll(typedNumber) { s ->
         for (unit in listOf("%", "MB", "GB", "kB/s", "MB/s")) {
-            if (amountError(s, unit) != null) continue
+            if (amountError(s, unit).en() != null) continue
             val v = decimal(s)!!
             assertTrue("$v finite, not negative", v.isFinite() && v >= 0)
             if (unit == "%") assertTrue(v <= 100)
@@ -31,7 +31,7 @@ class ValidationTest {
     @Test
     fun speedLimitsSurviveTheCoresKiB() = forAll(typedNumber) { s ->
         for (unit in listOf("kB/s", "MB/s")) {
-            if (amountError(s, unit, emptyOk = true) != null) continue
+            if (amountError(s, unit, emptyOk = true).en() != null) continue
             val v = decimal(s) ?: 0.0
             val kib = limitKib(v, unit)
             val bytes = v * if (unit == "MB/s") 1e6 else 1e3
@@ -46,21 +46,21 @@ class ValidationTest {
     @Test
     fun overflowingLimitsWereSavedAsOneKiB() {
         // 3,000,000 MB/s passed the app's Int as KiB and wrapped to a negative number, then became 1 KiB/s.
-        assertEquals("Up to 2000000\u00A0MB/s", amountError("3000000", "MB/s"))
+        assertEquals("Up to 2000000\u00A0MB/s", amountError("3000000", "MB/s").en())
         assertEquals(1_953_125_000L, limitKib(2e6, "MB/s"))
         assertEquals(0L, limitKib(Double.NaN, "kB/s"))
-        assertEquals("Enter a number", amountError("NaN", "%"))
-        assertEquals("Enter a number", amountError("Infinity", "GB"))
-        assertEquals("Enter a number", amountError("1e3", "GB"))
-        assertEquals("0 or more", amountError("-1", "MB/s", emptyOk = true))
-        assertEquals(null, amountError("2,5", "%"))
+        assertEquals("Enter a number", amountError("NaN", "%").en())
+        assertEquals("Enter a number", amountError("Infinity", "GB").en())
+        assertEquals("Enter a number", amountError("1e3", "GB").en())
+        assertEquals("0 or more", amountError("-1", "MB/s", emptyOk = true).en())
+        assertEquals(null, amountError("2,5", "%").en())
     }
 
     @Test
     fun wholeNumbersAreStoredAsTheCoreReadsThem() = forAll(typedNumber) { s ->
         for (type in listOf("trashcan", "simple", "staggered")) {
             val p = versioningParam(type)!!
-            if (wholeNumberError(s, p.min) != null) continue
+            if (wholeNumberError(s, p.min).en() != null) continue
             val n = wholeNumber(s)!!
             assertTrue(n >= p.min)
             val stored = versioningStored(type, s)
@@ -74,13 +74,13 @@ class ValidationTest {
     @Test
     fun versionsToKeepIsAtLeastOne() {
         // The simple versioner removes every version beyond "keep", so 0 kept none.
-        assertEquals("A whole number, 1 or more", wholeNumberError("0", versioningParam("simple")!!.min))
-        assertEquals(null, wholeNumberError("0", versioningParam("trashcan")!!.min))
+        assertEquals("A whole number, 1 or more", wholeNumberError("0", versioningParam("simple")!!.min).en())
+        assertEquals(null, wholeNumberError("0", versioningParam("trashcan")!!.min).en())
         // Persian digits were stored as typed; Go then read them as an error and used its default.
         // Refused, with the reason: converting them silently would surprise.
-        assertEquals("Use the digits 0-9", wholeNumberError("۳۰"))
-        assertEquals("A whole number, 0 or more", wholeNumberError("1.5"))
-        assertEquals("A whole number, 0 or more", wholeNumberError("99999999999"))
+        assertEquals("Use the digits 0-9", wholeNumberError("۳۰").en())
+        assertEquals("A whole number, 0 or more", wholeNumberError("1.5").en())
+        assertEquals("A whole number, 0 or more", wholeNumberError("99999999999").en())
     }
 
     // --- Device IDs
@@ -120,7 +120,7 @@ class ValidationTest {
         assertNull(deviceId("MFZWI3DBONSGYCYLTMRWGC43ENR5QXGZDMMFZWI3DPNSGYCYLTMRWGCA"))
         assertNull(deviceId("MFZWI3DBONSGYCYLTMRWGC43ENR5QXGZDMMFZWI3DPNSGYCYLTMRWGCB"))
         assertNull(deviceId("MFZWI3DONSGYCYLTMRWGC43ENR5QXGZDMMFZWI3DPNSGYCYLTMRWGC")) // 54: incorrect length
-        assertEquals("A device ID has 56 characters", deviceIdError("AAFRMIJMG5BE2XWDDNZ4YJD42UWWYLXRWR3TT7F7I7ICMPCSNB7J"))
+        assertEquals("A device ID has 56 characters", deviceIdError("AAFRMIJMG5BE2XWDDNZ4YJD42UWWYLXRWR3TT7F7I7ICMPCSNB7J").en())
     }
 
     @Test
@@ -133,7 +133,7 @@ class ValidationTest {
             val i = r.nextInt(short.length)
             short = short.removeRange(i, i + 1)
             assertNull(short, deviceId(short))
-            assertEquals("A device ID has 56 characters", deviceIdError(short))
+            assertEquals("A device ID has 56 characters", deviceIdError(short).en())
         }
     }
 
@@ -259,7 +259,7 @@ class ValidationTest {
 
     @Test
     fun acceptedFolderPathsAreInSharedStorageAndApart() = forAll(oneOf(path, anyText)) { s ->
-        if (folderPathError(s, existing) != null) return@forAll
+        if (folderPathError(s, existing).en() != null) return@forAll
         val p = folderPath(s)
         assertTrue(p.startsWith("/storage/"))
         val parts = p.split('/').drop(1)
@@ -273,19 +273,19 @@ class ValidationTest {
 
     @Test
     fun folderPathExamples() {
-        assertEquals(null, folderPathError("/storage/emulated/0/Documents/", existing))
-        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/emulated/0/DCIM/Camera", existing))
-        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-ABCD", existing))
-        assertEquals("In the phone's storage or on an SD card (/storage/…)", folderPathError("/data/user/0/eu.stedb.mysyncthing/files/syncthing"))
-        assertEquals("No empty, . or .. parts", folderPathError("/storage/emulated/0/Syncthing/.."))
-        assertEquals("No line breaks or control characters", folderPathError("/storage/emulated/0/a\nb"))
+        assertEquals(null, folderPathError("/storage/emulated/0/Documents/", existing).en())
+        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/emulated/0/DCIM/Camera", existing).en())
+        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-ABCD", existing).en())
+        assertEquals("In the phone's storage or on an SD card (/storage/…)", folderPathError("/data/user/0/eu.stedb.mysyncthing/files/syncthing").en())
+        assertEquals("No empty, . or .. parts", folderPathError("/storage/emulated/0/Syncthing/..").en())
+        assertEquals("No line breaks or control characters", folderPathError("/storage/emulated/0/a\nb").en())
         assertEquals("/storage/emulated/0/Music", folderPath(" /sdcard/Music/ "))
-        assertEquals("Another folder is already here, or inside it", folderPathError("/sdcard/DCIM", existing))
+        assertEquals("Another folder is already here, or inside it", folderPathError("/sdcard/DCIM", existing).en())
     }
 
     @Test
     fun acceptedFolderIdsFitInOneUrlSegment() = forAll(oneOf(anyText, pick(".", "..", "a/b", " x ", "abcde-12345", "My photos"))) { s ->
-        if (folderIdError(s, listOf("taken")) != null) return@forAll
+        if (folderIdError(s, listOf("taken")).en() != null) return@forAll
         val t = s.trim()
         assertTrue(t.isNotEmpty() && '/' !in t && t != "." && t != ".." && t != "taken")
     }

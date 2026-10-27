@@ -21,7 +21,7 @@ const val MINUTES_PER_DAY = 24 * 60
 const val MAX_SYNC_WINDOWS = 8
 
 /** [scheduleError] when the schedule is on without a window: the one check that belongs to no window. */
-const val NO_WINDOW = "Add a time window"
+val NO_WINDOW = text(R.string.schedule_error_no_window)
 
 /**
  * A time of day the core may sync in, by the phone's clock: from [start] to
@@ -38,17 +38,17 @@ data class SyncWindow(val start: Int, val end: Int, val days: Set<Int>) {
 }
 
 /** Why [w] can't be stored, or null. */
-fun syncWindowError(w: SyncWindow): String? = when {
-    w.start !in 0 until MINUTES_PER_DAY || w.end !in 0 until MINUTES_PER_DAY -> "Times from 00:00 to 23:59"
-    w.start == w.end -> "Start and end must differ"
-    w.days.isEmpty() -> "Pick at least one day"
-    w.days.any { it !in 1..7 } -> "Days are 1 (Monday) to 7"
+fun syncWindowError(w: SyncWindow): UiText? = when {
+    w.start !in 0 until MINUTES_PER_DAY || w.end !in 0 until MINUTES_PER_DAY -> text(R.string.schedule_error_times)
+    w.start == w.end -> text(R.string.schedule_error_same_times)
+    w.days.isEmpty() -> text(R.string.schedule_error_no_day)
+    w.days.any { it !in 1..7 } -> text(R.string.schedule_error_days)
     else -> null
 }
 
 /** Why the schedule can't be stored, or null. */
-fun scheduleError(on: Boolean, windows: List<SyncWindow>): String? = when {
-    windows.size > MAX_SYNC_WINDOWS -> "At most $MAX_SYNC_WINDOWS time windows"
+fun scheduleError(on: Boolean, windows: List<SyncWindow>): UiText? = when {
+    windows.size > MAX_SYNC_WINDOWS -> plural(R.plurals.schedule_error_too_many, MAX_SYNC_WINDOWS)
     on && windows.isEmpty() -> NO_WINDOW
     else -> windows.firstNotNullOfOrNull(::syncWindowError)
 }
@@ -94,10 +94,11 @@ fun List<SyncWindow>.nextOpen(t: LocalDateTime): LocalDateTime? {
 fun timeText(minutes: Int): String = "%02d:%02d".format(Locale.ROOT, minutes / 60, minutes % 60)
 
 /** "Outside sync times · next 22:00", with the weekday when the next window opens on another day. */
-fun outsideText(windows: List<SyncWindow>, now: LocalDateTime): String {
-    val next = windows.nextOpen(now) ?: return "Outside sync times"
-    val day = if (next.toLocalDate() == now.toLocalDate()) "" else shortDay(next.dayOfWeek) + " "
-    return "Outside sync times · next $day${timeText(minuteOfDay(next))}"
+fun outsideText(windows: List<SyncWindow>, now: LocalDateTime): UiText {
+    val next = windows.nextOpen(now) ?: return text(R.string.schedule_outside)
+    val time = timeText(minuteOfDay(next))
+    return if (next.toLocalDate() == now.toLocalDate()) text(R.string.schedule_outside_next, time)
+    else text(R.string.schedule_outside_next_day, shortDay(next.dayOfWeek), time)
 }
 
 fun shortDay(d: DayOfWeek): String = d.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)

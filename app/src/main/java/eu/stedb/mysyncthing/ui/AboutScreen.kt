@@ -1,5 +1,10 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.R as CoreR
+import eu.stedb.mysyncthing.core.raw
+import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -30,11 +35,11 @@ private const val DOCS = "https://docs.syncthing.net/"
 
 /** Libraries in the APK, with their licences; Syncthing's Go dependencies are covered by its own notice. */
 private val LIBRARIES = listOf(
-    "AndroidX and Jetpack Compose" to "Apache-2.0",
-    "Kotlin, kotlinx.coroutines, kotlinx.serialization" to "Apache-2.0",
-    "OkHttp, Okio" to "Apache-2.0",
-    "ZXing and ZXing Android Embedded" to "Apache-2.0",
-    "Syncthing and the Go libraries it uses" to "MPL-2.0, with MIT, BSD and Apache-2.0 parts",
+    text(R.string.lib_androidx) to raw("Apache-2.0"),
+    raw("Kotlin, kotlinx.coroutines, kotlinx.serialization") to raw("Apache-2.0"),
+    raw("OkHttp, Okio") to raw("Apache-2.0"),
+    text(R.string.lib_zxing) to raw("Apache-2.0"),
+    text(R.string.lib_syncthing) to text(R.string.lib_syncthing_licence),
 )
 
 /** App and core versions, licences and links, as F-Droid users expect. */
@@ -46,34 +51,34 @@ fun AboutScreen(onBack: () -> Unit) {
     var libraries by rememberSaveable { mutableStateOf(false) }
     val link = @Composable { Icon(Icons.AutoMirrored.Filled.OpenInNew, null) }
 
-    AppScreen(title = "About", onBack = onBack) { padding ->
+    AppScreen(title = stringResource(R.string.about), onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
-            SettingsGroup("MySyncthing") {
-                SettingRow("Version", version)
-                SettingRow("Licence", "AGPL-3.0", trailing = link) { uri.openUri(AGPL) }
-                SettingRow("Source code", SOURCE.removePrefix("https://"), trailing = link) { uri.openUri(SOURCE) }
+            SettingsGroup(stringResource(R.string.app_name)) {
+                SettingRow(stringResource(R.string.about_version), version)
+                SettingRow(stringResource(R.string.about_licence), "AGPL-3.0", trailing = link) { uri.openUri(AGPL) }
+                SettingRow(stringResource(R.string.about_source), SOURCE.removePrefix("https://"), trailing = link) { uri.openUri(SOURCE) }
             }
-            SettingsGroup("Syncthing") {
-                SettingRow("Version", SyncthingCore.version)
-                SettingRow("Licence", "MPL-2.0", trailing = link) { uri.openUri(MPL) }
-                SettingRow("Documentation", DOCS.removePrefix("https://").trimEnd('/'), trailing = link) { uri.openUri(DOCS) }
+            SettingsGroup(stringResource(CoreR.string.syncthing)) {
+                SettingRow(stringResource(R.string.about_version), SyncthingCore.version)
+                SettingRow(stringResource(R.string.about_licence), "MPL-2.0", trailing = link) { uri.openUri(MPL) }
+                SettingRow(stringResource(R.string.about_docs), DOCS.removePrefix("https://").trimEnd('/'), trailing = link) { uri.openUri(DOCS) }
             }
-            SettingsGroup("Other") {
-                SettingRow("Open-source licences", "Libraries used by the app") { libraries = true }
+            SettingsGroup(stringResource(R.string.about_other)) {
+                SettingRow(stringResource(R.string.about_licences), stringResource(R.string.about_licences_hint)) { libraries = true }
             }
         }
     }
     if (libraries) {
         AlertDialog(
             onDismissRequest = { libraries = false },
-            title = { Text("Open-source licences") },
+            title = { Text(stringResource(R.string.about_licences)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
-                    LIBRARIES.forEach { (name, licence) -> SettingRow(name, licence) }
-                    SettingRow("Apache License 2.0", "Full text", trailing = link) { uri.openUri(APACHE) }
+                    LIBRARIES.forEach { (name, licence) -> SettingRow(name.asString(), licence.asString()) }
+                    SettingRow("Apache License 2.0", stringResource(R.string.about_full_text), trailing = link) { uri.openUri(APACHE) }
                 }
             },
-            confirmButton = { TextButton(onClick = { libraries = false }) { Text("Close") } },
+            confirmButton = { TextButton(onClick = { libraries = false }) { Text(stringResource(R.string.action_close)) } },
         )
     }
 }

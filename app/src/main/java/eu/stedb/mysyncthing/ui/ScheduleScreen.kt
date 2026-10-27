@@ -1,5 +1,11 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.raw
+import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -72,31 +78,31 @@ private fun ScheduleForm(initial: RunConditions, save: suspend ((RunConditions) 
     val back = rememberDiscardGuard(changed, onBack)
 
     AppScreen(
-        title = "Sync times",
+        title = stringResource(R.string.sync_times),
         onBack = back,
         actions = {
             TextButton(enabled = changed && error == null && !saving, onClick = {
                 saving = true
                 scope.launch { if (save { it.copy(timeSchedule = on, windows = windows) }) onBack() else saving = false }
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.action_save)) }
         },
     ) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             ListCard {
                 SwitchRow(
-                    "Only at set times", if (on) "Syncing pauses outside the times below" else "Off: syncs at any time",
+                    stringResource(R.string.schedule_only_at_set_times), stringResource(if (on) R.string.schedule_on_hint else R.string.schedule_off_hint),
                     on, Icons.Default.Schedule,
                 ) { on = it }
             }
             windows.forEachIndexed { i, w ->
-                SettingsGroup("Time window ${i + 1}") {
+                SettingsGroup(stringResource(R.string.schedule_window_title, i + 1)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(shape = ButtonShape, onClick = { picking = i to true }) { Text("From ${timeText(w.start)}") }
-                            OutlinedButton(shape = ButtonShape, onClick = { picking = i to false }) { Text("to ${timeText(w.end)}") }
+                            OutlinedButton(shape = ButtonShape, onClick = { picking = i to true }) { Text(stringResource(R.string.schedule_from, timeText(w.start))) }
+                            OutlinedButton(shape = ButtonShape, onClick = { picking = i to false }) { Text(stringResource(R.string.schedule_to, timeText(w.end))) }
                             Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
                                 IconButton(onClick = { edit(windows.filterIndexed { j, _ -> j != i }) }) {
-                                    Icon(Icons.Default.Delete, "Delete time window ${i + 1}")
+                                    Icon(Icons.Default.Delete, stringResource(R.string.schedule_delete_window, i + 1))
                                 }
                             }
                         }
@@ -111,7 +117,7 @@ private fun ScheduleForm(initial: RunConditions, save: suspend ((RunConditions) 
                             }
                         }
                         Text(
-                            syncWindowError(w) ?: windowText(w),
+                            (syncWindowError(w) ?: windowText(w)).asString(),
                             style = MaterialTheme.typography.bodyMedium,
                             color = if (syncWindowError(w) != null) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -121,19 +127,18 @@ private fun ScheduleForm(initial: RunConditions, save: suspend ((RunConditions) 
             Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
                 OutlinedButton(shape = ButtonShape, enabled = windows.size < MAX_SYNC_WINDOWS, onClick = { edit(windows + SyncWindow.NIGHT) }) {
                     Icon(Icons.Default.Add, null)
-                    Text("Add time window", Modifier.padding(start = 8.dp))
+                    Text(stringResource(R.string.schedule_add_window), Modifier.padding(start = 8.dp))
                 }
             }
             if (error == NO_WINDOW) {
                 Text(
-                    "$NO_WINDOW, or turn \"Only at set times\" off.",
+                    stringResource(R.string.schedule_no_window_fix),
                     style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error,
                     modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                 )
             }
             Text(
-                "Times follow the phone's clock and time zone. While the phone is idle, Android may start or pause syncing " +
-                    "a few minutes late. A window that ends before it starts runs into the next day.",
+                stringResource(R.string.schedule_note),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp),
             )
@@ -142,7 +147,7 @@ private fun ScheduleForm(initial: RunConditions, save: suspend ((RunConditions) 
 
     picking?.let { (i, start) ->
         val w = windows.getOrNull(i) ?: return@let
-        TimeDialog(if (start) "From" else "To", if (start) w.start else w.end, onDismiss = { picking = null }) { m ->
+        TimeDialog(stringResource(if (start) R.string.schedule_from_title else R.string.schedule_to_title), if (start) w.start else w.end, onDismiss = { picking = null }) { m ->
             picking = null
             edit(windows.replace(i, if (start) w.copy(start = m) else w.copy(end = m)))
         }
@@ -160,38 +165,36 @@ private fun TimeDialog(title: String, minutes: Int, onDismiss: () -> Unit, onPic
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { TimePicker(state) },
-        confirmButton = { TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text("OK") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text(stringResource(R.string.action_ok)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
 /** "Mon–Fri 22:00–07:00 (next day)": a window for people. */
-fun windowText(w: SyncWindow): String {
-    val next = if (w.end < w.start) " (next day)" else ""
-    return "${daysText(w.days)} ${timeText(w.start)}–${timeText(w.end)}$next"
-}
+fun windowText(w: SyncWindow): UiText =
+    text(if (w.end < w.start) R.string.schedule_window_next_day else R.string.schedule_window, daysText(w.days), timeText(w.start), timeText(w.end))
 
 /** Days as runs: "Mon–Fri", "Sat, Sun", "Every day", "Mon, Wed–Fri". */
-fun daysText(days: Set<Int>): String {
-    if (days.size == 7) return "Every day"
+fun daysText(days: Set<Int>): UiText {
+    if (days.size == 7) return text(R.string.every_day)
     val runs = mutableListOf<IntRange>()
     for (d in days.sorted()) {
         val last = runs.lastOrNull()
         if (last != null && last.last == d - 1) runs[runs.size - 1] = last.first..d else runs += d..d
     }
     fun name(d: Int) = shortDay(DayOfWeek.of(d))
-    return runs.joinToString(", ") { r ->
+    return raw(runs.joinToString(", ") { r ->
         when (r.last - r.first) {
             0 -> name(r.first)
             1 -> "${name(r.first)}, ${name(r.last)}"
             else -> "${name(r.first)}–${name(r.last)}"
         }
-    }
+    })
 }
 
 /** The Settings row's summary of the schedule. */
-fun scheduleText(c: RunConditions): String = when {
-    !c.timeSchedule -> "Any time"
+fun scheduleText(c: RunConditions): UiText = when {
+    !c.timeSchedule -> text(R.string.any_time)
     c.windows.size == 1 -> windowText(c.windows.single())
-    else -> windowText(c.windows.first()) + ", and ${c.windows.size - 1} more"
+    else -> plural(R.plurals.schedule_and_more, c.windows.size - 1, windowText(c.windows.first()), c.windows.size - 1)
 }

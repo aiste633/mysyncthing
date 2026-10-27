@@ -1,5 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.text
 import android.app.Application
 import android.net.Uri
 import androidx.compose.runtime.getValue
@@ -35,7 +38,7 @@ class ImportViewModel(app: Application) : AndroidViewModel(app) {
     /** Reads the backup at [uri] with [typed] as its password (empty when none was asked for yet). */
     fun inspect(uri: Uri, typed: String) {
         if (_step.value is ImportStep.Working) return
-        _step.value = ImportStep.Working("Reading the backup")
+        _step.value = ImportStep.Working(text(R.string.import_reading))
         viewModelScope.launch {
             val next = when (val r = ForkImport.inspect(getApplication<Application>().contentResolver, uri, typed)) {
                 is ForkInspection.Ok -> ImportStep.Review(uri, typed, r.preview)
@@ -50,7 +53,7 @@ class ImportViewModel(app: Application) : AndroidViewModel(app) {
 
     fun import(review: ImportStep.Review, keepIdentity: Boolean, deleteBackup: Boolean) {
         if (_step.value is ImportStep.Working) return
-        _step.value = ImportStep.Working("Importing")
+        _step.value = ImportStep.Working(text(R.string.import_importing))
         viewModelScope.launch {
             val problem = ForkImport.import(
                 getApplication(), review.uri, review.password, keepIdentity, review.preview.conditions, review.preview.proxy, deleteBackup,
@@ -78,7 +81,7 @@ sealed interface ImportStep {
         override fun toString() = "Review(${preview.deviceName})"
     }
 
-    data class Working(val what: String) : ImportStep
-    data class Done(val keepIdentity: Boolean, val problem: String?) : ImportStep
-    data class Failed(val message: String) : ImportStep
+    data class Working(val what: UiText) : ImportStep
+    data class Done(val keepIdentity: Boolean, val problem: UiText?) : ImportStep
+    data class Failed(val message: UiText) : ImportStep
 }

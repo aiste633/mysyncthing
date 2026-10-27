@@ -1,5 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.R as CoreR
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -55,10 +58,10 @@ fun DevicesScreen(
     var showMyId by rememberSaveable { mutableStateOf(false) }
     val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
     AppScreen(
-        title = "Devices",
+        title = stringResource(R.string.tab_devices),
         status = summary,
         fab = {
-            AddFab("Add device") { onAdd("", "") }
+            AddFab(stringResource(R.string.devices_add)) { onAdd("", "") }
         },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
@@ -66,9 +69,12 @@ fun DevicesScreen(
                 item("me") { ThisDeviceCard(s, live, onOpenThisPhone) { showMyId = true } }
                 s.pendingDevices.forEach { (id, p) ->
                     item("pending-$id") {
-                        RequestCard("${p.name.ifEmpty { shortId(id) }} wants to connect", "Device ID ${shortId(id)} · ${p.address}") {
-                            TextButton(onClick = { vm.ignoreDevice(id) }) { Text("Ignore") }
-                            TextButton(onClick = { onAdd(id, p.name) }) { Text("Review") }
+                        RequestCard(
+                            stringResource(CoreR.string.request_device_title, p.name.ifEmpty { shortId(id) }),
+                            stringResource(R.string.devices_request_detail, shortId(id), p.address),
+                        ) {
+                            TextButton(onClick = { vm.ignoreDevice(id) }) { Text(stringResource(CoreR.string.action_ignore)) }
+                            TextButton(onClick = { onAdd(id, p.name) }) { Text(stringResource(CoreR.string.action_review)) }
                         }
                     }
                 }
@@ -80,8 +86,8 @@ fun DevicesScreen(
                     item("empty") {
                         // The list scrolls already, so the hint itself must not (EmptyState would crash here).
                         EmptyHint(
-                            Icons.Default.Devices, "No other devices yet",
-                            "Tap Add device and scan the other device's QR code, or show it this phone's ID.",
+                            Icons.Default.Devices, stringResource(R.string.devices_empty),
+                            stringResource(R.string.devices_empty_hint),
                             Modifier.padding(horizontal = 24.dp, vertical = 48.dp),
                         )
                     }
@@ -101,8 +107,8 @@ private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, on
                 Icon(Icons.Default.Smartphone, null, tint = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.width(8.dp))
                 Column {
-                    Text(s.myName.ifEmpty { "This phone" }, style = MaterialTheme.typography.titleMedium)
-                    Text("This device · ID ${shortId(s.myId)}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(s.myName.ifEmpty { stringResource(R.string.this_phone) }, style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.devices_this_device_id, shortId(s.myId)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             live?.let { l ->
@@ -111,18 +117,19 @@ private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, on
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
                     Spacer(Modifier.width(6.dp))
-                    Text(l.healthText, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(l.healthText.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 8.dp)) {
                 FilledTonalButton(shape = ButtonShape, onClick = onShowQr) {
-                    Icon(Icons.Default.QrCode, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Show ID")
+                    Icon(Icons.Default.QrCode, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.devices_show_id))
                 }
+                val chooserTitle = stringResource(R.string.devices_share_id_title)
                 FilledTonalButton(shape = ButtonShape, onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, s.myId)
-                    context.startActivity(Intent.createChooser(send, "Share device ID"))
+                    context.startActivity(Intent.createChooser(send, chooserTitle))
                 }) {
-                    Icon(Icons.Default.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text("Share ID")
+                    Icon(Icons.Default.Share, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.devices_share_id))
                 }
             }
         }
@@ -144,10 +151,10 @@ private fun DeviceCard(d: Device, s: Snapshot, onClick: () -> Unit) {
                 )
                 Icon(look.icon, null, Modifier.size(18.dp), tint = look.color)
                 Spacer(Modifier.width(4.dp))
-                Text(status.text, style = MaterialTheme.typography.labelLarge, color = look.color)
+                Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
             }
             Text(
-                listOfNotNull(connectionText(conn, withAddress = false), "$folders ${if (folders == 1) "folder" else "folders"}").joinToString(" · "),
+                listOfNotNull(connectionText(conn, withAddress = false), count(R.plurals.count_folders, folders)).map { it.asString() }.joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             status.progress?.let {
@@ -162,13 +169,13 @@ private fun MyIdDialog(id: String, onDismiss: () -> Unit) {
     val qr = remember(id) { qrCode(id) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("This device") },
+        title = { Text(stringResource(R.string.this_device)) },
         text = {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Image(qr, "Device ID QR code", Modifier.size(240.dp))
+                Image(qr, stringResource(R.string.devices_qr_description), Modifier.size(240.dp))
                 SelectionContainer { Text(id, style = MaterialTheme.typography.bodySmall) }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
     )
 }

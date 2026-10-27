@@ -1,5 +1,12 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.annotation.PluralsRes
+import androidx.annotation.StringRes
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.raw
+import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.DiskSize
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
@@ -35,32 +42,30 @@ fun duration(seconds: Long): String {
     }
 }
 
-/** "1 file", "1,204 files"; digits grouped as the phone's language does. */
-fun count(n: Int, word: String): String =
-    String.format(Locale.getDefault(), "%,d", n) + " " + if (n == 1) word else word + "s"
+/** [n] with its digits grouped as the phone's language does: "1,204". */
+fun grouped(n: Int): String = String.format(Locale.getDefault(), "%,d", n)
+
+/** "1 file", "1,204 files": [id] is a plurals resource whose %1$s takes the grouped count. */
+fun count(@PluralsRes id: Int, n: Int): UiText = plural(id, n, grouped(n))
 
 /** The Revert confirmation for [n] locally changed items, with the verbs agreeing. */
-fun revertText(n: Int): String {
-    val one = n == 1
-    return "${count(n, "item")} changed on this phone ${if (one) "is" else "are"} replaced with the version from your other devices, " +
-        "or deleted if ${if (one) "it doesn't" else "they don't"} exist there. This can't be undone."
-}
+fun revertText(n: Int): UiText = plural(R.plurals.revert_text, n, grouped(n))
 
 /**
  * A REST time stamp (RFC 3339) for people, day before month, 24 h: "12:03" today,
  * "yesterday, 22:10", "25 Oct, 12:03" this year, else with the year.
  * Null for Go's zero time, which the core uses for "never".
  */
-fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): String? {
+fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): UiText? {
     val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
     if (t.year < 2000) return null
     val time = t.format(DateTimeFormatter.ofPattern("HH:mm", locale))
     val day = t.toLocalDate()
     return when {
-        day == now.toLocalDate() -> time
-        day == now.toLocalDate().minusDays(1) -> "yesterday, $time"
-        t.year == now.year -> t.format(DateTimeFormatter.ofPattern("d MMM, HH:mm", locale))
-        else -> t.format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
+        day == now.toLocalDate() -> raw(time)
+        day == now.toLocalDate().minusDays(1) -> text(R.string.when_yesterday, time)
+        t.year == now.year -> raw(t.format(DateTimeFormatter.ofPattern("d MMM, HH:mm", locale)))
+        else -> raw(t.format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale)))
     }
 }
 
@@ -69,14 +74,14 @@ fun dateTimeText(epochMillis: Long, zone: java.time.ZoneId = java.time.ZoneId.sy
     java.time.Instant.ofEpochMilli(epochMillis).atZone(zone).format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
 
 /** Heading for a day of changes: "Today", "Yesterday", "3 Oct", "3 Oct 2025"; null for an unreadable time. */
-fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): String? {
+fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): UiText? {
     val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
     val day = t.toLocalDate()
     return when {
-        day == now.toLocalDate() -> "Today"
-        day == now.toLocalDate().minusDays(1) -> "Yesterday"
-        t.year == now.year -> t.format(DateTimeFormatter.ofPattern("d MMM", locale))
-        else -> t.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale))
+        day == now.toLocalDate() -> text(R.string.day_today)
+        day == now.toLocalDate().minusDays(1) -> text(R.string.day_yesterday)
+        t.year == now.year -> raw(t.format(DateTimeFormatter.ofPattern("d MMM", locale)))
+        else -> raw(t.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)))
     }
 }
 
@@ -96,34 +101,33 @@ fun exactTimeText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): St
 }
 
 val PULL_ORDERS = listOf(
-    "random" to "Random",
-    "alphabetic" to "Alphabetical",
-    "smallestFirst" to "Smallest first",
-    "largestFirst" to "Largest first",
-    "oldestFirst" to "Oldest first",
-    "newestFirst" to "Newest first",
+    "random" to text(R.string.order_random),
+    "alphabetic" to text(R.string.order_alphabetic),
+    "smallestFirst" to text(R.string.order_smallest_first),
+    "largestFirst" to text(R.string.order_largest_first),
+    "oldestFirst" to text(R.string.order_oldest_first),
+    "newestFirst" to text(R.string.order_newest_first),
 )
 
-fun orderLabel(order: String): String = PULL_ORDERS.find { it.first == order }?.second ?: order
+fun orderLabel(order: String): UiText = PULL_ORDERS.find { it.first == order }?.second ?: raw(order)
 
 /** "Every hour", "Every 6 hours", "Once a day", "Never". */
-fun rescanText(seconds: Int): String = when {
-    seconds <= 0 -> "Never"
-    seconds == 86_400 -> "Once a day"
-    seconds % 86_400 == 0 -> "Every ${withUnit(seconds / 86_400, "days")}"
-    seconds == 3_600 -> "Every hour"
-    seconds % 3_600 == 0 -> "Every ${withUnit(seconds / 3_600, "hours")}"
-    seconds % 60 == 0 -> "Every ${withUnit(seconds / 60, "min")}"
-    else -> "Every ${withUnit(seconds, "s")}"
+fun rescanText(seconds: Int): UiText = when {
+    seconds <= 0 -> text(R.string.rescan_never)
+    seconds == 86_400 -> text(R.string.rescan_daily)
+    seconds % 86_400 == 0 -> plural(R.plurals.rescan_every_days, seconds / 86_400)
+    seconds % 3_600 == 0 -> plural(R.plurals.rescan_every_hours, seconds / 3_600)
+    seconds % 60 == 0 -> text(R.string.rescan_every_minutes, seconds / 60)
+    else -> text(R.string.rescan_every_seconds, seconds)
 }
 
 /** The usual choices, plus the current value when it is something else. */
-fun rescanChoices(current: Int): List<Pair<Int, String>> =
+fun rescanChoices(current: Int): List<Pair<Int, UiText>> =
     (listOf(3_600, 21_600, 86_400, 0) + current).distinct().map { it to rescanText(it) }
 
-fun rescanHint(seconds: Int): String? = when (seconds) {
-    3_600 -> "Default"
-    0 -> "Only changes that watching sees are synced"
+fun rescanHint(seconds: Int): UiText? = when (seconds) {
+    3_600 -> text(R.string.hint_default)
+    0 -> text(R.string.rescan_never_hint)
     else -> null
 }
 
@@ -152,24 +156,26 @@ fun limitKib(value: Double, unit: String): Long {
     return Math.round(b / 1024).coerceAtLeast(1)
 }
 
-fun limitText(kib: Long): String = if (kib <= 0) "No limit" else limitSi(kib).let { (v, u) -> withUnit(number(v), u) }
+fun limitText(kib: Long): UiText = if (kib <= 0) text(R.string.limit_none) else raw(limitSi(kib).let { (v, u) -> withUnit(number(v), u) })
 
-val COMPRESSIONS = listOf("metadata" to "Metadata only", "always" to "All data", "never" to "Off")
+val COMPRESSIONS = listOf(
+    "metadata" to text(R.string.compression_metadata),
+    "always" to text(R.string.compression_always),
+    "never" to text(R.string.compression_never),
+)
 
-fun compressionHint(c: String): String? = when (c) {
-    "metadata" -> "Default"
-    "always" -> "Saves data on text and documents, costs battery. Photos and videos gain almost nothing."
+fun compressionLabel(c: String): UiText = COMPRESSIONS.find { it.first == c }?.second ?: raw(c)
+
+fun compressionHint(c: String): UiText? = when (c) {
+    "metadata" -> text(R.string.hint_default)
+    "always" -> text(R.string.compression_always_hint)
     else -> null
 }
 
 /** 0 is Syncthing's choice, currently 3 connections. */
-fun connectionsText(n: Int): String = when {
-    n <= 0 -> "Automatic"
-    n == 1 -> "1 connection"
-    else -> "$n connections"
-}
+fun connectionsText(n: Int): UiText = if (n <= 0) text(R.string.connections_auto) else plural(R.plurals.connections, n)
 
-fun connectionChoices(current: Int): List<Pair<Int, String>> =
+fun connectionChoices(current: Int): List<Pair<Int, UiText>> =
     (listOf(0, 1, 2, 3, 4, 8) + current.coerceAtLeast(0)).distinct().map { it to connectionsText(it) }
 
 /** Syncthing's grouped display form, e.g. ABCDEFG-HIJKLMN. Only the first group is shown in lists. */
@@ -182,51 +188,60 @@ fun shortId(id: String): String = id.substringBefore('-')
 fun wrapPath(path: String): String = if (path.length > 1 && path[0] == '/') "/\u2060" + path.substring(1) else path
 
 /** Paths in internal storage are shown relative to it, as the Files app does. */
-fun displayPath(path: String): String = when {
-    path == INTERNAL_STORAGE -> "Internal storage"
-    path.startsWith("$INTERNAL_STORAGE/") -> path.removePrefix(INTERNAL_STORAGE)
-    else -> path
+fun displayPath(path: String): UiText = when {
+    path == INTERNAL_STORAGE -> text(R.string.internal_storage)
+    path.startsWith("$INTERNAL_STORAGE/") -> raw(path.removePrefix(INTERNAL_STORAGE))
+    else -> raw(path)
 }
 
 val FOLDER_TYPES = listOf(
-    "sendreceive" to "Send & receive",
-    "sendonly" to "Send only",
-    "receiveonly" to "Receive only",
+    "sendreceive" to text(R.string.folder_type_send_receive),
+    "sendonly" to text(R.string.folder_type_send_only),
+    "receiveonly" to text(R.string.folder_type_receive_only),
 )
 
-fun folderTypeLabel(type: String): String = FOLDER_TYPES.find { it.first == type }?.second ?: type
+fun folderTypeLabel(type: String): UiText = FOLDER_TYPES.find { it.first == type }?.second ?: raw(type)
 
-fun folderTypeHint(type: String): String? = when (type) {
-    "sendreceive" -> "Changes go both ways."
-    "sendonly" -> "This phone is the source; changes made elsewhere are not applied here."
-    "receiveonly" -> "Changes made on this phone are never sent to other devices."
+fun folderTypeHint(type: String): UiText? = when (type) {
+    "sendreceive" -> text(R.string.folder_type_send_receive_hint)
+    "sendonly" -> text(R.string.folder_type_send_only_hint)
+    "receiveonly" -> text(R.string.folder_type_receive_only_hint)
     else -> null
 }
+
+/** A folder type with what it means: "Send only. This phone is the source; …". */
+fun folderTypeText(type: String): UiText =
+    folderTypeHint(type)?.let { text(R.string.label_and_hint, folderTypeLabel(type), it) } ?: folderTypeLabel(type)
 
 /** Versioning methods the native screen offers; "external" stays in the web GUI. */
 val VERSIONING_TYPES = listOf(
-    "" to "Off",
-    "trashcan" to "Trash can",
-    "simple" to "Simple",
-    "staggered" to "Staggered",
+    "" to text(R.string.versioning_off),
+    "trashcan" to text(R.string.versioning_trashcan),
+    "simple" to text(R.string.versioning_simple),
+    "staggered" to text(R.string.versioning_staggered),
 )
 
-fun versioningHint(type: String): String? = when (type) {
-    "" -> "Replaced or deleted files are gone."
-    "trashcan" -> "Keeps the last version of files changed or deleted on other devices."
-    "simple" -> "Keeps a number of old versions of each file."
-    "staggered" -> "Keeps more recent versions, fewer older ones, up to a maximum age."
+fun versioningLabel(type: String): UiText = VERSIONING_TYPES.find { it.first == type }?.second ?: raw(type)
+
+fun versioningHint(type: String): UiText? = when (type) {
+    "" -> text(R.string.versioning_off_hint)
+    "trashcan" -> text(R.string.versioning_trashcan_hint)
+    "simple" -> text(R.string.versioning_simple_hint)
+    "staggered" -> text(R.string.versioning_staggered_hint)
     else -> null
 }
 
-/** The one number each method asks for: its param key, label, upstream default and smallest value (upstream web GUI's min). */
-data class VersioningParam(val key: String, val label: String, val default: String, val unit: String, val min: Int = 0)
+/**
+ * The one number each method asks for: its param key, label, upstream default and smallest value (upstream web GUI's min).
+ * [days] when it counts days (0 = forever), else versions.
+ */
+data class VersioningParam(val key: String, @param:StringRes val label: Int, val default: String, val days: Boolean, val min: Int = 0)
 
 fun versioningParam(type: String): VersioningParam? = when (type) {
-    "trashcan" -> VersioningParam("cleanoutDays", "Keep for (days, 0 = forever)", "0", "days")
+    "trashcan" -> VersioningParam("cleanoutDays", R.string.versioning_keep_days, "0", days = true)
     // 0 would delete every version as soon as it is made.
-    "simple" -> VersioningParam("keep", "Versions to keep", "5", "versions", min = 1)
-    "staggered" -> VersioningParam("maxAge", "Keep for (days, 0 = forever)", "365", "days")
+    "simple" -> VersioningParam("keep", R.string.versioning_keep_versions, "5", days = false, min = 1)
+    "staggered" -> VersioningParam("maxAge", R.string.versioning_keep_days, "365", days = true)
     else -> null
 }
 
@@ -243,13 +258,27 @@ fun versioningStored(type: String, shown: String): String {
     return (if (versioningParam(type)?.key == "maxAge") n * 86_400 else n).toString()
 }
 
-fun versioningSummary(type: String, params: Map<String, String>): String {
-    val label = VERSIONING_TYPES.find { it.first == type }?.second ?: type
+fun versioningSummary(type: String, params: Map<String, String>): UiText {
+    val label = versioningLabel(type)
     val p = versioningParam(type) ?: return label
-    val n = versioningShown(type, params[p.key])
+    val shown = versioningShown(type, params[p.key])
+    return if (p.days && shown == "0") text(R.string.versioning_summary_forever, label)
+    else text(R.string.versioning_summary, label, versioningAmount(p, shown))
+}
+
+/** "Forever", "30 days" or "5 versions" for what [p] is set to, [shown] as the screen edits it. */
+fun versioningAmount(p: VersioningParam, shown: String): UiText {
+    val n = shown.toIntOrNull() ?: 0
     return when {
-        p.unit == "days" && n == "0" -> "$label · keep forever"
-        p.unit == "days" -> "$label · $n days"
-        else -> "$label · $n ${p.unit}"
+        p.days && n == 0 -> text(R.string.versioning_forever)
+        p.days -> plural(R.plurals.count_days, n, shown)
+        else -> plural(R.plurals.count_versions, n, shown)
     }
+}
+
+/** "None", "3 rules", or "Loading" while [ignores] is not read yet. */
+fun ignoresText(ignores: List<String>?): UiText = when {
+    ignores == null -> text(R.string.loading)
+    ignores.isEmpty() -> text(R.string.ignores_none)
+    else -> count(R.plurals.count_rules, ignores.size)
 }

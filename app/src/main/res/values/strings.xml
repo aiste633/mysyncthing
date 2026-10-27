@@ -1,3 +1,966 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Texts of the app's screens. Source language: English (en-GB). Translations
+    go in values-<language>/strings.xml with the same names; the sync status,
+    notifications and widget are in core/src/main/res/values/strings.xml.
+    Placeholders: %1$s, %2$d… keep their number; their order may change.
+    Units (kB, MB/s, %, d, h, min) and the name Syncthing are never translated.
+-->
 <resources>
-    <string name="app_name">MySyncthing</string>
+    <string name="app_name" translatable="false">MySyncthing</string>
+
+    <!-- Common actions -->
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
+    <string name="action_close">Close</string>
+    <string name="action_back">Back</string>
+    <string name="action_add">Add</string>
+    <!-- %1$s: the entry to remove from a list, e.g. an address -->
+    <string name="action_remove_item">Remove %1$s</string>
+    <string name="action_discard">Discard</string>
+    <!-- Starts Syncthing -->
+    <string name="action_start">Start</string>
+    <string name="action_try_again">Try again</string>
+    <string name="action_share">Share</string>
+    <string name="action_done">Done</string>
+    <string name="action_more">More</string>
+
+    <!-- When Syncthing does not run -->
+    <string name="core_failed">Syncthing failed</string>
+    <string name="core_stopped_unexpectedly">Syncthing stopped</string>
+    <string name="core_stopped">Syncthing is stopped</string>
+    <string name="core_starting">Starting Syncthing</string>
+
+    <!-- Leaving a form with changes -->
+    <string name="discard_title">Discard changes?</string>
+    <string name="discard_text">What you entered here is lost.</string>
+
+    <!-- Speed limit dialog; the unit (kB/s or MB/s) is picked beside the field -->
+    <string name="limit_label">Limit</string>
+    <string name="limit_none">No limit</string>
+    <string name="limit_hint">Leave empty or 0 for no limit.</string>
+    <!-- List of addresses or servers with one automatic entry. %1$s: that entry's name, e.g. Default -->
+    <string name="list_add_or_tick">Add one, or tick \"%1$s\"</string>
+
+    <!-- Counts. %1$s: the number, digits grouped as in "1,204" -->
+    <plurals name="count_items">
+        <item quantity="one">%1$s item</item>
+        <item quantity="other">%1$s items</item>
+    </plurals>
+    <plurals name="count_files">
+        <item quantity="one">%1$s file</item>
+        <item quantity="other">%1$s files</item>
+    </plurals>
+    <plurals name="count_folders">
+        <item quantity="one">%1$s folder</item>
+        <item quantity="other">%1$s folders</item>
+    </plurals>
+    <plurals name="count_devices">
+        <item quantity="one">%1$s device</item>
+        <item quantity="other">%1$s devices</item>
+    </plurals>
+    <!-- Ignore patterns, one per line -->
+    <plurals name="count_rules">
+        <item quantity="one">%1$s rule</item>
+        <item quantity="other">%1$s rules</item>
+    </plurals>
+    <!-- Old versions of a file kept by file versioning -->
+    <plurals name="count_versions">
+        <item quantity="one">%1$s version</item>
+        <item quantity="other">%1$s versions</item>
+    </plurals>
+    <plurals name="count_days">
+        <item quantity="one">%1$s day</item>
+        <item quantity="other">%1$s days</item>
+    </plurals>
+    <!-- Confirmation of Revert in a receive-only folder. %1$s: number of items -->
+    <plurals name="revert_text">
+        <item quantity="one">%1$s item changed on this phone is replaced with the version from your other devices, or deleted if it doesn\'t exist there. This can\'t be undone.</item>
+        <item quantity="other">%1$s items changed on this phone are replaced with the version from your other devices, or deleted if they don\'t exist there. This can\'t be undone.</item>
+    </plurals>
+    <!-- A setting's value and what it means. %1$s: the value, %2$s: its explanation (a full sentence) -->
+    <string name="label_and_hint">%1$s. %2$s</string>
+    <!-- Marks the default choice in a list of options -->
+    <string name="hint_default">Default</string>
+
+    <!-- Times. %1$s: a time of day, e.g. 22:10 -->
+    <string name="when_yesterday">yesterday, %1$s</string>
+    <!-- Headings over a day of changes -->
+    <string name="day_today">Today</string>
+    <string name="day_yesterday">Yesterday</string>
+
+    <!-- The order in which a folder downloads files -->
+    <string name="order_random">Random</string>
+    <string name="order_alphabetic">Alphabetical</string>
+    <string name="order_smallest_first">Smallest first</string>
+    <string name="order_largest_first">Largest first</string>
+    <string name="order_oldest_first">Oldest first</string>
+    <string name="order_newest_first">Newest first</string>
+
+    <!-- How often a folder is fully rescanned -->
+    <string name="rescan_never">Never</string>
+    <string name="rescan_daily">Once a day</string>
+    <plurals name="rescan_every_days">
+        <item quantity="one">Every day</item>
+        <item quantity="other">Every %1$d\u00A0days</item>
+    </plurals>
+    <plurals name="rescan_every_hours">
+        <item quantity="one">Every hour</item>
+        <item quantity="other">Every %1$d\u00A0hours</item>
+    </plurals>
+    <!-- min is the unit symbol for minutes -->
+    <string name="rescan_every_minutes">Every %1$d\u00A0min</string>
+    <!-- s is the unit symbol for seconds -->
+    <string name="rescan_every_seconds">Every %1$d\u00A0s</string>
+    <!-- Hint under "Never": watching for changes is a folder setting -->
+    <string name="rescan_never_hint">Only changes that watching sees are synced</string>
+
+    <!-- Compression of data sent to a device -->
+    <string name="compression_metadata">Metadata only</string>
+    <string name="compression_always">All data</string>
+    <string name="compression_never">Off</string>
+    <string name="compression_always_hint">Saves data on text and documents, costs battery. Photos and videos gain almost nothing.</string>
+    <!-- Number of connections to a device; automatic is Syncthing\'s choice -->
+    <string name="connections_auto">Automatic</string>
+    <plurals name="connections">
+        <item quantity="one">%1$d connection</item>
+        <item quantity="other">%1$d connections</item>
+    </plurals>
+
+    <!-- The phone\'s shared storage, as the Files app calls it -->
+    <string name="internal_storage">Internal storage</string>
+
+    <!-- Folder types -->
+    <string name="folder_type_send_receive">Send &amp; receive</string>
+    <string name="folder_type_send_only">Send only</string>
+    <string name="folder_type_receive_only">Receive only</string>
+    <string name="folder_type_send_receive_hint">Changes go both ways.</string>
+    <string name="folder_type_send_only_hint">This phone is the source; changes made elsewhere are not applied here.</string>
+    <string name="folder_type_receive_only_hint">Changes made on this phone are never sent to other devices.</string>
+
+    <!-- File versioning methods -->
+    <string name="versioning_off">Off</string>
+    <string name="versioning_trashcan">Trash can</string>
+    <string name="versioning_simple">Simple</string>
+    <string name="versioning_staggered">Staggered</string>
+    <string name="versioning_off_hint">Replaced or deleted files are gone.</string>
+    <string name="versioning_trashcan_hint">Keeps the last version of files changed or deleted on other devices.</string>
+    <string name="versioning_simple_hint">Keeps a number of old versions of each file.</string>
+    <string name="versioning_staggered_hint">Keeps more recent versions, fewer older ones, up to a maximum age.</string>
+    <string name="versioning_keep_days">Keep for (days, 0 = forever)</string>
+    <string name="versioning_keep_versions">Versions to keep</string>
+    <string name="versioning_forever">Forever</string>
+    <!-- %1$s: versioning method, %2$s: how long or how many, e.g. "Simple · 5 versions" -->
+    <string name="versioning_summary">%1$s · %2$s</string>
+    <!-- %1$s: versioning method that keeps old versions without a time limit -->
+    <string name="versioning_summary_forever">%1$s · keep forever</string>
+
+    <!-- Snackbar after an action failed. %1$s: the action (one of the op_* texts), %2$s: the reason -->
+    <string name="op_failed">%1$s failed: %2$s</string>
+    <string name="op_clear">Clear</string>
+    <string name="op_usage_reporting">Usage reporting</string>
+    <string name="op_add_device">Add device</string>
+    <string name="op_untrusted">Untrusted</string>
+    <string name="op_introducer">Introducer</string>
+    <string name="op_accept_folders">Accept folders</string>
+    <string name="op_group">Group</string>
+    <string name="op_addresses">Addresses</string>
+    <string name="op_download_limit">Download limit</string>
+    <string name="op_upload_limit">Upload limit</string>
+    <string name="op_compression">Compression</string>
+    <string name="op_connections">Connections</string>
+    <string name="op_restart">Restart</string>
+    <string name="op_remove_device">Remove device</string>
+    <string name="op_rename">Rename</string>
+    <string name="op_pause">Pause</string>
+    <string name="op_ignore">Ignore</string>
+    <string name="op_unignore">Unignore</string>
+    <string name="op_add_folder">Add folder</string>
+    <string name="op_remove_folder">Remove folder</string>
+    <string name="op_rescan">Rescan</string>
+    <string name="op_revert">Revert</string>
+    <string name="op_override">Override</string>
+    <string name="op_full_rescan">Full rescan</string>
+    <string name="op_download_order">Download order</string>
+    <string name="op_keep_free">Keep free</string>
+    <string name="op_change_type">Change type</string>
+    <string name="op_watch">Watch for changes</string>
+    <string name="op_versioning">Versioning</string>
+    <string name="op_sharing">Sharing</string>
+    <string name="op_ignore_patterns">Ignore patterns</string>
+    <string name="op_type">Type</string>
+    <string name="op_limit">Limit</string>
+    <string name="op_local_discovery">Local discovery</string>
+    <string name="op_internet_discovery">Internet discovery</string>
+    <string name="op_relays">Relays</string>
+    <string name="op_port_opening">Port opening</string>
+    <string name="op_listen_addresses">Listen addresses</string>
+    <string name="op_discovery_servers">Discovery servers</string>
+
+    <!-- Snackbars after an action started or finished -->
+    <string name="done_restarting">Restarting Syncthing</string>
+    <!-- %1$s: folder name -->
+    <string name="done_added">Added %1$s</string>
+    <string name="done_rescanning">Rescanning</string>
+    <string name="done_rescanning_all">Rescanning all folders</string>
+    <string name="done_reverting">Reverting local changes</string>
+    <string name="done_overriding">Overriding changes</string>
+    <!-- Why a new folder stayed paused. %1$s: the reason -->
+    <string name="folder_added_paused">added paused, default ignore patterns not set (%1$s)</string>
+    <!-- %1$s: the reason -->
+    <string name="proxy_not_saved">Proxy not saved: %1$s</string>
+    <string name="not_saved">Not saved: the phone\'s storage may be full</string>
+
+    <!-- Restoring old versions of files -->
+    <string name="restore_done">Restored</string>
+    <!-- Used for 2 or more. %1$s: number of files -->
+    <plurals name="restore_done_files">
+        <item quantity="one">Restored %1$s file</item>
+        <item quantity="other">Restored %1$s files</item>
+    </plurals>
+    <!-- %1$s: the reason -->
+    <string name="restore_failed">Restore failed: %1$s</string>
+    <!-- %1$s: file name, %2$s: the reason -->
+    <string name="restore_failed_file">Restore failed for %1$s: %2$s</string>
+    <!-- %1$s: a message about one item, %2$d: how many more items it applies to -->
+    <plurals name="and_more">
+        <item quantity="one">%1$s (and %2$d more)</item>
+        <item quantity="other">%1$s (and %2$d more)</item>
+    </plurals>
+    <!-- The file came back but its modification time could not be set. %1$s: file name -->
+    <string name="restore_undated">Restored, but the date of %1$s could not be updated, so the restore may not sync</string>
+    <!-- %1$s: file name, %2$d: how many more files -->
+    <plurals name="restore_undated_more">
+        <item quantity="one">Restored, but the date of %1$s (and %2$d more) could not be updated, so the restore may not sync</item>
+        <item quantity="other">Restored, but the date of %1$s (and %2$d more) could not be updated, so the restore may not sync</item>
+    </plurals>
+
+    <!-- Tabs at the bottom of the main screen -->
+    <string name="tab_folders">Folders</string>
+    <string name="tab_devices">Devices</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Shown once after the app was moved to a new phone with Android\'s phone-to-phone transfer -->
+    <string name="moved_title">Moved from another phone</string>
+    <string name="moved_text">This phone kept the device ID, folders and devices of your old phone, and is checking the folders again. Stop or uninstall Syncthing on the old phone: two phones with the same device ID disturb each other\'s connections.</string>
+
+    <!-- A folder\'s or device\'s state on its card -->
+    <string name="item_unknown">Unknown</string>
+    <string name="item_error">Error</string>
+    <plurals name="item_errors">
+        <item quantity="one">%1$d error</item>
+        <item quantity="other">%1$d errors</item>
+    </plurals>
+    <string name="item_local_changes">Local changes</string>
+    <string name="item_out_of_sync">Out of sync</string>
+    <string name="item_scanning">Scanning</string>
+    <string name="item_not_shared">Not shared</string>
+    <string name="item_disconnected">Disconnected</string>
+
+    <!-- How a device is connected: on the local network, over the internet, or through a relay -->
+    <string name="connection_lan">LAN</string>
+    <string name="connection_internet">Internet</string>
+    <string name="connection_relay">Relay</string>
+    <!-- %1$s: one of the connection_* texts, %2$s: the address, e.g. tcp://192.0.2.1:22000 -->
+    <string name="connection_with_address">%1$s · %2$s</string>
+
+    <!-- This phone\'s connectivity. Listening: addresses Syncthing accepts connections on. Discovery: ways to find other devices.
+         %1$d of %2$d listening addresses work; %3$d of %4$d discovery methods work -->
+    <string name="health">Listening %1$d of %2$d · Discovery %3$d of %4$d</string>
+    <!-- %1$d of %2$d listening addresses work -->
+    <string name="health_discovery_off">Listening %1$d of %2$d · Discovery off</string>
+    <string name="unused_no_ipv6">Not used: this network has no IPv6</string>
+    <string name="unused_no_route">Not used: no route on this network</string>
+
+    <!-- Sharing a folder encrypted with an untrusted device -->
+    <string name="encryption_set">Encrypted · password set</string>
+    <string name="encryption_needed">Untrusted: needs a password to share</string>
+    <string name="encryption_missing">No password: Syncthing stops sharing it</string>
+    <string name="encryption_title">Share encrypted</string>
+    <!-- %1$s: device name, %2$s: folder name -->
+    <string name="encryption_text">%1$s gets \"%2$s\" encrypted and can\'t read it.</string>
+    <!-- %1$s: device name -->
+    <string name="encryption_keep_safe">Keep it safe: the files can only be decrypted with it. Other devices that share this folder with %1$s must use the same password.</string>
+    <string name="password">Password</string>
+    <string name="password_show">Show password</string>
+    <string name="password_hide">Hide password</string>
+    <string name="action_stop_sharing">Stop sharing</string>
+
+    <!-- Folders tab -->
+    <string name="folders_rescan_all">Rescan all folders</string>
+    <string name="recent_changes">Recent changes</string>
+    <string name="folders_add">Add folder</string>
+    <string name="folders_empty">No folders yet</string>
+    <!-- "Add folder" is the button\'s label -->
+    <string name="folders_empty_hint">Tap Add folder to sync a folder on this phone. Folders other devices share with you appear here too.</string>
+    <!-- %1$s: device name, %2$s: folder name -->
+    <string name="folders_offer">%1$s shares \"%2$s\"</string>
+    <string name="folders_offer_choose">Choose where to keep it on this phone</string>
+    <!-- %1$s: where the folder is on this phone, %2$s: device name -->
+    <string name="folders_offer_have">You already have it in %1$s. Share it with %2$s too?</string>
+    <!-- On a folder card, after its size -->
+    <string name="folder_card_not_shared">not shared</string>
+    <!-- On a folder card, after its size. %1$d: number of other devices -->
+    <plurals name="folder_card_shared">
+        <item quantity="one">shared with %1$d</item>
+        <item quantity="other">shared with %1$d</item>
+    </plurals>
+
+    <!-- Devices tab -->
+    <string name="devices_add">Add device</string>
+    <!-- %1$s: first part of the device ID, %2$s: its address -->
+    <string name="devices_request_detail">Device ID %1$s · %2$s</string>
+    <string name="devices_empty">No other devices yet</string>
+    <!-- "Add device" is the button\'s label -->
+    <string name="devices_empty_hint">Tap Add device and scan the other device\'s QR code, or show it this phone\'s ID.</string>
+    <!-- Fallback when this phone has no device name -->
+    <string name="this_phone">This phone</string>
+    <string name="this_device">This device</string>
+    <!-- %1$s: first part of this phone\'s device ID -->
+    <string name="devices_this_device_id">This device · ID %1$s</string>
+    <string name="devices_show_id">Show ID</string>
+    <string name="devices_share_id">Share ID</string>
+    <string name="devices_share_id_title">Share device ID</string>
+    <string name="devices_qr_description">Device ID QR code</string>
+
+    <!-- Settings tab -->
+    <string name="settings_restart_needed">Restart Syncthing to apply the changed settings.</string>
+    <string name="action_restart">Restart</string>
+    <string name="settings_device_name">Device name</string>
+    <string name="settings_device_name_hint">Other devices see this name</string>
+    <string name="settings_not_set">Not set</string>
+    <string name="name">Name</string>
+    <string name="settings_group_syncing">Syncing</string>
+    <string name="settings_pause">Pause syncing</string>
+    <string name="settings_pause_hint">Until you resume it here or on the widget</string>
+    <string name="settings_ignored">Ignored requests</string>
+    <!-- "Ignore" is the button on device and folder requests -->
+    <string name="settings_ignored_hint">Devices and folders you tapped Ignore on, to undo it</string>
+    <!-- Heading over the networks syncing may use -->
+    <string name="settings_group_sync_on">Sync on</string>
+    <string name="settings_unmetered">Unmetered Wi-Fi and Ethernet</string>
+    <string name="settings_always">Always</string>
+    <string name="settings_metered">Metered Wi-Fi and hotspots</string>
+    <string name="settings_metered_hint">Wi-Fi that Android or you marked as metered, another phone\'s hotspot, tethering</string>
+    <string name="settings_mobile_data">Mobile data</string>
+    <string name="settings_mobile_data_hint">Can cost money on a limited plan</string>
+    <string name="settings_roaming">Mobile data while roaming</string>
+    <string name="settings_roaming_hint">Abroad or on another network, where data can cost extra</string>
+    <string name="settings_group_time">Time</string>
+    <string name="sync_times">Sync times</string>
+    <string name="settings_group_power">Power</string>
+    <string name="settings_power">Sync when</string>
+    <string name="power_any">Charging or on battery</string>
+    <string name="power_charging">Only while charging</string>
+    <string name="power_battery">Only on battery</string>
+    <string name="power_charging_hint">Pauses when unplugged</string>
+    <string name="power_battery_hint">Pauses while plugged in</string>
+    <string name="settings_battery_saver">Pause in battery saver</string>
+    <string name="settings_battery_saver_hint">Syncing waits while battery saver is on</string>
+    <string name="settings_group_defaults">New folders and devices</string>
+    <string name="defaults_folders">Default settings for new folders</string>
+    <string name="defaults_folders_hint">Type, versioning, ignore patterns and more</string>
+    <string name="defaults_devices">Default settings for new devices</string>
+    <string name="defaults_devices_hint">Auto-accept, addresses, limits and more</string>
+    <string name="settings_group_network">Network</string>
+    <string name="download_limit">Download limit</string>
+    <string name="upload_limit">Upload limit</string>
+    <string name="settings_limit_lan">Also limit on local network</string>
+    <string name="settings_limit_lan_on">Limits apply everywhere</string>
+    <string name="settings_limit_lan_off">Off: transfers on the local network run at full speed</string>
+    <string name="proxy">Proxy</string>
+    <string name="settings_group_discovery">Finding devices</string>
+    <string name="settings_local_discovery">Local network</string>
+    <string name="settings_local_discovery_hint">Find devices on the same Wi-Fi</string>
+    <string name="settings_global_discovery">Internet discovery</string>
+    <string name="settings_global_discovery_hint">Look devices up through Syncthing\'s discovery servers. They learn this phone\'s IP address.</string>
+    <string name="settings_relays">Relays</string>
+    <string name="settings_relays_hint">Connect through a relay when a direct connection fails. Still end-to-end encrypted.</string>
+    <string name="settings_nat">Router port opening</string>
+    <string name="settings_nat_hint">Ask the router to open a port (UPnP, NAT-PMP)</string>
+    <string name="settings_group_system">System</string>
+    <string name="settings_boot">Start at boot</string>
+    <string name="settings_boot_hint">Sync starts when the phone starts</string>
+    <string name="settings_start">Start Syncthing</string>
+    <string name="settings_stop">Stop Syncthing</string>
+    <string name="settings_stop_hint">Until you start it again or the phone restarts</string>
+    <string name="settings_restart">Restart Syncthing</string>
+    <string name="settings_restart_hint">Applies settings that need a restart</string>
+    <string name="settings_export">Export a backup</string>
+    <string name="settings_export_hint">Folders, devices, this phone\'s identity and sync settings, as a zip file</string>
+    <string name="settings_import">Import a backup</string>
+    <!-- Syncthing-Fork is another Syncthing app for Android -->
+    <string name="settings_import_hint">From this app\'s export or a Syncthing-Fork backup</string>
+    <string name="settings_group_permissions">Permissions</string>
+    <string name="settings_group_advanced">Advanced</string>
+    <string name="settings_usage">Anonymous usage reporting</string>
+    <string name="settings_usage_hint">Helps Syncthing\'s developers; statistics at data.syncthing.net</string>
+    <!-- Addresses Syncthing accepts connections on -->
+    <string name="listen_addresses">Listen addresses</string>
+    <string name="settings_listen_default">Default, port 22000</string>
+    <string name="discovery_servers">Discovery servers</string>
+    <string name="settings_servers_default">Syncthing\'s public servers</string>
+    <string name="settings_web_gui">Web GUI</string>
+    <string name="settings_web_gui_hint">Syncthing\'s full settings, for what this app does not show</string>
+    <string name="about">About</string>
+    <string name="settings_about_hint">Versions, licences and source code</string>
+    <!-- The automatic entry is ticked with the label "Default" (hint_default) -->
+    <string name="listen_default_hint">TCP and QUIC on port 22000, plus relays</string>
+    <!-- "Default" is the label of the automatic entry (hint_default); keep the addresses as they are -->
+    <string name="listen_add_hint">For another port, add tcp://0.0.0.0:22001 and quic://0.0.0.0:22001 and untick Default.</string>
+    <string name="servers_default_hint">Used by internet discovery</string>
+    <!-- Keep the address as it is -->
+    <string name="servers_add_hint">Your own server, for example https://discovery.example.com/ (https only)</string>
+
+    <!-- First-run checklist; Settings shows the same permission rows -->
+    <string name="setup_title">Set up</string>
+    <string name="setup_intro">MySyncthing needs one permission to sync. The others make it more reliable.</string>
+    <string name="setup_mobile_data">Sync on mobile data</string>
+    <string name="setup_mobile_data_on">On: also uses mobile data, not while roaming</string>
+    <string name="setup_mobile_data_off">Off: only on Wi-Fi or Ethernet. You can change it in Settings.</string>
+    <!-- Android\'s name for the permission; use the name Android shows in your language -->
+    <string name="permission_files">All files access</string>
+    <string name="permission_files_hint">Syncthing reads and writes your folders directly.</string>
+    <string name="permission_notifications">Notifications</string>
+    <!-- %1$s: name of the notification category (channel_service) -->
+    <string name="permission_notifications_hint">Requests from new devices and folders, and problems. While Syncthing runs, Android also requires a small status notification; to hide it, turn off its “%1$s” category.</string>
+    <string name="permission_background">Run in background</string>
+    <!-- "Allow background activity": what some phones (OnePlus) call the battery setting; use their wording in your language -->
+    <string name="permission_background_hint">Keeps syncing with the screen off. Some phones call this “Allow background activity”.</string>
+    <!-- Tags above the permission names -->
+    <string name="permission_required">Required</string>
+    <string name="permission_optional">Optional</string>
+    <string name="permission_recommended">Recommended</string>
+    <string name="permission_grant">Grant</string>
+    <string name="permission_allow">Allow</string>
+    <string name="permission_granted">Granted</string>
+
+    <string name="loading">Loading</string>
+    <string name="group_general">General</string>
+    <string name="group_trust">Trust</string>
+
+    <!-- Defaults for new folders and devices -->
+    <string name="defaults_folders_intro">Folders you add, and folders you accept from other devices, start with these settings.</string>
+    <string name="defaults_devices_intro">Devices you add, and device requests you accept, start with these settings.</string>
+    <string name="defaults_location">Location</string>
+    <!-- %1$s: the base directory; "folder name" stands for each new folder\'s name -->
+    <string name="defaults_location_value">%1$s/&lt;folder name&gt;</string>
+
+    <!-- Folder settings, also on the defaults screen -->
+    <string name="folder_type">Folder type</string>
+    <!-- Folder type, as a setting's name -->
+    <string name="type">Type</string>
+    <string name="file_versioning">File versioning</string>
+    <string name="folder_watch">Watch for changes</string>
+    <string name="folder_watch_hint">Sync edits within seconds instead of at the next scan</string>
+    <string name="full_rescan">Full rescan</string>
+    <string name="download_order">Download order</string>
+    <string name="keep_free">Keep free on this phone</string>
+    <string name="ignore_patterns">Ignore patterns</string>
+    <string name="ignores_none">None</string>
+
+    <!-- Device settings, also on the defaults screen -->
+    <string name="device_introducer">Introducer</string>
+    <string name="device_introducer_hint">Also add the devices it shares folders with</string>
+    <string name="device_auto_accept">Accept its folders automatically</string>
+    <!-- "Syncthing/<folder name>": the directory in the phone\'s storage; keep it as it is -->
+    <string name="device_auto_accept_hint">Saved to Syncthing/&lt;folder name&gt; without asking</string>
+    <string name="device_addresses">Addresses</string>
+    <string name="compression">Compression</string>
+    <string name="connections">Connections</string>
+
+    <!-- Adding a folder -->
+    <string name="folder_already_added">Already added</string>
+    <!-- %1$s: name of the folder another device offers -->
+    <string name="folder_add_offer">Add \"%1$s\"</string>
+    <!-- %1$s: device name -->
+    <string name="folder_offered_by">Offered by %1$s</string>
+    <string name="folder">Folder</string>
+    <string name="folder_path">Folder on this phone</string>
+    <string name="folder_path_required">Required. Full path, or choose one</string>
+    <string name="folder_path_suggested">Suggested. It is created if missing.</string>
+    <string name="folder_path_hint">Full path, or choose one</string>
+    <string name="folder_choose">Choose folder</string>
+    <string name="folder_id">Folder ID</string>
+    <string name="folder_id_hint">Must be the same on every device sharing this folder</string>
+    <string name="share_with">Share with</string>
+    <string name="share_no_devices">No devices added yet</string>
+    <string name="share_no_devices_hint">Add one on the Devices tab</string>
+    <string name="share_offered">Offered this folder</string>
+    <string name="folder_ignores_first">Set ignore patterns first</string>
+    <string name="folder_ignores_first_hint">The folder stays paused until you save them</string>
+    <string name="versioning_method">Method</string>
+    <!-- Field label: the number of days to keep old versions -->
+    <string name="versioning_unit_days">Days</string>
+    <!-- Field label: the number of old versions to keep -->
+    <string name="versioning_unit_versions">Versions</string>
+
+    <!-- Why a form value can\'t be saved; shown under the field -->
+    <string name="error_required">Required</string>
+    <string name="error_ascii_digits">Use the digits 0-9</string>
+    <!-- %1$d: the smallest number allowed -->
+    <string name="error_whole_number">A whole number, %1$d or more</string>
+    <string name="error_not_negative">0 or more</string>
+    <string name="error_number">Enter a number</string>
+    <!-- %1$s: the largest amount with its unit, e.g. "100 %" -->
+    <string name="error_up_to">Up to %1$s</string>
+    <string name="error_path_absolute">A full path, starting with /</string>
+    <string name="error_control_characters">No line breaks or control characters</string>
+    <!-- Parts of a path between slashes -->
+    <string name="error_path_parts">No empty, . or .. parts</string>
+    <!-- Keep /storage/… as it is -->
+    <string name="error_path_storage">In the phone\'s storage or on an SD card (/storage/…)</string>
+    <string name="error_path_overlap">Another folder is already here, or inside it</string>
+    <string name="error_id_slash">No /</string>
+    <string name="error_id_dots">Not . or ..</string>
+    <string name="error_id_control">No control characters</string>
+    <string name="error_id_taken">Another folder already has this ID</string>
+    <string name="error_device_id_length">A device ID has 56 characters</string>
+    <string name="error_device_id">Not a device ID. Check every character against the other device.</string>
+    <!-- Keep ::1 as it is -->
+    <string name="error_host_brackets">Without brackets, for example ::1</string>
+    <string name="error_host">An IP address or a host name</string>
+    <string name="error_port">A port from 1 to 65535</string>
+    <string name="error_too_long_255">Too long: at most 255 bytes</string>
+    <string name="error_too_long">Too long</string>
+    <!-- A proxy user name is needed when a password is set -->
+    <string name="error_user_needed">Needed with a password</string>
+    <string name="error_proxy_type">Unknown proxy type</string>
+    <!-- %1$d: the shortest password length -->
+    <plurals name="error_password_short">
+        <item quantity="one">At least %1$d character</item>
+        <item quantity="other">At least %1$d characters</item>
+    </plurals>
+    <string name="error_password_repeat">Not the same password</string>
+
+    <!-- A folder\'s screen. %1$s: size on this phone, %2$s: size of the whole folder -->
+    <string name="folder_size">%1$s on this phone of %2$s</string>
+    <!-- Receive-only folder. %1$s: number of items, %2$s: their size -->
+    <plurals name="folder_local_changes">
+        <item quantity="one">%1$s item, %2$s, changed on this phone. This folder is receive only, so other devices don\'t get these changes.</item>
+        <item quantity="other">%1$s items, %2$s, changed on this phone. This folder is receive only, so other devices don\'t get these changes.</item>
+    </plurals>
+    <!-- Send-only folder. %1$s: number of items -->
+    <plurals name="folder_remote_changes">
+        <item quantity="one">%1$s item changed on other devices. This folder is send only, so those changes aren\'t applied here.</item>
+        <item quantity="other">%1$s items changed on other devices. This folder is send only, so those changes aren\'t applied here.</item>
+    </plurals>
+    <string name="folder_show_changes">Show changes</string>
+    <!-- Buttons that open a confirmation -->
+    <string name="folder_revert_button">Revert…</string>
+    <string name="folder_override_button">Override…</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_rescan">Rescan</string>
+    <string name="action_revert">Revert</string>
+    <string name="action_override">Override</string>
+    <string name="action_remove">Remove</string>
+    <string name="folder_to_download">Still to download</string>
+    <!-- %1$s: number of items, %2$s: their size -->
+    <string name="items_and_size">%1$s · %2$s</string>
+    <string name="folder_see_files">See which files</string>
+    <string name="failed_items">Failed items</string>
+    <!-- %1$s: number of failed items -->
+    <string name="folder_see_all">See all %1$s</string>
+    <!-- A folder without a name -->
+    <string name="name_none">(none)</string>
+    <string name="group">Group</string>
+    <string name="group_none">None</string>
+    <string name="details">Details</string>
+    <string name="folder_last_scan">Last scan</string>
+    <string name="not_yet">Not yet</string>
+    <!-- %1$s: file name -->
+    <string name="folder_deleted_file">Deleted %1$s</string>
+    <string name="folder_last_change">Last change</string>
+    <string name="on_this_phone">On this phone</string>
+    <string name="on_all_devices">On all devices</string>
+    <!-- %1$s: number of files, %2$s: number of folders, %3$s: total size -->
+    <string name="folder_contents">%1$s · %2$s · %3$s</string>
+    <string name="shared_with">Shared with</string>
+    <string name="restore_versions">Restore versions</string>
+    <string name="restore_versions_hint">Get back files changed or deleted by other devices</string>
+    <!-- Hint after how often the folder is fully rescanned; watching for changes is a folder setting -->
+    <string name="folder_rescan_hint">Catches what watching misses.</string>
+    <string name="folder_keep_free_hint">Syncing pauses below this.</string>
+    <string name="folder_remove_hint">Stops syncing it. Files on this phone stay.</string>
+    <string name="folder_name">Folder name</string>
+    <string name="folder_group">Folder group</string>
+    <string name="folder_group_hint">Folders in a group are listed together. Only on this phone.</string>
+    <string name="folder_revert_title">Revert local changes?</string>
+    <string name="folder_override_title">Override changes?</string>
+    <!-- %1$s: number of items -->
+    <plurals name="folder_override_text">
+        <item quantity="one">Your other devices get this phone\'s version of %1$s item. The changes made to them elsewhere are lost. This can\'t be undone.</item>
+        <item quantity="other">Your other devices get this phone\'s version of %1$s items. The changes made to them elsewhere are lost. This can\'t be undone.</item>
+    </plurals>
+    <!-- %1$s: folder name -->
+    <string name="folder_remove_title">Remove %1$s?</string>
+    <string name="folder_remove_text">Syncthing stops syncing this folder. Files on this phone are not deleted.</string>
+    <string name="amount">Amount</string>
+    <string name="keep_free_text">Syncing into this folder pauses when less is free.</string>
+    <!-- %1$s: free space now, %2$s: total space -->
+    <string name="keep_free_text_now">Syncing into this folder pauses when less is free. Free now: %1$s of %2$s.</string>
+
+    <!-- A device\'s screen. %1$s: bytes received, %2$s: bytes sent -->
+    <string name="device_traffic">Received %1$s · sent %2$s</string>
+    <!-- %1$s: when, e.g. "yesterday, 22:10" -->
+    <string name="device_last_seen">Last seen %1$s</string>
+    <string name="device_never_connected">Never connected</string>
+    <!-- %1$s: version, e.g. v2.1.7 -->
+    <string name="syncthing_version">Syncthing %1$s</string>
+    <!-- %1$s: number of items, %2$s: their size -->
+    <plurals name="device_still_needs">
+        <item quantity="one">Still needs %1$s item, %2$s from this phone</item>
+        <item quantity="other">Still needs %1$s items, %2$s from this phone</item>
+    </plurals>
+    <string name="device_untrusted">Untrusted</string>
+    <string name="device_untrusted_hint">Only receives encrypted data. Each shared folder needs a password.</string>
+    <string name="device_id">Device ID</string>
+    <string name="device_to_send">Still to send</string>
+    <string name="device_shared_folders">Shared folders</string>
+    <string name="device_no_folders_hint">Add one on the Folders tab</string>
+    <string name="device_remove_hint">It can no longer sync with this phone.</string>
+    <string name="device_group">Device group</string>
+    <string name="device_group_hint">Devices in a group are listed together. Only on this phone.</string>
+    <string name="connections_auto_hint">Syncthing decides, currently 3. More can help on fast, distant links.</string>
+    <string name="device_untrusted_title">Mark as untrusted?</string>
+    <!-- %1$s: device name -->
+    <string name="device_untrusted_text">%1$s will only get encrypted folders, and can\'t be an introducer or accept folders automatically.</string>
+    <!-- %1$s: device name, %2$s: list of folder names -->
+    <string name="device_untrusted_text_plain">%1$s will only get encrypted folders, and can\'t be an introducer or accept folders automatically. These folders are shared without a password and stop being shared: %2$s.</string>
+    <string name="device_untrusted_confirm">Mark untrusted</string>
+    <string name="device_remove_text">Folders stop syncing with this device. No files are deleted.</string>
+    <!-- A device\'s addresses when all are found by discovery -->
+    <string name="addresses_automatic">Found automatically</string>
+    <!-- Stands for the automatic entry in a list of addresses -->
+    <string name="address_automatic">automatic</string>
+    <string name="addresses_find">Find automatically</string>
+    <string name="addresses_find_hint">Through local and global discovery</string>
+    <!-- Keep the address as it is -->
+    <string name="addresses_add_hint">For example tcp://192.0.2.10:22000 or a VPN address</string>
+
+    <!-- Add device screen -->
+    <!-- Title when accepting a device that asked to connect. %1$s: its name or short ID. -->
+    <string name="device_add_named">Add \"%1$s\"</string>
+    <!-- %1$s: network address, such as 192.0.2.1:22000 -->
+    <string name="device_wants_to_connect">Wants to connect from %1$s</string>
+    <string name="device">Device</string>
+    <string name="device_id_check">Check it matches the other device</string>
+    <string name="device_id_hint">Scan its QR code, paste it, or pick a nearby device</string>
+    <string name="scan_qr_code">Scan QR code</string>
+    <string name="name_optional">Name (optional)</string>
+    <string name="device_nearby">Nearby on this network</string>
+    <string name="device_nearby_tap">Tap to use</string>
+    <string name="device_share_folders">Share folders</string>
+
+    <!-- Recent changes screen -->
+    <string name="all_folders">All folders</string>
+    <string name="recent_none">No changes since Syncthing started.</string>
+    <plurals name="recent_note">
+        <item quantity="one">Syncthing keeps its latest %1$s change in memory until it restarts.</item>
+        <item quantity="other">Syncthing keeps its latest %1$s changes in memory until it restarts.</item>
+    </plurals>
+    <!-- How a file changed, after its folder and before the time -->
+    <string name="change_deleted_here">deleted on this phone</string>
+    <string name="change_changed_here">changed on this phone</string>
+    <!-- %1$s: device name -->
+    <string name="change_deleted_by">deleted by %1$s</string>
+    <!-- %1$s: device name -->
+    <string name="change_changed_by">changed by %1$s</string>
+
+    <!-- Restore versions screen -->
+    <string name="range_week">Last 7 days</string>
+    <string name="range_month">Last 30 days</string>
+    <string name="range_all">All</string>
+    <string name="restore_all">Restore all</string>
+    <string name="search">Search</string>
+    <string name="versions_none">No old versions kept in this folder.</string>
+    <string name="versions_no_match">No versions match.</string>
+    <!-- %1$s: when the newest version was archived, such as "yesterday, 14:05" -->
+    <string name="versions_latest">latest %1$s</string>
+    <string name="action_restore">Restore</string>
+    <!-- %1$s: a number of files, such as "3 files" -->
+    <string name="restore_all_title">Restore %1$s?</string>
+    <string name="restore_all_newest_week">Each goes back to its newest version from the last 7 days.</string>
+    <string name="restore_all_newest_month">Each goes back to its newest version from the last 30 days.</string>
+    <string name="restore_all_newest">Each goes back to its newest version.</string>
+    <!-- %1$s: one of the restore_all_newest sentences; %2$s: one of the restore_note sentences -->
+    <string name="restore_all_text">%1$s The current files are kept as versions. %2$s</string>
+    <!-- %1$s: one of the restore_note sentences -->
+    <string name="restore_one_text">The current file is kept as a version. %1$s</string>
+    <string name="restore_note_local_many">Restored files are dated now and stay a local change: this folder is receive only.</string>
+    <string name="restore_note_local_one">The restored file is dated now and stays a local change: this folder is receive only.</string>
+    <string name="restore_note_many">Restored files are dated now and sync to every device that shares this folder.</string>
+    <string name="restore_note_one">The restored file is dated now and syncs to every device that shares this folder.</string>
+
+    <!-- Ignored requests screen -->
+    <string name="ignored_none">Nothing ignored. When you tap Ignore on a request, it is listed here.</string>
+    <!-- %1$s: the first block of a device ID -->
+    <string name="ignored_id">ID %1$s</string>
+    <!-- After the device ID. %1$s: when, such as "yesterday, 14:05" -->
+    <string name="ignored_when">ignored %1$s</string>
+    <!-- At the start of a line. %1$s: when, such as "yesterday, 14:05" -->
+    <string name="ignored_when_start">Ignored %1$s</string>
+    <!-- %1$s: folder name; %2$s: device name -->
+    <string name="ignored_folder">\"%1$s\" from %2$s</string>
+    <string name="action_unignore">Unignore</string>
+    <string name="ignored_comes_back">The request comes back the next time that device connects.</string>
+
+    <!-- Ignore patterns screen -->
+    <string name="ignores_default_title">Default ignore patterns</string>
+    <string name="ignores_save_and_sync">Save and sync</string>
+    <string name="ignores_default_intro">New folders start with these patterns, including folders accepted automatically.</string>
+    <!-- %1$s: folder name -->
+    <string name="ignores_first_sync">%1$s. The folder stays paused until you save, so nothing is synced before the patterns apply.</string>
+    <!-- Chips that insert pattern syntax, after the syntax itself such as "!  keep" -->
+    <string name="ignores_chip_keep">keep</string>
+    <string name="ignores_chip_any_case">any case</string>
+    <string name="ignores_chip_deletable">deletable</string>
+    <string name="ignores_chip_comment">comment</string>
+    <string name="ignores_chip_any_path">any path</string>
+    <string name="ignores_placeholder">One pattern per line</string>
+    <string name="ignores_leave_title">Leave without saving?</string>
+    <string name="ignores_leave_text">The folder stays paused. Resume it on its screen when you are ready.</string>
+    <string name="action_leave">Leave</string>
+    <string name="ignores_discard_text">Your edits to the patterns are lost.</string>
+    <string name="ignores_help_title">How patterns work</string>
+    <string name="ignores_help_intro">One pattern per line, relative to this folder. Ignored files stay on this phone but are not synced.</string>
+    <!-- Each ignores_help_* line explains an example pattern shown above it, such as "name" or "/photos/**".
+         Keep the pattern words (name, *, ?, /) as they are: they are the literal syntax. -->
+    <string name="ignores_help_name">Ignores every file or folder called name, at any depth.</string>
+    <string name="ignores_help_top">Only name at the top of this folder.</string>
+    <string name="ignores_help_star">* matches anything except /; ? matches one character.</string>
+    <string name="ignores_help_double_star">** matches anything, including /.</string>
+    <string name="ignores_help_keep">Syncs it after all. The first line that matches wins, so put it above the broader rule.</string>
+    <string name="ignores_help_case">Ignores upper and lower case.</string>
+    <string name="ignores_help_deletable">Syncthing may delete it when it is all that keeps a deleted folder from going away.</string>
+    <string name="ignores_help_comment">A comment.</string>
+    <string name="ignores_help_not_shared">Patterns are stored in the folder\'s .stignore file and are not shared: set them on each device.</string>
+
+    <!-- Sync times screen -->
+    <string name="schedule_only_at_set_times">Only at set times</string>
+    <string name="schedule_on_hint">Syncing pauses outside the times below</string>
+    <string name="schedule_off_hint">Off: syncs at any time</string>
+    <!-- %1$d: number of the window, from 1 -->
+    <string name="schedule_window_title">Time window %1$d</string>
+    <!-- Button. %1$s: time, such as 22:00 -->
+    <string name="schedule_from">From %1$s</string>
+    <!-- Button after "From 22:00". %1$s: time, such as 07:00 -->
+    <string name="schedule_to">to %1$s</string>
+    <!-- %1$d: number of the window, from 1 -->
+    <string name="schedule_delete_window">Delete time window %1$d</string>
+    <string name="schedule_add_window">Add time window</string>
+    <string name="schedule_no_window_fix">Add a time window, or turn \"Only at set times\" off.</string>
+    <string name="schedule_note">Times follow the phone\'s clock and time zone. While the phone is idle, Android may start or pause syncing a few minutes late. A window that ends before it starts runs into the next day.</string>
+    <!-- Titles of the time picker -->
+    <string name="schedule_from_title">From</string>
+    <string name="schedule_to_title">To</string>
+    <!-- %1$s: days, such as "Mon–Fri"; %2$s and %3$s: start and end time -->
+    <string name="schedule_window">%1$s %2$s–%3$s</string>
+    <!-- As schedule_window, for a window that ends the next day -->
+    <string name="schedule_window_next_day">%1$s %2$s–%3$s (next day)</string>
+    <string name="every_day">Every day</string>
+    <string name="any_time">Any time</string>
+    <!-- %1$s: the first time window; %2$d: how many more there are -->
+    <plurals name="schedule_and_more">
+        <item quantity="one">%1$s, and %2$d more</item>
+        <item quantity="other">%1$s, and %2$d more</item>
+    </plurals>
+
+    <!-- Proxy screen. SOCKS5, HTTP, CONNECT, HTTPS, QUIC and Tor are names: keep them. -->
+    <string name="proxy_connect_through">Connect through</string>
+    <string name="proxy_none">No proxy</string>
+    <string name="proxy_socks5">SOCKS5 proxy</string>
+    <string name="proxy_http">HTTP proxy</string>
+    <string name="proxy_http_hint">Uses CONNECT, as for HTTPS</string>
+    <string name="proxy_use_tor">Use Tor (Orbot)</string>
+    <string name="proxy_host">Host</string>
+    <string name="proxy_host_hint">IP address or name, for example 127.0.0.1</string>
+    <string name="proxy_port">Port</string>
+    <string name="proxy_user">User name (optional)</string>
+    <string name="password_optional">Password (optional)</string>
+    <string name="proxy_only">Only through the proxy</string>
+    <string name="proxy_only_hint">If the proxy can\'t be reached, Syncthing waits instead of connecting directly. QUIC and router port opening are off, as they would go around the proxy.</string>
+    <string name="proxy_http_password_note">An HTTP proxy gets the user name and password unencrypted</string>
+    <string name="proxy_note_lan">Devices on the local network are reached directly, without the proxy.</string>
+    <string name="proxy_note_tor">For Tor, Orbot or another Tor app must run on this phone.</string>
+    <string name="proxy_note_restart">Saving restarts Syncthing.</string>
+    <!-- Settings summary of the proxy -->
+    <string name="proxy_summary_none">None: direct connections</string>
+    <!-- %1$s: type, host and port, such as "SOCKS5 127.0.0.1:9050" -->
+    <string name="proxy_summary_only">%1$s, nothing else</string>
+    <!-- %1$s: type, host and port, such as "SOCKS5 127.0.0.1:9050" -->
+    <string name="proxy_summary_fallback">%1$s, direct if it fails</string>
+
+    <!-- Import screen -->
+    <string name="import_title">Import backup</string>
+    <string name="import_reading">Reading the backup</string>
+    <string name="import_importing">Importing</string>
+    <string name="import_done">Imported</string>
+    <string name="import_done_problem">Import finished with a problem</string>
+    <string name="import_done_text">Syncthing restarted with the imported setup and is checking every folder again. Identical files are recognised and not transferred.</string>
+    <string name="import_done_identity">This phone now has the backup\'s device ID: stop or uninstall Syncthing where the backup came from, or both will disturb each other\'s connections.</string>
+    <string name="import_failed">Cannot import this file</string>
+    <string name="import_choose_another">Choose another file</string>
+    <string name="import_intro_title">Bring your setup over</string>
+    <!-- "Export a backup" and "Import and Export" are the names of the settings in this app and in Syncthing-Fork -->
+    <string name="import_intro">Choose a backup exported by this app (Settings &gt; Export a backup), or by Syncthing-Fork (Settings &gt; Import and Export). This phone then gets its folders, devices and settings. The files in the folders are not part of the backup.</string>
+    <string name="import_found">Backup found</string>
+    <string name="import_choose">Choose a backup file</string>
+    <string name="import_password_title">Password protected</string>
+    <string name="import_password_text">Enter the password the backup was exported with.</string>
+    <string name="import_password_label">Backup password</string>
+    <string name="action_continue">Continue</string>
+    <!-- %1$s: device name; %2$s: first block of its device ID -->
+    <string name="import_take_over">Take over \"%1$s\" (%2$s)</string>
+    <string name="import_take_over_own_hint">Other devices keep syncing with this phone as before. The phone the backup came from must not run under this ID any more.</string>
+    <string name="import_take_over_fork_hint">Other devices keep syncing with this phone as before. Syncthing-Fork must not run under this ID any more.</string>
+    <string name="import_keep_id">Keep this phone\'s own ID</string>
+    <string name="import_keep_id_hint">Other devices must accept this phone as a new device. The old install can keep running.</string>
+    <string name="import_sync_settings">Sync settings</string>
+    <string name="import_not_imported">Not imported</string>
+    <string name="import_key_warning">The backup holds the device\'s private key. Any app that can read the file can pose as this device.</string>
+    <string name="import_delete_backup">Delete the backup file after importing</string>
+    <string name="action_import">Import</string>
+    <string name="import_replace_title">Replace this phone\'s setup?</string>
+    <string name="import_replace_text">The folders, devices and settings of Syncthing on this phone are replaced by the backup\'s. Files on the phone are not touched.</string>
+    <string name="action_replace">Replace</string>
+    <string name="error_password_wrong">Wrong password</string>
+    <string name="error_password_backup_empty">Enter the backup\'s password</string>
+    <plurals name="error_too_long_chars">
+        <item quantity="one">At most %1$d character</item>
+        <item quantity="other">At most %1$d characters</item>
+    </plurals>
+    <!-- What happens to a folder from the backup. %1$s: its path -->
+    <string name="import_folder_found">%1$s: found, will be checked again</string>
+    <!-- %1$s: folder path -->
+    <string name="import_folder_found_new">%1$s: found, will become a Syncthing folder and be checked</string>
+    <!-- %1$s: folder path -->
+    <string name="import_folder_create_empty">%1$s: not on this phone, will be created empty</string>
+    <!-- %1$s: folder path -->
+    <string name="import_folder_create">%1$s: not on this phone, will be created and filled from other devices</string>
+    <!-- The backup's sync settings. %1$s: a list of the networks below, separated by commas -->
+    <string name="import_on">On %1$s</string>
+    <string name="import_unmetered">unmetered Wi-Fi</string>
+    <string name="import_metered">metered Wi-Fi</string>
+    <string name="import_mobile">mobile data</string>
+    <string name="import_mobile_roaming">mobile data, also roaming</string>
+    <string name="import_battery_saver_on">Pause in battery saver: on</string>
+    <string name="import_battery_saver_off">Pause in battery saver: off</string>
+    <string name="import_boot_on">Start at boot: on</string>
+    <string name="import_boot_off">Start at boot: off</string>
+    <!-- %1$s: time windows separated by semicolons, or import_any_time -->
+    <string name="import_sync_times">Sync times: %1$s</string>
+    <string name="import_any_time">any time</string>
+    <!-- %1$s: proxy summary, or import_proxy_none -->
+    <string name="import_proxy">Proxy: %1$s</string>
+    <string name="import_proxy_none">none</string>
+    <!-- Syncthing-Fork settings this app has no equivalent for -->
+    <string name="not_imported_networks">Not syncing on Wi-Fi: here unmetered Wi-Fi is always used, metered Wi-Fi is off</string>
+    <string name="not_imported_force_start">Force start (sync regardless of conditions)</string>
+    <string name="not_imported_force_stop">Syncing paused by hand (here only this phone\'s own pause counts)</string>
+    <string name="not_imported_flight_mode">Sync in flight mode</string>
+    <string name="not_imported_master_sync">Follow Android\'s auto-sync switch</string>
+    <string name="not_imported_wifi_allowlist">Sync only on chosen Wi-Fi networks</string>
+    <string name="not_imported_schedule">Sync for some minutes every few hours (here: Sync times, by the clock)</string>
+    <string name="not_imported_broadcasts">Control by other apps</string>
+    <string name="not_imported_socks_proxy">SOCKS proxy: not a valid address, or Tor was on</string>
+    <string name="not_imported_http_proxy">HTTP proxy: not a valid address, or another proxy was on</string>
+    <string name="not_imported_environment">Environment variables for Syncthing</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_conditions">Own sync conditions of folder %1$s</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_script">Script after syncing folder %1$s</string>
+    <!-- %1$s: device name -->
+    <string name="not_imported_device_conditions">Own sync conditions of device %1$s</string>
+
+    <!-- Export screen -->
+    <string name="export_title">Export backup</string>
+    <string name="export_working">Exporting</string>
+    <string name="export_done">Exported</string>
+    <!-- "Import a backup" is the name of the setting -->
+    <string name="export_done_encrypted">Import it on this or another phone in Settings &gt; Import a backup. Keep the password: without it the backup can\'t be opened.</string>
+    <string name="export_done_plain">Import it on this or another phone in Settings &gt; Import a backup. Keep the file private: it holds this phone\'s private key.</string>
+    <string name="export_failed">Export failed</string>
+    <string name="export_intro_title">Back up this phone\'s setup</string>
+    <string name="export_intro">The backup holds the folders, devices, this phone\'s device ID with its private key, and the sync settings including the proxy. Not the files in the folders, and not the web GUI login.</string>
+    <string name="export_password_group">Password (recommended)</string>
+    <!-- %1$d: minimum length. AES-256 is a name. -->
+    <plurals name="export_password_hint">
+        <item quantity="one">At least %1$d character. Encrypts the backup with AES-256.</item>
+        <item quantity="other">At least %1$d characters. Encrypts the backup with AES-256.</item>
+    </plurals>
+    <string name="password_again">Password again</string>
+    <string name="export_no_password_warning">Without a password, any app or person that can read the file can pose as this phone.</string>
+    <string name="export_choose">Choose where to save</string>
+
+    <!-- File lists of a folder -->
+    <string name="files_changed_elsewhere">Changed on other devices</string>
+    <!-- %1$s: number of items, %2$s: their size still to download -->
+    <string name="items_and_size_left">%1$s · %2$s left</string>
+    <!-- %1$s: number of items, %2$s: their size; the list may hold more -->
+    <string name="items_and_size_or_more">%1$s · %2$s or more</string>
+    <string name="files_no_remote_changes">No changes from other devices.</string>
+    <string name="files_nothing_left">Nothing left to download.</string>
+    <string name="files_downloading_now">Downloading now</string>
+    <!-- %1$s: size downloaded, %2$s: size of the file -->
+    <string name="files_progress">%1$s of %2$s</string>
+    <string name="files_waiting">Waiting</string>
+    <!-- %1$s: device name -->
+    <string name="remote_need_title">%1$s still needs</string>
+    <!-- %1$s: device name -->
+    <string name="remote_need_none">%1$s has everything from this folder.</string>
+    <string name="files_changed_here">Changed on this phone</string>
+    <string name="files_no_local_changes">No local changes.</string>
+    <string name="files_deleted">Deleted</string>
+    <string name="files_copy_all">Copy all</string>
+    <plurals name="files_could_not_sync">
+        <item quantity="one">%1$s item could not sync</item>
+        <item quantity="other">%1$s items could not sync</item>
+    </plurals>
+    <string name="files_search_hint">Name or error</string>
+    <string name="files_nothing_failed">Nothing failed.</string>
+    <string name="files_no_match">No match.</string>
+    <string name="action_show_more">Show more</string>
+    <string name="files_to_delete">To delete</string>
+
+    <!-- This phone screen. %1$s: bytes received, %2$s: bytes sent -->
+    <string name="this_phone_traffic">Received %1$s · sent %2$s since start</string>
+    <!-- %1$s: how long Syncthing runs, %2$s: its version, such as v2.1.7 -->
+    <string name="this_phone_uptime">Running for %1$s · Syncthing %2$s</string>
+    <string name="this_phone_listening">Listening for connections</string>
+    <string name="this_phone_no_listeners">No listen addresses</string>
+    <string name="this_phone_no_listeners_hint">Other devices can only connect through relays or to you</string>
+    <string name="this_phone_discovery">Discovery</string>
+    <string name="this_phone_discovery_off">Off</string>
+    <string name="this_phone_discovery_off_hint">Other devices find this phone only through the addresses they have for it</string>
+    <!-- A listener or discovery method without errors -->
+    <string name="this_phone_working">Working</string>
+
+    <!-- Usage reporting question: upstream Syncthing\'s wording; use upstream\'s translation where it has one -->
+    <string name="usage_title">Allow anonymous usage reporting?</string>
+    <string name="usage_text">The encrypted usage report is sent daily. It is used to track common platforms, folder sizes, and app versions. If the reported data set is changed you will be prompted with this dialog again.</string>
+    <!-- %1$s: the link to the statistics website -->
+    <string name="usage_stats">The aggregated statistics are publicly available at %1$s. You can change your decision at any time in Settings.</string>
+    <string name="usage_preview">Preview usage report</string>
+    <string name="usage_preview_failed">Could not load the report.</string>
+    <string name="usage_report">Usage report</string>
+    <string name="action_yes">Yes</string>
+    <string name="action_no">No</string>
+
+    <!-- About screen -->
+    <string name="about_version">Version</string>
+    <string name="about_licence">Licence</string>
+    <string name="about_source">Source code</string>
+    <string name="about_docs">Documentation</string>
+    <string name="about_other">Other</string>
+    <string name="about_licences">Open-source licences</string>
+    <string name="about_licences_hint">Libraries used by the app</string>
+    <string name="about_full_text">Full text</string>
+    <!-- Library names: keep the names, translate only the words between them -->
+    <string name="lib_androidx">AndroidX and Jetpack Compose</string>
+    <string name="lib_zxing">ZXing and ZXing Android Embedded</string>
+    <string name="lib_syncthing">Syncthing and the Go libraries it uses</string>
+    <string name="lib_syncthing_licence">MPL-2.0, with MIT, BSD and Apache-2.0 parts</string>
 </resources>

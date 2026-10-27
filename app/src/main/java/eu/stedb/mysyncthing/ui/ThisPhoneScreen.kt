@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -26,36 +28,36 @@ import eu.stedb.mysyncthing.core.SyncthingCore
 @Composable
 fun ThisPhoneScreen(s: Snapshot, vm: MainViewModel, onBack: () -> Unit) {
     val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
-    AppScreen(title = s.myName.ifEmpty { "This phone" }, onBack = onBack) { padding ->
+    AppScreen(title = s.myName.ifEmpty { stringResource(R.string.this_phone) }, onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             ListCard {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text("This device · ID ${shortId(s.myId)}", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.devices_this_device_id, shortId(s.myId)), style = MaterialTheme.typography.titleMedium)
                     val l = live
                     if (l == null) {
-                        Text("Loading", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         val muted = MaterialTheme.colorScheme.onSurfaceVariant
                         l.total?.let { Text(speedText(it), style = MaterialTheme.typography.bodyMedium, color = muted) }
                         Text(
-                            "Received ${bytes(l.connections.total.inBytesTotal)} · sent ${bytes(l.connections.total.outBytesTotal)} since start",
+                            stringResource(R.string.this_phone_traffic, bytes(l.connections.total.inBytesTotal), bytes(l.connections.total.outBytesTotal)),
                             style = MaterialTheme.typography.bodySmall, color = muted,
                         )
                         Text(
-                            "Running for ${duration(l.status.uptime)} · Syncthing ${SyncthingCore.version}",
+                            stringResource(R.string.this_phone_uptime, duration(l.status.uptime), SyncthingCore.version),
                             style = MaterialTheme.typography.bodySmall, color = muted,
                         )
                     }
                 }
             }
             live?.let { l ->
-                SettingsGroup("Listening for connections") {
-                    if (l.listeners.isEmpty()) SettingRow("No listen addresses", "Other devices can only connect through relays or to you")
+                SettingsGroup(stringResource(R.string.this_phone_listening)) {
+                    if (l.listeners.isEmpty()) SettingRow(stringResource(R.string.this_phone_no_listeners), stringResource(R.string.this_phone_no_listeners_hint))
                     l.listeners.toSortedMap().forEach { (address, st) -> ServiceRow(address, st) }
                 }
-                SettingsGroup("Discovery") {
-                    if (!l.status.discoveryEnabled) SettingRow("Off", "Other devices find this phone only through the addresses they have for it")
-                    l.discovery.toSortedMap().forEach { (method, st) -> ServiceRow(method, st, unusedHere(st)) }
+                SettingsGroup(stringResource(R.string.this_phone_discovery)) {
+                    if (!l.status.discoveryEnabled) SettingRow(stringResource(R.string.this_phone_discovery_off), stringResource(R.string.this_phone_discovery_off_hint))
+                    l.discovery.toSortedMap().forEach { (method, st) -> ServiceRow(method, st, unusedHere(st)?.asString()) }
                 }
             }
         }
@@ -70,5 +72,5 @@ private fun ServiceRow(name: String, st: ServiceStatus, unused: String? = null) 
         unused != null -> Icons.Default.RemoveCircleOutline to AppColors.neutral
         else -> SyncState.Problem.look().let { it.icon to it.color }
     }
-    SettingRow(name, unused ?: st.error ?: "Working", trailing = { Icon(icon, null, Modifier.size(20.dp), tint = tint) })
+    SettingRow(name, unused ?: st.error ?: stringResource(R.string.this_phone_working), trailing = { Icon(icon, null, Modifier.size(20.dp), tint = tint) })
 }

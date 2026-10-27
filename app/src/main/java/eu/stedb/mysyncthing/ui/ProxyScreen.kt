@@ -1,5 +1,10 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.joined
+import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -65,74 +70,73 @@ private fun ProxyForm(initial: ProxySettings, running: Boolean, save: suspend (P
     val passwordError = proxyCredentialError(password)
 
     AppScreen(
-        title = "Proxy",
+        title = stringResource(R.string.proxy),
         onBack = back,
         actions = {
             TextButton(enabled = result != null && !saving, onClick = {
                 saving = true
                 scope.launch { if (save(result!!)) onBack() else saving = false }
-            }) { Text("Save") }
+            }) { Text(stringResource(R.string.action_save)) }
         },
     ) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
-            SettingsGroup("Connect through") {
+            SettingsGroup(stringResource(R.string.proxy_connect_through)) {
                 ChoiceList(
-                    listOf(ProxyType.None to "No proxy", ProxyType.Socks5 to "SOCKS5 proxy", ProxyType.Http to "HTTP proxy"),
+                    listOf(ProxyType.None to text(R.string.proxy_none), ProxyType.Socks5 to text(R.string.proxy_socks5), ProxyType.Http to text(R.string.proxy_http)),
                     type, Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    describe = { if (it == ProxyType.Http) "Uses CONNECT, as for HTTPS" else null },
+                    describe = { if (it == ProxyType.Http) text(R.string.proxy_http_hint) else null },
                 ) { type = it }
             }
             Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
                 OutlinedButton(shape = ButtonShape, onClick = {
                     val t = ProxySettings.TOR
                     type = t.type; host = t.host; port = t.port.toString(); user = ""; password = ""; only = t.only
-                }) { Text("Use Tor (Orbot)") }
+                }) { Text(stringResource(R.string.proxy_use_tor)) }
             }
             if (type != ProxyType.None) {
-                SettingsGroup("Proxy") {
+                SettingsGroup(stringResource(R.string.proxy)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedTextField(
-                            host, { host = it }, label = { Text("Host") }, singleLine = true, isError = hostError != null,
-                            supportingText = { Text(hostError ?: "IP address or name, for example 127.0.0.1") },
+                            host, { host = it }, label = { Text(stringResource(R.string.proxy_host)) }, singleLine = true, isError = hostError != null,
+                            supportingText = { Text(hostError?.asString() ?: stringResource(R.string.proxy_host_hint)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
-                            port, { port = it }, label = { Text("Port") }, singleLine = true, isError = portError != null,
-                            supportingText = portError?.let { { Text(it) } },
+                            port, { port = it }, label = { Text(stringResource(R.string.proxy_port)) }, singleLine = true, isError = portError != null,
+                            supportingText = portError?.let { { Text(it.asString()) } },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
-                            user, { user = it }, label = { Text("User name (optional)") }, singleLine = true, isError = userError != null,
-                            supportingText = userError?.let { { Text(it) } },
+                            user, { user = it }, label = { Text(stringResource(R.string.proxy_user)) }, singleLine = true, isError = userError != null,
+                            supportingText = userError?.let { { Text(it.asString()) } },
                             keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                             modifier = Modifier.fillMaxWidth(),
                         )
                         OutlinedTextField(
-                            password, { password = it }, label = { Text("Password (optional)") }, singleLine = true,
+                            password, { password = it }, label = { Text(stringResource(R.string.password_optional)) }, singleLine = true,
                             isError = passwordError != null,
-                            supportingText = (passwordError ?: httpPasswordNote(type, password))?.let { { Text(it) } },
+                            supportingText = (passwordError ?: httpPasswordNote(type, password))?.let { { Text(it.asString()) } },
                             visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                             trailingIcon = {
                                 IconButton(onClick = { show = !show }) {
-                                    Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, if (show) "Hide password" else "Show password")
+                                    Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, stringResource(if (show) R.string.password_hide else R.string.password_show))
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                     SwitchRow(
-                        "Only through the proxy",
-                        "If the proxy can't be reached, Syncthing waits instead of connecting directly. " +
-                            "QUIC and router port opening are off, as they would go around the proxy.",
+                        stringResource(R.string.proxy_only),
+                        stringResource(R.string.proxy_only_hint),
                         only, onChange = { only = it },
                     )
                 }
             }
             Text(
-                proxyNote(type, running),
+                proxyNote(type, running).asString(),
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 32.dp, vertical = 16.dp),
             )
@@ -147,21 +151,21 @@ fun proxyForm(type: ProxyType, host: String, port: String, user: String, passwor
     return p.takeIf { proxyPortError(port) == null && proxyError(type.scheme, p.host, p.port, user, password) == null }
 }
 
-private fun httpPasswordNote(type: ProxyType, password: String): String? =
-    "An HTTP proxy gets the user name and password unencrypted".takeIf { type == ProxyType.Http && password.isNotEmpty() }
+private fun httpPasswordNote(type: ProxyType, password: String): UiText? =
+    text(R.string.proxy_http_password_note).takeIf { type == ProxyType.Http && password.isNotEmpty() }
 
-private fun proxyNote(type: ProxyType, running: Boolean): String = listOfNotNull(
-    "Devices on the local network are reached directly, without the proxy.".takeIf { type != ProxyType.None },
-    "For Tor, Orbot or another Tor app must run on this phone.".takeIf { type == ProxyType.Socks5 },
-    "Saving restarts Syncthing.".takeIf { running },
-).joinToString(" ")
+private fun proxyNote(type: ProxyType, running: Boolean): UiText = listOfNotNull(
+    text(R.string.proxy_note_lan).takeIf { type != ProxyType.None },
+    text(R.string.proxy_note_tor).takeIf { type == ProxyType.Socks5 },
+    text(R.string.proxy_note_restart).takeIf { running },
+).joined(" ")
 
 /** The Settings row's summary of a proxy. */
-fun proxyText(p: ProxySettings): String = when (p.type) {
-    ProxyType.None -> "None: direct connections"
+fun proxyText(p: ProxySettings): UiText = when (p.type) {
+    ProxyType.None -> text(R.string.proxy_summary_none)
     else -> {
         val name = if (p.type == ProxyType.Socks5) "SOCKS5" else "HTTP"
         val host = if (':' in p.host) "[${p.host}]" else p.host
-        "$name $host:${p.port}" + if (p.only) ", nothing else" else ", direct if it fails"
+        text(if (p.only) R.string.proxy_summary_only else R.string.proxy_summary_fallback, "$name $host:${p.port}")
     }
 }

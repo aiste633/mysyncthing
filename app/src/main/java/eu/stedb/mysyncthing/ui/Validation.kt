@@ -1,12 +1,17 @@
 package eu.stedb.mysyncthing.ui
 
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.text
+
 // Form checks: each says why a value can't be saved, or returns null when it
 // can. Where the core has a rule for a value, the check follows it (Syncthing
 // v2.1.7, file named per check), so the app neither sends what the core
 // refuses nor what it takes and then fails on. docs/input-validation.md lists
 // every field with its check.
 
-fun requiredError(s: String): String? = if (s.isBlank()) "Required" else null
+fun requiredError(s: String): UiText? = if (s.isBlank()) text(R.string.error_required) else null
 
 /**
  * Digits other than 0-9, as keyboards for some languages type them (٣, ۳, ३).
@@ -15,17 +20,17 @@ fun requiredError(s: String): String? = if (s.isBlank()) "Required" else null
  */
 private fun otherDigits(s: String): Boolean = s.any { it.isDigit() && it !in '0'..'9' }
 
-private const val USE_ASCII_DIGITS = "Use the digits 0-9"
+private val USE_ASCII_DIGITS = text(R.string.error_ascii_digits)
 
 /** A whole number in 0-9 digits, without sign or separators; null when it isn't one or doesn't fit an Int. */
 fun wholeNumber(s: String): Int? = s.trim().takeIf { WHOLE.matches(it) }?.toIntOrNull()
 
 private val WHOLE = Regex("[0-9]+")
 
-fun wholeNumberError(s: String, min: Int = 0): String? = when {
+fun wholeNumberError(s: String, min: Int = 0): UiText? = when {
     otherDigits(s) -> USE_ASCII_DIGITS
     (wholeNumber(s) ?: Int.MIN_VALUE) >= min -> null
-    else -> "A whole number, $min or more"
+    else -> text(R.string.error_whole_number, min)
 }
 
 /** A plain decimal in 0-9 digits, with either separator; null when it isn't one. No signs, exponents, NaN or Infinity. */
@@ -38,14 +43,14 @@ private val DECIMAL = Regex("[0-9]+([.,][0-9]*)?|[.,][0-9]+")
 const val MAX_LIMIT_BYTES = 2e12
 
 /** An amount in [unit]; [emptyOk] when empty means none, as for speed limits. */
-fun amountError(s: String, unit: String, emptyOk: Boolean = false): String? {
+fun amountError(s: String, unit: String, emptyOk: Boolean = false): UiText? {
     if (emptyOk && s.isBlank()) return null
     if (otherDigits(s)) return USE_ASCII_DIGITS
-    val v = decimal(s) ?: return if (s.trim().startsWith("-")) "0 or more" else "Enter a number"
+    val v = decimal(s) ?: return text(if (s.trim().startsWith("-")) R.string.error_not_negative else R.string.error_number)
     return when {
-        unit == "%" && v > 100 -> "Up to ${withUnit(100, "%")}"
-        unit == "kB/s" && v * 1e3 > MAX_LIMIT_BYTES -> "Up to ${withUnit(number(MAX_LIMIT_BYTES / 1e3), "kB/s")}"
-        unit == "MB/s" && v * 1e6 > MAX_LIMIT_BYTES -> "Up to ${withUnit(number(MAX_LIMIT_BYTES / 1e6), "MB/s")}"
+        unit == "%" && v > 100 -> text(R.string.error_up_to, withUnit(100, "%"))
+        unit == "kB/s" && v * 1e3 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(number(MAX_LIMIT_BYTES / 1e3), "kB/s"))
+        unit == "MB/s" && v * 1e6 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(number(MAX_LIMIT_BYTES / 1e6), "MB/s"))
         else -> null
     }
 }
@@ -55,16 +60,16 @@ fun amountError(s: String, unit: String, emptyOk: Boolean = false): String? {
  * the app's own files (which hold this device's key). Not the same as, inside
  * or around another folder, which would sync the same files twice.
  */
-fun folderPathError(path: String, others: Collection<String> = emptyList()): String? {
+fun folderPathError(path: String, others: Collection<String> = emptyList()): UiText? {
     val p = folderPath(path)
     val inside = { a: String, b: String -> a == b || a.startsWith("$b/") }
     return when {
-        p.isEmpty() -> "Required"
-        !p.startsWith("/") -> "A full path, starting with /"
-        p.any { it.isISOControl() } -> "No line breaks or control characters"
-        p.split('/').drop(1).any { it.isEmpty() || it == "." || it == ".." } -> "No empty, . or .. parts"
-        !inside(p, "/storage") || p == "/storage" || p == "/storage/emulated" -> "In the phone's storage or on an SD card (/storage/…)"
-        others.map(::folderPath).any { inside(p, it) || inside(it, p) } -> "Another folder is already here, or inside it"
+        p.isEmpty() -> text(R.string.error_required)
+        !p.startsWith("/") -> text(R.string.error_path_absolute)
+        p.any { it.isISOControl() } -> text(R.string.error_control_characters)
+        p.split('/').drop(1).any { it.isEmpty() || it == "." || it == ".." } -> text(R.string.error_path_parts)
+        !inside(p, "/storage") || p == "/storage" || p == "/storage/emulated" -> text(R.string.error_path_storage)
+        others.map(::folderPath).any { inside(p, it) || inside(it, p) } -> text(R.string.error_path_overlap)
         else -> null
     }
 }
@@ -81,14 +86,14 @@ fun folderPath(path: String): String {
  * Folder IDs: any text upstream, but the REST API names a folder by its ID in
  * the URL, which can't carry "/", "." or ".." (TestFolderIDsInRESTPaths).
  */
-fun folderIdError(id: String, existing: Collection<String>): String? {
+fun folderIdError(id: String, existing: Collection<String>): UiText? {
     val t = id.trim()
     return when {
-        t.isEmpty() -> "Required"
-        '/' in t -> "No /"
-        t == "." || t == ".." -> "Not . or .."
-        t.any { it.isISOControl() } -> "No control characters"
-        t in existing -> "Another folder already has this ID"
+        t.isEmpty() -> text(R.string.error_required)
+        '/' in t -> text(R.string.error_id_slash)
+        t == "." || t == ".." -> text(R.string.error_id_dots)
+        t.any { it.isISOControl() } -> text(R.string.error_id_control)
+        t in existing -> text(R.string.error_id_taken)
         else -> null
     }
 }
@@ -158,10 +163,10 @@ private fun idCharacters(s: String): String =
     s.trim().trim('=').uppercase().replace('0', 'O').replace('1', 'I').replace('8', 'B').replace("-", "").replace(" ", "")
 
 /** Why [s] is not a device ID, or null when it is one. */
-fun deviceIdError(s: String): String? = when {
+fun deviceIdError(s: String): UiText? = when {
     deviceId(s) != null -> null
-    idCharacters(s).length != 56 -> "A device ID has 56 characters"
-    else -> "Not a device ID. Check every character against the other device."
+    idCharacters(s).length != 56 -> text(R.string.error_device_id_length)
+    else -> text(R.string.error_device_id)
 }
 
 /** lib/protocol/luhn.go: not the textbook Luhn mod N, but what every Syncthing ID uses. */
@@ -327,18 +332,18 @@ private fun isHostName(s: String): Boolean {
     }
 }
 
-fun proxyHostError(host: String): String? = when {
-    host.isEmpty() -> "Required"
-    host.startsWith("[") -> "Without brackets, for example ::1"
+fun proxyHostError(host: String): UiText? = when {
+    host.isEmpty() -> text(R.string.error_required)
+    host.startsWith("[") -> text(R.string.error_host_brackets)
     isIPv4(host) || isIPv6(host) || isHostName(host) -> null
-    else -> "An IP address or a host name"
+    else -> text(R.string.error_host)
 }
 
-fun proxyPortError(s: String): String? = when {
+fun proxyPortError(s: String): UiText? = when {
     otherDigits(s) -> USE_ASCII_DIGITS
-    s.isBlank() -> "Required"
+    s.isBlank() -> text(R.string.error_required)
     (wholeNumber(s) ?: 0) in 1..65535 -> null
-    else -> "A port from 1 to 65535"
+    else -> text(R.string.error_port)
 }
 
 /** UTF-16 that Go receives unchanged: a lone surrogate would arrive as U+FFFD. */
@@ -354,34 +359,34 @@ private fun String.validUnicode(): Boolean = indices.all { i ->
 private fun String.utf8Size(): Int = toByteArray(Charsets.UTF_8).size
 
 /** User name or password for the proxy; SOCKS5 (RFC 1929) carries at most 255 bytes each. */
-fun proxyCredentialError(s: String): String? = when {
-    !s.validUnicode() || s.any { it.isISOControl() } -> "No line breaks or control characters"
-    s.utf8Size() > 255 -> "Too long: at most 255 bytes"
+fun proxyCredentialError(s: String): UiText? = when {
+    !s.validUnicode() || s.any { it.isISOControl() } -> text(R.string.error_control_characters)
+    s.utf8Size() > 255 -> text(R.string.error_too_long_255)
     else -> null
 }
 
-fun proxyUserError(user: String, password: String): String? =
-    proxyCredentialError(user) ?: if (user.isEmpty() && password.isNotEmpty()) "Needed with a password" else null
+fun proxyUserError(user: String, password: String): UiText? =
+    proxyCredentialError(user) ?: if (user.isEmpty() && password.isNotEmpty()) text(R.string.error_user_needed) else null
 
 /** All proxy fields as the bridge gets them; null when it takes them. [scheme] "" is no proxy. */
-fun proxyError(scheme: String, host: String, port: Int, user: String, password: String): String? = when (scheme) {
+fun proxyError(scheme: String, host: String, port: Int, user: String, password: String): UiText? = when (scheme) {
     "" -> null
     "socks5", "http" -> proxyHostError(host)
-        ?: (if (port in 1..65535) null else "A port from 1 to 65535")
+        ?: (if (port in 1..65535) null else text(R.string.error_port))
         ?: proxyUserError(user, password) ?: proxyCredentialError(password)
-    else -> "Unknown proxy type"
+    else -> text(R.string.error_proxy_type)
 }
 
 /** The shortest export password: WinZip AES stretches it with only 1000 PBKDF2 rounds. */
 const val MIN_EXPORT_PASSWORD = 12
 
 /** Why [password] can't protect an export (go/bridge ExportPasswordError); empty means none. Used as typed. */
-fun exportPasswordError(password: String): String? = when {
+fun exportPasswordError(password: String): UiText? = when {
     password.isEmpty() -> null
-    !password.validUnicode() || password.any { it.isISOControl() } -> "No line breaks or control characters"
-    password.codePointCount(0, password.length) < MIN_EXPORT_PASSWORD -> "At least $MIN_EXPORT_PASSWORD characters"
-    password.utf8Size() > 1024 -> "Too long"
+    !password.validUnicode() || password.any { it.isISOControl() } -> text(R.string.error_control_characters)
+    password.codePointCount(0, password.length) < MIN_EXPORT_PASSWORD -> plural(R.plurals.error_password_short, MIN_EXPORT_PASSWORD)
+    password.utf8Size() > 1024 -> text(R.string.error_too_long)
     else -> null
 }
 
-fun exportRepeatError(password: String, repeat: String): String? = if (password == repeat) null else "Not the same password"
+fun exportRepeatError(password: String, repeat: String): UiText? = if (password == repeat) null else text(R.string.error_password_repeat)

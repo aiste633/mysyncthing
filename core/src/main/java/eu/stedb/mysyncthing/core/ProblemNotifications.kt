@@ -41,8 +41,8 @@ object ProblemNotifications {
 
     fun createChannel(context: Context) {
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Problems", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Errors that stop Syncthing from syncing"
+            NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_problems), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = context.getString(R.string.channel_problems_description)
             }
         )
     }
@@ -57,7 +57,7 @@ object ProblemNotifications {
         val fresh = errors.any { it !in alerted }
         alerted = errors.toSet()
         val latest = errors.last()
-        val title = if (errors.size == 1) "Syncthing has a problem" else "Syncthing has ${errors.size} problems"
+        val title = context.resources.getQuantityString(R.plurals.problems_title, errors.size, errors.size)
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val open = PendingIntent.getActivity(context, NOTIFICATION_ID, launch, PendingIntent.FLAG_IMMUTABLE)
@@ -70,7 +70,7 @@ object ProblemNotifications {
             .setContentText(latest.text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(errors.reversed().take(5).joinToString("\n") { it.text }))
             .setContentIntent(open)
-            .addAction(0, "Clear", clear)
+            .addAction(0, context.getString(R.string.action_clear), clear)
             .setOnlyAlertOnce(!fresh)
             .setCategory(NotificationCompat.CATEGORY_ERROR)
             // Messages can name paths and addresses, so they stay off the lock screen.
@@ -98,12 +98,12 @@ object ProblemNotifications {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         val open = PendingIntent.getActivity(context, NO_ACCESS_ID, launch, PendingIntent.FLAG_IMMUTABLE)
-        val text = "MySyncthing has no access to your files. Allow All files access to sync again."
+        val text = context.getString(R.string.problem_no_file_access)
         nm.notify(
             NO_ACCESS_ID,
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.widget_ic_problem)
-                .setContentTitle("Syncing stopped")
+                .setContentTitle(context.getString(R.string.problem_no_file_access_title))
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setContentIntent(open)
@@ -133,12 +133,13 @@ object ProblemNotifications {
         val open = PendingIntent.getActivity(
             context, p.id.hashCode(), launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val title = "${p.name} stopped syncing"
+        val title = context.getString(R.string.problem_folder_stopped, p.name)
+        val error = problemText(p.error).resolve(context)
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.widget_ic_problem)
             .setContentTitle(title)
-            .setContentText(problemText(p.error))
-            .setStyle(NotificationCompat.BigTextStyle().bigText(problemText(p.error)))
+            .setContentText(error)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(error))
             .setContentIntent(open)
             .setOnlyAlertOnce(true) // a changed message on a shown one updates silently
             .setCategory(NotificationCompat.CATEGORY_ERROR)
@@ -147,7 +148,7 @@ object ProblemNotifications {
             .setPublicVersion(
                 NotificationCompat.Builder(context, CHANNEL_ID)
                     .setSmallIcon(R.drawable.widget_ic_problem)
-                    .setContentTitle("A folder stopped syncing")
+                    .setContentTitle(context.getString(R.string.problem_folder_stopped_public))
                     .build()
             )
             .build()

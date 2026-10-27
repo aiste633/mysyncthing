@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -32,37 +34,37 @@ fun IgnoredScreen(vm: MainViewModel, onBack: () -> Unit) {
         Unit
     }
 
-    AppScreen(title = "Ignored requests", onBack = onBack) { padding ->
+    AppScreen(title = stringResource(R.string.settings_ignored), onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             val d = data
             val folders = d?.devices.orEmpty().flatMap { dev -> dev.ignoredFolders.map { dev to it } }
             if (d != null && d.remoteIgnoredDevices.isEmpty() && folders.isEmpty()) {
-                Note("Nothing ignored. When you tap Ignore on a request, it is listed here.")
+                Note(stringResource(R.string.ignored_none))
             }
             if (d != null && d.remoteIgnoredDevices.isNotEmpty()) {
-                SettingsGroup("Devices") {
+                SettingsGroup(stringResource(R.string.tab_devices)) {
                     d.remoteIgnoredDevices.forEach { o ->
                         SettingRow(
                             o.name.ifEmpty { shortId(o.deviceID) },
-                            listOfNotNull("ID ${shortId(o.deviceID)}", whenText(o.time)?.let { "ignored $it" }).joinToString(" · "),
-                            trailing = { TextButton(onClick = { unignore(o.deviceID, null) }) { Text("Unignore") } },
+                            listOfNotNull(stringResource(R.string.ignored_id, shortId(o.deviceID)), whenText(o.time)?.let { stringResource(R.string.ignored_when, it.asString()) }).joinToString(" · "),
+                            trailing = { TextButton(onClick = { unignore(o.deviceID, null) }) { Text(stringResource(R.string.action_unignore)) } },
                         )
                     }
                 }
             }
             if (folders.isNotEmpty()) {
-                SettingsGroup("Folders") {
+                SettingsGroup(stringResource(R.string.tab_folders)) {
                     folders.forEach { (dev, o) ->
                         SettingRow(
-                            "\"${o.label.ifEmpty { o.id }}\" from ${dev.name.ifEmpty { shortId(dev.deviceID) }}",
-                            whenText(o.time)?.let { "Ignored $it" },
-                            trailing = { TextButton(onClick = { unignore(dev.deviceID, o.id) }) { Text("Unignore") } },
+                            stringResource(R.string.ignored_folder, o.label.ifEmpty { o.id }, dev.name.ifEmpty { shortId(dev.deviceID) }),
+                            whenText(o.time)?.let { stringResource(R.string.ignored_when_start, it.asString()) },
+                            trailing = { TextButton(onClick = { unignore(dev.deviceID, o.id) }) { Text(stringResource(R.string.action_unignore)) } },
                         )
                     }
                 }
             }
             if (d != null && (d.remoteIgnoredDevices.isNotEmpty() || folders.isNotEmpty())) {
-                Note("The request comes back the next time that device connects.")
+                Note(stringResource(R.string.ignored_comes_back))
             }
         }
     }

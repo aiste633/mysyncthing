@@ -15,23 +15,23 @@ class EncryptionTest {
 
     @Test
     fun aShareStaysEncryptedAfterTheDeviceIsTrustedAgain() {
-        assertEquals("Encrypted · password set", encryptionText(trusted, encrypted))
+        assertEquals("Encrypted · password set", encryptionText(trusted, encrypted).en())
         assertTrue(sharesEncrypted(trusted, encrypted))
     }
 
     @Test
     fun plainSharesWithTrustedDevicesSayNothing() {
-        assertEquals(null, encryptionText(trusted, plain))
-        assertEquals(null, encryptionText(trusted, null))
+        assertEquals(null, encryptionText(trusted, plain).en())
+        assertEquals(null, encryptionText(trusted, null).en())
         assertFalse(sharesEncrypted(trusted, plain))
         assertFalse(sharesEncrypted(trusted, null))
     }
 
     @Test
     fun untrustedDevicesAlwaysAskForAPassword() {
-        assertEquals("Untrusted: needs a password to share", encryptionText(untrusted, null))
-        assertEquals("No password: Syncthing stops sharing it", encryptionText(untrusted, plain))
-        assertEquals("Encrypted · password set", encryptionText(untrusted, encrypted))
+        assertEquals("Untrusted: needs a password to share", encryptionText(untrusted, null).en())
+        assertEquals("No password: Syncthing stops sharing it", encryptionText(untrusted, plain).en())
+        assertEquals("Encrypted · password set", encryptionText(untrusted, encrypted).en())
         assertTrue(sharesEncrypted(untrusted, null))
     }
 }

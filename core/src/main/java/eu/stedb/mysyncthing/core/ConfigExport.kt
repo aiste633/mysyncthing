@@ -35,7 +35,7 @@ object ConfigExport {
     internal fun settingsJson(c: RunConditions, p: ProxySettings): String = json.encodeToString(OwnSettings(conditions = c, proxy = p))
 
     /** Writes the export to [uri] (from the system's save dialog). Returns null on success, else what went wrong. */
-    suspend fun export(context: Context, uri: Uri, password: String): String? = withContext(Dispatchers.IO) {
+    suspend fun export(context: Context, uri: Uri, password: String): UiText? = withContext(Dispatchers.IO) {
         val settings = Settings(context)
         val home = File(context.filesDir, "syncthing")
         // Locked: an import replacing the setup meanwhile would mix its files with the old settings.
@@ -43,12 +43,12 @@ object ConfigExport {
             try {
                 val js = settingsJson(settings.runConditions.first(), settings.proxy.first())
                 // "wt": a provider that keeps the old bytes on "w" would leave a longer file's tail.
-                (context.contentResolver.openFileDescriptor(uri, "wt") ?: error("Cannot write the file")).use { fd ->
+                (context.contentResolver.openFileDescriptor(uri, "wt") ?: throw UiTextException(text(R.string.export_cannot_write))).use { fd ->
                     Stbridge.exportBackup(fd.fd.toLong(), home.absolutePath, password, js)
                 }
                 null
             } catch (e: Exception) {
-                sentence(e.message ?: e.toString())
+                e.sentenceText()
             }
         }
     }

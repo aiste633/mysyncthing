@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -32,6 +34,9 @@ import kotlinx.coroutines.launch
 
 private const val STATS = "https://data.syncthing.net/"
 
+/** Where the link goes in usage_stats; a character no translation holds. */
+private const val LINK_MARK = "\uE000"
+
 /** Upstream's consent state: whether to ask now, and whether reporting is on. */
 data class UsageConsent(val needsPrompt: Boolean, val enabled: Boolean)
 
@@ -45,6 +50,7 @@ data class UsageConsent(val needsPrompt: Boolean, val enabled: Boolean)
 fun UsageReportingPrompt(core: CoreState, vm: MainViewModel) {
     var show by remember { mutableStateOf(false) }
     var preview by remember { mutableStateOf<String?>(null) }
+    val failed = stringResource(R.string.usage_preview_failed)
     val scope = rememberCoroutineScope()
     LaunchedEffect(core is CoreState.Running) {
         if (core is CoreState.Running) show = vm.usageConsent()?.needsPrompt == true
@@ -54,34 +60,32 @@ fun UsageReportingPrompt(core: CoreState, vm: MainViewModel) {
         onDismissRequest = {},
         // An answer is required, as in the web GUI; it is asked only once.
         properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        title = { Text("Allow anonymous usage reporting?") },
+        title = { Text(stringResource(R.string.usage_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                Text(
-                    "The encrypted usage report is sent daily. It is used to track common platforms, folder sizes, " +
-                        "and app versions. If the reported data set is changed you will be prompted with this dialog again.",
-                )
+                Text(stringResource(R.string.usage_text))
+                val (before, after) = stringResource(R.string.usage_stats, LINK_MARK).split(LINK_MARK).let { it.first() to it.last() }
                 val link = SpanStyle(color = MaterialTheme.colorScheme.primary, textDecoration = TextDecoration.Underline)
                 Text(
                     buildAnnotatedString {
-                        append("The aggregated statistics are publicly available at ")
+                        append(before)
                         withLink(LinkAnnotation.Url(STATS, TextLinkStyles(link))) { append(STATS) }
-                        append(". You can change your decision at any time in Settings.")
+                        append(after)
                     },
                     modifier = Modifier.padding(top = 8.dp),
                 )
-                TextButton(onClick = { scope.launch { preview = vm.usageReport() ?: "Could not load the report." } }) {
-                    Text("Preview usage report")
+                TextButton(onClick = { scope.launch { preview = vm.usageReport() ?: failed } }) {
+                    Text(stringResource(R.string.usage_preview))
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { vm.answerUsagePrompt(true); show = false }) { Text("Yes") } },
-        dismissButton = { TextButton(onClick = { vm.answerUsagePrompt(false); show = false }) { Text("No") } },
+        confirmButton = { TextButton(onClick = { vm.answerUsagePrompt(true); show = false }) { Text(stringResource(R.string.action_yes)) } },
+        dismissButton = { TextButton(onClick = { vm.answerUsagePrompt(false); show = false }) { Text(stringResource(R.string.action_no)) } },
     )
     preview?.let { report ->
         AlertDialog(
             onDismissRequest = { preview = null },
-            title = { Text("Usage report") },
+            title = { Text(stringResource(R.string.usage_report)) },
             text = {
                 SelectionContainer {
                     Text(
@@ -90,7 +94,7 @@ fun UsageReportingPrompt(core: CoreState, vm: MainViewModel) {
                     )
                 }
             },
-            confirmButton = { TextButton(onClick = { preview = null }) { Text("Close") } },
+            confirmButton = { TextButton(onClick = { preview = null }) { Text(stringResource(R.string.action_close)) } },
         )
     }
 }

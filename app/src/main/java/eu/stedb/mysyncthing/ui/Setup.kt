@@ -1,5 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.R as CoreR
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -128,9 +131,9 @@ fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Bool
             Modifier.fillMaxSize().safeDrawingPadding().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("Set up", style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.headlineMedium)
             Text(
-                "MySyncthing needs one permission to sync. The others make it more reliable.",
+                stringResource(R.string.setup_intro),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Card(colors = AppColors.card(), border = AppColors.cardBorder()) {
@@ -138,11 +141,12 @@ fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Bool
             }
             Card(colors = AppColors.card(), border = AppColors.cardBorder()) {
                 SwitchRow(
-                    "Sync on mobile data", if (mobileData) "On: also uses mobile data, not while roaming" else "Off: only on Wi-Fi or Ethernet. You can change it in Settings.",
+                    stringResource(R.string.setup_mobile_data),
+                    stringResource(if (mobileData) R.string.setup_mobile_data_on else R.string.setup_mobile_data_off),
                     mobileData, Icons.Default.SignalCellularAlt, onMobileData,
                 )
             }
-            Button(onClick = onDone, enabled = state.storage, shape = ButtonShape, modifier = Modifier.fillMaxWidth()) { Text("Done") }
+            Button(onClick = onDone, enabled = state.storage, shape = ButtonShape, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_done)) }
         }
     }
 }
@@ -151,22 +155,21 @@ fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Bool
 @Composable
 fun PermissionRows(state: PermissionState, requestNotifications: () -> Unit, checklist: Boolean = false) {
     PermissionRow(
-        Icons.Default.Folder, "All files access", "Required".takeIf { checklist },
-        "Syncthing reads and writes your folders directly.",
-        state.storage, "Grant", state::requestStorage,
+        Icons.Default.Folder, stringResource(R.string.permission_files), stringResource(R.string.permission_required).takeIf { checklist },
+        stringResource(R.string.permission_files_hint),
+        state.storage, stringResource(R.string.permission_grant), state::requestStorage,
     )
     if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     PermissionRow(
-        Icons.Default.Notifications, "Notifications", "Optional".takeIf { checklist },
-        "Requests from new devices and folders, and problems. While Syncthing runs, Android also requires a small status notification; " +
-            "to hide it, turn off its \u201cSync service\u201d category.",
-        state.notifications, "Allow", requestNotifications,
+        Icons.Default.Notifications, stringResource(R.string.permission_notifications), stringResource(R.string.permission_optional).takeIf { checklist },
+        stringResource(R.string.permission_notifications_hint, stringResource(CoreR.string.channel_service)),
+        state.notifications, stringResource(R.string.permission_allow), requestNotifications,
     )
     if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
     PermissionRow(
-        Icons.Default.BatteryFull, "Run in background", "Recommended".takeIf { checklist },
-        "Keeps syncing with the screen off. Some phones call this \u201cAllow background activity\u201d.",
-        state.batteryExempt, "Allow", state::requestBatteryExemption,
+        Icons.Default.BatteryFull, stringResource(R.string.permission_background), stringResource(R.string.permission_recommended).takeIf { checklist },
+        stringResource(R.string.permission_background_hint),
+        state.batteryExempt, stringResource(R.string.permission_allow), state::requestBatteryExemption,
     )
 }
 
@@ -191,7 +194,7 @@ private fun PermissionRow(
             if (granted) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp), tint = AppColors.ok)
-                    Text("Granted", color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
+                    Text(stringResource(R.string.permission_granted), color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
                 }
             } else {
                 OutlinedButton(onClick = onAction, shape = ButtonShape) { Text(action) }

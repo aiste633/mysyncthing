@@ -97,7 +97,7 @@ class ReplaceSetupTest {
         val phase = AtomicInteger(OLD)
         val events = Collections.synchronizedList(mutableListOf<String>())
         val problem = replaceSetup(lock, Steps(phase, events, failInstall = "not a Syncthing backup: config.xml is missing"))
-        assertEquals("Not a Syncthing backup: config.xml is missing", problem)
+        assertEquals("Not a Syncthing backup: config.xml is missing", problem.en())
         assertEquals(listOf("stop", "start requested"), events.toList())
         withTimeout(1_000) { lock.use { } } // released
     }
@@ -105,13 +105,13 @@ class ReplaceSetupTest {
     @Test
     fun undeletedBackupIsReported() = runBlocking(Dispatchers.Default) {
         val problem = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), Collections.synchronizedList(mutableListOf()), removed = false))
-        assertTrue(problem!!.contains("could not be deleted"))
+        assertTrue(problem.en()!!.contains("could not be deleted"))
     }
 
     @Test
     fun unsavedSettingsAreReportedAndTheCoreStillStarts() = runBlocking(Dispatchers.Default) {
         val events = Collections.synchronizedList(mutableListOf<String>())
-        val problem = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), events, saved = false, removed = false))!!
+        val problem = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), events, saved = false, removed = false)).en()!!
         assertTrue(problem.contains("could not all be saved"))
         assertTrue(problem.contains("could not be deleted"))
         assertEquals(listOf("stop", "install", "settings", "remove", "start requested"), events.toList())

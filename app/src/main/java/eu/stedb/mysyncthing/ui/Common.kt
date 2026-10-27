@@ -2,6 +2,11 @@
 
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.R as CoreR
+import eu.stedb.mysyncthing.core.UiText
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.core.SyncthingCore
 import eu.stedb.mysyncthing.core.problemText
@@ -115,16 +120,17 @@ fun CoreGate(state: CoreState, content: @Composable () -> Unit) {
             val stoppedByUser by SyncthingCore.stoppedByUser.collectAsStateWithLifecycle()
             when (state) {
                 is CoreState.Failed -> Centered {
-                    Text("Syncthing failed", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
-                    Text(problemText(state.message).replaceFirstChar { it.uppercaseChar() }, textAlign = TextAlign.Center)
-                    Button(shape = ButtonShape, onClick = { SyncthingService.start(context) }) { Text("Try again") }
+                    Text(stringResource(R.string.core_failed), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                    val why = if (state.message.isEmpty()) stringResource(R.string.core_stopped_unexpectedly) else problemText(state.message).asString()
+                    Text(why.replaceFirstChar { it.uppercaseChar() }, textAlign = TextAlign.Center)
+                    Button(shape = ButtonShape, onClick = { SyncthingService.start(context) }) { Text(stringResource(R.string.action_try_again)) }
                 }
                 // Otherwise a start is on its way (the app just opened, or an import restarts it).
                 CoreState.Stopped if stoppedByUser -> Centered {
-                    Text("Syncthing is stopped")
-                    Button(shape = ButtonShape, onClick = { SyncthingService.start(context) }) { Text("Start") }
+                    Text(stringResource(R.string.core_stopped))
+                    Button(shape = ButtonShape, onClick = { SyncthingService.start(context) }) { Text(stringResource(R.string.action_start)) }
                 }
-                else -> Centered { BusyIndicator(); Text("Starting Syncthing") }
+                else -> Centered { BusyIndicator(); Text(stringResource(R.string.core_starting)) }
             }
         }
     }
@@ -170,7 +176,7 @@ fun AppScreen(
                     }
                 },
                 navigationIcon = {
-                    if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                    if (onBack != null) IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
                 },
                 actions = { actions() },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.background),
@@ -209,7 +215,7 @@ fun StatusChip(summary: Summary, modifier: Modifier = Modifier) {
             Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
             Spacer(Modifier.width(6.dp))
             Text(
-                summary.text, style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                summary.text.asString(), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -261,7 +267,7 @@ fun ProblemsCard(errors: List<SystemError>, onClear: () -> Unit) {
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    if (errors.size == 1) "1 problem" else "${errors.size} problems",
+                    pluralStringResource(CoreR.plurals.status_problems, errors.size, errors.size),
                     style = MaterialTheme.typography.titleSmall, color = fg,
                 )
                 errors.reversed().forEach { e ->
@@ -273,7 +279,7 @@ fun ProblemsCard(errors: List<SystemError>, onClear: () -> Unit) {
             }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onClear) { Text("Clear", color = fg) }
+            TextButton(onClick = onClear) { Text(stringResource(CoreR.string.action_clear), color = fg) }
         }
     }
 }
@@ -402,9 +408,9 @@ private fun Centered(content: @Composable () -> Unit) {
 @Composable
 fun <T> ChoiceDialog(
     title: String,
-    options: List<Pair<T, String>>,
+    options: List<Pair<T, UiText>>,
     selected: T,
-    describe: (T) -> String? = { null },
+    describe: (T) -> UiText? = { null },
     onDismiss: () -> Unit,
     onPick: (T) -> Unit,
 ) {
@@ -412,17 +418,17 @@ fun <T> ChoiceDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = { ChoiceList(options, selected, Modifier.verticalScroll(rememberScrollState()), describe, onPick) },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
 /** Radio rows with an optional explanation each; in [ChoiceDialog] and inline in forms. */
 @Composable
 fun <T> ChoiceList(
-    options: List<Pair<T, String>>,
+    options: List<Pair<T, UiText>>,
     selected: T,
     modifier: Modifier = Modifier,
-    describe: (T) -> String? = { null },
+    describe: (T) -> UiText? = { null },
     onPick: (T) -> Unit,
 ) {
     Column(modifier) {
@@ -435,8 +441,8 @@ fun <T> ChoiceList(
                 RadioButton(value == selected, onClick = null)
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.padding(vertical = 8.dp)) {
-                    Text(label)
-                    describe(value)?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                    Text(label.asString())
+                    describe(value)?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
             }
         }
@@ -454,12 +460,12 @@ fun TextDialog(
     label: String,
     singleLine: Boolean = true,
     supporting: String? = null,
-    error: (String) -> String? = ::requiredError,
+    error: (String) -> UiText? = ::requiredError,
     onDismiss: () -> Unit,
     onSave: (String) -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
-    val problem = error(text)
+    val problem = error(text)?.asString()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -471,8 +477,8 @@ fun TextDialog(
                 modifier = Modifier.fillMaxWidth(),
             )
         },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = problem == null) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = problem == null) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -485,7 +491,8 @@ fun rememberDiscardGuard(changed: Boolean, onBack: () -> Unit): () -> Unit {
     var asking by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = changed) { asking = true }
     if (asking) {
-        ConfirmDialog("Discard changes?", "What you entered here is lost.", "Discard", onDismiss = { asking = false }) {
+        ConfirmDialog(
+            stringResource(R.string.discard_title), stringResource(R.string.discard_text), stringResource(R.string.action_discard), onDismiss = { asking = false }) {
             asking = false
             onBack()
         }
@@ -502,7 +509,7 @@ fun ConfirmDialog(title: String, text: String, confirm: String, onDismiss: () ->
         confirmButton = {
             TextButton(onClick = onConfirm) { Text(confirm, color = MaterialTheme.colorScheme.error) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -548,14 +555,14 @@ fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (L
     var value by rememberSaveable { mutableStateOf(if (kib > 0) number(v0) else "") }
     var unit by rememberSaveable { mutableStateOf(u0) }
     val units = listOf("kB/s", "MB/s")
-    val error = amountError(value, unit, emptyOk = true)
+    val error = amountError(value, unit, emptyOk = true)?.asString()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value, { value = it }, label = { Text("Limit") }, placeholder = { Text("No limit") },
+                    value, { value = it }, label = { Text(stringResource(R.string.limit_label)) }, placeholder = { Text(stringResource(R.string.limit_none)) },
                     singleLine = true, isError = error != null, supportingText = error?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                 )
@@ -567,11 +574,11 @@ fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (L
                         ) { Text(u) }
                     }
                 }
-                Text("Leave empty or 0 for no limit.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(stringResource(R.string.limit_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(limitKib(decimal(value) ?: 0.0, unit)) }, enabled = error == null) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(limitKib(decimal(value) ?: 0.0, unit)) }, enabled = error == null) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
 
@@ -618,22 +625,22 @@ fun ListEditDialog(
                 own.forEach { a ->
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
                         Text(a, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                        IconButton(onClick = { own = own - a }) { Icon(Icons.Default.Close, "Remove $a") }
+                        IconButton(onClick = { own = own - a }) { Icon(Icons.Default.Close, stringResource(R.string.action_remove_item, a)) }
                     }
                 }
                 OutlinedTextField(
-                    draft, { draft = it }, label = { Text("Add") }, singleLine = true,
+                    draft, { draft = it }, label = { Text(stringResource(R.string.action_add)) }, singleLine = true,
                     isError = (draft.isNotBlank() && !draftValid) || all.isEmpty(),
                     // Save is off with nothing in the list, so say why instead of the format hint.
-                    supportingText = { Text(if (all.isEmpty()) "Add one, or tick \"$tokenTitle\"" else addHint) },
+                    supportingText = { Text(if (all.isEmpty()) stringResource(R.string.list_add_or_tick, tokenTitle) else addHint) },
                     trailingIcon = {
-                        IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, "Add") }
+                        IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

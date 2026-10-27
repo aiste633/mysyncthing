@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.material.icons.filled.CreateNewFolder
 import androidx.compose.material.icons.filled.DevicesOther
@@ -97,7 +101,7 @@ fun SettingsScreen(
         restartNeeded = running && vm.restartRequired()
     }
     // Shows the change at once; on failure rereads what the core has.
-    val change = { new: Options, label: String, fields: JsonObjectBuilder.() -> Unit ->
+    val change = { new: Options, label: Int, fields: JsonObjectBuilder.() -> Unit ->
         opts = new
         scope.launch {
             if (vm.patchOptions(label, fields)) restartNeeded = vm.restartRequired() else opts = vm.options()
@@ -105,139 +109,139 @@ fun SettingsScreen(
         Unit
     }
 
-    AppScreen(title = "Settings", status = summary) { padding ->
+    AppScreen(title = stringResource(R.string.tab_settings), status = summary) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             if (restartNeeded && running) {
                 ListCard {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Restart Syncthing to apply the changed settings.", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.settings_restart_needed), style = MaterialTheme.typography.bodyMedium)
                         FilledTonalButton(shape = ButtonShape, onClick = {
                             vm.restartCore()
                             restartNeeded = false
-                        }) { Text("Restart") }
+                        }) { Text(stringResource(R.string.action_restart)) }
                     }
                 }
             }
-            SettingsGroup("This phone") {
-                SettingRow("Device name", s.myName.ifEmpty { "Not set" }, Icons.Default.Smartphone) { if (running && s.loaded) rename = true }
+            SettingsGroup(stringResource(R.string.this_phone)) {
+                SettingRow(stringResource(R.string.settings_device_name), s.myName.ifEmpty { stringResource(R.string.settings_not_set) }, Icons.Default.Smartphone) { if (running && s.loaded) rename = true }
             }
 
-            SettingsGroup("Syncing") {
-                Toggle("Pause syncing", "Until you resume it here or on the widget", Icons.Default.PauseCircle, rc.pausedByUser) { v ->
+            SettingsGroup(stringResource(R.string.settings_group_syncing)) {
+                Toggle(stringResource(R.string.settings_pause), stringResource(R.string.settings_pause_hint), Icons.Default.PauseCircle, rc.pausedByUser) { v ->
                     vm.setRunConditions { it.copy(pausedByUser = v) }
                 }
                 SettingRow(
-                    "Ignored requests", "Devices and folders you tapped Ignore on, to undo it",
+                    stringResource(R.string.settings_ignored), stringResource(R.string.settings_ignored_hint),
                     Icons.Default.Block, onClick = if (running) onOpenIgnored else null,
                 )
             }
 
-            SettingsGroup("Sync on") {
-                SettingRow("Unmetered Wi-Fi and Ethernet", "Always", Icons.Default.Wifi)
+            SettingsGroup(stringResource(R.string.settings_group_sync_on)) {
+                SettingRow(stringResource(R.string.settings_unmetered), stringResource(R.string.settings_always), Icons.Default.Wifi)
                 Toggle(
-                    "Metered Wi-Fi and hotspots", "Wi-Fi that Android or you marked as metered, another phone's hotspot, tethering",
+                    stringResource(R.string.settings_metered), stringResource(R.string.settings_metered_hint),
                     Icons.Default.NetworkCheck, rc.meteredWifi,
                 ) { v -> vm.setRunConditions { it.copy(meteredWifi = v) } }
-                Toggle("Mobile data", "Can cost money on a limited plan", Icons.Default.SignalCellularAlt, rc.mobileData) { v ->
+                Toggle(stringResource(R.string.settings_mobile_data), stringResource(R.string.settings_mobile_data_hint), Icons.Default.SignalCellularAlt, rc.mobileData) { v ->
                     vm.setRunConditions { it.copy(mobileData = v) }
                 }
                 if (rc.mobileData) {
-                    Toggle("Mobile data while roaming", "Abroad or on another network, where data can cost extra", Icons.Default.TravelExplore, rc.roaming) { v ->
+                    Toggle(stringResource(R.string.settings_roaming), stringResource(R.string.settings_roaming_hint), Icons.Default.TravelExplore, rc.roaming) { v ->
                         vm.setRunConditions { it.copy(roaming = v) }
                     }
                 }
             }
 
-            SettingsGroup("Time") {
-                SettingRow("Sync times", scheduleText(rc), Icons.Default.Schedule, onClick = onOpenSchedule)
+            SettingsGroup(stringResource(R.string.settings_group_time)) {
+                SettingRow(stringResource(R.string.sync_times), scheduleText(rc).asString(), Icons.Default.Schedule, onClick = onOpenSchedule)
             }
 
-            SettingsGroup("Power") {
-                SettingRow("Sync when", powerText(rc.power), Icons.Default.BatteryChargingFull) { powerDialog = true }
-                Toggle("Pause in battery saver", "Syncing waits while battery saver is on", Icons.Default.BatterySaver, rc.respectBatterySaver) { v ->
+            SettingsGroup(stringResource(R.string.settings_group_power)) {
+                SettingRow(stringResource(R.string.settings_power), powerText(rc.power).asString(), Icons.Default.BatteryChargingFull) { powerDialog = true }
+                Toggle(stringResource(R.string.settings_battery_saver), stringResource(R.string.settings_battery_saver_hint), Icons.Default.BatterySaver, rc.respectBatterySaver) { v ->
                     vm.setRunConditions { it.copy(respectBatterySaver = v) }
                 }
             }
 
-            SettingsGroup("New folders and devices") {
+            SettingsGroup(stringResource(R.string.settings_group_defaults)) {
                 SettingRow(
-                    "Default settings for new folders", "Type, versioning, ignore patterns and more",
+                    stringResource(R.string.defaults_folders), stringResource(R.string.defaults_folders_hint),
                     Icons.Default.CreateNewFolder, onClick = if (running) onOpenFolderDefaults else null,
                 )
                 SettingRow(
-                    "Default settings for new devices", "Auto-accept, addresses, limits and more",
+                    stringResource(R.string.defaults_devices), stringResource(R.string.defaults_devices_hint),
                     Icons.Default.DevicesOther, onClick = if (running) onOpenDeviceDefaults else null,
                 )
             }
 
             // The proxy is the app's setting, so it can be changed while the core is stopped or failed.
-            SettingsGroup("Network") {
+            SettingsGroup(stringResource(R.string.settings_group_network)) {
                 opts?.let { o ->
-                    SettingRow("Download limit", limitText(o.maxRecvKbps), Icons.Default.Download) { dialog = NetDialog.Recv }
-                    SettingRow("Upload limit", limitText(o.maxSendKbps), Icons.Default.Upload) { dialog = NetDialog.Send }
+                    SettingRow(stringResource(R.string.download_limit), limitText(o.maxRecvKbps).asString(), Icons.Default.Download) { dialog = NetDialog.Recv }
+                    SettingRow(stringResource(R.string.upload_limit), limitText(o.maxSendKbps).asString(), Icons.Default.Upload) { dialog = NetDialog.Send }
                     Toggle(
-                        "Also limit on local network", if (o.limitBandwidthInLan) "Limits apply everywhere" else "Off: transfers on the local network run at full speed",
+                        stringResource(R.string.settings_limit_lan), if (o.limitBandwidthInLan) stringResource(R.string.settings_limit_lan_on) else stringResource(R.string.settings_limit_lan_off),
                         Icons.Default.Lan, o.limitBandwidthInLan,
-                    ) { v -> change(o.copy(limitBandwidthInLan = v), "Limit") { put("limitBandwidthInLan", v) } }
+                    ) { v -> change(o.copy(limitBandwidthInLan = v), R.string.op_limit) { put("limitBandwidthInLan", v) } }
                 }
-                SettingRow("Proxy", proxy?.let(::proxyText), Icons.Default.VpnLock, onClick = onOpenProxy)
+                SettingRow(stringResource(R.string.proxy), proxy?.let(::proxyText)?.asString(), Icons.Default.VpnLock, onClick = onOpenProxy)
             }
             opts?.let { o ->
-                SettingsGroup("Finding devices") {
-                    Toggle("Local network", "Find devices on the same Wi-Fi", Icons.Default.Router, o.localAnnounceEnabled) { v ->
-                        change(o.copy(localAnnounceEnabled = v), "Local discovery") { put("localAnnounceEnabled", v) }
+                SettingsGroup(stringResource(R.string.settings_group_discovery)) {
+                    Toggle(stringResource(R.string.settings_local_discovery), stringResource(R.string.settings_local_discovery_hint), Icons.Default.Router, o.localAnnounceEnabled) { v ->
+                        change(o.copy(localAnnounceEnabled = v), R.string.op_local_discovery) { put("localAnnounceEnabled", v) }
                     }
                     Toggle(
-                        "Internet discovery", "Look devices up through Syncthing's discovery servers. They learn this phone's IP address.",
+                        stringResource(R.string.settings_global_discovery), stringResource(R.string.settings_global_discovery_hint),
                         Icons.Default.Public, o.globalAnnounceEnabled,
-                    ) { v -> change(o.copy(globalAnnounceEnabled = v), "Internet discovery") { put("globalAnnounceEnabled", v) } }
+                    ) { v -> change(o.copy(globalAnnounceEnabled = v), R.string.op_internet_discovery) { put("globalAnnounceEnabled", v) } }
                     Toggle(
-                        "Relays", "Connect through a relay when a direct connection fails. Still end-to-end encrypted.",
+                        stringResource(R.string.settings_relays), stringResource(R.string.settings_relays_hint),
                         Icons.Default.SyncAlt, o.relaysEnabled,
-                    ) { v -> change(o.copy(relaysEnabled = v), "Relays") { put("relaysEnabled", v) } }
-                    Toggle("Router port opening", "Ask the router to open a port (UPnP, NAT-PMP)", Icons.Default.SettingsEthernet, o.natEnabled) { v ->
-                        change(o.copy(natEnabled = v), "Port opening") { put("natEnabled", v) }
+                    ) { v -> change(o.copy(relaysEnabled = v), R.string.op_relays) { put("relaysEnabled", v) } }
+                    Toggle(stringResource(R.string.settings_nat), stringResource(R.string.settings_nat_hint), Icons.Default.SettingsEthernet, o.natEnabled) { v ->
+                        change(o.copy(natEnabled = v), R.string.op_port_opening) { put("natEnabled", v) }
                     }
                 }
             }
 
-            SettingsGroup("System") {
-                Toggle("Start at boot", "Sync starts when the phone starts", Icons.Default.RestartAlt, rc.startOnBoot) { v ->
+            SettingsGroup(stringResource(R.string.settings_group_system)) {
+                Toggle(stringResource(R.string.settings_boot), stringResource(R.string.settings_boot_hint), Icons.Default.RestartAlt, rc.startOnBoot) { v ->
                     vm.setRunConditions { it.copy(startOnBoot = v) }
                 }
                 when (core) {
                     is CoreState.Stopped, is CoreState.Failed ->
-                        SettingRow("Start Syncthing", null, Icons.Default.PowerSettingsNew) { SyncthingService.start(context) }
-                    else -> SettingRow("Stop Syncthing", "Until you start it again or the phone restarts", Icons.Default.PowerSettingsNew) {
+                        SettingRow(stringResource(R.string.settings_start), null, Icons.Default.PowerSettingsNew) { SyncthingService.start(context) }
+                    else -> SettingRow(stringResource(R.string.settings_stop), stringResource(R.string.settings_stop_hint), Icons.Default.PowerSettingsNew) {
                         SyncthingService.stopByUser(context)
                     }
                 }
                 if (running) {
-                    SettingRow("Restart Syncthing", "Applies settings that need a restart", Icons.Default.Refresh) {
+                    SettingRow(stringResource(R.string.settings_restart), stringResource(R.string.settings_restart_hint), Icons.Default.Refresh) {
                         vm.restartCore()
                         restartNeeded = false
                     }
                 }
                 SettingRow(
-                    "Export a backup", "Folders, devices, this phone's identity and sync settings, as a zip file",
+                    stringResource(R.string.settings_export), stringResource(R.string.settings_export_hint),
                     Icons.Default.SaveAlt, onClick = onOpenExport,
                 )
                 SettingRow(
-                    "Import a backup", "From this app's export or a Syncthing-Fork backup",
+                    stringResource(R.string.settings_import), stringResource(R.string.settings_import_hint),
                     Icons.Default.FileOpen, onClick = onOpenImport,
                 )
             }
 
-            SettingsGroup("Permissions") {
+            SettingsGroup(stringResource(R.string.settings_group_permissions)) {
                 PermissionRows(permissions, requestNotifications)
             }
 
-            SettingsGroup("Advanced") {
+            SettingsGroup(stringResource(R.string.settings_group_advanced)) {
                 var usage by remember { mutableStateOf<UsageConsent?>(null) }
                 LaunchedEffect(running) { usage = vm.usageConsent() }
                 usage?.let { u ->
                     SwitchRow(
-                        "Anonymous usage reporting", "Helps Syncthing's developers; statistics at data.syncthing.net",
+                        stringResource(R.string.settings_usage), stringResource(R.string.settings_usage_hint),
                         u.enabled, Icons.Default.QueryStats,
                     ) { v ->
                         vm.setUsageReporting(v)
@@ -245,18 +249,18 @@ fun SettingsScreen(
                     }
                 }
                 opts?.let { o ->
-                    SettingRow("Listen addresses", listText(o.listenAddresses, "Default, port 22000"), Icons.Default.SettingsInputAntenna) {
+                    SettingRow(stringResource(R.string.listen_addresses), listText(o.listenAddresses, stringResource(R.string.settings_listen_default)), Icons.Default.SettingsInputAntenna) {
                         dialog = NetDialog.Listen
                     }
-                    SettingRow("Discovery servers", listText(o.globalAnnounceServers, "Syncthing's public servers"), Icons.Default.Dns) {
+                    SettingRow(stringResource(R.string.discovery_servers), listText(o.globalAnnounceServers, stringResource(R.string.settings_servers_default)), Icons.Default.Dns) {
                         dialog = NetDialog.Servers
                     }
                 }
                 SettingRow(
-                    "Web GUI", "Syncthing's full settings, for what this app does not show",
+                    stringResource(R.string.settings_web_gui), stringResource(R.string.settings_web_gui_hint),
                     Icons.Default.Language, onClick = if (running) onOpenWebGui else null,
                 )
-                SettingRow("About", "Versions, licences and source code", Icons.Default.Info, onClick = onOpenAbout)
+                SettingRow(stringResource(R.string.about), stringResource(R.string.settings_about_hint), Icons.Default.Info, onClick = onOpenAbout)
             }
         }
     }
@@ -264,36 +268,36 @@ fun SettingsScreen(
     val o = opts
     val close = { dialog = null }
     if (o != null) when (dialog) {
-        NetDialog.Recv -> SpeedLimitDialog("Download limit", o.maxRecvKbps, onDismiss = close) { kib ->
-            close(); change(o.copy(maxRecvKbps = kib), "Download limit") { put("maxRecvKbps", kib) }
+        NetDialog.Recv -> SpeedLimitDialog(stringResource(R.string.download_limit), o.maxRecvKbps, onDismiss = close) { kib ->
+            close(); change(o.copy(maxRecvKbps = kib), R.string.op_download_limit) { put("maxRecvKbps", kib) }
         }
-        NetDialog.Send -> SpeedLimitDialog("Upload limit", o.maxSendKbps, onDismiss = close) { kib ->
-            close(); change(o.copy(maxSendKbps = kib), "Upload limit") { put("maxSendKbps", kib) }
+        NetDialog.Send -> SpeedLimitDialog(stringResource(R.string.upload_limit), o.maxSendKbps, onDismiss = close) { kib ->
+            close(); change(o.copy(maxSendKbps = kib), R.string.op_upload_limit) { put("maxSendKbps", kib) }
         }
         NetDialog.Listen -> ListEditDialog(
-            "Listen addresses", o.listenAddresses, token = "default", tokenTitle = "Default",
-            tokenHint = "TCP and QUIC on port 22000, plus relays",
-            addHint = "For another port, add tcp://0.0.0.0:22001 and quic://0.0.0.0:22001 and untick Default.",
+            stringResource(R.string.listen_addresses), o.listenAddresses, token = "default", tokenTitle = stringResource(R.string.hint_default),
+            tokenHint = stringResource(R.string.listen_default_hint),
+            addHint = stringResource(R.string.listen_add_hint),
             valid = ::isListenAddress, onDismiss = close,
-        ) { list -> close(); change(o.copy(listenAddresses = list), "Listen addresses") { putStrings("listenAddresses", list) } }
+        ) { list -> close(); change(o.copy(listenAddresses = list), R.string.op_listen_addresses) { putStrings("listenAddresses", list) } }
         NetDialog.Servers -> ListEditDialog(
-            "Discovery servers", o.globalAnnounceServers, token = "default", tokenTitle = "Syncthing's public servers",
-            tokenHint = "Used by internet discovery",
-            addHint = "Your own server, for example https://discovery.example.com/ (https only)",
+            stringResource(R.string.discovery_servers), o.globalAnnounceServers, token = "default", tokenTitle = stringResource(R.string.settings_servers_default),
+            tokenHint = stringResource(R.string.servers_default_hint),
+            addHint = stringResource(R.string.servers_add_hint),
             valid = ::isDiscoveryServer, onDismiss = close,
-        ) { list -> close(); change(o.copy(globalAnnounceServers = list), "Discovery servers") { putStrings("globalAnnounceServers", list) } }
+        ) { list -> close(); change(o.copy(globalAnnounceServers = list), R.string.op_discovery_servers) { putStrings("globalAnnounceServers", list) } }
         null -> {}
     }
 
     if (powerDialog) {
         ChoiceDialog(
-            "Sync when", PowerSource.entries.map { it to powerText(it) }, rc.power, describe = ::powerHint,
+            stringResource(R.string.settings_power), PowerSource.entries.map { it to powerText(it) }, rc.power, describe = ::powerHint,
             onDismiss = { powerDialog = false },
         ) { p -> powerDialog = false; vm.setRunConditions { it.copy(power = p) } }
     }
 
     if (rename) {
-        TextDialog("Device name", s.myName, "Name", supporting = "Other devices see this name", onDismiss = { rename = false }) {
+        TextDialog(stringResource(R.string.settings_device_name), s.myName, stringResource(R.string.name), supporting = stringResource(R.string.settings_device_name_hint), onDismiss = { rename = false }) {
             vm.renameDevice(s.myId, it); rename = false
         }
     }
@@ -313,14 +317,14 @@ private fun JsonObjectBuilder.putStrings(key: String, list: List<String>) {
     putJsonArray(key) { list.forEach { add(JsonPrimitive(it)) } }
 }
 
-fun powerText(p: PowerSource): String = when (p) {
-    PowerSource.Any -> "Charging or on battery"
-    PowerSource.ChargingOnly -> "Only while charging"
-    PowerSource.BatteryOnly -> "Only on battery"
+fun powerText(p: PowerSource): UiText = when (p) {
+    PowerSource.Any -> text(R.string.power_any)
+    PowerSource.ChargingOnly -> text(R.string.power_charging)
+    PowerSource.BatteryOnly -> text(R.string.power_battery)
 }
 
-private fun powerHint(p: PowerSource): String? = when (p) {
+private fun powerHint(p: PowerSource): UiText? = when (p) {
     PowerSource.Any -> null
-    PowerSource.ChargingOnly -> "Pauses when unplugged"
-    PowerSource.BatteryOnly -> "Pauses while plugged in"
+    PowerSource.ChargingOnly -> text(R.string.power_charging_hint)
+    PowerSource.BatteryOnly -> text(R.string.power_battery_hint)
 }

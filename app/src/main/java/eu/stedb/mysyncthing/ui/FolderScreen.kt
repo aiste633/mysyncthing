@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -87,36 +91,34 @@ fun FolderScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(look.icon, null, tint = look.color)
                         Spacer(Modifier.width(8.dp))
-                        Text(status.text, style = MaterialTheme.typography.titleMedium, color = look.color)
+                        Text(status.text.asString(), style = MaterialTheme.typography.titleMedium, color = look.color)
                     }
                     if (st != null) {
                         Text(
-                            "${bytes(st.localBytes)} on this phone of ${bytes(st.globalBytes)}",
+                            stringResource(R.string.folder_size, bytes(st.localBytes), bytes(st.globalBytes)),
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     st?.error?.ifEmpty { null }?.let {
-                        Text(problemText(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                        Text(problemText(it).asString(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                     }
                     status.progress?.let { ProgressBar(it, look.color) }
                     if (st != null && f.needsReview(st)) {
                         val local = f.type == "receiveonly"
                         Text(
                             if (local) {
-                                "${count(st.receiveOnlyTotalItems, "item")}, ${bytes(st.receiveOnlyChangedBytes)}, changed on this phone. " +
-                                    "This folder is receive only, so other devices don't get these changes."
+                                pluralStringResource(R.plurals.folder_local_changes, st.receiveOnlyTotalItems, grouped(st.receiveOnlyTotalItems), bytes(st.receiveOnlyChangedBytes))
                             } else {
-                                "${count(st.needTotalItems, "item")} changed on other devices. " +
-                                    "This folder is send only, so those changes aren't applied here."
+                                pluralStringResource(R.plurals.folder_remote_changes, st.needTotalItems, grouped(st.needTotalItems))
                             },
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilledTonalButton(shape = ButtonShape, onClick = if (local) onOpenChanges else onOpenNeed) { Text("Show changes") }
+                            FilledTonalButton(shape = ButtonShape, onClick = if (local) onOpenChanges else onOpenNeed) { Text(stringResource(R.string.folder_show_changes)) }
                             FilledTonalButton(shape = ButtonShape, onClick = { dialog = if (local) FolderDialog.Revert else FolderDialog.Override }) {
                                 Icon(Icons.AutoMirrored.Filled.Undo, null, Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
-                                Text(if (local) "Revert…" else "Override…")
+                                Text(stringResource(if (local) R.string.folder_revert_button else R.string.folder_override_button))
                             }
                         }
                     }
@@ -124,92 +126,95 @@ fun FolderScreen(
                         FilledTonalButton(shape = ButtonShape, onClick = { vm.setFolderPaused(id, !f.paused) }) {
                             Icon(if (f.paused) Icons.Default.PlayArrow else Icons.Default.Pause, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text(if (f.paused) "Resume" else "Pause")
+                            Text(stringResource(if (f.paused) R.string.action_resume else R.string.action_pause))
                         }
                         FilledTonalButton(shape = ButtonShape, onClick = { vm.rescan(id) }, enabled = !f.paused) {
                             Icon(Icons.Default.Refresh, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
-                            Text("Rescan")
+                            Text(stringResource(R.string.action_rescan))
                         }
                     }
                 }
             }
 
             if (st != null && st.needTotalItems > 0 && !f.paused && f.type != "sendonly") {
-                SettingsGroup("Still to download") {
+                SettingsGroup(stringResource(R.string.folder_to_download)) {
                     SettingRow(
-                        "${count(st.needTotalItems, "item")} · ${bytes(st.needBytes)}", "See which files",
+                        stringResource(R.string.items_and_size, count(R.plurals.count_items, st.needTotalItems).asString(), bytes(st.needBytes)),
+                        stringResource(R.string.folder_see_files),
                         trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, onClick = onOpenNeed,
                     )
                 }
             }
             if (errors.isNotEmpty()) {
-                SettingsGroup("Failed items") {
-                    errors.take(FAILED_PREVIEW).forEach { SettingRow(it.path, problemText(it.error)) }
+                SettingsGroup(stringResource(R.string.failed_items)) {
+                    errors.take(FAILED_PREVIEW).forEach { SettingRow(it.path, problemText(it.error).asString()) }
                     if (errors.size > FAILED_PREVIEW) {
                         SettingRow(
-                            "See all ${errors.size}", null,
+                            stringResource(R.string.folder_see_all, grouped(errors.size)), null,
                             trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, onClick = onOpenFailed,
                         )
                     }
                 }
             }
 
-            SettingsGroup("General") {
-                SettingRow("Name", f.label.ifEmpty { "(none)" }) { dialog = FolderDialog.Name }
-                SettingRow("Group", f.group.ifEmpty { "None" }) { dialog = FolderDialog.Group }
-                SettingRow("Folder on this phone", displayPath(f.path))
-                SettingRow("Type", "${folderTypeLabel(f.type)}. ${folderTypeHint(f.type).orEmpty()}") { dialog = FolderDialog.Type }
-                SettingRow("Folder ID", f.id)
+            SettingsGroup(stringResource(R.string.group_general)) {
+                SettingRow(stringResource(R.string.name), f.label.ifEmpty { stringResource(R.string.name_none) }) { dialog = FolderDialog.Name }
+                SettingRow(stringResource(R.string.group), f.group.ifEmpty { stringResource(R.string.group_none) }) { dialog = FolderDialog.Group }
+                SettingRow(stringResource(R.string.folder_path), displayPath(f.path).asString())
+                SettingRow(stringResource(R.string.type), folderTypeText(f.type).asString()) { dialog = FolderDialog.Type }
+                SettingRow(stringResource(R.string.folder_id), f.id)
             }
 
             if (st != null) {
-                SettingsGroup("Details") {
-                    SettingRow("Last scan", stats?.lastScan?.let { whenText(it) } ?: "Not yet")
+                SettingsGroup(stringResource(R.string.details)) {
+                    SettingRow(stringResource(R.string.folder_last_scan), stats?.lastScan?.let { whenText(it) }?.asString() ?: stringResource(R.string.not_yet))
                     stats?.lastFile?.takeIf { it.filename.isNotEmpty() }?.let { lf ->
-                        val what = if (lf.deleted) "Deleted ${lf.filename}" else lf.filename
-                        SettingRow("Last change", listOfNotNull(what, whenText(lf.at)).joinToString(" · "))
+                        val what = if (lf.deleted) stringResource(R.string.folder_deleted_file, lf.filename) else lf.filename
+                        SettingRow(stringResource(R.string.folder_last_change), listOfNotNull(what, whenText(lf.at)?.asString()).joinToString(" · "))
                     }
-                    SettingRow("On this phone", contents(st.localFiles, st.localDirectories, st.localBytes))
-                    SettingRow("On all devices", contents(st.globalFiles, st.globalDirectories, st.globalBytes))
+                    SettingRow(stringResource(R.string.on_this_phone), contents(st.localFiles, st.localDirectories, st.localBytes).asString())
+                    SettingRow(stringResource(R.string.on_all_devices), contents(st.globalFiles, st.globalDirectories, st.globalBytes).asString())
                 }
             }
-            SettingsGroup("Shared with") {
-                if (s.devices.isEmpty()) SettingRow("No devices added yet", "Add one on the Devices tab")
+            SettingsGroup(stringResource(R.string.shared_with)) {
+                if (s.devices.isEmpty()) SettingRow(stringResource(R.string.share_no_devices), stringResource(R.string.share_no_devices_hint))
                 s.devices.forEach { dev ->
                     val entry = f.devices.find { it.deviceID == dev.deviceID }
                     // A device's sync state only means something for folders it shares.
-                    val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null).text else "Not shared"
+                    val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null).text else text(R.string.item_not_shared)
                     CheckRow(
-                        dev.name.ifEmpty { shortId(dev.deviceID) }, listOfNotNull(state, encryptionText(dev, entry)).joinToString(" · "), entry != null,
+                        dev.name.ifEmpty { shortId(dev.deviceID) }, listOfNotNull(state, encryptionText(dev, entry)).map { it.asString() }.joinToString(" · "), entry != null,
                     ) { if (sharesEncrypted(dev, entry)) encrypt = dev.deviceID else vm.setShared(f, dev.deviceID, it) }
                 }
             }
 
-            SettingsGroup("File versioning") {
+            SettingsGroup(stringResource(R.string.file_versioning)) {
                 VersioningEditor(f.versioning) { vm.setVersioning(id, it) }
                 if (f.versioning.type.isNotEmpty()) {
                     SettingRow(
-                        "Restore versions", "Get back files changed or deleted by other devices",
+                        stringResource(R.string.restore_versions), stringResource(R.string.restore_versions_hint),
                         trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, onClick = onOpenVersions,
                     )
                 }
             }
 
-            SettingsGroup("Advanced") {
-                SwitchRow("Watch for changes", "Sync edits within seconds instead of at the next scan", f.fsWatcherEnabled) { vm.setWatcher(id, it) }
-                SettingRow("Full rescan", "${rescanText(f.rescanIntervalS)}. Catches what watching misses.") { dialog = FolderDialog.Rescan }
+            SettingsGroup(stringResource(R.string.settings_group_advanced)) {
+                SwitchRow(stringResource(R.string.folder_watch), stringResource(R.string.folder_watch_hint), f.fsWatcherEnabled) { vm.setWatcher(id, it) }
                 SettingRow(
-                    "Ignore patterns",
-                    ignores?.let { if (it.isEmpty()) "None" else count(it.size, "rule") } ?: "Loading",
-                    onClick = onOpenIgnores,
-                )
-                SettingRow("Download order", orderLabel(f.order)) { dialog = FolderDialog.Order }
-                SettingRow("Keep free on this phone", "${diskSizeText(f.minDiskFree)}. Syncing pauses below this.") { dialog = FolderDialog.DiskFree }
+                    stringResource(R.string.full_rescan),
+                    stringResource(R.string.label_and_hint, rescanText(f.rescanIntervalS).asString(), stringResource(R.string.folder_rescan_hint)),
+                ) { dialog = FolderDialog.Rescan }
+                SettingRow(stringResource(R.string.ignore_patterns), ignoresText(ignores).asString(), onClick = onOpenIgnores)
+                SettingRow(stringResource(R.string.download_order), orderLabel(f.order).asString()) { dialog = FolderDialog.Order }
+                SettingRow(
+                    stringResource(R.string.keep_free),
+                    stringResource(R.string.label_and_hint, diskSizeText(f.minDiskFree), stringResource(R.string.folder_keep_free_hint)),
+                ) { dialog = FolderDialog.DiskFree }
             }
 
-            SettingsGroup("Remove") {
-                SettingRow("Remove folder", "Stops syncing it. Files on this phone stay.", icon = Icons.Default.Delete, danger = true) {
+            SettingsGroup(stringResource(R.string.action_remove)) {
+                SettingRow(stringResource(R.string.op_remove_folder), stringResource(R.string.folder_remove_hint), icon = Icons.Default.Delete, danger = true) {
                     dialog = FolderDialog.Remove
                 }
             }
@@ -217,39 +222,38 @@ fun FolderScreen(
     }
 
     when (dialog) {
-        FolderDialog.Name -> TextDialog("Folder name", f.label, "Name", onDismiss = { dialog = null }) {
+        FolderDialog.Name -> TextDialog(stringResource(R.string.folder_name), f.label, stringResource(R.string.name), onDismiss = { dialog = null }) {
             vm.setFolderLabel(id, it); dialog = null
         }
-        FolderDialog.Type -> ChoiceDialog("Folder type", FOLDER_TYPES, f.type, ::folderTypeHint, onDismiss = { dialog = null }) {
+        FolderDialog.Type -> ChoiceDialog(stringResource(R.string.folder_type), FOLDER_TYPES, f.type, ::folderTypeHint, onDismiss = { dialog = null }) {
             vm.setFolderType(id, it); dialog = null
         }
         FolderDialog.Group -> TextDialog(
-            "Folder group", f.group, "Group", supporting = "Folders in a group are listed together. Only on this phone.",
+            stringResource(R.string.folder_group), f.group, stringResource(R.string.group), supporting = stringResource(R.string.folder_group_hint),
             error = { null }, onDismiss = { dialog = null },
         ) { vm.setFolderGroup(id, it); dialog = null }
-        FolderDialog.Rescan -> ChoiceDialog("Full rescan", rescanChoices(f.rescanIntervalS), f.rescanIntervalS, ::rescanHint, onDismiss = { dialog = null }) {
+        FolderDialog.Rescan -> ChoiceDialog(stringResource(R.string.full_rescan), rescanChoices(f.rescanIntervalS), f.rescanIntervalS, ::rescanHint, onDismiss = { dialog = null }) {
             vm.setRescanInterval(id, it); dialog = null
         }
-        FolderDialog.Order -> ChoiceDialog("Download order", PULL_ORDERS, f.order, onDismiss = { dialog = null }) {
+        FolderDialog.Order -> ChoiceDialog(stringResource(R.string.download_order), PULL_ORDERS, f.order, onDismiss = { dialog = null }) {
             vm.setPullOrder(id, it); dialog = null
         }
         FolderDialog.DiskFree -> DiskFreeDialog(f.minDiskFree, f.path, onDismiss = { dialog = null }) {
             vm.setMinDiskFree(id, it); dialog = null
         }
         FolderDialog.Revert -> ConfirmDialog(
-            "Revert local changes?",
-            revertText(st?.receiveOnlyTotalItems ?: 0),
-            "Revert", onDismiss = { dialog = null },
+            stringResource(R.string.folder_revert_title),
+            revertText(st?.receiveOnlyTotalItems ?: 0).asString(),
+            stringResource(R.string.action_revert), onDismiss = { dialog = null },
         ) { vm.revert(id); dialog = null }
         FolderDialog.Override -> ConfirmDialog(
-            "Override changes?",
-            "Your other devices get this phone's version of ${count(st?.needTotalItems ?: 0, "item")}. " +
-                "The changes made to them elsewhere are lost. This can't be undone.",
-            "Override", onDismiss = { dialog = null },
+            stringResource(R.string.folder_override_title),
+            (st?.needTotalItems ?: 0).let { pluralStringResource(R.plurals.folder_override_text, it, grouped(it)) },
+            stringResource(R.string.action_override), onDismiss = { dialog = null },
         ) { vm.override(id); dialog = null }
         FolderDialog.Remove -> ConfirmDialog(
-            "Remove ${f.label.ifEmpty { f.id }}?", "Syncthing stops syncing this folder. Files on this phone are not deleted.",
-            "Remove", onDismiss = { dialog = null },
+            stringResource(R.string.folder_remove_title, f.label.ifEmpty { f.id }), stringResource(R.string.folder_remove_text),
+            stringResource(R.string.action_remove), onDismiss = { dialog = null },
         ) { vm.removeFolder(id); dialog = null; onBack() }
         null -> {}
     }
@@ -265,7 +269,7 @@ fun FolderScreen(
 private const val FAILED_PREVIEW = 5
 
 private fun contents(files: Int, dirs: Int, size: Long) =
-    "${count(files, "file")} · ${count(dirs, "folder")} · ${bytes(size)}"
+    text(R.string.folder_contents, count(R.plurals.count_files, files), count(R.plurals.count_folders, dirs), bytes(size))
 
 /** Amount plus unit (%, MB, GB, or the unit already set); shows what is free now for scale. */
 @Composable
@@ -274,14 +278,14 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
     var unit by rememberSaveable { mutableStateOf(initial.unit) }
     val units = (listOf("%", "MB", "GB") + initial.unit).distinct()
     val free = remember(path) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
-    val error = amountError(value, unit)
+    val error = amountError(value, unit)?.asString()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Keep free on this phone") },
+        title = { Text(stringResource(R.string.keep_free)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value, { value = it }, label = { Text("Amount") }, singleLine = true, isError = error != null,
+                    value, { value = it }, label = { Text(stringResource(R.string.amount)) }, singleLine = true, isError = error != null,
                     supportingText = error?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                 )
@@ -294,13 +298,12 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
                     }
                 }
                 Text(
-                    "Syncing into this folder pauses when less is free." +
-                        (free?.let { (a, t) -> " Free now: ${bytes(a)} of ${bytes(t)}." } ?: ""),
+                    free?.let { (a, t) -> stringResource(R.string.keep_free_text_now, bytes(a), bytes(t)) } ?: stringResource(R.string.keep_free_text),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },
-        confirmButton = { TextButton(onClick = { onSave(DiskSize(decimal(value)!!, unit)) }, enabled = error == null) { Text("Save") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        confirmButton = { TextButton(onClick = { onSave(DiskSize(decimal(value)!!, unit)) }, enabled = error == null) { Text(stringResource(R.string.action_save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }

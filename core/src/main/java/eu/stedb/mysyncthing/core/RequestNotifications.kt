@@ -12,20 +12,20 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 /** One device asking to connect, or one folder offered by one device. */
-data class Request(val key: String, val title: String, val text: String, val folder: String?, val device: String)
+data class Request(val key: String, val title: UiText, val text: UiText, val folder: String?, val device: String)
 
 fun Snapshot.requests(): List<Request> {
     fun name(id: String) = devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: id.substringBefore('-')
     val forDevices = pendingDevices.map { (id, p) ->
-        Request("device:$id", "${p.name.ifEmpty { id.substringBefore('-') }} wants to connect",
-            "Device ID ${id.substringBefore('-')}", null, id)
+        Request("device:$id", text(R.string.request_device_title, p.name.ifEmpty { id.substringBefore('-') }),
+            text(R.string.request_device_text, id.substringBefore('-')), null, id)
     }
     val forFolders = pendingFolders.flatMap { (folder, p) ->
         p.offeredBy.map { (device, offer) ->
             val have = folders.any { it.id == folder }
             // The folder name leads: a heads-up shows one line of title and cut "<device> shares "…" before it.
-            Request("folder:$folder:$device", "\"${offer.label.ifEmpty { folder }}\" shared with you",
-                "From ${name(device)}. " + if (have) "You already have this folder; tap Review to share it." else "Tap Review to choose where to keep it.",
+            Request("folder:$folder:$device", text(R.string.request_folder_title, offer.label.ifEmpty { folder }),
+                text(if (have) R.string.request_folder_text_have else R.string.request_folder_text, name(device)),
                 folder, device)
         }
     }
@@ -57,8 +57,8 @@ object RequestNotifications {
         OLD_CHANNEL_IDS.forEach(nm::deleteNotificationChannel)
         // High: a request waits on the user, and missed in the shade it blocks syncing for good.
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Requests", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "New devices and shared folders waiting for your approval"
+            NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_requests), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = context.getString(R.string.channel_requests_description)
             }
         )
     }
@@ -74,12 +74,12 @@ object RequestNotifications {
 
     private fun notification(context: Context, r: Request) = NotificationCompat.Builder(context, CHANNEL_ID)
         .setSmallIcon(R.drawable.widget_ic_input)
-        .setContentTitle(r.title)
-        .setContentText(r.text)
-        .setStyle(NotificationCompat.BigTextStyle().bigText(r.text))
+        .setContentTitle(r.title.resolve(context))
+        .setContentText(r.text.resolve(context))
+        .setStyle(NotificationCompat.BigTextStyle().bigText(r.text.resolve(context)))
         .setContentIntent(review(context, r))
-        .addAction(0, "Review", review(context, r))
-        .addAction(0, "Ignore", ignore(context, r))
+        .addAction(0, context.getString(R.string.action_review), review(context, r))
+        .addAction(0, context.getString(R.string.action_ignore), ignore(context, r))
         .setOnlyAlertOnce(true)
         .setAutoCancel(true)
         .setCategory(NotificationCompat.CATEGORY_RECOMMENDATION)
@@ -88,7 +88,7 @@ object RequestNotifications {
         .setPublicVersion(
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.widget_ic_input)
-                .setContentTitle(if (r.folder != null) "A folder was shared with you" else "A device wants to connect")
+                .setContentTitle(context.getString(if (r.folder != null) R.string.request_folder_public else R.string.request_device_public))
                 .build()
         )
         .build()

@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.resolve
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import android.net.Uri
@@ -51,10 +55,10 @@ import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.SyncthingService
 import kotlinx.coroutines.flow.first
 
-private enum class Tab(val route: String, val label: String, val icon: ImageVector) {
-    Folders("folders", "Folders", Icons.Default.Folder),
-    Devices("devices", "Devices", Icons.Default.Devices),
-    Settings("settings", "Settings", Icons.Default.Settings),
+private enum class Tab(val route: String, @param:StringRes val label: Int, val icon: ImageVector) {
+    Folders("folders", R.string.tab_folders, Icons.Default.Folder),
+    Devices("devices", R.string.tab_devices, Icons.Default.Devices),
+    Settings("settings", R.string.tab_settings, Icons.Default.Settings),
 }
 
 /** A screen opened from outside the app: the widget or a request notification. */
@@ -123,7 +127,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
 
         val nav = rememberNavController()
         val snackbar = remember { SnackbarHostState() }
-        LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it) } }
+        LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it.resolve(context)) } }
         val core by vm.core.collectAsStateWithLifecycle()
         val snapshot by vm.snapshot.collectAsStateWithLifecycle()
         val summary by vm.summary.collectAsStateWithLifecycle()
@@ -322,14 +326,9 @@ private fun MovedFromOtherPhoneNote(vm: MainViewModel) {
     AlertDialog(
         onDismissRequest = {},
         properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false),
-        title = { Text("Moved from another phone") },
-        text = {
-            Text(
-                "This phone kept the device ID, folders and devices of your old phone, and is checking the folders again. " +
-                    "Stop or uninstall Syncthing on the old phone: two phones with the same device ID disturb each other's connections.",
-            )
-        },
-        confirmButton = { TextButton(onClick = vm::dismissMovedNote) { Text("OK") } },
+        title = { Text(stringResource(R.string.moved_title)) },
+        text = { Text(stringResource(R.string.moved_text)) },
+        confirmButton = { TextButton(onClick = vm::dismissMovedNote) { Text(stringResource(R.string.action_ok)) } },
     )
 }
 
@@ -355,7 +354,7 @@ private fun TabBar(nav: NavHostController, route: String?, s: Snapshot) {
                 icon = {
                     BadgedBox(badge = { if (badge > 0) Badge { Text("$badge") } }) { Icon(tab.icon, null) }
                 },
-                label = { Text(tab.label) },
+                label = { Text(stringResource(tab.label)) },
             )
         }
     }

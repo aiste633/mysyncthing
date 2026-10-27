@@ -45,6 +45,11 @@ android {
 
 kotlin { jvmToolchain(21) }
 
+// XmlStrings: unit tests read the English strings straight from res/values.
+androidComponents {
+    onVariants { v -> v.hostTests.values.forEach { it.sources.kotlin?.addStaticSourceDirectory("../core/src/testShared/java") } }
+}
+
 dependencies {
     implementation(project(":core"))
     implementation(platform(libs.compose.bom))

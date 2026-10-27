@@ -1,5 +1,13 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.Strings
+import eu.stedb.mysyncthing.core.resolve
+import eu.stedb.mysyncthing.core.strings
 import android.content.ClipData
 import android.content.ClipboardManager
 import androidx.compose.foundation.layout.Arrangement
@@ -59,26 +67,28 @@ fun NeedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> Uni
 
     // A send-only folder never downloads: the list is what other devices changed.
     val sendOnly = f?.type == "sendonly"
-    FileList(if (sendOnly) "Changed on other devices" else "Still to download", onBack) {
+    FileList(stringResource(if (sendOnly) R.string.files_changed_elsewhere else R.string.folder_to_download), onBack) {
         item("header") {
-            val left = st?.let { "${count(it.needTotalItems, "item")} · ${bytes(it.needBytes)}" + if (sendOnly) "" else " left" }
+            val left = st?.let {
+                stringResource(if (sendOnly) R.string.items_and_size else R.string.items_and_size_left, count(R.plurals.count_items, it.needTotalItems).asString(), bytes(it.needBytes))
+            }
             Header(f?.label?.ifEmpty { null } ?: folder, left, status)
         }
         val p = page
         if (p == null) {
-            item("loading") { Note("Loading") }
+            item("loading") { Note(stringResource(R.string.loading)) }
             return@FileList
         }
-        if (shown == 0) item("none") { Note(if (sendOnly) "No changes from other devices." else "Nothing left to download.") }
+        if (shown == 0) item("none") { Note(stringResource(if (sendOnly) R.string.files_no_remote_changes else R.string.files_nothing_left)) }
         // The puller marks a whole batch "in progress" at once; only files with
         // download progress are really transferring, the rest wait their turn.
         val (active, started) = p.progress.orEmpty().partition { it.name in progress }
-        section("Downloading now", active) { e ->
+        section(R.string.files_downloading_now, active) { e ->
             val d = progress.getValue(e.name)
-            FileRow(e.name, "${bytes(d.bytesDone)} of ${bytes(d.bytesTotal)}",
+            FileRow(e.name, stringResource(R.string.files_progress, bytes(d.bytesDone), bytes(d.bytesTotal)),
                 progress = d.takeIf { it.bytesTotal > 0 }?.let { it.bytesDone.toFloat() / it.bytesTotal })
         }
-        section("Waiting", started + p.queued.orEmpty() + p.rest.orEmpty()) { e -> FileRow(e.name, needDetail(e)) }
+        section(R.string.files_waiting, started + p.queued.orEmpty() + p.rest.orEmpty()) { e -> FileRow(e.name, needDetail(e)) }
         if (shown >= limit) item("more") { More { limit += PAGE } }
     }
 }
@@ -93,12 +103,22 @@ fun RemoteNeedScreen(s: Snapshot, device: String, folder: String, vm: MainViewMo
     LaunchedEffect(device, folder, limit, s.completion[device]) { vm.remoteNeed(folder, device, limit)?.let { files = it } }
     val name = d?.name?.ifEmpty { null } ?: shortId(device)
 
-    FileList("$name still needs", onBack) {
-        item("header") { Header(f?.label?.ifEmpty { null } ?: folder, files?.let { "${count(it.size, "item")} · ${bytes(it.sumOf { e -> e.size })}" + if (it.size >= limit) " or more" else "" }) }
+    FileList(stringResource(R.string.remote_need_title, name), onBack) {
+        item("header") {
+            Header(
+                f?.label?.ifEmpty { null } ?: folder,
+                files?.let {
+                    stringResource(
+                        if (it.size >= limit) R.string.items_and_size_or_more else R.string.items_and_size,
+                        count(R.plurals.count_items, it.size).asString(), bytes(it.sumOf { e -> e.size }),
+                    )
+                },
+            )
+        }
         val list = files
         when {
             list == null -> item("loading") { Note("Loading") }
-            list.isEmpty() -> item("none") { Note("$name has everything from this folder.") }
+            list.isEmpty() -> item("none") { Note(stringResource(R.string.remote_need_none, name)) }
             else -> {
                 section(null, list) { e -> FileRow(e.name, needDetail(e)) }
                 if (list.size >= limit) item("more") { More { limit += PAGE } }
@@ -116,16 +136,19 @@ fun LocalChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: (
     var files by remember { mutableStateOf<List<FileEntry>?>(null) }
     LaunchedEffect(folder, limit, st?.receiveOnlyTotalItems) { vm.localChanged(folder, limit)?.let { files = it } }
 
-    FileList("Changed on this phone", onBack) {
+    FileList(stringResource(R.string.files_changed_here), onBack) {
         item("header") {
-            Header(f?.label?.ifEmpty { null } ?: folder, st?.let { "${count(it.receiveOnlyTotalItems, "item")} · ${bytes(it.receiveOnlyChangedBytes)}" })
+            Header(
+                f?.label?.ifEmpty { null } ?: folder,
+                st?.let { stringResource(R.string.items_and_size, count(R.plurals.count_items, it.receiveOnlyTotalItems).asString(), bytes(it.receiveOnlyChangedBytes)) },
+            )
         }
         val list = files
         when {
             list == null -> item("loading") { Note("Loading") }
-            list.isEmpty() -> item("none") { Note("No local changes.") }
+            list.isEmpty() -> item("none") { Note(stringResource(R.string.files_no_local_changes)) }
             else -> {
-                section(null, list) { e -> FileRow(e.name, if (e.deleted) "Deleted" else needDetail(e)) }
+                section(null, list) { e -> FileRow(e.name, if (e.deleted) stringResource(R.string.files_deleted) else needDetail(e)) }
                 if (list.size >= limit) item("more") { More { limit += PAGE } }
             }
         }
@@ -142,25 +165,27 @@ fun FailedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> U
     LaunchedEffect(folder, st?.errors) { errors = vm.folderErrors(folder) }
     var query by rememberSaveable { mutableStateOf("") }
     val all = errors.orEmpty()
-    val shown = if (query.isBlank()) all else all.filter { failedItemMatches(it, query) }
+    val strings = LocalResources.current.strings()
+    val shown = if (query.isBlank()) all else all.filter { failedItemMatches(it, query, strings) }
+    val clipLabel = stringResource(R.string.failed_items)
 
-    FileList("Failed items", onBack, actions = {
+    FileList(stringResource(R.string.failed_items), onBack, actions = {
         TextButton(enabled = all.isNotEmpty(), onClick = {
             val text = failedItemsCopy(all)
-            context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Failed items", text))
-        }) { Text("Copy all") }
+            context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText(clipLabel, text))
+        }) { Text(stringResource(R.string.files_copy_all)) }
     }) {
-        item("header") { Header(f?.label?.ifEmpty { null } ?: folder, errors?.let { "${count(it.size, "item")} could not sync" }) }
+        item("header") { Header(f?.label?.ifEmpty { null } ?: folder, errors?.let { pluralStringResource(R.plurals.files_could_not_sync, it.size, grouped(it.size)) }) }
         item("search") {
             OutlinedTextField(
-                query, { query = it }, singleLine = true, label = { Text("Search") },
-                placeholder = { Text("Name or error") }, leadingIcon = { Icon(Icons.Default.Search, null) },
+                query, { query = it }, singleLine = true, label = { Text(stringResource(R.string.search)) },
+                placeholder = { Text(stringResource(R.string.files_search_hint)) }, leadingIcon = { Icon(Icons.Default.Search, null) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
             )
         }
-        if (errors == null) item("loading") { Note("Loading") }
-        else if (shown.isEmpty()) item("none") { Note(if (all.isEmpty()) "Nothing failed." else "No match.") }
-        section(null, shown) { e -> FileRow(e.path, problemText(e.error), detailColor = MaterialTheme.colorScheme.error) }
+        if (errors == null) item("loading") { Note(stringResource(R.string.loading)) }
+        else if (shown.isEmpty()) item("none") { Note(stringResource(if (all.isEmpty()) R.string.files_nothing_failed else R.string.files_no_match)) }
+        section(null, shown) { e -> FileRow(e.path, problemText(e.error).asString(), detailColor = MaterialTheme.colorScheme.error) }
     }
 }
 
@@ -174,9 +199,9 @@ private fun FileList(title: String, onBack: () -> Unit, actions: @Composable () 
 }
 
 /** A heading followed by one compact card per file; the list can hold thousands, so each row is its own item. */
-private fun <T> LazyListScope.section(title: String?, files: List<T>, row: @Composable (T) -> Unit) {
+private fun <T> LazyListScope.section(@StringRes title: Int?, files: List<T>, row: @Composable (T) -> Unit) {
     if (files.isEmpty()) return
-    title?.let { item("title-$it") { SectionTitle(it) } }
+    title?.let { item("title-$it") { SectionTitle(stringResource(it)) } }
     items(files) { row(it) }
 }
 
@@ -203,7 +228,7 @@ private fun StatusLine(status: ItemStatus) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Icon(look.icon, null, Modifier.size(18.dp), tint = look.color)
         Spacer(Modifier.width(6.dp))
-        Text(status.text, style = MaterialTheme.typography.labelLarge, color = look.color)
+        Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
     }
 }
 
@@ -225,12 +250,13 @@ private fun Note(text: String) = Text(
 
 @Composable
 private fun More(onClick: () -> Unit) = TextButton(onClick = onClick, modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-    Text("Show more")
+    Text(stringResource(R.string.action_show_more))
 }
 
+@Composable
 private fun needDetail(e: FileEntry) = when {
-    e.deleted -> "To delete"
-    e.isDirectory -> "Folder"
+    e.deleted -> stringResource(R.string.files_to_delete)
+    e.isDirectory -> stringResource(R.string.folder)
     else -> bytes(e.size)
 }
 
@@ -238,5 +264,5 @@ private fun needDetail(e: FileEntry) = when {
 internal fun failedItemsCopy(errors: List<FileError>): String = errors.joinToString("\n") { "${it.path}: ${it.error}" }
 
 /** Search in Failed items finds a row by its path, the core's text, or the text shown for it. */
-internal fun failedItemMatches(e: FileError, query: String): Boolean =
-    query.trim().lowercase() in (e.path + " " + e.error + " " + problemText(e.error)).lowercase()
+internal fun failedItemMatches(e: FileError, query: String, strings: Strings): Boolean =
+    query.trim().lowercase() in (e.path + " " + e.error + " " + problemText(e.error).resolve(strings)).lowercase()

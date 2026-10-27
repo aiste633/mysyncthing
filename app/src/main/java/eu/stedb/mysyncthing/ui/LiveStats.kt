@@ -1,5 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.Connection
 import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.ServiceStatus
@@ -23,10 +26,10 @@ data class LiveStats(
     private val usableDiscovery get() = discovery.values.filter { unusedHere(it) == null }
 
     /** "Listening 3 of 3 · Discovery 4 of 4"; methods this network can't use are not counted. */
-    val healthText: String get() {
-        val l = "Listening ${listeners.values.count { it.error == null }} of ${listeners.size}"
-        if (!status.discoveryEnabled) return "$l · Discovery off"
-        return "$l · Discovery ${usableDiscovery.count { it.error == null }} of ${usableDiscovery.size}"
+    val healthText: UiText get() {
+        val listening = listeners.values.count { it.error == null }
+        if (!status.discoveryEnabled) return text(R.string.health_discovery_off, listening, listeners.size)
+        return text(R.string.health, listening, listeners.size, usableDiscovery.count { it.error == null }, usableDiscovery.size)
     }
 
     /** Red when nothing listens, amber when a part fails that this network could use. */
@@ -59,10 +62,10 @@ data class LiveStats(
  * fails with ENETUNREACH ("network is unreachable"): no route for that
  * address family, not a fault of this phone or the server.
  */
-fun unusedHere(st: ServiceStatus): String? {
+fun unusedHere(st: ServiceStatus): UiText? {
     val e = st.error ?: return null
     if (!e.contains("network is unreachable")) return null
-    return if (IPV6_LITERAL.containsMatchIn(e)) "Not used: this network has no IPv6" else "Not used: no route on this network"
+    return text(if (IPV6_LITERAL.containsMatchIn(e)) R.string.unused_no_ipv6 else R.string.unused_no_route)
 }
 
 /** An IPv6 address as Go writes it in dial errors: "[2001:db8::1]:443". */

@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
 import android.app.Application
 import android.net.Uri
 import androidx.activity.compose.BackHandler
@@ -74,7 +78,7 @@ class ExportViewModel(app: Application) : AndroidViewModel(app) {
 sealed interface ExportResult {
     data object Working : ExportResult
     data class Saved(val encrypted: Boolean) : ExportResult
-    data class Failed(val message: String) : ExportResult
+    data class Failed(val message: UiText) : ExportResult
 }
 
 @Composable
@@ -84,7 +88,7 @@ fun ExportScreen(onBack: () -> Unit, vm: ExportViewModel = viewModel()) {
     val working = result == ExportResult.Working
     BackHandler(enabled = working) {} // leaving would hide whether the file was written
 
-    AppScreen("Export backup", onBack = if (working) null else onBack) { padding ->
+    AppScreen(stringResource(R.string.export_title), onBack = if (working) null else onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             when (val r = result) {
                 null -> ExportForm(vm) { save.launch(ConfigExport.fileName()) }
@@ -93,17 +97,16 @@ fun ExportScreen(onBack: () -> Unit, vm: ExportViewModel = viewModel()) {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     BusyIndicator()
-                    Text("Exporting")
+                    Text(stringResource(R.string.export_working))
                 }
                 is ExportResult.Saved -> ExportNote(
-                    "Exported",
-                    "Import it on this or another phone in Settings > Import a backup." +
-                        if (r.encrypted) " Keep the password: without it the backup can't be opened." else " Keep the file private: it holds this phone's private key.",
+                    stringResource(R.string.export_done),
+                    stringResource(if (r.encrypted) R.string.export_done_encrypted else R.string.export_done_plain),
                 )
                 is ExportResult.Failed -> {
-                    ExportNote("Export failed", r.message)
+                    ExportNote(stringResource(R.string.export_failed), r.message.asString())
                     Row(Modifier.padding(horizontal = 16.dp)) {
-                        Button(shape = ButtonShape, onClick = vm::again) { Text("Try again") }
+                        Button(shape = ButtonShape, onClick = vm::again) { Text(stringResource(R.string.action_try_again)) }
                     }
                 }
             }
@@ -117,31 +120,30 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
     val passwordError = exportPasswordError(vm.password)
     val repeatError = if (vm.password.isEmpty()) null else exportRepeatError(vm.password, vm.repeat)
     ExportNote(
-        "Back up this phone's setup",
-        "The backup holds the folders, devices, this phone's device ID with its private key, and the sync settings " +
-            "including the proxy. Not the files in the folders, and not the web GUI login.",
+        stringResource(R.string.export_intro_title),
+        stringResource(R.string.export_intro),
     )
-    SettingsGroup("Password (recommended)") {
+    SettingsGroup(stringResource(R.string.export_password_group)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             val transformation = if (show) VisualTransformation.None else PasswordVisualTransformation()
             val keyboard = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)
             OutlinedTextField(
-                vm.password, { vm.password = it }, label = { Text("Password") }, singleLine = true,
+                vm.password, { vm.password = it }, label = { Text(stringResource(R.string.password)) }, singleLine = true,
                 isError = passwordError != null,
-                supportingText = { Text(passwordError ?: "At least $MIN_EXPORT_PASSWORD characters. Encrypts the backup with AES-256.") },
+                supportingText = { Text(passwordError?.asString() ?: pluralStringResource(R.plurals.export_password_hint, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD)) },
                 visualTransformation = transformation, keyboardOptions = keyboard,
                 trailingIcon = {
                     IconButton(onClick = { show = !show }) {
-                        Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, if (show) "Hide password" else "Show password")
+                        Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, stringResource(if (show) R.string.password_hide else R.string.password_show))
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
             )
             if (vm.password.isNotEmpty()) {
                 OutlinedTextField(
-                    vm.repeat, { vm.repeat = it }, label = { Text("Password again") }, singleLine = true,
+                    vm.repeat, { vm.repeat = it }, label = { Text(stringResource(R.string.password_again)) }, singleLine = true,
                     isError = vm.repeat.isNotEmpty() && repeatError != null,
-                    supportingText = repeatError?.takeIf { vm.repeat.isNotEmpty() }?.let { { Text(it) } },
+                    supportingText = repeatError?.takeIf { vm.repeat.isNotEmpty() }?.let { { Text(it.asString()) } },
                     visualTransformation = transformation, keyboardOptions = keyboard,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -156,7 +158,7 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
             Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Key, null, tint = MaterialTheme.colorScheme.onErrorContainer)
                 Text(
-                    "Without a password, any app or person that can read the file can pose as this phone.",
+                    stringResource(R.string.export_no_password_warning),
                     color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(start = 12.dp),
                 )
             }
@@ -165,7 +167,7 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
     Row(Modifier.padding(16.dp)) {
         Button(shape = ButtonShape, enabled = passwordError == null && repeatError == null, onClick = onSave) {
             Icon(Icons.Default.SaveAlt, null)
-            Text("Choose where to save", Modifier.padding(start = 8.dp))
+            Text(stringResource(R.string.export_choose), Modifier.padding(start = 8.dp))
         }
     }
 }

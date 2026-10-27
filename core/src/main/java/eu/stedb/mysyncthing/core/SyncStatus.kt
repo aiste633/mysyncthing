@@ -42,7 +42,7 @@ object SyncStatus {
     private val _downloads = MutableStateFlow<Map<String, Map<String, FileProgress>>>(emptyMap())
     val downloads: StateFlow<Map<String, Map<String, FileProgress>>> = _downloads.asStateFlow()
 
-    private val _summary = MutableStateFlow(Summary(SyncState.Stopped, "Stopped"))
+    private val _summary = MutableStateFlow(Summary(SyncState.Stopped, text(R.string.status_stopped)))
     val summary: StateFlow<Summary> = _summary.asStateFlow()
 
     internal fun publish(summary: Summary) {
@@ -147,10 +147,10 @@ enum class SyncState { Stopped, Problem, Paused, NeedsInput, Syncing, UpToDate }
  */
 data class Summary(
     val state: SyncState,
-    val text: String,
+    val text: UiText,
     val progress: Int? = null,
     val connected: List<String> = emptyList(),
-    val publicText: String = text,
+    val publicText: UiText = text,
 )
 
 private val SYNCING_STATES = setOf("syncing", "sync-preparing")
@@ -159,55 +159,56 @@ private val SYNCING_STATES = setOf("syncing", "sync-preparing")
  * Ranks what the user most needs to know: errors first, then deliberate pauses,
  * then requests waiting for them, then sync progress.
  */
-fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean): Summary {
+fun summarize(core: CoreState, s: Snapshot, blockedBy: UiText?, online: Boolean): Summary {
     when (core) {
-        is CoreState.Failed -> return Summary(SyncState.Problem, "Stopped with an error")
-        CoreState.Stopped -> return Summary(SyncState.Stopped, "Stopped")
-        CoreState.Starting -> return Summary(SyncState.Syncing, "Starting")
-        is CoreState.Running -> if (!s.loaded) return Summary(SyncState.Syncing, "Starting")
+        is CoreState.Failed -> return Summary(SyncState.Problem, text(R.string.status_stopped_error))
+        CoreState.Stopped -> return Summary(SyncState.Stopped, text(R.string.status_stopped))
+        CoreState.Starting -> return Summary(SyncState.Syncing, text(R.string.status_starting))
+        is CoreState.Running -> if (!s.loaded) return Summary(SyncState.Syncing, text(R.string.status_starting))
     }
-    if (blockedBy != null) return Summary(SyncState.Paused, if (blockedBy == PAUSED_BY_USER) blockedBy else "Paused: $blockedBy")
-    if (!online) return Summary(SyncState.Problem, "No network")
+    if (blockedBy != null) {
+        return Summary(SyncState.Paused, if (blockedBy == PAUSED_BY_USER) blockedBy else text(R.string.status_paused_because, blockedBy))
+    }
+    if (!online) return Summary(SyncState.Problem, text(R.string.status_no_network))
     if (s.systemErrors.isNotEmpty()) {
-        val n = s.systemErrors.size
-        return Summary(SyncState.Problem, "$n ${plural(n, "problem")}", connected = s.connectedNames())
+        return Summary(SyncState.Problem, plural(R.plurals.status_problems, s.systemErrors.size), connected = s.connectedNames())
     }
 
     val connected = s.devices.filter { s.connections[it.deviceID]?.connected == true }
     val names = s.connectedNames()
-    fun result(state: SyncState, text: String, progress: Int? = null) = Summary(state, text, progress, names)
+    fun result(state: SyncState, text: UiText, progress: Int? = null) = Summary(state, text, progress, names)
 
     val active = s.folders.filter { !it.paused }
     val failing = active.mapNotNull { f -> s.folderStatus[f.id]?.takeIf { it.errors > 0 || it.state == "error" } }
     if (failing.isNotEmpty()) {
         val items = failing.sumOf { it.errors }
-        return result(SyncState.Problem, if (items > 0) "$items ${plural(items, "item")} failed to sync" else "Folder error")
+        return result(SyncState.Problem, if (items > 0) plural(R.plurals.status_items_failed, items) else text(R.string.status_folder_error))
     }
 
     val requests = s.pendingDevices.size + s.pendingFolders.values.sumOf { it.offeredBy.size }
     if (requests > 0) {
-        val text = when {
-            requests > 1 -> "$requests requests waiting"
-            s.pendingDevices.isNotEmpty() -> "New device wants to connect"
-            else -> "New folder shared with you"
+        val request = when {
+            requests > 1 -> plural(R.plurals.status_requests, requests)
+            s.pendingDevices.isNotEmpty() -> text(R.string.status_new_device)
+            else -> text(R.string.status_new_folder)
         }
-        return result(SyncState.NeedsInput, text)
+        return result(SyncState.NeedsInput, request)
     }
     val review = active.filter { it.needsReview(s.folderStatus[it.id]) }
     if (review.isNotEmpty()) {
         val f = review.singleOrNull()
-        val name = f?.label?.ifEmpty { f.id }
-        val text = when {
-            f == null -> "${review.size} folders need review"
-            f.type == "receiveonly" -> "Local changes in $name"
-            else -> "$name is out of sync"
+        val name = f?.label?.ifEmpty { f.id }.orEmpty()
+        val line = when {
+            f == null -> plural(R.plurals.status_folders_review, review.size)
+            f.type == "receiveonly" -> text(R.string.status_local_changes, name)
+            else -> text(R.string.status_out_of_sync, name)
         }
-        return result(SyncState.NeedsInput, text).copy(publicText = if (f == null) text else "A folder needs review")
+        return result(SyncState.NeedsInput, line).copy(publicText = if (f == null) line else text(R.string.status_folder_review_public))
     }
-    if (s.devices.isEmpty()) return result(SyncState.NeedsInput, "No devices added")
-    if (s.folders.isEmpty()) return result(SyncState.NeedsInput, "No folders added")
-    if (s.devices.all { it.paused } || active.isEmpty()) return result(SyncState.Paused, "Paused")
-    if (connected.isEmpty()) return result(SyncState.Problem, "Not connected")
+    if (s.devices.isEmpty()) return result(SyncState.NeedsInput, text(R.string.status_no_devices))
+    if (s.folders.isEmpty()) return result(SyncState.NeedsInput, text(R.string.status_no_folders))
+    if (s.devices.all { it.paused } || active.isEmpty()) return result(SyncState.Paused, text(R.string.status_paused))
+    if (connected.isEmpty()) return result(SyncState.Problem, text(R.string.status_not_connected))
 
     // A send-only folder never downloads; what it "needs" is the review above.
     val statuses = active.filter { it.type != "sendonly" }.mapNotNull { s.folderStatus[it.id] }
@@ -217,24 +218,22 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: String?, online: Boolean)
     val global = needing.sumOf { it.globalBytes }
     if (need > 0 || statuses.any { it.state in SYNCING_STATES }) {
         val pct = if (global > 0) ((global - need) * 100 / global).toInt().coerceIn(0, 99) else null
-        return result(SyncState.Syncing, pct?.let { "Syncing $it %" } ?: "Syncing", pct)
+        return result(SyncState.Syncing, pct?.let { text(R.string.status_syncing_percent, it) } ?: text(R.string.status_syncing), pct)
     }
     val remote = connected.mapNotNull { d -> s.completion[d.deviceID]?.takeIf { it.needBytes > 0 } }
     if (remote.isNotEmpty()) {
         val pct = remote.minOf { it.completion }.toInt().coerceIn(0, 99)
-        return result(SyncState.Syncing, "Syncing $pct %", pct)
+        return result(SyncState.Syncing, text(R.string.status_syncing_percent, pct), pct)
     }
-    return result(SyncState.UpToDate, "Up to date")
+    return result(SyncState.UpToDate, text(R.string.status_up_to_date))
 }
 
 private fun Snapshot.connectedNames() = devices.filter { connections[it.deviceID]?.connected == true }
     .map { it.name.ifEmpty { it.deviceID.substringBefore('-') } }
 
 /** The notification line: state, then who it is connected to. */
-fun Summary.line(): String = when {
-    connected.size == 1 -> "$text · ${connected.single()}"
-    connected.size > 1 -> "$text · ${connected.size} devices"
-    else -> text
+fun Summary.line(): UiText = when {
+    connected.size == 1 -> text(R.string.status_line_device, this.text, connected.single())
+    connected.size > 1 -> plural(R.plurals.status_line_devices, connected.size, this.text, connected.size)
+    else -> this.text
 }
-
-private fun plural(n: Int, word: String) = if (n == 1) word else "${word}s"

@@ -26,35 +26,35 @@ class ConditionsTest {
         assertNull(c.blockedBy(homeWifi))
         assertNull(c.blockedBy(meteredWifi))
         assertNull(c.blockedBy(tether))
-        assertEquals("On mobile data", c.blockedBy(mobile))
-        assertEquals("No network", c.blockedBy(DeviceState()))
-        assertEquals("Battery saver on", c.blockedBy(homeWifi.copy(batterySaver = true)))
+        assertEquals("On mobile data", c.blockedBy(mobile).en())
+        assertEquals("No network", c.blockedBy(DeviceState()).en())
+        assertEquals("Battery saver on", c.blockedBy(homeWifi.copy(batterySaver = true)).en())
     }
 
     @Test
     fun eachConditionBlocks() {
-        assertEquals("Wi-Fi is metered", RunConditions(meteredWifi = false).blockedBy(meteredWifi))
-        assertEquals("Network is metered", RunConditions(meteredWifi = false).blockedBy(tether))
-        assertEquals("Roaming", RunConditions(mobileData = true).blockedBy(roaming))
+        assertEquals("Wi-Fi is metered", RunConditions(meteredWifi = false).blockedBy(meteredWifi).en())
+        assertEquals("Network is metered", RunConditions(meteredWifi = false).blockedBy(tether).en())
+        assertEquals("Roaming", RunConditions(mobileData = true).blockedBy(roaming).en())
         assertNull(RunConditions(mobileData = true).blockedBy(mobile))
         assertNull(RunConditions(mobileData = true, roaming = true).blockedBy(roaming))
         // Roaming alone allows nothing: it only widens mobile data.
-        assertEquals("On mobile data", RunConditions(roaming = true).blockedBy(roaming))
-        assertEquals("Not charging", RunConditions(power = PowerSource.ChargingOnly).blockedBy(homeWifi))
+        assertEquals("On mobile data", RunConditions(roaming = true).blockedBy(roaming).en())
+        assertEquals("Not charging", RunConditions(power = PowerSource.ChargingOnly).blockedBy(homeWifi).en())
         assertNull(RunConditions(power = PowerSource.ChargingOnly).blockedBy(homeWifi.copy(charging = true)))
-        assertEquals("Charging", RunConditions(power = PowerSource.BatteryOnly).blockedBy(homeWifi.copy(charging = true)))
+        assertEquals("Charging", RunConditions(power = PowerSource.BatteryOnly).blockedBy(homeWifi.copy(charging = true)).en())
         assertNull(RunConditions(power = PowerSource.BatteryOnly).blockedBy(homeWifi))
     }
 
     @Test
     fun mobileDataIsMobileEvenWhenUnmetered() {
-        assertEquals("On mobile data", RunConditions().blockedBy(mobile.copy(unmetered = true)))
+        assertEquals("On mobile data", RunConditions().blockedBy(mobile.copy(unmetered = true)).en())
     }
 
     @Test
     fun offlineStaysPausedUnderANetworkLimit() {
-        assertEquals("No network", RunConditions(mobileData = false).blockedBy(DeviceState()))
-        assertEquals("No network", RunConditions(meteredWifi = false, mobileData = true).blockedBy(DeviceState()))
+        assertEquals("No network", RunConditions(mobileData = false).blockedBy(DeviceState()).en())
+        assertEquals("No network", RunConditions(meteredWifi = false, mobileData = true).blockedBy(DeviceState()).en())
         assertNull(RunConditions(meteredWifi = true, mobileData = true).blockedBy(DeviceState()))
     }
 
