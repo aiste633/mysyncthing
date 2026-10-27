@@ -32,6 +32,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Any dependency/plugin bump: regenerate `gradle/verification-metadata.xml` (command in README).
 - Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Keep `go/syncthing.version` in sync when bumping.
 - Build via `:app:assembleDebug`; `:core:bundle*Aar` fails by design (local Go AAR dependency).
+- GitHub Actions: pinned by full commit hash with a `# vX.Y.Z` comment (user's choice 2026-10-27: a moved tag could change what CI runs). All on Node 24 (Node 20 is deprecated: runners warn and force it): checkout v5.1.0, setup-java v5.7.0, setup-go v6.5.0, setup-gradle v5.0.2, upload-artifact v7.0.2, download-artifact v8.0.2 (fails on a digest mismatch). Bump steps in README; check `using:` in the new commit's action.yml.
 - Android link needs `-ldflags=-checklinkname=0` (wlynxg/anet uses go:linkname into net). Upstream requires Go 1.26.2.
 
 

@@ -43,8 +43,8 @@ lan_name='\b[a-z0-9-]+(\.[a-z0-9-]+)*\.(lan|local|home|internal|localdomain|intr
 unc='\\\\[A-Za-z0-9._-]+\\[A-Za-z0-9$._-]+'
 # user@host without a domain, as in a shell prompt or scp target.
 user_at_host='\b[a-z_][a-z0-9_-]*@[A-Za-z][A-Za-z0-9-]*\b[^.]'
-# Kotlin labels, and the placeholder itself.
-user_at_host_ok='^((return|this|break|continue|super)@|user@host\b)'
+# Kotlin labels, GitHub Actions pinned by commit (action@<40 hex>), and the placeholder itself.
+user_at_host_ok='^((return|this|break|continue|super)@|[a-z0-9_-]+@[0-9a-f]{40}\b|user@host\b)'
 
 found=0
 report() { echo "::error::$1"; found=1; }
