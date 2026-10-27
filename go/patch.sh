@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # Applies go/patches/*.patch to the go/syncthing submodule: fixes we need before upstream
 # has them. Idempotent: patches already applied are skipped. Patches may change the same
-# files, so the check is on the whole tree: the submodule must be its pinned commit plus
-# the first k patches, for some k; the rest are then applied. Fails on any other state,
-# e.g. after a Syncthing update (then drop or rebase the patches) or with local edits.
+# files, so the check is on all the files they touch together: these must be as in the
+# pinned commit plus the first k patches, for some k; the rest are then applied. Other
+# files don't count (F-Droid's scanner deletes some). Fails on any other state, e.g.
+# after a Syncthing update (then drop or rebase the patches) or with local edits.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"
@@ -15,9 +16,13 @@ idx="$(mktemp)"
 trap 'rm -f "$idx"' EXIT
 g() { GIT_INDEX_FILE="$idx" git -C "$sub" "$@"; }
 
-# The tree in the working directory, untracked files included.
+mapfile -t paths < <(for p in "${patches[@]}"; do git -C "$sub" apply --numstat "$p" | cut -f3; done | sort -u)
+
+# The pinned commit with the touched files as they are in the working directory.
 g read-tree HEAD
-g add -A
+for f in "${paths[@]}"; do
+  if [ -e "$sub/$f" ]; then g update-index --add -- "$f"; else g update-index --force-remove -- "$f"; fi
+done
 actual="$(g write-tree)"
 
 # The pinned commit plus the first k patches, for k = 0, 1, ...
@@ -32,7 +37,7 @@ for k in $(seq 0 ${#patches[@]}); do
   fi
 done
 if [ "$applied" -lt 0 ]; then
-  echo "go/syncthing is neither its pinned commit nor that plus the first patches" >&2
+  echo "go/syncthing: the files the patches change are neither as pinned nor as after the first patches" >&2
   exit 1
 fi
 
