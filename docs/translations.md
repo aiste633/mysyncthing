@@ -22,6 +22,20 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
 `values/strings.xml`, file mask `values-*/strings.xml`), and one for the fastlane folder
 (format "Fastlane metadata").
 
+## Choosing the language
+
+The app follows the phone's language. Android's per-app language page (Settings > Apps >
+MySyncthing > Language, or the app's Settings > System > Language) can set another one for
+the app alone. That page lists the languages in the app: the build generates its list
+(`locales_config`) from the `values-*` folders, with English as the base
+(`app/src/main/res/resources.properties`). Debug builds also list the pseudolocales
+en-XA (long, accented text) and ar-XB (right to left) for checking layouts.
+
+On a change of language the notification channels are renamed, and the status
+notification, the core's notices and the widget are drawn again in the new language.
+The web GUI has its own translations from upstream Syncthing: it takes the app's language
+unless one was chosen in the web GUI itself.
+
 ## For translators
 
 - Each string with placeholders has a comment saying what they hold. Keep `%1$s`, `%2$d`
@@ -40,8 +54,9 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
   language does (`3 ott 2025, 18:42`, `1,5 MB`), with the hour per the phone's 12/24 h
   setting. Only words around them ("yesterday, %1$s") are translated.
 - In the XML, an apostrophe is written `\'` and a double quote `\"`.
-- Messages from the Syncthing core itself (errors about files, connections) come in English
-  and are shown as they come, except the few the app maps to its own words.
+- Messages from the Syncthing core itself come in English. The ones people meet most (a
+  folder that stopped, a file that failed, a full disk) are mapped to the app's own strings
+  (`problem_*`, `core/.../ProblemText.kt`); any other is shown in English as it comes.
 
 ## For developers
 

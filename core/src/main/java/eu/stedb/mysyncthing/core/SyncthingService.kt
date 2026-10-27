@@ -7,8 +7,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Environment
+import android.os.LocaleList
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -41,7 +43,8 @@ class SyncthingService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         settings = Settings(this)
-        createChannel()
+        locales = resources.configuration.locales
+        createChannel(this)
         RequestNotifications.createChannel(this)
         ProblemNotifications.createChannel(this)
         // An unloaded snapshot (no core) passes as null, so what a new run loads is always posted,
@@ -66,6 +69,17 @@ class SyncthingService : LifecycleService() {
             }
         }
         startForeground(NOTIFICATION_ID, notification(getString(R.string.status_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+    }
+
+    private var locales: LocaleList? = null
+
+    /** Also a language picked for this app alone, which sends no LOCALE_CHANGED. */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (newConfig.locales == locales) return
+        locales = newConfig.locales
+        relocalize(this)
+        lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
     }
 
     /** The core's run: started by [onStartCommand], over once the core failed (a later start tries again). */
@@ -104,7 +118,7 @@ class SyncthingService : LifecycleService() {
             return
         }
         ProblemNotifications.noFileAccess(this, false)
-        updateNotification(getString(R.string.status_starting))
+        updateNotification(text(R.string.status_starting))
 
         val home = File(filesDir, "syncthing")
         // Locked: a start during an import waits for it, then sees its setup and settings.
@@ -134,7 +148,7 @@ class SyncthingService : LifecycleService() {
                     summarize(core, snap, reason, d.online)
                 }.collect { summary ->
                     SyncStatus.publish(summary)
-                    updateNotification(summary.line().resolve(this@SyncthingService), summary.publicText.resolve(this@SyncthingService))
+                    updateNotification(summary.line(), summary.publicText)
                 }
             }
             watchCore()
@@ -148,9 +162,9 @@ class SyncthingService : LifecycleService() {
      * the app can show why and start it again; the notices of a core that no
      * longer runs go (also those a crashed process left in the shade).
      */
-    private fun failed(state: CoreState, @StringRes text: Int) {
+    private fun failed(state: CoreState, @StringRes message: Int) {
         SyncStatus.publish(summarize(state, Snapshot(), null, true))
-        updateNotification(getString(text))
+        updateNotification(text(message))
         clearCoreNotices()
     }
 
@@ -212,19 +226,6 @@ class SyncthingService : LifecycleService() {
         }
     }
 
-    /**
-     * Android raises a foreground service's MIN channel to LOW, so the
-     * notification shows in the shade on every phone; it stays out of the
-     * status bar. The user can hide it by turning the channel off.
-     */
-    private fun createChannel() {
-        val nm = getSystemService(NotificationManager::class.java)
-        nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, getString(R.string.channel_service), NotificationManager.IMPORTANCE_MIN).apply {
-                setShowBadge(false)
-            }
-        )
-    }
 
     /** [publicText] is for the lock screen: the state without device names. */
     private fun notification(text: String, publicText: String = text): Notification {
@@ -257,13 +258,13 @@ class SyncthingService : LifecycleService() {
             .build()
     }
 
-    /** The texts last posted, so an unchanged summary posts nothing. */
-    private var lastShown: Pair<String, String>? = null
+    /** The texts last posted, so an unchanged summary posts nothing; kept unresolved for a change of language. */
+    private var lastShown: Pair<UiText, UiText>? = null
 
-    private fun updateNotification(text: String, publicText: String = text) {
+    private fun updateNotification(text: UiText, publicText: UiText = text) {
         if (text to publicText == lastShown) return
         lastShown = text to publicText
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, publicText))
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text.resolve(this), publicText.resolve(this)))
     }
 
     companion object {
@@ -298,6 +299,20 @@ class SyncthingService : LifecycleService() {
         /** Not the user's stop (an import replacing the setup): the app may start it again. */
         fun stop(context: Context) {
             context.stopService(Intent(context, SyncthingService::class.java))
+        }
+
+        /**
+         * Android raises a foreground service's MIN channel to LOW, so the
+         * notification shows in the shade on every phone; it stays out of the
+         * status bar. The user can hide it by turning the channel off.
+         */
+        fun createChannel(context: Context) {
+            val nm = context.getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(
+                NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_service), NotificationManager.IMPORTANCE_MIN).apply {
+                    setShowBadge(false)
+                }
+            )
         }
 
         /** Re-posts the notification, e.g. after the user allowed notifications while the service ran. */

@@ -28,9 +28,29 @@ class ProblemTextTest {
         assertEquals("The phone's storage is almost full. Free some space: syncing goes on by itself.", problemText("insufficient space on disk for database (x): odd").en())
     }
 
+    /** Upstream's messages as the core writes them, with the prefixes and wrapping it adds. */
+    @Test
+    fun commonMessagesInPlainWords() {
+        val cases = mapOf(
+            "folder marker missing (this indicates potential data loss, search docs/forum to get information about how to proceed)" to
+                "The folder's .stfolder marker is gone, so Syncthing stops rather than delete files on other devices. If the folder is complete, create an empty folder named .stfolder in it.",
+            "folder path missing" to "The folder is no longer on the phone. Put it back where it was, or remove it from Syncthing.",
+            "folder path not a directory" to "The folder's path leads to a file, not a folder.",
+            "opening temp file: open /storage/emulated/0/Test/.syncthing.a.txt.tmp: permission denied" to
+                "Syncthing may not read or change this file or folder.",
+            "syncing: peers who had this file went away, or the file has changed while syncing. will retry later" to
+                "The devices that had this file disconnected, or it changed while syncing. Syncthing tries again later.",
+            "pull: no connected device has the required version of this file" to
+                "No connected device has this version of the file. Syncthing tries again when one connects.",
+            "finishing: file modified but not rescanned; will try again later" to
+                "The file changed and has not been scanned yet. Syncthing tries again later.",
+        )
+        cases.forEach { (raw, plain) -> assertEquals(raw, plain, problemText(raw).en()) }
+    }
+
     @Test
     fun otherTextsUnchanged() {
-        for (raw in listOf("folder marker missing (this indicates potential data loss, search docs/forum to get information about how to proceed)", "", "permission denied"))
+        for (raw in listOf("", "hashing: unexpected EOF", "database misbehaved"))
             assertEquals(raw, problemText(raw).en())
     }
 

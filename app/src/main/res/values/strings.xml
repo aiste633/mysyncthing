@@ -383,6 +383,10 @@
     <string name="settings_nat">Router port opening</string>
     <string name="settings_nat_hint">Ask the router to open a port (UPnP, NAT-PMP)</string>
     <string name="settings_group_system">System</string>
+    <!-- Opens Android's language page for this app -->
+    <string name="settings_language">Language</string>
+    <!-- The app uses the language set for the whole phone -->
+    <string name="settings_language_phone">Same as the phone</string>
     <string name="settings_boot">Start at boot</string>
     <string name="settings_boot_hint">Sync starts when the phone starts</string>
     <string name="settings_start">Start Syncthing</string>

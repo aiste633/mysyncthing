@@ -63,13 +63,13 @@ object RequestNotifications {
         )
     }
 
-    /** Posts new requests (alerting once), and cancels those no longer pending. */
-    fun update(context: Context, requests: List<Request>) {
+    /** Posts new requests (alerting once), and cancels those no longer pending; [repost] redraws shown ones too. */
+    fun update(context: Context, requests: List<Request>, repost: Boolean = false) {
         val nm = context.getSystemService(NotificationManager::class.java)
         val shown = nm.activeNotifications.filter { it.tag == TAG }.map { it.id }.toSet()
         val wanted = requests.associateBy { it.key.hashCode() }
         (shown - wanted.keys).forEach { nm.cancel(TAG, it) }
-        wanted.forEach { (id, r) -> if (id !in shown) nm.notify(TAG, id, notification(context, r)) }
+        wanted.forEach { (id, r) -> if (repost || id !in shown) nm.notify(TAG, id, notification(context, r)) }
     }
 
     private fun notification(context: Context, r: Request) = NotificationCompat.Builder(context, CHANNEL_ID)

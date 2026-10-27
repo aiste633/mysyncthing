@@ -31,6 +31,9 @@ android {
         debug { isPseudoLocalesEnabled = true }
     }
 
+    // locales_config for Android's per-app language page, from the languages in res/ (base: resources.properties).
+    androidResources { generateLocaleConfig = true }
+
     // F-Droid: no Google dependency-info blob in the APK.
     dependenciesInfo {
         includeInApk = false

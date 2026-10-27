@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import android.app.LocaleManager
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -32,6 +36,7 @@ import androidx.compose.material.icons.filled.SettingsInputAntenna
 import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.SyncAlt
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.TravelExplore
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.VpnLock
@@ -206,6 +211,9 @@ fun SettingsScreen(
             }
 
             SettingsGroup(stringResource(R.string.settings_group_system)) {
+                SettingRow(stringResource(R.string.settings_language), appLanguage(context), Icons.Default.Translate) {
+                    context.startActivity(Intent(android.provider.Settings.ACTION_APP_LOCALE_SETTINGS, Uri.fromParts("package", context.packageName, null)))
+                }
                 Toggle(stringResource(R.string.settings_boot), stringResource(R.string.settings_boot_hint), Icons.Default.RestartAlt, rc.startOnBoot) { v ->
                     vm.setRunConditions { it.copy(startOnBoot = v) }
                 }
@@ -327,4 +335,17 @@ private fun powerHint(p: PowerSource): UiText? = when (p) {
     PowerSource.Any -> null
     PowerSource.ChargingOnly -> text(R.string.power_charging_hint)
     PowerSource.BatteryOnly -> text(R.string.power_battery_hint)
+}
+
+/**
+ * The language chosen for this app on Android's per-app language page, in that
+ * language ("Italiano"), or that it follows the phone. Choosing one recreates
+ * the activity, so reading it once per composition is enough.
+ */
+@Composable
+private fun appLanguage(context: Context): String {
+    val locales = context.getSystemService(LocaleManager::class.java).applicationLocales
+    if (locales.isEmpty) return stringResource(R.string.settings_language_phone)
+    val l = locales[0]
+    return l.getDisplayName(l).replaceFirstChar { it.titlecase(l) }
 }
