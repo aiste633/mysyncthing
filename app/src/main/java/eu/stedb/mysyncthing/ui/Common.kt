@@ -2,6 +2,12 @@
 
 package eu.stedb.mysyncthing.ui
 
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.stedb.mysyncthing.core.SyncthingCore
+import eu.stedb.mysyncthing.core.problemText
+import eu.stedb.mysyncthing.core.SyncthingService
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material3.Button
 import android.animation.ValueAnimator
 import androidx.activity.compose.BackHandler
 import android.net.Uri
@@ -105,8 +111,19 @@ fun CoreGate(state: CoreState, content: @Composable () -> Unit) {
     // Not inside an AppScreen, so it sets its own background and insets.
     Surface(Modifier.fillMaxSize(), color = AppColors.background) {
         Column(Modifier.safeDrawingPadding()) {
+            val context = LocalContext.current
+            val stoppedByUser by SyncthingCore.stoppedByUser.collectAsStateWithLifecycle()
             when (state) {
-                is CoreState.Failed -> Centered { Text("Syncthing failed: ${state.message}", color = MaterialTheme.colorScheme.error) }
+                is CoreState.Failed -> Centered {
+                    Text("Syncthing failed", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.error)
+                    Text(problemText(state.message).replaceFirstChar { it.uppercaseChar() }, textAlign = TextAlign.Center)
+                    Button(shape = ButtonShape, onClick = { SyncthingService.start(context) }) { Text("Try again") }
+                }
+                // Otherwise a start is on its way (the app just opened, or an import restarts it).
+                CoreState.Stopped if stoppedByUser -> Centered {
+                    Text("Syncthing is stopped")
+                    Button(shape = ButtonShape, onClick = { SyncthingService.start(context) }) { Text("Start") }
+                }
                 else -> Centered { BusyIndicator(); Text("Starting Syncthing") }
             }
         }

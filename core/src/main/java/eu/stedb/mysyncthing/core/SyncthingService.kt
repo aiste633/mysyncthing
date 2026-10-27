@@ -12,11 +12,12 @@ import android.os.Environment
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -38,16 +39,18 @@ class SyncthingService : LifecycleService() {
         createChannel()
         RequestNotifications.createChannel(this)
         ProblemNotifications.createChannel(this)
+        // An unloaded snapshot (no core) passes as null, so what a new run loads is always posted,
+        // also when it equals what was shown before failed() cleared it.
         lifecycleScope.launch {
-            SyncStatus.snapshot.filter { it.loaded }.map { it.requests() }.distinctUntilChanged()
+            SyncStatus.snapshot.map { s -> s.takeIf { it.loaded }?.requests() }.distinctUntilChanged().filterNotNull()
                 .collect { RequestNotifications.update(this@SyncthingService, it) }
         }
         lifecycleScope.launch {
-            SyncStatus.snapshot.filter { it.loaded }.map { it.systemErrors }.distinctUntilChanged()
+            SyncStatus.snapshot.map { s -> s.takeIf { it.loaded }?.systemErrors }.distinctUntilChanged().filterNotNull()
                 .collect { ProblemNotifications.update(this@SyncthingService, it) }
         }
         lifecycleScope.launch {
-            SyncStatus.snapshot.filter { it.loaded }.map { it.folderProblems() }.distinctUntilChanged()
+            SyncStatus.snapshot.map { s -> s.takeIf { it.loaded }?.folderProblems() }.distinctUntilChanged().filterNotNull()
                 .collect { ProblemNotifications.updateFolders(this@SyncthingService, it) }
         }
         // Renders at most every 2 s; a StateFlow collector always ends on the latest summary.
@@ -58,6 +61,33 @@ class SyncthingService : LifecycleService() {
             }
         }
         startForeground(NOTIFICATION_ID, notification("Starting"), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+    }
+
+    /** The core's run: started by [onStartCommand], over once the core failed (a later start tries again). */
+    private var run: Job? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
+        when (intent?.action) {
+            ACTION_STOP -> {
+                // Recorded first, so opening the app (or turning the phone) doesn't start it again.
+                SyncthingCore.setStoppedByUser(true)
+                lifecycleScope.launch {
+                    settings.setStoppedByUser(true)
+                    stopSelf()
+                }
+            }
+            ACTION_REFRESH -> lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
+            // A start (the user, the app opening, boot, a sticky restart) runs the core unless it already runs.
+            else -> {
+                lifecycleScope.launch { settings.setStoppedByUser(false) }
+                if (run?.isActive != true) run = lifecycleScope.launch { runCore() }
+            }
+        }
+        return START_STICKY
+    }
+
+    private suspend fun runCore() {
         // Without All files access the app still sees the files it wrote itself, .stfolder included, so the
         // core's folder-marker check passes and every other file would be scanned as deleted and synced as such.
         // Android kills the app when the access is taken away; this keeps the sticky restart (and boot) from
@@ -68,41 +98,51 @@ class SyncthingService : LifecycleService() {
             return
         }
         ProblemNotifications.noFileAccess(this, false)
+        updateNotification("Starting")
 
-        lifecycleScope.launch {
-            val home = File(filesDir, "syncthing")
-            // A phone migration copies the identity and config but not the database (data_extraction_rules.xml).
-            if (File(home, "config.xml").exists() && !File(home, "index-v2").exists()) settings.setMovedFromOtherPhone(true)
-            SyncthingCore.start(home, settings.credentials())
-            val running = SyncthingCore.state.first { it !is CoreState.Starting }
-            if (running !is CoreState.Running) {
-                SyncStatus.publish(summarize(running, Snapshot(), null, true))
-                updateNotification("Failed to start")
-                return@launch
-            }
-            launch { watchCore() }
-            launch { SyncStatus.follow(running.client) }
-            launch { applyPhoneDefaults(running.client) }
+        val home = File(filesDir, "syncthing")
+        // A phone migration copies the identity and config but not the database (data_extraction_rules.xml).
+        if (File(home, "config.xml").exists() && !File(home, "index-v2").exists()) settings.setMovedFromOtherPhone(true)
+        SyncthingCore.start(home, settings::credentials)
+        val running = SyncthingCore.state.first { it !is CoreState.Starting }
+        if (running !is CoreState.Running) return failed(running, "Failed to start")
+        coroutineScope {
+            val work = launch {
+                launch { SyncStatus.follow(running.client) }
+                launch { applyPhoneDefaults(running.client) }
 
-            val device = deviceState(this@SyncthingService).stateIn(this)
-            val blockedBy = combine(settings.runConditions, device) { c, d -> c.blockedBy(d) }.distinctUntilChanged()
-            launch { blockedBy.collect { reason -> applyConditions(running.client, reason) } }
-            combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
-                summarize(core, snap, reason, d.online)
-            }.collect { summary ->
-                SyncStatus.publish(summary)
-                updateNotification(summary.line(), summary.publicText)
+                val device = deviceState(this@SyncthingService).stateIn(this)
+                val blockedBy = combine(settings.runConditions, device) { c, d -> c.blockedBy(d) }.distinctUntilChanged()
+                launch { blockedBy.collect { reason -> applyConditions(running.client, reason) } }
+                combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
+                    summarize(core, snap, reason, d.online)
+                }.collect { summary ->
+                    SyncStatus.publish(summary)
+                    updateNotification(summary.line(), summary.publicText)
+                }
             }
+            watchCore()
+            work.cancel()
         }
+        failed(SyncthingCore.state.value, "Stopped with an error")
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        super.onStartCommand(intent, flags, startId)
-        when (intent?.action) {
-            ACTION_STOP -> stopSelf()
-            ACTION_REFRESH -> lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
-        }
-        return START_STICKY
+    /**
+     * The core did not start or stopped with an error. The service stays, so
+     * the app can show why and start it again; the notices of a core that no
+     * longer runs go (also those a crashed process left in the shade).
+     */
+    private fun failed(state: CoreState, text: String) {
+        SyncStatus.publish(summarize(state, Snapshot(), null, true))
+        updateNotification(text)
+        clearCoreNotices()
+    }
+
+    /** Requests and problems shown for a core that no longer runs. */
+    private fun clearCoreNotices() {
+        RequestNotifications.update(this, emptyList()) // Ignore needs a running core
+        ProblemNotifications.update(this, emptyList())
+        ProblemNotifications.updateFolders(this, emptyList())
     }
 
     override fun onDestroy() {
@@ -112,9 +152,7 @@ class SyncthingService : LifecycleService() {
             SyncStatus.publish(it)
             StatusWidget.render(this, it) // the collector above is already cancelled
         }
-        RequestNotifications.update(this, emptyList()) // Ignore needs a running core
-        ProblemNotifications.update(this, emptyList()) // a stopped core's notices are stale
-        ProblemNotifications.updateFolders(this, emptyList())
+        clearCoreNotices()
         super.onDestroy()
     }
 
@@ -123,7 +161,8 @@ class SyncthingService : LifecycleService() {
             val pausedByUs = settings.conditionPause()
             if (reason != null && pausedByUs == null) {
                 val userPaused = client.devices().filter { it.paused }.map { it.deviceID }.toSet()
-                settings.setConditionPause(userPaused)
+                // Unrecorded, the pause would never be undone; the next change of conditions tries again.
+                if (!settings.setConditionPause(userPaused)) return@runCatching
                 client.setAllPaused(true)
             } else if (reason == null && pausedByUs != null) {
                 client.devices().filter { it.deviceID !in pausedByUs }.forEach { client.setDevicePaused(it.deviceID, false) }
@@ -149,15 +188,11 @@ class SyncthingService : LifecycleService() {
         android.provider.Settings.Global.getString(contentResolver, android.provider.Settings.Global.DEVICE_NAME)
             ?.takeIf { it.isNotBlank() } ?: Build.MODEL
 
+    /** Returns once the running core has stopped on its own. */
     private suspend fun watchCore() {
-        SyncthingCore.state.filterIsInstance<CoreState.Running>().first()
-        while (true) {
+        while (SyncthingCore.state.value is CoreState.Running) {
             delay(10_000)
             SyncthingCore.checkAlive()
-            if (SyncthingCore.state.value is CoreState.Failed) {
-                updateNotification("Stopped with an error")
-                return
-            }
         }
     }
 
@@ -222,10 +257,29 @@ class SyncthingService : LifecycleService() {
         private const val ACTION_STOP = "eu.stedb.mysyncthing.STOP"
         private const val ACTION_REFRESH = "eu.stedb.mysyncthing.REFRESH_NOTIFICATION"
 
+        /**
+         * Starts the service, and the core unless it runs; also after it failed.
+         * For a start the user asked for (or boot, an import): it ends a stop by the user.
+         */
         fun start(context: Context) {
+            SyncthingCore.setStoppedByUser(false)
             context.startForegroundService(Intent(context, SyncthingService::class.java))
         }
 
+        /** The app came to the front: starts Syncthing unless the user stopped it. */
+        suspend fun startUnlessStopped(context: Context) {
+            if (SyncthingCore.stoppedByUser.value) return
+            if (Settings(context).stoppedByUser.first()) return SyncthingCore.setStoppedByUser(true)
+            start(context)
+        }
+
+        /** The user's stop: it lasts until the user starts Syncthing again or the phone restarts. */
+        fun stopByUser(context: Context) {
+            SyncthingCore.setStoppedByUser(true)
+            context.startService(Intent(context, SyncthingService::class.java).setAction(ACTION_STOP))
+        }
+
+        /** Not the user's stop (an import replacing the setup): the app may start it again. */
         fun stop(context: Context) {
             context.stopService(Intent(context, SyncthingService::class.java))
         }

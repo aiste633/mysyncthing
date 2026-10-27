@@ -35,10 +35,15 @@ object SyncthingCore {
     fun checkIgnores(folderPath: String, lines: List<String>): String? =
         Stbridge.checkIgnores(folderPath, lines.joinToString("\n")).ifEmpty { null }
 
-    internal suspend fun start(home: File, credentials: Credentials) = withContext(serial) {
+    /**
+     * Starts the core with the login [login] gives; any failure on the
+     * way, storing new credentials included, ends in [CoreState.Failed].
+     */
+    internal suspend fun start(home: File, login: suspend () -> Credentials) = withContext(serial) {
         if (Stbridge.isRunning()) return@withContext
         _state.value = CoreState.Starting
         _state.value = try {
+            val credentials = login()
             Stbridge.start(home.absolutePath, credentials.apiKey, credentials.guiUser, credentials.guiPassword)
             val address = Stbridge.guiAddress()
             val client = RestClient(address, credentials.apiKey)
@@ -62,6 +67,18 @@ object SyncthingCore {
             if (runCatching { client.adoptFolderDefaults(root) }.isSuccess) return
             delay(500)
         }
+    }
+
+    private val _stoppedByUser = MutableStateFlow(false)
+
+    /**
+     * Mirrors [Settings.stoppedByUser] for the screens: [CoreState.Stopped]
+     * reads as "stopped" only when the user stopped it, else as a start on its way.
+     */
+    val stoppedByUser: StateFlow<Boolean> = _stoppedByUser.asStateFlow()
+
+    internal fun setStoppedByUser(stopped: Boolean) {
+        _stoppedByUser.value = stopped
     }
 
     internal suspend fun stop() = withContext(serial) {
