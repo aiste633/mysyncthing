@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -40,8 +41,14 @@ data class RunConditions(
  * return false then (the stored values stay as they were) instead of throwing,
  * as a throw from a launched coroutine would crash the app.
  */
-class Settings internal constructor(private val store: DataStore<Preferences>) {
-    constructor(context: Context) : this(context.applicationContext.dataStore)
+class Settings internal constructor(
+    private val store: DataStore<Preferences>,
+    /** Which boot of the phone this is; -1 when unknown. */
+    private val bootCount: () -> Int = { -1 },
+) {
+    constructor(context: Context) : this(context.applicationContext.dataStore, {
+        android.provider.Settings.Global.getInt(context.contentResolver, android.provider.Settings.Global.BOOT_COUNT, -1)
+    })
 
     /** Every write but [credentials]'s goes through here. */
     private suspend fun write(block: (MutablePreferences) -> Unit): Boolean = try {
@@ -89,6 +96,22 @@ class Settings internal constructor(private val store: DataStore<Preferences>) {
         it[SETUP_DONE] = true
     }
 
+    /**
+     * The user stopped Syncthing (Settings or the notification): the app then
+     * doesn't start it when it opens, until the user starts it or the phone
+     * restarts. Stored as the boot it happened in, so it ends by itself with the
+     * next boot. A broadcast can't tell: Android 15+ also sends BOOT_COMPLETED
+     * when the app leaves the stopped state (a force-stop, an install).
+     */
+    val stoppedByUser: Flow<Boolean> = store.data.map { stopHolds(it[STOPPED_AT_BOOT], bootCount()) }
+
+    /** Writes only a change: it is asked on every start. */
+    suspend fun setStoppedByUser(stopped: Boolean): Boolean = when {
+        stoppedByUser.first() == stopped -> true
+        stopped -> write { it[STOPPED_AT_BOOT] = bootCount() }
+        else -> write { it.remove(STOPPED_AT_BOOT) }
+    }
+
     /** True after a phone migration brought the identity along, until the user has seen the note. */
     val movedFromOtherPhone: Flow<Boolean> = store.data.map { it[MOVED] ?: false }
 
@@ -134,6 +157,7 @@ class Settings internal constructor(private val store: DataStore<Preferences>) {
         val CONDITION_PAUSE = stringSetPreferencesKey("condition_pause")
         val SETUP_DONE = booleanPreferencesKey("setup_done")
         val MOVED = booleanPreferencesKey("moved_from_other_phone")
+        val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
 
         /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */
         const val TOKEN_CHARS = 64
@@ -144,3 +168,6 @@ class Settings internal constructor(private val store: DataStore<Preferences>) {
         }
     }
 }
+
+/** A Stop made in boot [stoppedAt] holds in boot [now]; with the boot unknown (-1), until the user starts again. */
+internal fun stopHolds(stoppedAt: Int?, now: Int): Boolean = stoppedAt != null && stoppedAt == now
