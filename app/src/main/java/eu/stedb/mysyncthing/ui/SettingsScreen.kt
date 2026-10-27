@@ -237,7 +237,7 @@ fun SettingsScreen(
             "Listen addresses", o.listenAddresses, token = "default", tokenTitle = "Default",
             tokenHint = "TCP and QUIC on port 22000, plus relays",
             addHint = "For another port, add tcp://0.0.0.0:22001 and quic://0.0.0.0:22001 and untick Default.",
-            valid = LISTEN::matches, onDismiss = close,
+            valid = ::isListenAddress, onDismiss = close,
         ) { list -> close(); change(o.copy(listenAddresses = list), "Listen addresses") { putStrings("listenAddresses", list) } }
         NetDialog.Servers -> ListEditDialog(
             "Discovery servers", o.globalAnnounceServers, token = "default", tokenTitle = "Syncthing's public servers",
@@ -260,8 +260,6 @@ private fun Toggle(title: String, hint: String, icon: ImageVector, value: Boolea
     SwitchRow(title, hint, value, icon, onChange)
 
 private enum class NetDialog { Recv, Send, Listen, Servers }
-
-private val LISTEN = Regex("^(tcp[46]?|quic[46]?|relay|dynamic\\+https?)" + "://\\S*$")
 
 /** [defaultText] for the default token alone, else the entries as stored. */
 private fun listText(list: List<String>, defaultText: String): String =

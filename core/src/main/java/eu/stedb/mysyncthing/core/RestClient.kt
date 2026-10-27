@@ -44,7 +44,7 @@ class RestClient(address: String, private val apiKey: String) {
 
     /** The bridge starts the core again in place, on the same address. */
     suspend fun restart() = send("POST", "rest/system/restart")
-    suspend fun device(id: String): Device = get("rest/config/devices/$id")
+    suspend fun device(id: String): Device = get("rest/config/devices", id = id)
     suspend fun folders(): List<Folder> = get("rest/config/folders")
     suspend fun connections(): Connections = get("rest/system/connections")
     suspend fun folderStatus(folder: String): FolderStatus = get("rest/db/status", "folder" to folder)
@@ -94,7 +94,7 @@ class RestClient(address: String, private val apiKey: String) {
         put("name", name)
     })
 
-    suspend fun removeDevice(id: String) = send("DELETE", "rest/config/devices/$id")
+    suspend fun removeDevice(id: String) = send("DELETE", "rest/config/devices", id = id)
 
     /** Settings new folders and devices start with; their IDs are empty. */
     suspend fun defaultFolder(): Folder = get("rest/config/defaults/folder")
@@ -114,7 +114,7 @@ class RestClient(address: String, private val apiKey: String) {
         send("PATCH", "rest/config/defaults/folder", buildJsonObject { put("path", path); put("ignorePerms", true) })
     }
 
-    suspend fun patchDevice(id: String, fields: JsonObject) = send("PATCH", "rest/config/devices/$id", fields)
+    suspend fun patchDevice(id: String, fields: JsonObject) = send("PATCH", "rest/config/devices", fields, id = id)
 
     /** Devices heard on the local network, plus the global lookups the core has cached. */
     suspend fun discovery(): Map<String, Discovered> = get("rest/system/discovery")
@@ -131,7 +131,7 @@ class RestClient(address: String, private val apiKey: String) {
 
     /** Lets [device] offer [folder] again. */
     suspend fun unignoreFolder(folder: String, device: String) {
-        val d = get<JsonObject>("rest/config/devices/$device")
+        val d = get<JsonObject>("rest/config/devices", id = device)
         val left = (d["ignoredFolders"] as? JsonArray).orEmpty()
             .filter { (it as? JsonObject)?.get("id")?.let { v -> (v as? JsonPrimitive)?.content } != folder }
         patchDevice(device, buildJsonObject { put("ignoredFolders", JsonArray(left)) })
@@ -162,7 +162,7 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun usageReport(): String = call(request("rest/svc/report", emptyList()).get().build())
 
     suspend fun setDeviceName(id: String, name: String) =
-        send("PATCH", "rest/config/devices/$id", buildJsonObject { put("name", name) })
+        patchDevice(id, buildJsonObject { put("name", name) })
 
     suspend fun addFolder(
         id: String, label: String, path: String, devices: List<FolderDevice>, type: String, versioning: Versioning, paused: Boolean = false,
@@ -180,7 +180,7 @@ class RestClient(address: String, private val apiKey: String) {
         })
 
     /** Changes only the given fields of a folder's config. */
-    suspend fun patchFolder(id: String, fields: JsonObject) = send("PATCH", "rest/config/folders/$id", fields)
+    suspend fun patchFolder(id: String, fields: JsonObject) = send("PATCH", "rest/config/folders", fields, id = id)
 
     /** Whole entries, so other devices keep their introducer and encryption password. */
     suspend fun setFolderDevices(id: String, devices: List<FolderDevice>) = patchFolder(id, buildJsonObject {
@@ -196,14 +196,21 @@ class RestClient(address: String, private val apiKey: String) {
     suspend fun folderErrors(id: String): FolderErrors = get("rest/folder/errors", "folder" to id)
     suspend fun ignores(id: String): List<String> = get<Ignores>("rest/db/ignores", "folder" to id).ignore.orEmpty()
 
-    suspend fun setIgnores(id: String, lines: List<String>) = send("POST", "rest/db/ignores", buildJsonObject {
-        putJsonArray("ignore") { lines.forEach { add(JsonPrimitive(it)) } }
-    }, query = listOf("folder" to id))
+    /**
+     * The core writes any patterns, answers 200 and only then reports them
+     * invalid (the folder stops), so its answer is checked too.
+     */
+    suspend fun setIgnores(id: String, lines: List<String>) {
+        val body = send("POST", "rest/db/ignores", buildJsonObject {
+            putJsonArray("ignore") { lines.forEach { add(JsonPrimitive(it)) } }
+        }, query = listOf("folder" to id))
+        json.decodeFromString<Ignores>(body).error?.takeIf { it.isNotEmpty() }?.let { throw IOException(it) }
+    }
 
-    suspend fun removeFolder(id: String) = send("DELETE", "rest/config/folders/$id")
+    suspend fun removeFolder(id: String) = send("DELETE", "rest/config/folders", id = id)
 
     suspend fun setFolderPaused(id: String, paused: Boolean) =
-        send("PATCH", "rest/config/folders/$id", buildJsonObject { put("paused", paused) })
+        patchFolder(id, buildJsonObject { put("paused", paused) })
 
     suspend fun shareFolder(folder: Folder, deviceId: String) {
         if (folder.devices.any { it.deviceID == deviceId }) return
@@ -227,10 +234,10 @@ class RestClient(address: String, private val apiKey: String) {
     /** Ignores one device's offer of a folder for good, stored on that device as upstream does. */
     suspend fun ignoreFolder(folder: String, device: String) {
         val label = pendingFolders()[folder]?.offeredBy?.get(device)?.label.orEmpty()
-        val d = get<JsonObject>("rest/config/devices/$device")
+        val d = get<JsonObject>("rest/config/devices", id = device)
         val entry = buildJsonObject { put("id", folder); put("label", label); put("time", Instant.now().toString()) }
         val ignored = (d["ignoredFolders"] as? JsonArray).orEmpty() + entry
-        send("PATCH", "rest/config/devices/$device", buildJsonObject { put("ignoredFolders", JsonArray(ignored)) })
+        patchDevice(device, buildJsonObject { put("ignoredFolders", JsonArray(ignored)) })
     }
 
     /** Pauses or resumes all devices; used to enforce run conditions without stopping the core. */
@@ -249,20 +256,24 @@ class RestClient(address: String, private val apiKey: String) {
         putJsonObject("params") { params.forEach { (k, v) -> put(k, v) } }
     }
 
-    private suspend inline fun <reified T> get(path: String, vararg query: Pair<String, String>): T {
-        val body = call(request(path, query.toList()).get().build())
+    /** [id] (a folder or device) is the last path segment, escaped: IDs may hold "?", "#", "%" or "\\". */
+    private suspend inline fun <reified T> get(path: String, vararg query: Pair<String, String>, id: String? = null): T {
+        val body = call(request(path, query.toList(), id).get().build())
         return json.decodeFromString(body)
     }
 
     /** Returns the response body; most callers ignore it. */
-    private suspend fun send(method: String, path: String, body: JsonObject? = null, query: List<Pair<String, String>> = emptyList()): String {
+    private suspend fun send(
+        method: String, path: String, body: JsonObject? = null, query: List<Pair<String, String>> = emptyList(), id: String? = null,
+    ): String {
         val rb: RequestBody? = body?.toString()?.toRequestBody(JSON)
             ?: if (method == "POST") ByteArray(0).toRequestBody(null) else null
-        return call(request(path, query).method(method, rb).build())
+        return call(request(path, query, id).method(method, rb).build())
     }
 
-    private fun request(path: String, query: List<Pair<String, String>>): Request.Builder {
+    internal fun request(path: String, query: List<Pair<String, String>>, id: String? = null): Request.Builder {
         val url = base.newBuilder().addPathSegments(path).apply {
+            id?.let { addPathSegment(it) }
             query.forEach { (k, v) -> addQueryParameter(k, v) }
         }.build()
         return Request.Builder().url(url).header("X-API-Key", apiKey)

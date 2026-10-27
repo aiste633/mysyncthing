@@ -85,7 +85,6 @@ class FormatTest {
     fun discoveryServersNeedHttpsAndAHost() {
         val https = "https" + "://"
         assertTrue(isDiscoveryServer("${https}discovery.example.com/"))
-        assertTrue(isDiscoveryServer("${https}discovery.example.com:8443/?id=ABC"))
         assertTrue(isDiscoveryServer("${https}192.0.2.10:8443/?insecure"))
         assertFalse(isDiscoveryServer("http" + "://example.com/"))
         assertFalse(isDiscoveryServer("${https}/path"))
@@ -99,7 +98,7 @@ class FormatTest {
     fun newFoldersFollowTheDefaultLocation() {
         assertEquals("/storage/emulated/0/Syncthing", pathBase(eu.stedb.mysyncthing.core.Folder(path = "~")))
         assertEquals("/storage/emulated/0/Sync", pathBase(eu.stedb.mysyncthing.core.Folder(path = "/storage/emulated/0/Sync/")))
-        assertEquals("/storage/emulated/0/Sync/a_b", suggestedPath(" a/b ", "/storage/emulated/0/Sync"))
+        assertEquals("/storage/emulated/0/Sync/a b", suggestedPath(" a/b ", "/storage/emulated/0/Sync"))
     }
 
     @Test

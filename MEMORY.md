@@ -112,3 +112,15 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Ask before pushing or opening a PR; one short-lived branch and PR per step, deleted after merge.
 - Finish every check locally first (unit tests, lint, emulator and phone checks) and push or open a PR only when all of them pass; GitHub CI comes last (user's rule, 2026-10-25).
 - Propose GUI designs and get the user's answer before building them.
+
+## Input validation audit (2026-10-26)
+- Table of every field and its check: `docs/input-validation.md`. Form checks live in `ui/Validation.kt`; where the core has a rule they port it (device ID check characters, `SanitizePath`, listener/discovery URL rules) and name the Go file.
+- Property tests: `ValidationTest` with the hand-rolled `forAll` in `Property.kt` (fixed seed, 20,000 inputs; no property library, to keep dependency verification small). Generators mimic typing: other scripts' digits, both decimal separators, pasted whitespace, junk.
+- Go fuzz targets in `go/bridge/fuzz_test.go` (FuzzPrepare, FuzzGUIGuard, FuzzRESTConfig, FuzzCheckIgnores). Run them with the proxy env vars unset: a fuzzed config can enable usage reporting.
+- `/` in the GUI is the login page and served to anyone: a login test must look for the `sessionid-` cookie, not HTTP 200.
+- The bridge refuses credentials that are not 1-72 `[A-Za-z0-9_-]` and never regenerates an unreadable cert/key (upstream's LoadOrGenerateCertificate does).
+- The core's supervisor counts every service return as a failure (suture defaults: more than 5 in ~30 s backs off 15 s). A GUI change used to restart the API that way: 6 in a row took GUI and REST down 15 s. `go/patches/0002` restarts the listener inside `Serve`. Any service that returns on purpose has the same trap.
+- `go/patch.sh` checks the files the patches touch together (pinned commit + first k patches), since patches may touch the same files. Only those files: F-Droid's scandelete removes others (lib/model/testdata).
+- Fuzz callbacks need an HTTP client timeout: an input running over ~10 s is killed as a hang with no message.
+- `TestHostCheck` in `lib/api` hangs in the cloud container (no IPv6 loopback); skip it there with `-skip '^TestHostCheck$'`.
+- Open: an offered folder whose ID holds `/` or a control character can be accepted but not edited natively (REST paths can't carry it).
