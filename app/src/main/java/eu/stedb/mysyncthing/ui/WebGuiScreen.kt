@@ -1,7 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.webkit.RenderProcessGoneDetail
@@ -15,7 +13,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
 import java.net.InetSocketAddress
 import java.net.Socket

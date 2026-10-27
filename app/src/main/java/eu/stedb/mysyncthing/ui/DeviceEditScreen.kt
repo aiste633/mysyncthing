@@ -1,7 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -25,9 +23,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.Snapshot

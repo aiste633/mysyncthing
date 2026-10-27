@@ -1,8 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.R as CoreR
 import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -39,12 +36,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Device
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
+import eu.stedb.mysyncthing.core.R as CoreR
 
 @Composable
 fun DevicesScreen(
@@ -112,7 +112,7 @@ private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, on
                 }
             }
             live?.let { l ->
-                l.total?.let { Text(speedText(it), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                l.total?.let { Text(speedText(it).asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 val look = l.health.look()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)

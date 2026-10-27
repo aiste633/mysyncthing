@@ -36,6 +36,9 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
 - Follow the terms of upstream Syncthing's translation for the same language (folder types,
   versioning, ignore patterns, introducer, and so on), so the app and the web GUI agree.
   The usage-reporting question uses upstream's wording; take upstream's translation of it.
+- Dates, times and numbers are not in the strings: the app writes them as the phone's
+  language does (`3 ott 2025, 18:42`, `1,5 MB`), with the hour per the phone's 12/24 h
+  setting. Only words around them ("yesterday, %1$s") are translated.
 - In the XML, an apostrophe is written `\'` and a double quote `\"`.
 - Messages from the Syncthing core itself (errors about files, connections) come in English
   and are shown as they come, except the few the app maps to its own words.
@@ -49,7 +52,13 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
 - An error to show from deep code: `throw UiTextException(text(R.string.x))`; the caller shows
   `e.messageText()`.
 - Each string with placeholders gets a comment for translators. Numbers of things use
-  `<plurals>`; counts are formatted with `grouped(n)` and passed as `%1$s`.
+  `<plurals>`; counts go in as `num(n)` and the string takes them as `%1$s`.
+- Numbers, dates and times are `UiText` too, formatted when resolved: `num(n)` or
+  `UiText.Num(v, decimals)` with the language's separators, and `time(value, skeleton)` with
+  an ICU skeleton (`dMMMyjm`), where `j` becomes the hour per the phone's 12/24 h setting.
+  Dates and numbers follow the phone's region (en-US writes month first). Logs, exports and file names stay ISO 8601;
+  units stay SI. A number field shows the language's decimal separator without grouping
+  (`fieldNumber`) and accepts both `.` and `,`.
 - Log, exception and `toString()` texts stay English in code.
 - Unit tests run on the JVM without Android: `XmlStrings` reads the English text from
   `res/values`, so a test asserts `someText(...).en()` against English. `StringsTest` checks
@@ -59,4 +68,8 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
   protocol word, a core message matched by the app) goes on its allowlist with the reason.
   It also fails when a use of a string resource passes fewer or more arguments than the
   string has placeholders (a missing one crashes at run time), or text where it expects a
-  number (`%d`).
+  number (`%d`). And it fails when a `UiText` value goes into a string template, a `+` with
+  a string or a formatting call without being resolved (it would show the data class).
+- `XmlStrings.with(is24Hour = false)` and `.with(locale = Locale.ITALY)` test the 12 h
+  clock and another language's dates and numbers on the JVM. Dates come from the JDK's CLDR
+  data, which gives the same text as Android 16 (a 12 h time has U+202F before "pm").

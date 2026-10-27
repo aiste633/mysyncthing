@@ -2,101 +2,121 @@ package eu.stedb.mysyncthing.ui
 
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
+import androidx.compose.runtime.Composable
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.joined
+import eu.stedb.mysyncthing.core.num
 import eu.stedb.mysyncthing.core.plural
 import eu.stedb.mysyncthing.core.raw
 import eu.stedb.mysyncthing.core.text
-import eu.stedb.mysyncthing.core.DiskSize
+import eu.stedb.mysyncthing.core.time
+import java.text.DecimalFormatSymbols
+import java.time.Duration
+import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-/** [value] and its [unit] with a no-break space, so a line never ends between them. */
-fun withUnit(value: Any, unit: String): String = "$value\u00A0$unit"
+/*
+ * Numbers, sizes and times are UiText (written in the language's way where they are
+ * shown) for logic, with a String twin for Compose: bytesText(n) and bytes(n).
+ * Units are SI symbols in every language.
+ */
 
-/** SI (base-1000) byte sizes. */
-fun bytes(n: Long): String {
-    if (n < 1000) return withUnit(n, "B")
+/** [value] and its [unit] with a no-break space, so a line never ends between them. */
+fun withUnit(value: UiText, unit: String): UiText = listOf(value, raw(unit)).joined("\u00A0")
+
+/** SI (base-1000) byte sizes, one decimal from kB on: "512 B", "1.5 MB". */
+fun bytesText(n: Long): UiText {
+    if (n < 1000) return withUnit(num(n), "B")
     val units = "kMGTPE"
     var v = n.toDouble()
     var i = -1
     while (v >= 1000 && i < units.length - 1) { v /= 1000; i++ }
-    return withUnit(String.format(Locale.ROOT, "%.1f", v), "${units[i]}B")
+    return withUnit(UiText.Num(v, 1), "${units[i]}B")
 }
 
+@Composable
+fun bytes(n: Long): String = bytesText(n).asString()
+
 /** A transfer speed with its unit, e.g. "1.2 MB/s". */
-fun rate(bytesPerSecond: Long): String = bytes(bytesPerSecond) + "/s"
+fun rateText(bytesPerSecond: Long): UiText = listOf(bytesText(bytesPerSecond), raw("/s")).joined("")
 
 /** "12 min", "3 h 5 min", "2 d 4 h": the two largest units. */
-fun duration(seconds: Long): String {
+fun durationText(seconds: Long): UiText {
     val d = seconds / 86_400
     val h = seconds % 86_400 / 3_600
     val m = seconds % 3_600 / 60
+    fun of(vararg parts: Pair<Long, String>) = parts.map { (n, unit) -> withUnit(num(n), unit) }.joined(" ")
     return when {
-        d > 0 -> if (h > 0) "${withUnit(d, "d")} ${withUnit(h, "h")}" else withUnit(d, "d")
-        h > 0 -> if (m > 0) "${withUnit(h, "h")} ${withUnit(m, "min")}" else withUnit(h, "h")
-        m > 0 -> withUnit(m, "min")
-        else -> withUnit(seconds, "s")
+        d > 0 -> if (h > 0) of(d to "d", h to "h") else of(d to "d")
+        h > 0 -> if (m > 0) of(h to "h", m to "min") else of(h to "h")
+        m > 0 -> of(m to "min")
+        else -> of(seconds to "s")
     }
 }
 
-/** [n] with its digits grouped as the phone's language does: "1,204". */
-fun grouped(n: Int): String = String.format(Locale.getDefault(), "%,d", n)
+@Composable
+fun duration(seconds: Long): String = durationText(seconds).asString()
+
+/** [n] with its digits grouped as the language does: "1,204". */
+@Composable
+fun grouped(n: Int): String = num(n).asString()
 
 /** "1 file", "1,204 files": [id] is a plurals resource whose %1$s takes the grouped count. */
-fun count(@PluralsRes id: Int, n: Int): UiText = plural(id, n, grouped(n))
+fun count(@PluralsRes id: Int, n: Int): UiText = plural(id, n, num(n))
 
 /** The Revert confirmation for [n] locally changed items, with the verbs agreeing. */
-fun revertText(n: Int): UiText = plural(R.plurals.revert_text, n, grouped(n))
+fun revertText(n: Int): UiText = plural(R.plurals.revert_text, n, num(n))
 
 /**
- * A REST time stamp (RFC 3339) for people, day before month, 24 h: "12:03" today,
- * "yesterday, 22:10", "25 Oct, 12:03" this year, else with the year.
- * Null for Go's zero time, which the core uses for "never".
+ * A REST time stamp (RFC 3339) for people, in the language's order and the phone's
+ * clock setting: "12:03" today, "yesterday, 22:10", "25 Oct, 12:03" this year, else
+ * with the year. Null for Go's zero time, which the core uses for "never".
  */
-fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): UiText? {
+fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): UiText? {
     val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
     if (t.year < 2000) return null
-    val time = t.format(DateTimeFormatter.ofPattern("HH:mm", locale))
     val day = t.toLocalDate()
     return when {
-        day == now.toLocalDate() -> raw(time)
-        day == now.toLocalDate().minusDays(1) -> text(R.string.when_yesterday, time)
-        t.year == now.year -> raw(t.format(DateTimeFormatter.ofPattern("d MMM, HH:mm", locale)))
-        else -> raw(t.format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale)))
+        day == now.toLocalDate() -> time(t, "jm")
+        day == now.toLocalDate().minusDays(1) -> text(R.string.when_yesterday, time(t, "jm"))
+        t.year == now.year -> time(t, "dMMMjm")
+        else -> time(t, "dMMMyjm")
     }
 }
 
-/** An absolute day-first time, e.g. "26 Oct 2026, 19:27", for a file's date. */
-fun dateTimeText(epochMillis: Long, zone: java.time.ZoneId = java.time.ZoneId.systemDefault(), locale: Locale = Locale.getDefault()): String =
-    java.time.Instant.ofEpochMilli(epochMillis).atZone(zone).format(DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", locale))
+/** An absolute time, e.g. "26 Oct 2026, 19:27", for a file's date. */
+fun dateTimeText(epochMillis: Long, zone: ZoneId = ZoneId.systemDefault()): UiText =
+    time(Instant.ofEpochMilli(epochMillis).atZone(zone), "dMMMyjm")
 
 /** Heading for a day of changes: "Today", "Yesterday", "3 Oct", "3 Oct 2025"; null for an unreadable time. */
-fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: Locale = Locale.getDefault()): UiText? {
+fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): UiText? {
     val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
     val day = t.toLocalDate()
     return when {
         day == now.toLocalDate() -> text(R.string.day_today)
         day == now.toLocalDate().minusDays(1) -> text(R.string.day_yesterday)
-        t.year == now.year -> raw(t.format(DateTimeFormatter.ofPattern("d MMM", locale)))
-        else -> raw(t.format(DateTimeFormatter.ofPattern("d MMM yyyy", locale)))
+        t.year == now.year -> time(t, "dMMM")
+        else -> time(t, "dMMMy")
     }
 }
 
 /**
- * The exact 24 h time to the second, for rows under a [dayText] heading, with
- * how long ago within the last hour: "18:02:12 · 5 min ago". "" when unreadable.
+ * The exact time to the second, for rows under a [dayText] heading, with how long
+ * ago within the last hour: "18:02:12 · 5 min ago". Empty when unreadable.
  */
 fun exactTimeText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): UiText {
     val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return raw("")
-    val clock = t.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
-    val ago = java.time.Duration.between(t, now).seconds
+    val clock = time(t, "jms")
+    val ago = Duration.between(t, now).seconds
     return when {
-        ago < 0 || ago >= 3600 -> raw(clock) // a clock set back, or long enough ago for the time alone
+        ago < 0 || ago >= 3600 -> clock // a clock set back, or long enough ago for the time alone
         ago < 60 -> text(R.string.exact_time_just_now, clock)
-        else -> text(R.string.exact_time_ago, clock, withUnit(ago / 60, "min"))
+        else -> text(R.string.exact_time_ago, clock, withUnit(num(ago / 60), "min"))
     }
 }
 
@@ -131,11 +151,20 @@ fun rescanHint(seconds: Int): UiText? = when (seconds) {
     else -> null
 }
 
-/** 1.0 as "1", 2.5 as "2.5". */
-fun number(v: Double): String = if (v == Math.floor(v) && v < 1e15) v.toLong().toString() else v.toString()
+/** 1.0 as "1", 2.5 as "2.5": as many decimals as it has, up to 6. */
+fun numberText(v: Double): UiText = UiText.Num(v, 0, 6)
+
+/**
+ * [v] for a text field to edit: 0-9 digits (what the fields take), no grouping, and the
+ * language's decimal comma where it has one. [decimal] reads either separator back.
+ */
+fun fieldNumber(v: Double, locale: Locale): String {
+    val plain = if (v == Math.floor(v) && v < 1e15) v.toLong().toString() else v.toString()
+    return if (DecimalFormatSymbols.getInstance(locale).decimalSeparator == ',') plain.replace('.', ',') else plain
+}
 
 /** "1 %", "5 GB": upstream's units are SI. */
-fun diskSizeText(d: DiskSize): String = withUnit(number(d.value), d.unit)
+fun diskSizeText(d: DiskSize): UiText = withUnit(numberText(d.value), d.unit)
 
 /**
  * A speed limit the core stores in KiB/s, as SI for people: 488 KiB/s is
@@ -156,7 +185,7 @@ fun limitKib(value: Double, unit: String): Long {
     return Math.round(b / 1024).coerceAtLeast(1)
 }
 
-fun limitText(kib: Long): UiText = if (kib <= 0) text(R.string.limit_none) else raw(limitSi(kib).let { (v, u) -> withUnit(number(v), u) })
+fun limitText(kib: Long): UiText = if (kib <= 0) text(R.string.limit_none) else limitSi(kib).let { (v, u) -> withUnit(numberText(v), u) }
 
 val COMPRESSIONS = listOf(
     "metadata" to text(R.string.compression_metadata),
@@ -271,8 +300,8 @@ fun versioningAmount(p: VersioningParam, shown: String): UiText {
     val n = shown.toIntOrNull() ?: 0
     return when {
         p.days && n == 0 -> text(R.string.versioning_forever)
-        p.days -> plural(R.plurals.count_days, n, shown)
-        else -> plural(R.plurals.count_versions, n, shown)
+        p.days -> count(R.plurals.count_days, n)
+        else -> count(R.plurals.count_versions, n)
     }
 }
 

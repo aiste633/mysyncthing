@@ -1,9 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.text
+import android.os.StatFs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -13,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -21,10 +19,16 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -34,21 +38,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import android.os.StatFs
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.TextButton
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import eu.stedb.mysyncthing.core.problemText
+import androidx.compose.ui.unit.dp
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.FolderStats
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.problemText
+import eu.stedb.mysyncthing.core.text
 
 private enum class FolderDialog { Name, Group, Type, Rescan, Order, DiskFree, Revert, Override, Remove }
 
@@ -209,7 +209,7 @@ fun FolderScreen(
                 SettingRow(stringResource(R.string.download_order), orderLabel(f.order).asString()) { dialog = FolderDialog.Order }
                 SettingRow(
                     stringResource(R.string.keep_free),
-                    stringResource(R.string.label_and_hint, diskSizeText(f.minDiskFree), stringResource(R.string.folder_keep_free_hint)),
+                    stringResource(R.string.label_and_hint, diskSizeText(f.minDiskFree).asString(), stringResource(R.string.folder_keep_free_hint)),
                 ) { dialog = FolderDialog.DiskFree }
             }
 
@@ -269,12 +269,13 @@ fun FolderScreen(
 private const val FAILED_PREVIEW = 5
 
 private fun contents(files: Int, dirs: Int, size: Long) =
-    text(R.string.folder_contents, count(R.plurals.count_files, files), count(R.plurals.count_folders, dirs), bytes(size))
+    text(R.string.folder_contents, count(R.plurals.count_files, files), count(R.plurals.count_folders, dirs), bytesText(size))
 
 /** Amount plus unit (%, MB, GB, or the unit already set); shows what is free now for scale. */
 @Composable
 internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Unit, onSave: (DiskSize) -> Unit) {
-    var value by rememberSaveable { mutableStateOf(number(initial.value)) }
+    val locale = currentStrings().locale
+    var value by rememberSaveable { mutableStateOf(fieldNumber(initial.value, locale)) }
     var unit by rememberSaveable { mutableStateOf(initial.unit) }
     val units = (listOf("%", "MB", "GB") + initial.unit).distinct()
     val free = remember(path) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }

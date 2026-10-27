@@ -1,64 +1,64 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.annotation.StringRes
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.UiText
-import eu.stedb.mysyncthing.core.UiTextException
-import eu.stedb.mysyncthing.core.messageText
-import eu.stedb.mysyncthing.core.plural
-import eu.stedb.mysyncthing.core.text
 import android.app.Application
+import android.os.SystemClock
+import androidx.annotation.StringRes
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.Completion
+import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.DeviceStats
+import eu.stedb.mysyncthing.core.Discovered
+import eu.stedb.mysyncthing.core.DiskChange
+import eu.stedb.mysyncthing.core.DiskSize
+import eu.stedb.mysyncthing.core.FileEntry
 import eu.stedb.mysyncthing.core.FileError
+import eu.stedb.mysyncthing.core.FileProgress
+import eu.stedb.mysyncthing.core.FileVersion
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderDevice
+import eu.stedb.mysyncthing.core.FolderStats
+import eu.stedb.mysyncthing.core.IgnoredRequests
+import eu.stedb.mysyncthing.core.NeedPage
+import eu.stedb.mysyncthing.core.Options
+import eu.stedb.mysyncthing.core.ProxySettings
 import eu.stedb.mysyncthing.core.RestClient
 import eu.stedb.mysyncthing.core.RestoreResult
-import eu.stedb.mysyncthing.core.restoreDatedNow
-import eu.stedb.mysyncthing.core.ProxySettings
 import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
 import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.UiTextException
 import eu.stedb.mysyncthing.core.Versioning
-import android.os.SystemClock
-import eu.stedb.mysyncthing.core.Completion
-import eu.stedb.mysyncthing.core.Connections
-import eu.stedb.mysyncthing.core.Device
-import eu.stedb.mysyncthing.core.DeviceStats
-import eu.stedb.mysyncthing.core.DiskChange
-import eu.stedb.mysyncthing.core.FileVersion
-import eu.stedb.mysyncthing.core.Discovered
-import eu.stedb.mysyncthing.core.IgnoredRequests
-import eu.stedb.mysyncthing.core.Options
-import eu.stedb.mysyncthing.core.DiskSize
-import eu.stedb.mysyncthing.core.FileEntry
-import eu.stedb.mysyncthing.core.FileProgress
-import eu.stedb.mysyncthing.core.FolderStats
-import eu.stedb.mysyncthing.core.NeedPage
+import eu.stedb.mysyncthing.core.messageText
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.restoreDatedNow
+import eu.stedb.mysyncthing.core.text
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
-import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
@@ -228,7 +228,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 if (undated.size > 1) plural(R.plurals.restore_undated_more, undated.size - 1, undated.first(), undated.size - 1)
                 else text(R.string.restore_undated, undated.first()),
             )
-            else -> _message.send(if (versions.size == 1) text(R.string.restore_done) else plural(R.plurals.restore_done_files, versions.size, grouped(versions.size)))
+            else -> _message.send(if (versions.size == 1) text(R.string.restore_done) else count(R.plurals.restore_done_files, versions.size))
         }
         errors.isEmpty()
     }

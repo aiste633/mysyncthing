@@ -46,7 +46,7 @@ class ValidationTest {
     @Test
     fun overflowingLimitsWereSavedAsOneKiB() {
         // 3,000,000 MB/s passed the app's Int as KiB and wrapped to a negative number, then became 1 KiB/s.
-        assertEquals("Up to 2000000\u00A0MB/s", amountError("3000000", "MB/s").en())
+        assertEquals("Up to 2,000,000\u00A0MB/s", amountError("3000000", "MB/s").en())
         assertEquals(1_953_125_000L, limitKib(2e6, "MB/s"))
         assertEquals(0L, limitKib(Double.NaN, "kB/s"))
         assertEquals("Enter a number", amountError("NaN", "%").en())

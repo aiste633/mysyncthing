@@ -1,25 +1,18 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.annotation.StringRes
-import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.Strings
-import eu.stedb.mysyncthing.core.resolve
-import eu.stedb.mysyncthing.core.strings
 import android.content.ClipData
 import android.content.ClipboardManager
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -42,15 +35,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import eu.stedb.mysyncthing.core.problemText
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.FileEntry
 import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.NeedPage
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.Strings
 import eu.stedb.mysyncthing.core.SyncState
+import eu.stedb.mysyncthing.core.problemText
+import eu.stedb.mysyncthing.core.resolve
+import eu.stedb.mysyncthing.core.strings
 
 /** Files this phone still has to download for one folder (web GUI: "Out of Sync Items"). */
 @Composable
@@ -165,7 +165,7 @@ fun FailedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> U
     LaunchedEffect(folder, st?.errors) { errors = vm.folderErrors(folder) }
     var query by rememberSaveable { mutableStateOf("") }
     val all = errors.orEmpty()
-    val strings = LocalResources.current.strings()
+    val strings = currentStrings()
     val shown = if (query.isBlank()) all else all.filter { failedItemMatches(it, query, strings) }
     val clipLabel = stringResource(R.string.failed_items)
 

@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import eu.stedb.mysyncthing.core.num
+import eu.stedb.mysyncthing.core.resolve
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -8,10 +10,10 @@ import org.junit.Test
 class FormatTest {
     @Test
     fun siBytes() {
-        assertEquals("999\u00A0B", bytes(999))
-        assertEquals("1.0\u00A0kB", bytes(1000))
-        assertEquals("1.5\u00A0MB", bytes(1_500_000))
-        assertEquals("2.0\u00A0GB", bytes(2_000_000_000))
+        assertEquals("999\u00A0B", bytesText(999).en())
+        assertEquals("1.0\u00A0kB", bytesText(1000).en())
+        assertEquals("1.5\u00A0MB", bytesText(1_500_000).en())
+        assertEquals("2.0\u00A0GB", bytesText(2_000_000_000).en())
     }
 
     @Test
@@ -36,23 +38,68 @@ class FormatTest {
 
     @Test
     fun ratesAndDurationsCarryUnits() {
-        assertEquals("1.2\u00A0MB/s", rate(1_200_000))
-        assertEquals("45\u00A0s", duration(45))
-        assertEquals("12\u00A0min", duration(720))
-        assertEquals("3\u00A0h 5\u00A0min", duration(3 * 3600 + 300))
-        assertEquals("2\u00A0d 4\u00A0h", duration(2 * 86_400 + 4 * 3600 + 59))
+        assertEquals("1.2\u00A0MB/s", rateText(1_200_000).en())
+        assertEquals("45\u00A0s", durationText(45).en())
+        assertEquals("12\u00A0min", durationText(720).en())
+        assertEquals("3\u00A0h 5\u00A0min", durationText(3 * 3600 + 300).en())
+        assertEquals("2\u00A0d 4\u00A0h", durationText(2 * 86_400 + 4 * 3600 + 59).en())
     }
 
     @Test
     fun timesAreDayFirstAnd24h() {
         val now = java.time.ZonedDateTime.parse("2026-10-25T14:00:00Z")
-        val en = java.util.Locale.ENGLISH
-        assertEquals("12:03", whenText("2026-10-25T12:03:41.5Z", now, en).en())
-        assertEquals("yesterday, 22:10", whenText("2026-10-24T22:10:00Z", now, en).en())
-        assertEquals("3 Oct, 08:05", whenText("2026-10-03T08:05:00Z", now, en).en())
-        assertEquals("3 Oct 2025, 18:42", whenText("2025-10-03T18:42:00+00:00", now, en).en())
-        assertEquals(null, whenText("0001-01-01T00:00:00Z", now, en).en())
-        assertEquals(null, whenText("garbage", now, en).en())
+        assertEquals("12:03", whenText("2026-10-25T12:03:41.5Z", now).en())
+        assertEquals("yesterday, 22:10", whenText("2026-10-24T22:10:00Z", now).en())
+        assertEquals("3 Oct, 08:05", whenText("2026-10-03T08:05:00Z", now).en())
+        assertEquals("3 Oct 2025, 18:42", whenText("2025-10-03T18:42:00+00:00", now).en())
+        assertEquals(null, whenText("0001-01-01T00:00:00Z", now).en())
+        assertEquals(null, whenText("garbage", now).en())
+    }
+
+    /** The hour follows the phone's 12/24 h setting; day and month stay day first. */
+    @Test
+    fun twelveHourClockFollowsPhone() {
+        val h12 = En.with(is24Hour = false)
+        val now = java.time.ZonedDateTime.parse("2026-10-25T14:00:00Z")
+        assertEquals("12:03\u202Fpm", whenText("2026-10-25T12:03:41.5Z", now)!!.resolve(h12))
+        assertEquals("yesterday, 10:10\u202Fpm", whenText("2026-10-24T22:10:00Z", now)!!.resolve(h12))
+        assertEquals("3 Oct 2025, 6:42\u202Fpm", whenText("2025-10-03T18:42:00+00:00", now)!!.resolve(h12))
+        assertEquals("6:02:12\u202Fpm", exactTimeText("2026-10-24T18:02:12Z", now).resolve(h12))
+    }
+
+    /** Dates follow the phone's region: month first in the US, Italian month names in Italy (as seen on Android 16). */
+    @Test
+    fun datesFollowRegion() {
+        val now = java.time.ZonedDateTime.parse("2026-10-25T14:00:00Z")
+        val t = "2025-10-03T18:42:00Z"
+        assertEquals("Oct 3, 2025, 6:42\u202FPM", whenText(t, now)!!.resolve(En.with(is24Hour = false, locale = java.util.Locale.US)))
+        assertEquals("3 ott 2025, 18:42", whenText(t, now)!!.resolve(En.with(locale = java.util.Locale.ITALY)))
+        assertEquals("26 ott, 19:59", whenText("2026-10-26T19:59:00Z", now.plusDays(3))!!.resolve(En.with(locale = java.util.Locale.ITALY)))
+    }
+
+    /** Numbers take the language's decimal separator; units stay SI and glued with a no-break space. */
+    @Test
+    fun numbersFollowLocale() {
+        val it = En.with(locale = java.util.Locale.ITALY)
+        assertEquals("1,5\u00A0MB", bytesText(1_500_000).resolve(it))
+        assertEquals("2,5\u00A0MB/s", limitText(limitKib(2.5, "MB/s")).resolve(it))
+        assertEquals("12.345", num(12_345).resolve(it))
+        assertEquals("12,345", num(12_345).en())
+    }
+
+    /** A number field shows the separator people type, never grouping, and reads back the same value. */
+    @Test
+    fun fieldNumbersRoundTrip() {
+        assertEquals("2.5", fieldNumber(2.5, java.util.Locale.UK))
+        assertEquals("2,5", fieldNumber(2.5, java.util.Locale.ITALY))
+        assertEquals("1000", fieldNumber(1000.0, java.util.Locale.ITALY))
+        val r = kotlin.random.Random(5)
+        repeat(5_000) {
+            val v = r.nextInt(0, 1_000_000) / 100.0
+            listOf(java.util.Locale.UK, java.util.Locale.ITALY, java.util.Locale.GERMANY, java.util.Locale.FRANCE).forEach { l ->
+                assertEquals(v, fieldNumber(v, l).replace(',', '.').toDouble(), 0.0)
+            }
+        }
     }
 
     /** A line can't end between a number and its unit: every unit follows a no-break space. */
@@ -61,8 +108,8 @@ class FormatTest {
         val r = kotlin.random.Random(4)
         repeat(5_000) {
             val texts = listOf(
-                bytes(r.nextLong(0, Long.MAX_VALUE) shr r.nextInt(63)), rate(r.nextLong(0, 1L shl 40)),
-                duration(r.nextLong(0, 1L shl 30)), rescanText(r.nextInt(-10, 1 shl 20)).en(), limitText(r.nextLong(-5, 1L shl 40)).en(),
+                bytesText(r.nextLong(0, Long.MAX_VALUE) shr r.nextInt(63)).en(), rateText(r.nextLong(0, 1L shl 40)).en(),
+                durationText(r.nextLong(0, 1L shl 30)).en(), rescanText(r.nextInt(-10, 1 shl 20)).en(), limitText(r.nextLong(-5, 1L shl 40)).en(),
                 exactTimeText(java.time.ZonedDateTime.now().minusSeconds(r.nextLong(-100, 7200)).toOffsetDateTime().toString()).en(),
             )
             texts.forEach { assertFalse(it, Regex("\\d [a-zA-Z%]").containsMatchIn(it)) }
@@ -72,10 +119,9 @@ class FormatTest {
     @Test
     fun fileDatesAreAbsolute() {
         val utc = java.time.ZoneOffset.UTC
-        val en = java.util.Locale.ENGLISH
         // Never relative ("yesterday"): a file's date is compared with when the backup was made.
-        assertEquals("26 Oct 2026, 19:27", dateTimeText(java.time.Instant.parse("2026-10-26T19:27:59Z").toEpochMilli(), utc, en))
-        assertEquals("3 Jan 2025, 07:05", dateTimeText(java.time.Instant.parse("2025-01-03T07:05:00Z").toEpochMilli(), utc, en))
+        assertEquals("26 Oct 2026, 19:27", dateTimeText(java.time.Instant.parse("2026-10-26T19:27:59Z").toEpochMilli(), utc).en())
+        assertEquals("3 Jan 2025, 07:05", dateTimeText(java.time.Instant.parse("2025-01-03T07:05:00Z").toEpochMilli(), utc).en())
     }
 
     /** Only a leading "/" gets glued to the next character; removing the joiner gives the path back. */
@@ -95,8 +141,8 @@ class FormatTest {
 
     @Test
     fun folderSettingTexts() {
-        assertEquals("1\u00A0%", diskSizeText(eu.stedb.mysyncthing.core.DiskSize()))
-        assertEquals("2.5\u00A0GB", diskSizeText(eu.stedb.mysyncthing.core.DiskSize(2.5, "GB")))
+        assertEquals("1\u00A0%", diskSizeText(eu.stedb.mysyncthing.core.DiskSize()).en())
+        assertEquals("2.5\u00A0GB", diskSizeText(eu.stedb.mysyncthing.core.DiskSize(2.5, "GB")).en())
         assertEquals("Every hour", rescanText(3600).en())
         assertEquals("Every 6\u00A0hours", rescanText(21_600).en())
         assertEquals("Once a day", rescanText(86_400).en())
@@ -151,10 +197,10 @@ class FormatTest {
     @Test
     fun dayHeadingsAndClock() {
         val now = java.time.ZonedDateTime.of(2026, 10, 25, 12, 0, 0, 0, java.time.ZoneOffset.UTC)
-        assertEquals("Today", dayText("2026-10-25T08:00:00Z", now, java.util.Locale.UK).en())
-        assertEquals("Yesterday", dayText("2026-10-24T23:59:00Z", now, java.util.Locale.UK).en())
-        assertEquals("3 Oct", dayText("2026-10-03T10:00:00Z", now, java.util.Locale.UK).en())
-        assertEquals("3 Oct 2025", dayText("2025-10-03T10:00:00Z", now, java.util.Locale.UK).en())
+        assertEquals("Today", dayText("2026-10-25T08:00:00Z", now).en())
+        assertEquals("Yesterday", dayText("2026-10-24T23:59:00Z", now).en())
+        assertEquals("3 Oct", dayText("2026-10-03T10:00:00Z", now).en())
+        assertEquals("3 Oct 2025", dayText("2025-10-03T10:00:00Z", now).en())
         assertEquals("18:02:12", exactTimeText("2026-10-24T18:02:12.123456789+00:00", now).en())
     }
 

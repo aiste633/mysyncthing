@@ -12,10 +12,9 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.Serializable
 import java.time.DayOfWeek
 import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
-import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
-import java.util.Locale
 
 const val MINUTES_PER_DAY = 24 * 60
 const val MAX_SYNC_WINDOWS = 8
@@ -91,7 +90,8 @@ fun List<SyncWindow>.nextOpen(t: LocalDateTime): LocalDateTime? {
     return edges(t, ends = false).filter { it > now }.minOrNull()
 }
 
-fun timeText(minutes: Int): String = "%02d:%02d".format(Locale.ROOT, minutes / 60, minutes % 60)
+/** A time of day in minutes after midnight, as the phone's clock setting writes it: "22:00" or "10:00 PM". */
+fun timeText(minutes: Int): UiText = time(LocalTime.of(minutes / 60, minutes % 60), "jm")
 
 /** "Outside sync times · next 22:00", with the weekday when the next window opens on another day. */
 fun outsideText(windows: List<SyncWindow>, now: LocalDateTime): UiText {
@@ -101,7 +101,8 @@ fun outsideText(windows: List<SyncWindow>, now: LocalDateTime): UiText {
     else text(R.string.schedule_outside_next_day, shortDay(next.dayOfWeek), time)
 }
 
-fun shortDay(d: DayOfWeek): String = d.getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
+/** "Mon", in the language. */
+fun shortDay(d: DayOfWeek): UiText = time(d, "EEE")
 
 /**
  * The current time, again at each start and end of [windows], at midnight

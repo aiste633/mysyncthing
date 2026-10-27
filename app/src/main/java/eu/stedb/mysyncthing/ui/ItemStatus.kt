@@ -1,16 +1,16 @@
 package eu.stedb.mysyncthing.ui
 
 import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.R as CoreR
-import eu.stedb.mysyncthing.core.UiText
-import eu.stedb.mysyncthing.core.plural
-import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connection
 import eu.stedb.mysyncthing.core.Device
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderStatus
 import eu.stedb.mysyncthing.core.SyncState
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.text
+import eu.stedb.mysyncthing.core.R as CoreR
 
 /** State and short text for one folder or device card. */
 data class ItemStatus(val state: SyncState, val text: UiText, val progress: Float? = null)

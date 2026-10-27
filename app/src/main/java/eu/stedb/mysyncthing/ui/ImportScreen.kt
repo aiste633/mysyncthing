@@ -1,12 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.UiText
-import eu.stedb.mysyncthing.core.joined
-import eu.stedb.mysyncthing.core.plural
-import eu.stedb.mysyncthing.core.raw
-import eu.stedb.mysyncthing.core.text
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -44,12 +37,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.ForkFolder
 import eu.stedb.mysyncthing.core.ForkImport
 import eu.stedb.mysyncthing.core.ForkNotImported
@@ -58,6 +53,11 @@ import eu.stedb.mysyncthing.core.PowerSource
 import eu.stedb.mysyncthing.core.ProxySettings
 import eu.stedb.mysyncthing.core.ProxyType
 import eu.stedb.mysyncthing.core.RunConditions
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.joined
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.raw
+import eu.stedb.mysyncthing.core.text
 import java.io.File
 
 /**
@@ -126,7 +126,7 @@ private fun ChooseStep(onFound: (File) -> Unit, onPick: () -> Unit) {
         SettingsGroup(stringResource(R.string.import_found)) {
             SettingRow(
                 wrapPath(displayPath(found.path).asString()),
-                "${dateTimeText(found.lastModified())}, ${bytes(found.length())}",
+                "${dateTimeText(found.lastModified()).asString()}, ${bytes(found.length())}",
                 Icons.Default.Folder,
             ) { onFound(found) }
         }

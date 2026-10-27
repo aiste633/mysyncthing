@@ -27,6 +27,8 @@ android {
             // Reproducible builds: no git commit in the APK, so a source tarball build matches too.
             vcsInfo { include = false }
         }
+        // en-XA (long accented text) and ar-XB (right to left) to check layouts; not in releases.
+        debug { isPseudoLocalesEnabled = true }
     }
 
     // F-Droid: no Google dependency-info blob in the APK.

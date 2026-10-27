@@ -1,9 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.annotation.StringRes
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -45,8 +42,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.DiskChange
 import eu.stedb.mysyncthing.core.FileVersion
 import eu.stedb.mysyncthing.core.Snapshot

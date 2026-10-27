@@ -38,4 +38,10 @@ class LiveStatsTest {
         assertEquals("Listening 1 of 1 · Discovery 1 of 2", s.healthText.en())
         assertEquals(SyncState.Paused, s.health)
     }
+
+    /** One string, so a right-to-left language keeps each rate with its arrow. */
+    @Test
+    fun speedLine() {
+        assertEquals("↓ 1.2\u00A0MB/s · ↑ 0\u00A0B/s", speedText(Speed(1_200_000, 0)).en())
+    }
 }

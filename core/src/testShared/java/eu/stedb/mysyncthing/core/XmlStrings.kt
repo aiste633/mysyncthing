@@ -3,6 +3,8 @@ package eu.stedb.mysyncthing.core
 import org.w3c.dom.Element
 import org.w3c.dom.Node
 import java.io.File
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAccessor
 import java.util.Locale
 import javax.xml.parsers.DocumentBuilderFactory
 
@@ -11,17 +13,24 @@ import javax.xml.parsers.DocumentBuilderFactory
  * where there are no Resources. Resource IDs are matched to names through the
  * generated R classes. Text is unescaped as aapt2 does for the cases our files
  * use; a value it would refuse (an unescaped apostrophe) fails here too.
- * Plurals follow English: "one" for 1, else "other".
+ * Plurals follow English: "one" for 1, else "other". Dates, times and numbers follow
+ * [locale] (en-GB by default) with a 24 h clock unless [is24Hour] is false: the JDK's CLDR
+ * data, which gives the same text as Android 16's ICU (checked on the emulator, including
+ * the narrow no-break space before "pm").
  */
-class XmlStrings(resDirs: List<File>, rClasses: List<Class<*>>) : Strings {
-    override val locale: Locale = Locale.UK
+class XmlStrings(
+    private val dirs: List<File>,
+    private val classes: List<Class<*>>,
+    override val is24Hour: Boolean = true,
+    override val locale: Locale = Locale.UK,
+) : Strings {
 
     private val strings = mutableMapOf<String, String>()
     private val plurals = mutableMapOf<String, Map<String, String>>()
 
     init {
-        val files = resDirs.flatMap { File(it, "values").listFiles { f -> f.extension == "xml" }.orEmpty().sorted() }
-        check(files.isNotEmpty()) { "no values XML in $resDirs (working directory ${File("").absolutePath})" }
+        val files = dirs.flatMap { File(it, "values").listFiles { f -> f.extension == "xml" }.orEmpty().sorted() }
+        check(files.isNotEmpty()) { "no values XML in $dirs (working directory ${File("").absolutePath})" }
         for (file in files) {
             val root = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }.newDocumentBuilder().parse(file).documentElement
             for (e in root.childElements()) {
@@ -36,8 +45,8 @@ class XmlStrings(resDirs: List<File>, rClasses: List<Class<*>>) : Strings {
         }
     }
 
-    private val stringNames = names(rClasses, "string")
-    private val pluralNames = names(rClasses, "plurals")
+    private val stringNames = names(classes, "string")
+    private val pluralNames = names(classes, "plurals")
 
     override fun string(id: Int): String {
         val name = stringNames[id] ?: error("no string resource $id")
@@ -50,10 +59,24 @@ class XmlStrings(resDirs: List<File>, rClasses: List<Class<*>>) : Strings {
         return forms[if (count == 1) "one" else "other"] ?: forms.getValue("other")
     }
 
+    /** The skeleton as ICU takes it, in the order the JDK's requested template wants ("dMMMy" is "yMMMd"). */
+    override fun time(value: TemporalAccessor, skeleton: String): String =
+        (OF_LOCALIZED_PATTERN.invoke(null, skeleton.toList().sortedBy { TEMPLATE_ORDER.indexOf(it) }.joinToString("")) as DateTimeFormatter)
+            .withLocale(locale).format(value)
+
+    /** The same English strings with another clock setting, or dates and numbers as [locale] writes them. */
+    fun with(is24Hour: Boolean = this.is24Hour, locale: Locale = this.locale) = XmlStrings(dirs, classes, is24Hour, locale)
+
     /** Every string and plural form, for checks over all of them. */
     val all: Map<String, String> get() = strings + plurals.flatMap { (n, f) -> f.map { (q, v) -> "$n/$q" to v } }
 
     private companion object {
+        /** Field order of [DateTimeFormatter.ofLocalizedPattern]'s requested template. */
+        const val TEMPLATE_ORDER = "GyQMwEdBhHjCmsvz"
+
+        /** JDK 19+; tests compile against android.jar, which lacks it, and run on JDK 21. */
+        val OF_LOCALIZED_PATTERN: java.lang.reflect.Method = DateTimeFormatter::class.java.getMethod("ofLocalizedPattern", String::class.java)
+
         fun names(rClasses: List<Class<*>>, type: String): Map<Int, String> = rClasses
             .mapNotNull { r -> r.classes.find { it.simpleName == type } }
             .flatMap { c -> c.fields.map { it.getInt(null) to it.name } }
