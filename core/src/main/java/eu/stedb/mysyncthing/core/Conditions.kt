@@ -28,7 +28,7 @@ data class DeviceState(
     val batterySaver: Boolean = false,
 )
 
-const val PAUSED_BY_USER = "Paused by you"
+val PAUSED_BY_USER = text(R.string.pause_reason_user)
 
 /**
  * Null when syncing is allowed, otherwise a short reason for the notification/UI.
@@ -38,17 +38,18 @@ const val PAUSED_BY_USER = "Paused by you"
  * A time schedule comes right after the user's own pause: it is the user's
  * plan, and its reason says when syncing resumes.
  */
-fun RunConditions.blockedBy(d: DeviceState, now: LocalDateTime = LocalDateTime.now()): String? = when {
+fun RunConditions.blockedBy(d: DeviceState, now: LocalDateTime = LocalDateTime.now()): UiText? = when {
     pausedByUser -> PAUSED_BY_USER
     timeSchedule && !windows.isOpen(now) -> outsideText(windows, now)
     // Offline with a network limit stays paused, so the next network is checked before the core uses it.
-    !d.online && !(mobileData && meteredWifi) -> "No network"
-    d.online && d.mobile && !mobileData -> "On mobile data"
-    d.online && d.mobile && d.roaming && !roaming -> "Roaming"
-    d.online && !d.mobile && !d.unmetered && !meteredWifi -> if (d.wifi) "Wi-Fi is metered" else "Network is metered"
-    power == PowerSource.ChargingOnly && !d.charging -> "Not charging"
-    power == PowerSource.BatteryOnly && d.charging -> "Charging"
-    respectBatterySaver && d.batterySaver -> "Battery saver on"
+    !d.online && !(mobileData && meteredWifi) -> text(R.string.pause_reason_no_network)
+    d.online && d.mobile && !mobileData -> text(R.string.pause_reason_mobile_data)
+    d.online && d.mobile && d.roaming && !roaming -> text(R.string.pause_reason_roaming)
+    d.online && !d.mobile && !d.unmetered && !meteredWifi ->
+        text(if (d.wifi) R.string.pause_reason_metered_wifi else R.string.pause_reason_metered_network)
+    power == PowerSource.ChargingOnly && !d.charging -> text(R.string.pause_reason_not_charging)
+    power == PowerSource.BatteryOnly && d.charging -> text(R.string.pause_reason_charging)
+    respectBatterySaver && d.batterySaver -> text(R.string.pause_reason_battery_saver)
     else -> null
 }
 

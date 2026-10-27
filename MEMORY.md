@@ -166,3 +166,12 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - The SBOM tools stay out of the app build (user's security choice): an init script (`scripts/sbom/runtime-deps.init.gradle.kts`, applied with `-I`) and a Go program (`scripts/sbom/`, own module, only `google/licensecheck`). The init script's POM downloads go through dependency verification, so a dependency bump must also write POM checksums (README command includes `:app:sbomRuntimeDeps`).
 - Output is deterministic (no timestamp or serial number, sorted). The generator fails instead of guessing: unknown POM licence name (`pomLicenses`), licence not yet accepted (`knownLicenses`: also the AGPL/F-Droid compatibility gate), Go licence file it cannot read (`goLicenseOverrides`), cgo package not in `cgoPackages`, a web GUI file in no `scripts/sbom/webgui.json` entry, or changed web GUI files (the error prints the new `sha256` to set after checking version and licence).
 - Found by the SBOM: the web GUI ships old AngularJS 1.3.20 and moment 2.19.4, and Bootstrap CSS 3.3.6 next to Bootstrap JS 3.4.1 (upstream Syncthing's choice, not ours).
+
+## Internationalization (2026-10-27)
+- Plan, one PR each, merged in order: (1) text into string resources + CI guard; (2) locale-aware dates and numbers (units stay SI, 12/24 h from the system setting, logs and exports ISO 8601); (3) per-app language (`locales_config`, en-GB declared as base) and the core's English messages; (4) Italian, which the user reviews and merges personally (no auto-merge).
+- English text is kept exactly as it was: en-GB is only the declared base locale, no British respelling (user's call).
+- Logic returns `UiText` (core `UiText.kt`), resolved at the edges; unit tests compare English via `XmlStrings` (`core/src/testShared`, added to host tests with the Variant API) and `.en()`.
+- One `strings.xml` per module (app, core) = two Weblate components, fastlane the third; fastlane stays `en-US`. Italian terms follow upstream Syncthing's Italian GUI. Weblate itself is not set up.
+- CI job `strings`: `scripts/check-strings.py` (allowlist style, like `check-leaks.sh`). Details in `docs/translations.md`.
+- Left for PR 2: `Format.kt` date patterns (`d MMM yyyy, HH:mm`), `grouped()`, `shortDay` (English), `timeText`. For PR 3: notification channel names and widget refresh on a language change; web GUI language; lint `MissingTranslation` for partial languages.
+

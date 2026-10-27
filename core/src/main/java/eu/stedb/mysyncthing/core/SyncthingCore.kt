@@ -98,7 +98,7 @@ object SyncthingCore {
     internal fun checkAlive() {
         val s = _state.value
         if (s is CoreState.Running && !Stbridge.isRunning()) {
-            _state.value = CoreState.Failed(Stbridge.lastError().ifEmpty { "Syncthing stopped" })
+            _state.value = CoreState.Failed(Stbridge.lastError())
         }
     }
 }

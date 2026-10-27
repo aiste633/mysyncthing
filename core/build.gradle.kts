@@ -19,6 +19,11 @@ android {
 
 kotlin { jvmToolchain(21) }
 
+// XmlStrings: unit tests read the English strings straight from res/values.
+androidComponents {
+    onVariants { v -> v.hostTests.values.forEach { it.sources.kotlin?.addStaticSourceDirectory("src/testShared/java") } }
+}
+
 val goDir = rootProject.layout.projectDirectory.dir("go")
 val bridgeAar = goDir.file("build/stbridge.aar")
 

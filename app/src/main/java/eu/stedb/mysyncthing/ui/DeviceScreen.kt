@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -66,28 +70,28 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(look.icon, null, tint = look.color)
                         Spacer(Modifier.width(8.dp))
-                        Text(status.text, style = MaterialTheme.typography.titleMedium, color = look.color)
+                        Text(status.text.asString(), style = MaterialTheme.typography.titleMedium, color = look.color)
                     }
                     val muted = MaterialTheme.colorScheme.onSurfaceVariant
                     connectionText(conn)?.let {
-                        Text(it, style = MaterialTheme.typography.bodyMedium, color = muted)
+                        Text(it.asString(), style = MaterialTheme.typography.bodyMedium, color = muted)
                     }
                     if (conn?.connected == true) {
                         live?.devices?.get(id)?.let { Text(speedText(it), style = MaterialTheme.typography.bodyMedium, color = muted) }
                         Text(
-                            "Received ${bytes(conn.inBytesTotal)} · sent ${bytes(conn.outBytesTotal)}",
+                            stringResource(R.string.device_traffic, bytes(conn.inBytesTotal), bytes(conn.outBytesTotal)),
                             style = MaterialTheme.typography.bodySmall, color = muted,
                         )
                     } else {
-                        val seen = lastSeen?.let { whenText(it) }
-                        Text(if (seen != null) "Last seen $seen" else "Never connected", style = MaterialTheme.typography.bodyMedium, color = muted)
+                        val seen = lastSeen?.let { whenText(it) }?.asString()
+                        Text(if (seen != null) stringResource(R.string.device_last_seen, seen) else stringResource(R.string.device_never_connected), style = MaterialTheme.typography.bodyMedium, color = muted)
                     }
                     conn?.clientVersion?.ifEmpty { null }?.let {
-                        Text(if (it.startsWith("v")) "Syncthing $it" else it, style = MaterialTheme.typography.bodySmall, color = muted)
+                        Text(if (it.startsWith("v")) stringResource(R.string.syncthing_version, it) else it, style = MaterialTheme.typography.bodySmall, color = muted)
                     }
                     if (total != null && total.needItems > 0) {
                         Text(
-                            "Still needs ${count(total.needItems, "item")}, ${bytes(total.needBytes)} from this phone",
+                            pluralStringResource(R.plurals.device_still_needs, total.needItems, grouped(total.needItems), bytes(total.needBytes)),
                             style = MaterialTheme.typography.bodySmall, color = muted,
                         )
                     }
@@ -95,61 +99,61 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                     FilledTonalButton(shape = ButtonShape, onClick = { vm.setDevicePaused(id, !d.paused) }, modifier = Modifier.padding(top = 4.dp)) {
                         Icon(if (d.paused) Icons.Default.PlayArrow else Icons.Default.Pause, null, Modifier.size(18.dp))
                         Spacer(Modifier.width(6.dp))
-                        Text(if (d.paused) "Resume" else "Pause")
+                        Text(stringResource(if (d.paused) R.string.action_resume else R.string.action_pause))
                     }
                 }
             }
 
-            SettingsGroup("Trust") {
-                SwitchRow("Untrusted", "Only receives encrypted data. Each shared folder needs a password.", d.untrusted) { v ->
+            SettingsGroup(stringResource(R.string.group_trust)) {
+                SwitchRow(stringResource(R.string.device_untrusted), stringResource(R.string.device_untrusted_hint), d.untrusted) { v ->
                     if (v) dialog = DeviceDialog.Untrusted else vm.setUntrusted(id, false)
                 }
                 // The core allows neither for an untrusted device.
                 if (!d.untrusted) {
-                    SwitchRow("Introducer", "Also add the devices it shares folders with", d.introducer) { vm.setIntroducer(id, it) }
-                    SwitchRow("Accept its folders automatically", "Saved to Syncthing/<folder name> without asking", d.autoAcceptFolders) {
+                    SwitchRow(stringResource(R.string.device_introducer), stringResource(R.string.device_introducer_hint), d.introducer) { vm.setIntroducer(id, it) }
+                    SwitchRow(stringResource(R.string.device_auto_accept), stringResource(R.string.device_auto_accept_hint), d.autoAcceptFolders) {
                         vm.setAutoAccept(id, it)
                     }
                 }
             }
 
-            SettingsGroup("General") {
-                SettingRow("Name", d.name.ifEmpty { "(none)" }) { dialog = DeviceDialog.Name }
-                SettingRow("Group", d.group.ifEmpty { "None" }) { dialog = DeviceDialog.Group }
-                SettingRow("Addresses", addressesText(d.addresses)) { dialog = DeviceDialog.Addresses }
-                SelectionContainer { SettingRow("Device ID", id) }
+            SettingsGroup(stringResource(R.string.group_general)) {
+                SettingRow(stringResource(R.string.name), d.name.ifEmpty { stringResource(R.string.name_none) }) { dialog = DeviceDialog.Name }
+                SettingRow(stringResource(R.string.group), d.group.ifEmpty { stringResource(R.string.group_none) }) { dialog = DeviceDialog.Group }
+                SettingRow(stringResource(R.string.device_addresses), addressesText(d.addresses)) { dialog = DeviceDialog.Addresses }
+                SelectionContainer { SettingRow(stringResource(R.string.device_id), id) }
             }
 
             if (needs.isNotEmpty()) {
-                SettingsGroup("Still to send") {
+                SettingsGroup(stringResource(R.string.device_to_send)) {
                     shared.filter { it.id in needs }.forEach { f ->
                         val c = needs.getValue(f.id)
                         SettingRow(
-                            f.label.ifEmpty { f.id }, "${count(c.needItems, "item")} · ${bytes(c.needBytes)}",
+                            f.label.ifEmpty { f.id }, stringResource(R.string.items_and_size, count(R.plurals.count_items, c.needItems).asString(), bytes(c.needBytes)),
                             trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) },
                         ) { onOpenNeeds(f.id) }
                     }
                 }
             }
-            SettingsGroup("Shared folders") {
-                if (s.folders.isEmpty()) SettingRow("No folders yet", "Add one on the Folders tab")
+            SettingsGroup(stringResource(R.string.device_shared_folders)) {
+                if (s.folders.isEmpty()) SettingRow(stringResource(R.string.folders_empty), stringResource(R.string.device_no_folders_hint))
                 s.folders.forEach { f ->
                     val entry = f.devices.find { it.deviceID == id }
-                    CheckRow(f.label.ifEmpty { f.id }, encryptionText(d, entry) ?: displayPath(f.path), entry != null) {
+                    CheckRow(f.label.ifEmpty { f.id }, (encryptionText(d, entry) ?: displayPath(f.path)).asString(), entry != null) {
                         if (sharesEncrypted(d, entry)) encrypt = f.id else vm.setShared(f, id, it)
                     }
                 }
             }
 
-            SettingsGroup("Advanced") {
-                SettingRow("Download limit", limitText(d.maxRecvKbps)) { dialog = DeviceDialog.Recv }
-                SettingRow("Upload limit", limitText(d.maxSendKbps)) { dialog = DeviceDialog.Send }
-                SettingRow("Compression", COMPRESSIONS.find { it.first == d.compression }?.second ?: d.compression) { dialog = DeviceDialog.Compression }
-                SettingRow("Connections", connectionsText(d.numConnections)) { dialog = DeviceDialog.Connections }
+            SettingsGroup(stringResource(R.string.settings_group_advanced)) {
+                SettingRow(stringResource(R.string.download_limit), limitText(d.maxRecvKbps).asString()) { dialog = DeviceDialog.Recv }
+                SettingRow(stringResource(R.string.upload_limit), limitText(d.maxSendKbps).asString()) { dialog = DeviceDialog.Send }
+                SettingRow(stringResource(R.string.compression), compressionLabel(d.compression).asString()) { dialog = DeviceDialog.Compression }
+                SettingRow(stringResource(R.string.connections), connectionsText(d.numConnections).asString()) { dialog = DeviceDialog.Connections }
             }
 
-            SettingsGroup("Remove") {
-                SettingRow("Remove device", "It can no longer sync with this phone.", icon = Icons.Default.Delete, danger = true) {
+            SettingsGroup(stringResource(R.string.action_remove)) {
+                SettingRow(stringResource(R.string.op_remove_device), stringResource(R.string.device_remove_hint), icon = Icons.Default.Delete, danger = true) {
                     dialog = DeviceDialog.Remove
                 }
             }
@@ -158,34 +162,34 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
 
     val close = { dialog = null }
     when (dialog) {
-        DeviceDialog.Name -> TextDialog("Device name", d.name, "Name", onDismiss = close) { vm.renameDevice(id, it); close() }
+        DeviceDialog.Name -> TextDialog(stringResource(R.string.settings_device_name), d.name, stringResource(R.string.name), onDismiss = close) { vm.renameDevice(id, it); close() }
         DeviceDialog.Group -> TextDialog(
-            "Device group", d.group, "Group", supporting = "Devices in a group are listed together. Only on this phone.",
+            stringResource(R.string.device_group), d.group, stringResource(R.string.group), supporting = stringResource(R.string.device_group_hint),
             error = { null }, onDismiss = close,
         ) { vm.setDeviceGroup(id, it); close() }
         DeviceDialog.Addresses -> AddressesDialog(d.addresses, onDismiss = close) { vm.setAddresses(id, it); close() }
-        DeviceDialog.Recv -> SpeedLimitDialog("Download limit", d.maxRecvKbps, onDismiss = close) { vm.setDeviceRecvLimit(id, it); close() }
-        DeviceDialog.Send -> SpeedLimitDialog("Upload limit", d.maxSendKbps, onDismiss = close) { vm.setDeviceSendLimit(id, it); close() }
-        DeviceDialog.Compression -> ChoiceDialog("Compression", COMPRESSIONS, d.compression, ::compressionHint, onDismiss = close) {
+        DeviceDialog.Recv -> SpeedLimitDialog(stringResource(R.string.download_limit), d.maxRecvKbps, onDismiss = close) { vm.setDeviceRecvLimit(id, it); close() }
+        DeviceDialog.Send -> SpeedLimitDialog(stringResource(R.string.upload_limit), d.maxSendKbps, onDismiss = close) { vm.setDeviceSendLimit(id, it); close() }
+        DeviceDialog.Compression -> ChoiceDialog(stringResource(R.string.compression), COMPRESSIONS, d.compression, ::compressionHint, onDismiss = close) {
             vm.setCompression(id, it); close()
         }
         DeviceDialog.Connections -> ChoiceDialog(
-            "Connections", connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0),
-            { if (it == 0) "Syncthing decides, currently 3. More can help on fast, distant links." else null }, onDismiss = close,
+            stringResource(R.string.connections), connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0),
+            { if (it == 0) text(R.string.connections_auto_hint) else null }, onDismiss = close,
         ) { vm.setNumConnections(id, it); close() }
         DeviceDialog.Untrusted -> {
             val plain = s.folders.filter { f -> f.devices.any { it.deviceID == id && it.encryptionPassword.isEmpty() } }
+            val name = d.name.ifEmpty { shortId(id) }
             ConfirmDialog(
-                "Mark as untrusted?",
-                "${d.name.ifEmpty { shortId(id) }} will only get encrypted folders, and can't be an introducer or accept folders automatically." +
-                    if (plain.isEmpty()) "" else " These folders are shared without a password and stop being shared: " +
-                        plain.joinToString(", ") { it.label.ifEmpty { it.id } } + ".",
-                "Mark untrusted", onDismiss = close,
+                stringResource(R.string.device_untrusted_title),
+                if (plain.isEmpty()) stringResource(R.string.device_untrusted_text, name)
+                else stringResource(R.string.device_untrusted_text_plain, name, plain.joinToString(", ") { it.label.ifEmpty { it.id } }),
+                stringResource(R.string.device_untrusted_confirm), onDismiss = close,
             ) { vm.setUntrusted(id, true); close() }
         }
         DeviceDialog.Remove -> ConfirmDialog(
-            "Remove ${d.name.ifEmpty { shortId(id) }}?", "Folders stop syncing with this device. No files are deleted.",
-            "Remove", onDismiss = close,
+            stringResource(R.string.folder_remove_title, d.name.ifEmpty { shortId(id) }), stringResource(R.string.device_remove_text),
+            stringResource(R.string.action_remove), onDismiss = close,
         ) { vm.removeDevice(id); close(); onBack() }
         null -> {}
     }
@@ -200,15 +204,16 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
 
 private enum class DeviceDialog { Name, Group, Addresses, Recv, Send, Compression, Connections, Untrusted, Remove }
 
+@Composable
 internal fun addressesText(a: List<String>): String = when {
-    a.isEmpty() || a == listOf("dynamic") -> "Found automatically"
-    else -> a.joinToString(", ") { if (it == "dynamic") "automatic" else it }
+    a.isEmpty() || a == listOf("dynamic") -> stringResource(R.string.addresses_automatic)
+    else -> a.map { if (it == "dynamic") stringResource(R.string.address_automatic) else it }.joinToString(", ")
 }
 
 /** "Find automatically" plus fixed addresses Syncthing tries first. */
 @Composable
 internal fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) = ListEditDialog(
-    "Addresses", initial, token = "dynamic", tokenTitle = "Find automatically", tokenHint = "Through local and global discovery",
-    addHint = "For example tcp://192.0.2.10:22000 or a VPN address", valid = ::isDeviceAddress, normalize = ::normalizeAddress,
+    stringResource(R.string.device_addresses), initial, token = "dynamic", tokenTitle = stringResource(R.string.addresses_find),
+    tokenHint = stringResource(R.string.addresses_find_hint), addHint = stringResource(R.string.addresses_add_hint), valid = ::isDeviceAddress, normalize = ::normalizeAddress,
     onDismiss = onDismiss, onSave = onSave,
 )

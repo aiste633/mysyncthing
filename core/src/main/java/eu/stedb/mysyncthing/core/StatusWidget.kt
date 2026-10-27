@@ -71,8 +71,8 @@ class StatusWidget : AppWidgetProvider() {
             }
             v.setImageViewResource(R.id.widget_status_icon, icon)
             v.setColorInt(R.id.widget_status_icon, "setColorFilter", light, dark)
-            v.setTextViewText(R.id.widget_title, s.text)
-            v.setTextViewText(R.id.widget_detail, detail(s))
+            v.setTextViewText(R.id.widget_title, s.text.resolve(context))
+            v.setTextViewText(R.id.widget_detail, detail(s).resolve(context))
 
             val progress = s.progress
             v.setViewVisibility(R.id.widget_progress, if (progress != null) View.VISIBLE else View.GONE)
@@ -94,11 +94,11 @@ class StatusWidget : AppWidgetProvider() {
         }
 
         /** Second line: the one connected device by name, else how many. */
-        private fun detail(s: Summary): String = when {
-            s.state == SyncState.Stopped -> "Not running"
-            s.connected.size == 1 -> s.connected.single()
-            s.connected.size > 1 -> "${s.connected.size} devices connected"
-            else -> "No device connected"
+        private fun detail(s: Summary): UiText = when {
+            s.state == SyncState.Stopped -> text(R.string.widget_not_running)
+            s.connected.size == 1 -> raw(s.connected.single())
+            s.connected.size > 1 -> plural(R.plurals.widget_devices_connected, s.connected.size)
+            else -> text(R.string.widget_no_device)
         }
 
         private fun openApp(context: Context): PendingIntent {

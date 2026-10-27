@@ -24,14 +24,14 @@ class ImportTextTest {
 
     @Test
     fun passwordField() {
-        assertNotNull(backupPasswordError("", wrong = false))
-        assertNull(backupPasswordError("x", wrong = false))
-        assertNull(backupPasswordError("   ", wrong = false)) // spaces are a valid password, used as typed
-        assertNull(backupPasswordError("x".repeat(MAX_BACKUP_PASSWORD), wrong = false))
-        assertNotNull(backupPasswordError("x".repeat(MAX_BACKUP_PASSWORD + 1), wrong = false))
-        assertEquals("Wrong password", backupPasswordError("x", wrong = true))
+        assertNotNull(backupPasswordError("", wrong = false).en())
+        assertNull(backupPasswordError("x", wrong = false).en())
+        assertNull(backupPasswordError("   ", wrong = false).en()) // spaces are a valid password, used as typed
+        assertNull(backupPasswordError("x".repeat(MAX_BACKUP_PASSWORD), wrong = false).en())
+        assertNotNull(backupPasswordError("x".repeat(MAX_BACKUP_PASSWORD + 1), wrong = false).en())
+        assertEquals("Wrong password", backupPasswordError("x", wrong = true).en())
         // A failed attempt is reported whatever the field holds (the emulator check found it hidden behind "empty").
-        assertEquals("Wrong password", backupPasswordError("", wrong = true))
+        assertEquals("Wrong password", backupPasswordError("", wrong = true).en())
     }
 
     /** Accepted exactly when 1 to MAX characters long and not known to be wrong; a wrong one always says so. */
@@ -42,8 +42,8 @@ class ImportTextTest {
             val p = r.text(if (r.nextInt(10) == 0) MAX_BACKUP_PASSWORD + 50 else 40)
             val wrong = r.nextBoolean()
             val ok = p.isNotEmpty() && p.length <= MAX_BACKUP_PASSWORD && !wrong
-            assertEquals("for ${p.length} chars, wrong=$wrong", ok, backupPasswordError(p, wrong) == null)
-            if (wrong) assertEquals("Wrong password", backupPasswordError(p, true))
+            assertEquals("for ${p.length} chars, wrong=$wrong", ok, backupPasswordError(p, wrong).en() == null)
+            if (wrong) assertEquals("Wrong password", backupPasswordError(p, true).en())
         }
     }
 
@@ -54,8 +54,8 @@ class ImportTextTest {
         repeat(5_000) {
             val path = "/storage/emulated/0/" + r.text(20)
             val f = ForkFolder("id", "", path, types[r.nextInt(types.size)], r.nextBoolean(), r.nextBoolean())
-            val text = folderImportText(f)
-            assertTrue(text.startsWith(wrapPath(displayPath(path)) + ": "))
+            val text = folderImportText(f).en()
+            assertTrue(text.startsWith(wrapPath(displayPath(path).en()) + ": "))
             // A missing directory never claims to be found, and a found one never to be created.
             assertEquals(f.exists, "found" in text.substringAfterLast(": "))
         }
@@ -70,20 +70,20 @@ class ImportTextTest {
                 r.nextBoolean(), List(r.nextInt(0, 3)) { SyncWindow(r.nextInt(0, 1440), r.nextInt(0, 1440), (1..7).shuffled(r).take(r.nextInt(1, 8)).toSet()) },
             )
             val proxy = if (r.nextBoolean()) ProxySettings() else ProxySettings(ProxyType.entries.random(r), "p", 1080, only = r.nextBoolean())
-            val lines = conditionsText(c, proxy)
+            val lines = conditionsText(c, proxy).map { it.en() }
             val networks = lines.single { it.startsWith("On ") }
             assertTrue(networks.startsWith("On unmetered Wi-Fi"))
             assertEquals(c.meteredWifi, "metered Wi-Fi" in networks.removePrefix("On unmetered Wi-Fi"))
             assertEquals(c.mobileData, "mobile data" in networks)
             assertEquals(c.mobileData && c.roaming, "roaming" in networks)
-            assertEquals(c.power != PowerSource.Any, powerText(c.power) in lines)
+            assertEquals(c.power != PowerSource.Any, powerText(c.power).en() in lines)
             // A backup never pauses: the phone's own switch is kept.
             assertFalse(lines.any { "pause" in it.lowercase() && !it.startsWith("Pause in battery saver") })
             assertEquals(1, lines.count { it.startsWith("Start at boot") })
             assertEquals(proxy.type == ProxyType.None, "Proxy: none" in lines)
             val times = lines.single { it.startsWith("Sync times: ") }
             assertEquals(!c.timeSchedule, times == "Sync times: any time")
-            if (c.timeSchedule) c.windows.forEach { assertTrue(windowText(it) in times) }
+            if (c.timeSchedule) c.windows.forEach { assertTrue(windowText(it).en() in times) }
         }
     }
 
@@ -93,16 +93,16 @@ class ImportTextTest {
             "networks", "force_start", "force_stop", "flight_mode", "master_sync", "wifi_allowlist",
             "schedule", "broadcasts", "socks_proxy", "http_proxy", "environment",
         )
-        keys.forEach { assertFalse("$it has no text", notImportedText(ForkNotImported(it)).contains('_')) }
+        keys.forEach { assertFalse("$it has no text", notImportedText(ForkNotImported(it)).en().contains('_')) }
         listOf("folder_conditions", "folder_script", "device_conditions").forEach {
-            assertTrue(notImportedText(ForkNotImported(it, "Photos")).endsWith("Photos"))
+            assertTrue(notImportedText(ForkNotImported(it, "Photos")).en().endsWith("Photos"))
         }
         // A key a newer bridge sends still shows, with its subject.
         val r = Random(3)
         repeat(1_000) {
             val key = "new_" + r.text(10)
             val subject = r.text(10)
-            val text = notImportedText(ForkNotImported(key, subject))
+            val text = notImportedText(ForkNotImported(key, subject)).en()
             assertTrue(key in text && subject in text)
         }
     }

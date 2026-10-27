@@ -13,16 +13,14 @@ package eu.stedb.mysyncthing.core
  * space this app may use, which excludes what Android reserves, so it can read
  * 0.00 % while a file manager still shows some megabytes free.
  */
-fun problemText(raw: String): String {
+fun problemText(raw: String): UiText {
     val required = Regex("< required (\\S+(?: %| ?[kMGT]?B)?)\\s*$").find(raw)?.groupValues?.get(1)?.replace(' ', '\u00A0') // never wrapped from its number
-    val keeps = required?.let { " (Syncthing keeps $it free)" }.orEmpty()
     return when {
         "insufficient space on disk for database" in raw ->
-            "The phone's storage is almost full$keeps. Free some space: syncing goes on by itself."
+            required?.let { text(R.string.problem_storage_almost_full_keeps, it) } ?: text(R.string.problem_storage_almost_full)
         "insufficient space in folder" in raw ->
-            "Too little free space where this folder is$keeps. Free some space, or lower \"Keep free\" in the folder's settings."
-        "no space left on device" in raw.lowercase() ->
-            "The phone's storage is full. Free some space, then try again."
-        else -> raw
+            required?.let { text(R.string.problem_folder_space_keeps, it) } ?: text(R.string.problem_folder_space)
+        "no space left on device" in raw.lowercase() -> text(R.string.problem_storage_full)
+        else -> raw(raw)
     }
 }

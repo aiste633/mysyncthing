@@ -1,5 +1,12 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.joined
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.raw
+import eu.stedb.mysyncthing.core.text
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -67,7 +74,7 @@ fun ImportScreen(onBack: () -> Unit, vm: ImportViewModel = viewModel()) {
     // While working, Back is held here: leaving would drop the result of the import.
     BackHandler { if (!working) back() }
 
-    AppScreen("Import backup", onBack = if (working) null else back) { padding ->
+    AppScreen(stringResource(R.string.import_title), onBack = if (working) null else back) { padding ->
         Column(
             Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp),
         ) {
@@ -87,22 +94,20 @@ fun ImportScreen(onBack: () -> Unit, vm: ImportViewModel = viewModel()) {
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
                     BusyIndicator()
-                    Text(s.what)
+                    Text(s.what.asString())
                 }
                 is ImportStep.Done -> Note(
-                    if (s.problem == null) "Imported" else "Import finished with a problem",
+                    stringResource(if (s.problem == null) R.string.import_done else R.string.import_done_problem),
                     listOfNotNull(
                         s.problem,
-                        "Syncthing restarted with the imported setup and is checking every folder again. " +
-                            "Identical files are recognised and not transferred.",
-                        if (s.keepIdentity) "This phone now has the backup's device ID: stop or uninstall Syncthing " +
-                            "where the backup came from, or both will disturb each other's connections." else null,
-                    ).joinToString("\n\n"),
+                        text(R.string.import_done_text),
+                        if (s.keepIdentity) text(R.string.import_done_identity) else null,
+                    ).joined("\n\n").asString(),
                 )
                 is ImportStep.Failed -> {
-                    Note("Cannot import this file", s.message)
+                    Note(stringResource(R.string.import_failed), s.message.asString())
                     Row(Modifier.padding(horizontal = 16.dp)) {
-                        OutlinedButton(shape = ButtonShape, onClick = vm::restart) { Text("Choose another file") }
+                        OutlinedButton(shape = ButtonShape, onClick = vm::restart) { Text(stringResource(R.string.import_choose_another)) }
                     }
                 }
             }
@@ -114,14 +119,13 @@ fun ImportScreen(onBack: () -> Unit, vm: ImportViewModel = viewModel()) {
 private fun ChooseStep(onFound: (File) -> Unit, onPick: () -> Unit) {
     val found = remember { ForkImport.defaultBackup.takeIf { it.isFile } }
     Note(
-        "Bring your setup over",
-        "Choose a backup exported by this app (Settings > Export a backup), or by Syncthing-Fork (Settings > Import and Export). " +
-            "This phone then gets its folders, devices and settings. The files in the folders are not part of the backup.",
+        stringResource(R.string.import_intro_title),
+        stringResource(R.string.import_intro),
     )
     if (found != null) {
-        SettingsGroup("Backup found") {
+        SettingsGroup(stringResource(R.string.import_found)) {
             SettingRow(
-                wrapPath(displayPath(found.path)),
+                wrapPath(displayPath(found.path).asString()),
                 "${dateTimeText(found.lastModified())}, ${bytes(found.length())}",
                 Icons.Default.Folder,
             ) { onFound(found) }
@@ -130,7 +134,7 @@ private fun ChooseStep(onFound: (File) -> Unit, onPick: () -> Unit) {
     Row(Modifier.padding(16.dp)) {
         Button(shape = ButtonShape, onClick = onPick) {
             Icon(Icons.Default.FolderOpen, null)
-            Text("Choose a backup file", Modifier.padding(start = 8.dp))
+            Text(stringResource(R.string.import_choose), Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -141,24 +145,24 @@ private fun PasswordStep(tried: String, wrong: Boolean, password: String, onChan
     var show by rememberSaveable { mutableStateOf(false) }
     var edited by rememberSaveable { mutableStateOf(false) }
     val problem = backupPasswordError(password, wrong && password == tried)
-    Note("Password protected", "Enter the password the backup was exported with.")
+    Note(stringResource(R.string.import_password_title), stringResource(R.string.import_password_text))
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             password, { onChange(it); edited = true },
-            label = { Text("Backup password") }, singleLine = true,
+            label = { Text(stringResource(R.string.import_password_label)) }, singleLine = true,
             isError = problem != null && (edited || wrong),
-            supportingText = problem?.takeIf { edited || wrong }?.let { { Text(it) } },
+            supportingText = problem?.takeIf { edited || wrong }?.let { { Text(it.asString()) } },
             visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             trailingIcon = {
                 IconButton(onClick = { show = !show }) {
-                    Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, if (show) "Hide password" else "Show password")
+                    Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, stringResource(if (show) R.string.password_hide else R.string.password_show))
                 }
             },
             modifier = Modifier.fillMaxWidth(),
         )
         Button(shape = ButtonShape, enabled = backupPasswordError(password, false) == null, onClick = onContinue) {
-            Text("Continue")
+            Text(stringResource(R.string.action_continue))
         }
     }
 }
@@ -169,31 +173,30 @@ private fun ReviewStep(p: ForkPreview, onImport: (keepIdentity: Boolean, deleteB
     var deleteBackup by rememberSaveable { mutableStateOf(true) }
     var confirm by rememberSaveable { mutableStateOf(false) }
 
-    SettingsGroup("Device ID") {
+    SettingsGroup(stringResource(R.string.device_id)) {
         RadioRow(
-            "Take over \"${p.deviceName.ifEmpty { shortId(p.deviceID) }}\" (${shortId(p.deviceID)})",
-            "Other devices keep syncing with this phone as before. " +
-                (if (p.source == "own") "The phone the backup came from" else "Syncthing-Fork") + " must not run under this ID any more.",
+            stringResource(R.string.import_take_over, p.deviceName.ifEmpty { shortId(p.deviceID) }, shortId(p.deviceID)),
+            stringResource(if (p.source == "own") R.string.import_take_over_own_hint else R.string.import_take_over_fork_hint),
             keepIdentity,
         ) { keepIdentity = true }
         RadioRow(
-            "Keep this phone's own ID",
-            "Other devices must accept this phone as a new device. The old install can keep running.",
+            stringResource(R.string.import_keep_id),
+            stringResource(R.string.import_keep_id_hint),
             !keepIdentity,
         ) { keepIdentity = false }
     }
-    SettingsGroup(count(p.folders.size, "folder")) {
-        p.folders.forEach { f -> SettingRow(f.label.ifEmpty { f.id }, folderImportText(f), Icons.Default.Folder) }
+    SettingsGroup(count(R.plurals.count_folders, p.folders.size).asString()) {
+        p.folders.forEach { f -> SettingRow(f.label.ifEmpty { f.id }, folderImportText(f).asString(), Icons.Default.Folder) }
     }
-    SettingsGroup(count(p.devices.size, "device")) {
+    SettingsGroup(count(R.plurals.count_devices, p.devices.size).asString()) {
         p.devices.forEach { d -> SettingRow(d.name.ifEmpty { shortId(d.id) }, shortId(d.id), Icons.Default.Devices) }
     }
-    SettingsGroup("Sync settings") {
-        conditionsText(p.conditions, p.proxy).forEach { SettingRow(it) }
+    SettingsGroup(stringResource(R.string.import_sync_settings)) {
+        conditionsText(p.conditions, p.proxy).forEach { SettingRow(it.asString()) }
     }
     if (p.notImported.isNotEmpty()) {
-        SettingsGroup("Not imported") {
-            p.notImported.forEach { SettingRow(notImportedText(it)) }
+        SettingsGroup(stringResource(R.string.import_not_imported)) {
+            p.notImported.forEach { SettingRow(notImportedText(it).asString()) }
         }
     }
 
@@ -205,22 +208,21 @@ private fun ReviewStep(p: ForkPreview, onImport: (keepIdentity: Boolean, deleteB
         Row(Modifier.padding(start = 16.dp, top = 12.dp, end = 16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Default.Key, null, tint = MaterialTheme.colorScheme.onErrorContainer)
             Text(
-                "The backup holds the device's private key. Any app that can read the file can pose as this device.",
+                stringResource(R.string.import_key_warning),
                 color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(start = 12.dp),
             )
         }
-        CheckRow("Delete the backup file after importing", "Recommended", deleteBackup) { deleteBackup = it }
+        CheckRow(stringResource(R.string.import_delete_backup), stringResource(R.string.permission_recommended), deleteBackup) { deleteBackup = it }
     }
     Row(Modifier.padding(horizontal = 16.dp)) {
-        Button(shape = ButtonShape, onClick = { confirm = true }) { Text("Import") }
+        Button(shape = ButtonShape, onClick = { confirm = true }) { Text(stringResource(R.string.action_import)) }
     }
 
     if (confirm) {
         ConfirmDialog(
-            "Replace this phone's setup?",
-            "The folders, devices and settings of Syncthing on this phone are replaced by the backup's. " +
-                "Files on the phone are not touched.",
-            "Replace", onDismiss = { confirm = false },
+            stringResource(R.string.import_replace_title),
+            stringResource(R.string.import_replace_text),
+            stringResource(R.string.action_replace), onDismiss = { confirm = false },
         ) {
             confirm = false
             onImport(keepIdentity, deleteBackup)
@@ -243,52 +245,56 @@ const val MAX_BACKUP_PASSWORD = 1024
  * Why [password] can't be tried, or null. It is used exactly as typed: spaces
  * count, as they did when Fork encrypted the backup.
  */
-fun backupPasswordError(password: String, wrong: Boolean): String? = when {
-    wrong -> "Wrong password"
-    password.isEmpty() -> "Enter the backup's password"
-    password.length > MAX_BACKUP_PASSWORD -> "At most $MAX_BACKUP_PASSWORD characters"
+fun backupPasswordError(password: String, wrong: Boolean): UiText? = when {
+    wrong -> text(R.string.error_password_wrong)
+    password.isEmpty() -> text(R.string.error_password_backup_empty)
+    password.length > MAX_BACKUP_PASSWORD -> plural(R.plurals.error_too_long_chars, MAX_BACKUP_PASSWORD)
     else -> null
 }
 
 /** What happens to an imported folder on this phone (design: the core creates what is missing). */
-fun folderImportText(f: ForkFolder): String {
-    val path = wrapPath(displayPath(f.path))
-    return when {
-        f.exists && f.marker -> "$path: found, will be checked again"
-        f.exists -> "$path: found, will become a Syncthing folder and be checked"
-        f.type == "sendonly" -> "$path: not on this phone, will be created empty"
-        else -> "$path: not on this phone, will be created and filled from other devices"
-    }
-}
+fun folderImportText(f: ForkFolder): UiText = text(
+    when {
+        f.exists && f.marker -> R.string.import_folder_found
+        f.exists -> R.string.import_folder_found_new
+        f.type == "sendonly" -> R.string.import_folder_create_empty
+        else -> R.string.import_folder_create
+    },
+    displayPath(f.path).let { if (it is UiText.Raw) raw(wrapPath(it.text)) else it },
+)
 
-fun conditionsText(c: RunConditions, proxy: ProxySettings): List<String> = listOfNotNull(
-    "On " + listOfNotNull(
-        "unmetered Wi-Fi",
-        "metered Wi-Fi".takeIf { c.meteredWifi },
-        (if (c.roaming) "mobile data, also roaming" else "mobile data").takeIf { c.mobileData },
-    ).joinToString(", "),
+fun conditionsText(c: RunConditions, proxy: ProxySettings): List<UiText> = listOfNotNull(
+    text(
+        R.string.import_on,
+        listOfNotNull(
+            text(R.string.import_unmetered),
+            text(R.string.import_metered).takeIf { c.meteredWifi },
+            text(if (c.roaming) R.string.import_mobile_roaming else R.string.import_mobile).takeIf { c.mobileData },
+        ).joined(", "),
+    ),
     powerText(c.power).takeIf { c.power != PowerSource.Any },
-    if (c.respectBatterySaver) "Pause in battery saver: on" else "Pause in battery saver: off",
-    if (c.startOnBoot) "Start at boot: on" else "Start at boot: off",
-    "Sync times: " + if (c.timeSchedule) c.windows.joinToString("; ", transform = ::windowText) else "any time",
-    "Proxy: " + if (proxy.type == ProxyType.None) "none" else proxyText(proxy),
+    text(if (c.respectBatterySaver) R.string.import_battery_saver_on else R.string.import_battery_saver_off),
+    text(if (c.startOnBoot) R.string.import_boot_on else R.string.import_boot_off),
+    text(R.string.import_sync_times, if (c.timeSchedule) c.windows.map(::windowText).joined("; ") else text(R.string.import_any_time)),
+    text(R.string.import_proxy, if (proxy.type == ProxyType.None) text(R.string.import_proxy_none) else proxyText(proxy)),
 )
 
 /** A Fork setting this app has no equivalent for, for people. */
-fun notImportedText(n: ForkNotImported): String = when (n.key) {
-    "networks" -> "Not syncing on Wi-Fi: here unmetered Wi-Fi is always used, metered Wi-Fi is off"
-    "force_start" -> "Force start (sync regardless of conditions)"
-    "force_stop" -> "Syncing paused by hand (here only this phone's own pause counts)"
-    "flight_mode" -> "Sync in flight mode"
-    "master_sync" -> "Follow Android's auto-sync switch"
-    "wifi_allowlist" -> "Sync only on chosen Wi-Fi networks"
-    "schedule" -> "Sync for some minutes every few hours (here: Sync times, by the clock)"
-    "broadcasts" -> "Control by other apps"
-    "socks_proxy" -> "SOCKS proxy: not a valid address, or Tor was on"
-    "http_proxy" -> "HTTP proxy: not a valid address, or another proxy was on"
-    "environment" -> "Environment variables for Syncthing"
-    "folder_conditions" -> "Own sync conditions of folder ${n.subject}"
-    "folder_script" -> "Script after syncing folder ${n.subject}"
-    "device_conditions" -> "Own sync conditions of device ${n.subject}"
-    else -> listOf(n.key, n.subject).filter { it.isNotEmpty() }.joinToString(": ")
+fun notImportedText(n: ForkNotImported): UiText = when (n.key) {
+    "networks" -> text(R.string.not_imported_networks)
+    "force_start" -> text(R.string.not_imported_force_start)
+    "force_stop" -> text(R.string.not_imported_force_stop)
+    "flight_mode" -> text(R.string.not_imported_flight_mode)
+    "master_sync" -> text(R.string.not_imported_master_sync)
+    "wifi_allowlist" -> text(R.string.not_imported_wifi_allowlist)
+    "schedule" -> text(R.string.not_imported_schedule)
+    "broadcasts" -> text(R.string.not_imported_broadcasts)
+    "socks_proxy" -> text(R.string.not_imported_socks_proxy)
+    "http_proxy" -> text(R.string.not_imported_http_proxy)
+    "environment" -> text(R.string.not_imported_environment)
+    "folder_conditions" -> text(R.string.not_imported_folder_conditions, n.subject)
+    "folder_script" -> text(R.string.not_imported_folder_script, n.subject)
+    "device_conditions" -> text(R.string.not_imported_device_conditions, n.subject)
+    // A key from a newer bridge: shown as it came.
+    else -> raw(listOf(n.key, n.subject).filter { it.isNotEmpty() }.joinToString(": "))
 }

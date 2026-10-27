@@ -19,15 +19,15 @@ class FailedItemsTest {
     fun copyAllKeepsTheCoresText() {
         val copied = failedItemsCopy(listOf(keepFree, other))
         assertEquals("${keepFree.path}: ${keepFree.error}\n${other.path}: ${other.error}", copied)
-        assertFalse(copied.contains(problemText(keepFree.error)))
+        assertFalse(copied.contains(problemText(keepFree.error).en()))
     }
 
     @Test
     fun searchFindsShownAndCoreText() {
-        assertTrue(failedItemMatches(keepFree, "free space")) // shown text only
-        assertTrue(failedItemMatches(keepFree, "Insufficient")) // core's text only
-        assertTrue(failedItemMatches(keepFree, " photos/ "))
-        assertFalse(failedItemMatches(other, "free space"))
-        assertTrue(failedItemMatches(other, ""))
+        assertTrue(failedItemMatches(keepFree, "free space", En)) // shown text only
+        assertTrue(failedItemMatches(keepFree, "Insufficient", En)) // core's text only
+        assertTrue(failedItemMatches(keepFree, " photos/ ", En))
+        assertFalse(failedItemMatches(other, "free space", En))
+        assertTrue(failedItemMatches(other, "", En))
     }
 }

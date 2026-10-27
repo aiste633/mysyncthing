@@ -55,7 +55,7 @@ sealed interface ForkInspection {
     data class Ok(val preview: ForkPreview) : ForkInspection
     data object NeedPassword : ForkInspection
     data object WrongPassword : ForkInspection
-    data class Failed(val message: String) : ForkInspection
+    data class Failed(val message: UiText) : ForkInspection
 }
 
 /**
@@ -77,7 +77,7 @@ object ForkImport {
             when (e.message) {
                 Stbridge.errNeedPassword() -> ForkInspection.NeedPassword
                 Stbridge.errWrongPassword() -> ForkInspection.WrongPassword
-                else -> ForkInspection.Failed(sentence(e.message ?: e.toString()))
+                else -> ForkInspection.Failed(e.sentenceText())
             }
         }
     }
@@ -98,7 +98,7 @@ object ForkImport {
         conditions: RunConditions,
         proxy: ProxySettings,
         deleteBackup: Boolean,
-    ): String? = withContext(Dispatchers.IO + NonCancellable) {
+    ): UiText? = withContext(Dispatchers.IO + NonCancellable) {
         val settings = Settings(context)
         replaceSetup(SyncthingCore.homeLock, object : SetupReplacement {
             override suspend fun stopCore() {
@@ -129,7 +129,7 @@ object ForkImport {
     }
 
     private inline fun <T> withFd(resolver: ContentResolver, uri: Uri, block: (Int) -> T): T =
-        (resolver.openFileDescriptor(uri, "r") ?: error("Cannot open the backup")).use { block(it.fd) }
+        (resolver.openFileDescriptor(uri, "r") ?: throw UiTextException(text(R.string.import_cannot_open))).use { block(it.fd) }
 
     private fun delete(resolver: ContentResolver, uri: Uri): Boolean = runCatching {
         when (uri.scheme) {
@@ -156,20 +156,24 @@ internal interface SetupReplacement {
  * old setup or the new one with the old settings. The core is started again
  * after the lock is released, also when stopping or installing failed.
  */
-internal suspend fun replaceSetup(lock: HomeLock, r: SetupReplacement): String? {
+internal suspend fun replaceSetup(lock: HomeLock, r: SetupReplacement): UiText? {
     val outcome = lock.use {
         try {
             r.stopCore()
             r.install()
         } catch (e: Exception) {
-            return@use sentence(e.message ?: e.toString())
+            return@use e.sentenceText()
         }
         val saved = r.applySettings()
         val removed = r.removeBackup()
-        listOfNotNull(
-            if (saved) null else "The sync settings could not all be saved, probably because the storage is full. Check them in Settings.",
-            if (removed) null else "The backup file could not be deleted. Delete it yourself: it holds the device's private key.",
-        ).joinToString(" ").ifEmpty { null }
+        val notSaved = text(R.string.import_settings_not_saved)
+        val notDeleted = text(R.string.import_backup_not_deleted)
+        when {
+            !saved && !removed -> text(R.string.two_sentences, notSaved, notDeleted)
+            !saved -> notSaved
+            !removed -> notDeleted
+            else -> null
+        }
     }
     r.startCore()
     return outcome
@@ -177,3 +181,6 @@ internal suspend fun replaceSetup(lock: HomeLock, r: SetupReplacement): String? 
 
 /** Go errors start lower-case; shown on their own, they are sentences. */
 internal fun sentence(message: String) = message.replaceFirstChar { it.uppercaseChar() }
+
+/** [messageText], as a sentence of its own. */
+internal fun Throwable.sentenceText(): UiText = (this as? UiTextException)?.text ?: raw(sentence(message ?: toString()))

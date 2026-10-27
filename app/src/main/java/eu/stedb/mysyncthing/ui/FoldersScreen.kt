@@ -1,5 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.R as CoreR
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,26 +55,26 @@ fun FoldersScreen(
     onOpenRecent: () -> Unit,
 ) {
     AppScreen(
-        title = "Folders",
+        title = stringResource(R.string.tab_folders),
         status = summary,
         actions = {
             var menu by remember { mutableStateOf(false) }
-            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, "More") }
+            IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, stringResource(R.string.action_more)) }
             DropdownMenu(menu, onDismissRequest = { menu = false }) {
                 DropdownMenuItem(
-                    text = { Text("Rescan all folders") }, enabled = s.folders.any { !it.paused },
+                    text = { Text(stringResource(R.string.folders_rescan_all)) }, enabled = s.folders.any { !it.paused },
                     onClick = { menu = false; vm.rescanAll() },
                 )
-                DropdownMenuItem(text = { Text("Recent changes") }, onClick = { menu = false; onOpenRecent() })
+                DropdownMenuItem(text = { Text(stringResource(R.string.recent_changes)) }, onClick = { menu = false; onOpenRecent() })
             }
         },
-        fab = { AddFab("Add folder", onAdd) },
+        fab = { AddFab(stringResource(R.string.folders_add), onAdd) },
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             if (s.loaded && s.folders.isEmpty() && s.pendingFolders.isEmpty()) {
                 EmptyState(
-                    Icons.Default.FolderOpen, "No folders yet",
-                    "Tap Add folder to sync a folder on this phone. Folders other devices share with you appear here too.",
+                    Icons.Default.FolderOpen, stringResource(R.string.folders_empty),
+                    stringResource(R.string.folders_empty_hint),
                 )
             }
             val list = rememberLazyListState()
@@ -92,19 +96,19 @@ fun FoldersScreen(
                             val who = dev?.name?.ifEmpty { null } ?: shortId(device)
                             // The core also lists a folder this phone has but doesn't share with that device yet.
                             val existing = s.folders.find { it.id == id }
-                            val title = "$who shares \"${offer.label.ifEmpty { id }}\""
+                            val title = stringResource(R.string.folders_offer, who, offer.label.ifEmpty { id })
                             if (existing == null) {
-                                RequestCard(title, "Choose where to keep it on this phone") {
-                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text("Ignore") }
-                                    TextButton(onClick = { onAccept(id, device) }) { Text("Review") }
+                                RequestCard(title, stringResource(R.string.folders_offer_choose)) {
+                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text(stringResource(CoreR.string.action_ignore)) }
+                                    TextButton(onClick = { onAccept(id, device) }) { Text(stringResource(CoreR.string.action_review)) }
                                 }
                             } else {
-                                RequestCard(title, "You already have it in ${displayPath(existing.path)}. Share it with $who too?") {
-                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text("Ignore") }
+                                RequestCard(title, stringResource(R.string.folders_offer_have, displayPath(existing.path).asString(), who)) {
+                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text(stringResource(CoreR.string.action_ignore)) }
                                     TextButton(onClick = {
                                         // An untrusted device needs a password, asked on the folder's screen.
                                         if (dev != null && sharesEncrypted(dev, null)) onOpen(id) else vm.setShared(existing, device, true)
-                                    }) { Text("Share") }
+                                    }) { Text(stringResource(R.string.action_share)) }
                                 }
                             }
                         }
@@ -133,16 +137,16 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onClick: () ->
                 )
                 Icon(look.icon, null, Modifier.size(18.dp), tint = look.color)
                 Spacer(Modifier.width(4.dp))
-                Text(status.text, style = MaterialTheme.typography.labelLarge, color = look.color)
+                Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
             }
             Text(
-                displayPath(f.path), style = MaterialTheme.typography.bodyMedium,
+                displayPath(f.path).asString(), style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             val details = listOfNotNull(
                 st?.let { bytes(it.localBytes) },
-                folderTypeLabel(f.type).takeIf { f.type != "sendreceive" },
-                if (shared == 0) "not shared" else "shared with $shared",
+                folderTypeLabel(f.type).takeIf { f.type != "sendreceive" }?.asString(),
+                if (shared == 0) stringResource(R.string.folder_card_not_shared) else pluralStringResource(R.plurals.folder_card_shared, shared, shared),
             )
             Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             status.progress?.let {

@@ -27,12 +27,12 @@ class ProxyExportValidationTest {
     @Test
     fun proxyFieldsAgreeWithTheBridge() = contract.getValue("proxy").jsonArray.map { it.jsonObject }.forEach { c ->
         val ok = c.getValue("ok").jsonPrimitive.boolean
-        assertEquals(c.toString(), ok, proxyError(c.str("scheme"), c.str("host"), c.getValue("port").jsonPrimitive.int, c.str("user"), c.str("password")) == null)
+        assertEquals(c.toString(), ok, proxyError(c.str("scheme"), c.str("host"), c.getValue("port").jsonPrimitive.int, c.str("user"), c.str("password")).en() == null)
     }
 
     @Test
     fun exportPasswordAgreesWithTheBridge() = contract.getValue("exportPassword").jsonArray.map { it.jsonObject }.forEach { c ->
-        assertEquals(c.str("password"), c.getValue("ok").jsonPrimitive.boolean, exportPasswordError(c.str("password")) == null)
+        assertEquals(c.str("password"), c.getValue("ok").jsonPrimitive.boolean, exportPasswordError(c.str("password")).en() == null)
     }
 
     // --- Generators: what people type or paste into the fields.
@@ -51,7 +51,7 @@ class ProxyExportValidationTest {
 
     @Test
     fun acceptedHostsMakeAProxyUrl() = forAll(typedHost) { h ->
-        if (proxyHostError(h) != null) return@forAll
+        if (proxyHostError(h).en() != null) return@forAll
         assertTrue(h, h.isNotEmpty() && h.none { it.isWhitespace() || it in "/@[]%?#" })
         // java.net.URI brackets an IPv6 host itself and refuses what a URL can't carry.
         val u = URI("socks5", null, h, 1080, null, null, null)
@@ -61,23 +61,23 @@ class ProxyExportValidationTest {
 
     @Test
     fun portsAreWholeNumbersFrom1To65535() = forAll(typedPort) { s ->
-        val ok = proxyPortError(s) == null
+        val ok = proxyPortError(s).en() == null
         val n = s.trim().takeIf { t -> t.isNotEmpty() && t.all { it in '0'..'9' } }?.toIntOrNull()
         assertEquals(s, n != null && n in 1..65535, ok)
-        if (s.any { it.isDigit() && it !in '0'..'9' }) assertEquals("Use the digits 0-9", proxyPortError(s))
+        if (s.any { it.isDigit() && it !in '0'..'9' }) assertEquals("Use the digits 0-9", proxyPortError(s).en())
     }
 
     /** Keyboards in other scripts type their own digits; adb can't, so the emulator checks couldn't. */
     @Test
     fun otherScriptsDigitsAreRefused() {
-        for (s in listOf("٣", "١٠٨٠", "۱۰۸۰", "१०८०", "１０８０", "10८0")) assertEquals(s, "Use the digits 0-9", proxyPortError(s))
+        for (s in listOf("٣", "١٠٨٠", "۱۰۸۰", "१०८०", "１０８０", "10८0")) assertEquals(s, "Use the digits 0-9", proxyPortError(s).en())
         assertNull(proxyForm(ProxyType.Socks5, "127.0.0.1", "١٠٨٠", "", "", false))
         assertNotNull(proxyForm(ProxyType.Socks5, "127.0.0.1", "1080", "", "", false))
     }
 
     @Test
     fun credentialsFitSocks5() = forAll(oneOf(anyText, { chars("aü中😀", 0, 200) }, { "x".repeat(nextInt(250, 260)) })) { s ->
-        val ok = proxyCredentialError(s) == null
+        val ok = proxyCredentialError(s).en() == null
         val bytes = s.toByteArray(Charsets.UTF_8)
         if (ok) {
             assertTrue(s, bytes.size <= 255 && s.none { it.isISOControl() })
@@ -99,19 +99,19 @@ class ProxyExportValidationTest {
             assertEquals(ProxySettings(), p)
             return@forAll
         }
-        val fieldsOk = proxyHostError(host.trim()) == null && proxyPortError(port) == null &&
-            proxyUserError(user, password) == null && proxyCredentialError(password) == null
+        val fieldsOk = proxyHostError(host.trim()).en() == null && proxyPortError(port).en() == null &&
+            proxyUserError(user, password).en() == null && proxyCredentialError(password).en() == null
         assertEquals(fieldsOk, p != null)
         if (p != null) {
             assertEquals(host.trim(), p.host)
             assertEquals(port.trim().toInt(), p.port)
-            assertNull(proxyError(type.scheme, p.host, p.port, p.user, p.password))
+            assertNull(proxyError(type.scheme, p.host, p.port, p.user, p.password).en())
         }
     }
 
     @Test
     fun exportPasswordRules() = forAll(oneOf(anyText, { chars("aZ9 -äß€п中😀", 0, 30) }, { "p".repeat(nextInt(1020, 1030)) })) { pw ->
-        val ok = exportPasswordError(pw) == null
+        val ok = exportPasswordError(pw).en() == null
         val bytes = pw.toByteArray(Charsets.UTF_8)
         val expected = pw.isEmpty() || (
             String(bytes, Charsets.UTF_8) == pw && pw.none { it.isISOControl() } &&
@@ -122,32 +122,32 @@ class ProxyExportValidationTest {
 
     @Test
     fun exportPasswordMessages() {
-        assertNull(exportPasswordError(""))
-        assertEquals("At least 12 characters", exportPasswordError("short"))
-        assertEquals("At least 12 characters", exportPasswordError("😀".repeat(11))) // 22 UTF-16 units, 11 characters
-        assertNull(exportPasswordError("😀".repeat(12)))
-        assertEquals("No line breaks or control characters", exportPasswordError("twelve chars\nlong"))
-        assertEquals("No line breaks or control characters", exportPasswordError("twelve chars \ud800 long"))
-        assertNotNull(exportPasswordError("p".repeat(1025)))
-        assertNull(exportRepeatError("same password", "same password"))
-        assertEquals("Not the same password", exportRepeatError("same password", "same passwort"))
+        assertNull(exportPasswordError("").en())
+        assertEquals("At least 12 characters", exportPasswordError("short").en())
+        assertEquals("At least 12 characters", exportPasswordError("😀".repeat(11)).en()) // 22 UTF-16 units, 11 characters
+        assertNull(exportPasswordError("😀".repeat(12)).en())
+        assertEquals("No line breaks or control characters", exportPasswordError("twelve chars\nlong").en())
+        assertEquals("No line breaks or control characters", exportPasswordError("twelve chars \ud800 long").en())
+        assertNotNull(exportPasswordError("p".repeat(1025)).en())
+        assertNull(exportRepeatError("same password", "same password").en())
+        assertEquals("Not the same password", exportRepeatError("same password", "same passwort").en())
     }
 
     @Test
     fun hostMessages() {
-        assertEquals("Required", proxyHostError(""))
-        assertEquals("Without brackets, for example ::1", proxyHostError("[::1]"))
-        assertEquals("An IP address or a host name", proxyHostError("192.0.2.999"))
-        assertNull(proxyHostError("2001:db8::192.0.2.1"))
-        assertEquals("Needed with a password", proxyUserError("", "pw"))
-        assertFalse(proxyPortError("") == null)
+        assertEquals("Required", proxyHostError("").en())
+        assertEquals("Without brackets, for example ::1", proxyHostError("[::1]").en())
+        assertEquals("An IP address or a host name", proxyHostError("192.0.2.999").en())
+        assertNull(proxyHostError("2001:db8::192.0.2.1").en())
+        assertEquals("Needed with a password", proxyUserError("", "pw").en())
+        assertFalse(proxyPortError("").en() == null)
     }
 
     @Test
     fun proxyTexts() {
-        assertEquals("None: direct connections", proxyText(ProxySettings()))
-        assertEquals("SOCKS5 127.0.0.1:9050, nothing else", proxyText(ProxySettings.TOR))
-        assertEquals("HTTP [::1]:3128, direct if it fails", proxyText(ProxySettings(ProxyType.Http, "::1", 3128)))
+        assertEquals("None: direct connections", proxyText(ProxySettings()).en())
+        assertEquals("SOCKS5 127.0.0.1:9050, nothing else", proxyText(ProxySettings.TOR).en())
+        assertEquals("HTTP [::1]:3128, direct if it fails", proxyText(ProxySettings(ProxyType.Http, "::1", 3128)).en())
         // The password never shows up, not even in logs.
         assertFalse("secret" in ProxySettings(ProxyType.Socks5, "p", 1, "me", "secret").toString())
     }

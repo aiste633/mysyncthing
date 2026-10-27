@@ -2,6 +2,9 @@
 
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -82,65 +85,65 @@ fun FolderEditScreen(
     val who = offeredBy?.let { id -> s.devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: shortId(id) }
     val pathError = folderPathError(d.path, s.folders.map { it.path })
     // An offer's ID is the other device's; only a typed one must also work in REST paths.
-    val idError = if (isOffer) "Already added".takeIf { s.folders.any { it.id == d.id } } else folderIdError(d.id, s.folders.map { it.id })
+    val idError = if (isOffer) text(R.string.folder_already_added).takeIf { s.folders.any { it.id == d.id } } else folderIdError(d.id, s.folders.map { it.id })
     val valid = pathError == null && idError == null
 
     val back = rememberDiscardGuard(d != initial, onBack)
 
     AppScreen(
-        title = if (isOffer) "Add \"${initial.label}\"" else "Add folder",
+        title = if (isOffer) stringResource(R.string.folder_add_offer, initial.label) else stringResource(R.string.folders_add),
         onBack = back,
-        actions = { TextButton(onClick = { onSave(d) }, enabled = valid) { Text("Save") } },
+        actions = { TextButton(onClick = { onSave(d) }, enabled = valid) { Text(stringResource(R.string.action_save)) } },
     ) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             if (who != null) {
                 Text(
-                    "Offered by $who", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    stringResource(R.string.folder_offered_by, who), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
                 )
             }
-            SettingsGroup("Folder") {
+            SettingsGroup(stringResource(R.string.folder)) {
                 Column(Modifier.padding(16.dp)) {
                     OutlinedTextField(
                         d.label,
                         { d = d.copy(label = it, path = if (pathTouched) d.path else suggestedPath(it, pathBase, d.id)) },
-                        label = { Text("Name") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
                     OutlinedTextField(
                         d.path, { pathTouched = true; d = d.copy(path = it) },
-                        label = { Text("Folder on this phone") }, maxLines = 3, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        label = { Text(stringResource(R.string.folder_path)) }, maxLines = 3, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         // An empty path on a new form is not yet a mistake: no red, but say it's needed.
                         isError = d.path.isNotBlank() && pathError != null,
                         supportingText = {
                             Text(
                                 when {
-                                    d.path.isBlank() -> "Required. Full path, or choose one"
-                                    pathError != null -> pathError
-                                    isOffer && !pathTouched -> "Suggested. It is created if missing."
-                                    else -> "Full path, or choose one"
+                                    d.path.isBlank() -> stringResource(R.string.folder_path_required)
+                                    pathError != null -> pathError.asString()
+                                    isOffer && !pathTouched -> stringResource(R.string.folder_path_suggested)
+                                    else -> stringResource(R.string.folder_path_hint)
                                 },
                             )
                         },
                     )
-                    TextButton(onClick = pick) { Text("Choose folder") }
+                    TextButton(onClick = pick) { Text(stringResource(R.string.folder_choose)) }
                     if (!isOffer) {
                         OutlinedTextField(
-                            d.id, { d = d.copy(id = it) }, label = { Text("Folder ID") }, singleLine = true, isError = idError != null,
-                            supportingText = { Text(idError ?: "Must be the same on every device sharing this folder") },
+                            d.id, { d = d.copy(id = it) }, label = { Text(stringResource(R.string.folder_id)) }, singleLine = true, isError = idError != null,
+                            supportingText = { Text(idError?.asString() ?: stringResource(R.string.folder_id_hint)) },
                             modifier = Modifier.fillMaxWidth(),
                         )
                     }
                 }
             }
-            SettingsGroup("Type") {
+            SettingsGroup(stringResource(R.string.type)) {
                 ChoiceList(FOLDER_TYPES, d.type, Modifier.padding(horizontal = 16.dp, vertical = 8.dp), ::folderTypeHint) { d = d.copy(type = it) }
             }
-            SettingsGroup("Share with") {
-                if (s.devices.isEmpty()) SettingRow("No devices added yet", "Add one on the Devices tab")
+            SettingsGroup(stringResource(R.string.share_with)) {
+                if (s.devices.isEmpty()) SettingRow(stringResource(R.string.share_no_devices), stringResource(R.string.share_no_devices_hint))
                 s.devices.forEach { dev ->
                     val on = dev.deviceID in d.devices
-                    val note = if (dev.deviceID == offeredBy) "Offered this folder"
-                    else encryptionText(dev, d.passwords[dev.deviceID]?.let { FolderDevice(dev.deviceID, encryptionPassword = it) }.takeIf { on })
+                    val note = if (dev.deviceID == offeredBy) stringResource(R.string.share_offered)
+                    else encryptionText(dev, d.passwords[dev.deviceID]?.let { FolderDevice(dev.deviceID, encryptionPassword = it) }.takeIf { on })?.asString()
                     CheckRow(dev.name.ifEmpty { shortId(dev.deviceID) }, note, on) { share ->
                         when {
                             !share -> d = d.copy(devices = d.devices - dev.deviceID, passwords = d.passwords - dev.deviceID)
@@ -150,11 +153,11 @@ fun FolderEditScreen(
                     }
                 }
             }
-            SettingsGroup("File versioning") {
+            SettingsGroup(stringResource(R.string.file_versioning)) {
                 VersioningEditor(d.versioning) { d = d.copy(versioning = it) }
             }
-            SettingsGroup("Ignore patterns") {
-                CheckRow("Set ignore patterns first", "The folder stays paused until you save them", d.ignoresFirst) {
+            SettingsGroup(stringResource(R.string.ignore_patterns)) {
+                CheckRow(stringResource(R.string.folder_ignores_first), stringResource(R.string.folder_ignores_first_hint), d.ignoresFirst) {
                     d = d.copy(ignoresFirst = it)
                 }
             }
@@ -167,19 +170,18 @@ fun FolderEditScreen(
 fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
     var choose by rememberSaveable { mutableStateOf(false) }
     var editParam by rememberSaveable { mutableStateOf(false) }
-    SettingRow("Method", versioningSummary(v.type, v.params).substringBefore(" · ")) { choose = true }
+    SettingRow(stringResource(R.string.versioning_method), versioningLabel(v.type).asString()) { choose = true }
     val param = versioningParam(v.type)
     if (param != null) {
-        val n = versioningShown(v.type, v.params[param.key])
-        SettingRow(param.label, if (param.unit == "days" && n == "0") "Forever" else "$n ${param.unit}") { editParam = true }
+        SettingRow(stringResource(param.label), versioningAmount(param, versioningShown(v.type, v.params[param.key])).asString()) { editParam = true }
     }
     versioningHint(v.type)?.let {
         Row(Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
     if (choose) {
-        ChoiceDialog("File versioning", VERSIONING_TYPES, v.type, ::versioningHint, onDismiss = { choose = false }) { type ->
+        ChoiceDialog(stringResource(R.string.file_versioning), VERSIONING_TYPES, v.type, ::versioningHint, onDismiss = { choose = false }) { type ->
             choose = false
             val p = versioningParam(type)
             onChange(Versioning(type, if (p == null) emptyMap() else mapOf(p.key to versioningStored(type, p.default))))
@@ -187,7 +189,8 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
     }
     if (editParam && param != null) {
         TextDialog(
-            param.label, versioningShown(v.type, v.params[param.key]), param.unit.replaceFirstChar { it.uppercase() },
+            stringResource(param.label), versioningShown(v.type, v.params[param.key]),
+            stringResource(if (param.days) R.string.versioning_unit_days else R.string.versioning_unit_versions),
             error = { wholeNumberError(it, param.min) },
             onDismiss = { editParam = false },
         ) {

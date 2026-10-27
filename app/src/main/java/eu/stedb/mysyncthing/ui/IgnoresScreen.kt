@@ -1,5 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.annotation.StringRes
+import androidx.compose.ui.res.stringResource
+import eu.stedb.mysyncthing.R
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -67,10 +70,10 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
     BackHandler(enabled = ask) { leaving = true }
 
     AppScreen(
-        title = if (id == null) "Default ignore patterns" else "Ignore patterns",
+        title = stringResource(if (id == null) R.string.ignores_default_title else R.string.ignore_patterns),
         onBack = { if (ask) leaving = true else onBack() },
         actions = {
-            IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Filled.HelpOutline, "How patterns work") }
+            IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Filled.HelpOutline, stringResource(R.string.ignores_help_title)) }
             TextButton(enabled = loaded && !saving, onClick = {
                 saving = true
                 scope.launch {
@@ -78,26 +81,25 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
                     val ok = if (id == null) vm.saveDefaultIgnores(lines) else vm.saveIgnores(id, lines, resume = firstSync)
                     if (ok) onBack() else saving = false
                 }
-            }) { Text(if (firstSync) "Save and sync" else "Save") }
+            }) { Text(stringResource(if (firstSync) R.string.ignores_save_and_sync else R.string.action_save)) }
         },
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().imePadding().padding(horizontal = 16.dp)) {
             Text(
-                if (id == null) "New folders start with these patterns, including folders accepted automatically."
-                else (f?.label?.ifEmpty { null } ?: id) +
-                    if (firstSync) ". The folder stays paused until you save, so nothing is synced before the patterns apply." else "",
+                if (id == null) stringResource(R.string.ignores_default_intro)
+                else (f?.label?.ifEmpty { null } ?: id).let { if (firstSync) stringResource(R.string.ignores_first_sync, it) else it },
                 style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                LINE_PREFIXES.forEach { (prefix, label) ->
-                    AssistChip(onClick = { text = text.prefixLine(prefix) }, enabled = loaded, label = { Text("$prefix  $label") }, shape = ButtonShape)
+                LINE_PREFIXES.forEach { (prefix, @StringRes label) ->
+                    AssistChip(onClick = { text = text.prefixLine(prefix) }, enabled = loaded, label = { Text("$prefix  ${stringResource(label)}") }, shape = ButtonShape)
                 }
-                AssistChip(onClick = { text = text.insert("**") }, enabled = loaded, label = { Text("**  any path") }, shape = ButtonShape)
+                AssistChip(onClick = { text = text.insert("**") }, enabled = loaded, label = { Text("**  ${stringResource(R.string.ignores_chip_any_path)}") }, shape = ButtonShape)
             }
             OutlinedTextField(
                 text, { text = it }, enabled = loaded,
-                placeholder = { Text(if (loaded) "One pattern per line" else "Loading") },
+                placeholder = { Text(stringResource(if (loaded) R.string.ignores_placeholder else R.string.loading)) },
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(bottom = 16.dp),
             )
@@ -106,15 +108,18 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
     if (help) IgnoresHelp { help = false }
     if (leaving) {
         ConfirmDialog(
-            if (firstSync) "Leave without saving?" else "Discard changes?",
-            if (firstSync) "The folder stays paused. Resume it on its screen when you are ready." else "Your edits to the patterns are lost.",
-            if (firstSync) "Leave" else "Discard",
+            stringResource(if (firstSync) R.string.ignores_leave_title else R.string.discard_title),
+            stringResource(if (firstSync) R.string.ignores_leave_text else R.string.ignores_discard_text),
+            stringResource(if (firstSync) R.string.action_leave else R.string.action_discard),
             onDismiss = { leaving = false },
         ) { leaving = false; onBack() }
     }
 }
 
-private val LINE_PREFIXES = listOf("!" to "keep", "(?i)" to "any case", "(?d)" to "deletable", "//" to "comment")
+private val LINE_PREFIXES = listOf(
+    "!" to R.string.ignores_chip_keep, "(?i)" to R.string.ignores_chip_any_case,
+    "(?d)" to R.string.ignores_chip_deletable, "//" to R.string.ignores_chip_comment,
+)
 
 /** Puts [prefix] at the start of the line holding the cursor, unless it is already there. */
 private fun TextFieldValue.prefixLine(prefix: String): TextFieldValue {
@@ -135,33 +140,33 @@ private fun TextFieldValue.insert(s: String): TextFieldValue {
 @Composable
 private fun IgnoresHelp(onDismiss: () -> Unit) {
     val rules = listOf(
-        "name" to "Ignores every file or folder called name, at any depth.",
-        "/name" to "Only name at the top of this folder.",
-        "*.tmp" to "* matches anything except /; ? matches one character.",
-        "/photos/**" to "** matches anything, including /.",
-        "!keep.txt" to "Syncs it after all. The first line that matches wins, so put it above the broader rule.",
-        "(?i)thumbs.db" to "Ignores upper and lower case.",
-        "(?d).DS_Store" to "Syncthing may delete it when it is all that keeps a deleted folder from going away.",
-        "// note" to "A comment.",
+        "name" to R.string.ignores_help_name,
+        "/name" to R.string.ignores_help_top,
+        "*.tmp" to R.string.ignores_help_star,
+        "/photos/**" to R.string.ignores_help_double_star,
+        "!keep.txt" to R.string.ignores_help_keep,
+        "(?i)thumbs.db" to R.string.ignores_help_case,
+        "(?d).DS_Store" to R.string.ignores_help_deletable,
+        "// note" to R.string.ignores_help_comment,
     )
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("How patterns work") },
+        title = { Text(stringResource(R.string.ignores_help_title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("One pattern per line, relative to this folder. Ignored files stay on this phone but are not synced.")
+                Text(stringResource(R.string.ignores_help_intro))
                 rules.forEach { (pattern, meaning) ->
                     Column {
                         Text(pattern, style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace))
-                        Text(meaning, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(meaning), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
                 Text(
-                    "Patterns are stored in the folder's .stignore file and are not shared: set them on each device.",
+                    stringResource(R.string.ignores_help_not_shared),
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
     )
 }

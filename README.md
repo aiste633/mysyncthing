@@ -96,6 +96,10 @@ echo vX.Y.Z > ../syncthing.version
 cd ../bridge && go mod tidy && go test .
 ```
 
+## Translations
+
+All text for people is in string resources; English is the source language and Italian the first translation. Files, conventions for translators, and how code handles text: [`docs/translations.md`](docs/translations.md).
+
 ## Licence
 
 AGPL-3.0 (see `LICENSE`). The bundled Syncthing core is MPL-2.0.

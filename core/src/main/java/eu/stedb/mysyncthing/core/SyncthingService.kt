@@ -1,6 +1,7 @@
 package eu.stedb.mysyncthing.core
 
 import android.app.Notification
+import androidx.annotation.StringRes
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
@@ -64,7 +65,7 @@ class SyncthingService : LifecycleService() {
                 delay(2_000)
             }
         }
-        startForeground(NOTIFICATION_ID, notification("Starting"), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        startForeground(NOTIFICATION_ID, notification(getString(R.string.status_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
     /** The core's run: started by [onStartCommand], over once the core failed (a later start tries again). */
@@ -103,7 +104,7 @@ class SyncthingService : LifecycleService() {
             return
         }
         ProblemNotifications.noFileAccess(this, false)
-        updateNotification("Starting")
+        updateNotification(getString(R.string.status_starting))
 
         val home = File(filesDir, "syncthing")
         // Locked: a start during an import waits for it, then sees its setup and settings.
@@ -115,7 +116,7 @@ class SyncthingService : LifecycleService() {
             SyncthingCore.start(home, settings::credentials, settings.proxy.first())
         }
         val running = SyncthingCore.state.first { it !is CoreState.Starting }
-        if (running !is CoreState.Running) return failed(running, "Failed to start")
+        if (running !is CoreState.Running) return failed(running, R.string.status_failed_to_start)
         coroutineScope {
             val work = launch {
                 launch { SyncStatus.follow(running.client) }
@@ -133,13 +134,13 @@ class SyncthingService : LifecycleService() {
                     summarize(core, snap, reason, d.online)
                 }.collect { summary ->
                     SyncStatus.publish(summary)
-                    updateNotification(summary.line(), summary.publicText)
+                    updateNotification(summary.line().resolve(this@SyncthingService), summary.publicText.resolve(this@SyncthingService))
                 }
             }
             watchCore()
             work.cancel()
         }
-        failed(SyncthingCore.state.value, "Stopped with an error")
+        failed(SyncthingCore.state.value, R.string.status_stopped_error)
     }
 
     /**
@@ -147,9 +148,9 @@ class SyncthingService : LifecycleService() {
      * the app can show why and start it again; the notices of a core that no
      * longer runs go (also those a crashed process left in the shade).
      */
-    private fun failed(state: CoreState, text: String) {
+    private fun failed(state: CoreState, @StringRes text: Int) {
         SyncStatus.publish(summarize(state, Snapshot(), null, true))
-        updateNotification(text)
+        updateNotification(getString(text))
         clearCoreNotices()
     }
 
@@ -163,7 +164,7 @@ class SyncthingService : LifecycleService() {
     override fun onDestroy() {
         // Let the core flush its database before the process may be killed.
         runBlocking { SyncthingCore.stop() }
-        Summary(SyncState.Stopped, if (Environment.isExternalStorageManager()) "Stopped" else "Stopped: no access to files").let {
+        Summary(SyncState.Stopped, text(if (Environment.isExternalStorageManager()) R.string.status_stopped else R.string.status_stopped_no_access)).let {
             SyncStatus.publish(it)
             StatusWidget.render(this, it) // the collector above is already cancelled
         }
@@ -171,7 +172,7 @@ class SyncthingService : LifecycleService() {
         super.onDestroy()
     }
 
-    private suspend fun applyConditions(client: RestClient, reason: String?) {
+    private suspend fun applyConditions(client: RestClient, reason: UiText?) {
         runCatching {
             val pausedByUs = settings.conditionPause()
             if (reason != null && pausedByUs == null) {
@@ -219,7 +220,7 @@ class SyncthingService : LifecycleService() {
     private fun createChannel() {
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ID, "Sync service", NotificationManager.IMPORTANCE_MIN).apply {
+            NotificationChannel(CHANNEL_ID, getString(R.string.channel_service), NotificationManager.IMPORTANCE_MIN).apply {
                 setShowBadge(false)
             }
         )
@@ -234,10 +235,10 @@ class SyncthingService : LifecycleService() {
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle("Syncthing")
+            .setContentTitle(getString(R.string.syncthing))
             .setContentText(text)
             .setContentIntent(content)
-            .addAction(0, "Stop", stop)
+            .addAction(0, getString(R.string.action_stop), stop)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             // Its own group keeps it out of Android's automatic group of our other
@@ -248,7 +249,7 @@ class SyncthingService : LifecycleService() {
             .setPublicVersion(
                 NotificationCompat.Builder(this, CHANNEL_ID)
                     .setSmallIcon(android.R.drawable.stat_notify_sync)
-                    .setContentTitle("Syncthing")
+                    .setContentTitle(getString(R.string.syncthing))
                     .setContentText(publicText)
                     .setGroup(SERVICE_GROUP)
                     .build()
