@@ -6,6 +6,7 @@ import eu.stedb.mysyncthing.core.PowerSource
 import eu.stedb.mysyncthing.core.ProxySettings
 import eu.stedb.mysyncthing.core.ProxyType
 import eu.stedb.mysyncthing.core.RunConditions
+import eu.stedb.mysyncthing.core.SyncWindow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -66,6 +67,7 @@ class ImportTextTest {
         repeat(1_000) {
             val c = RunConditions(
                 r.nextBoolean(), r.nextBoolean(), r.nextBoolean(), PowerSource.entries.random(r), r.nextBoolean(), r.nextBoolean(), r.nextBoolean(),
+                r.nextBoolean(), List(r.nextInt(0, 3)) { SyncWindow(r.nextInt(0, 1440), r.nextInt(0, 1440), (1..7).shuffled(r).take(r.nextInt(1, 8)).toSet()) },
             )
             val proxy = if (r.nextBoolean()) ProxySettings() else ProxySettings(ProxyType.entries.random(r), "p", 1080, only = r.nextBoolean())
             val lines = conditionsText(c, proxy)
@@ -78,6 +80,9 @@ class ImportTextTest {
             assertEquals(c.pausedByUser, "Syncing is paused" in lines)
             assertEquals(1, lines.count { it.startsWith("Start at boot") })
             assertEquals(proxy.type == ProxyType.None, "Proxy: none" in lines)
+            val times = lines.single { it.startsWith("Sync times: ") }
+            assertEquals(!c.timeSchedule, times == "Sync times: any time")
+            if (c.timeSchedule) c.windows.forEach { assertTrue(windowText(it) in times) }
         }
     }
 

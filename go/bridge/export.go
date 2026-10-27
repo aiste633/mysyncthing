@@ -71,8 +71,8 @@ func readOwnSettings(js []byte) (*ownSettings, error) {
 	if dec.More() {
 		return nil, errors.New("data after the settings")
 	}
-	if !powerSources[s.Conditions.Power] {
-		return nil, fmt.Errorf("power source %q", s.Conditions.Power)
+	if err := s.Conditions.check(); err != nil {
+		return nil, err
 	}
 	if err := s.Proxy.check(); err != nil {
 		return nil, err

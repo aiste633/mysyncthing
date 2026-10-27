@@ -336,6 +336,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         save { settings.update(transform) }
     }
 
+    /** The stored run conditions (not [runConditions]'s placeholder before they are read). */
+    suspend fun loadRunConditions(): RunConditions = settings.runConditions.first()
+
+    /** Like [setRunConditions], for a form that closes only once it is stored. */
+    suspend fun saveRunConditions(transform: (RunConditions) -> RunConditions): Boolean =
+        settings.update(transform).also { if (!it) _message.send(NOT_SAVED) }
+
     /** A settings write; it fails (and changes nothing) when the phone's storage is full. */
     private fun save(write: suspend () -> Boolean) {
         viewModelScope.launch { if (!write()) _message.send(NOT_SAVED) }

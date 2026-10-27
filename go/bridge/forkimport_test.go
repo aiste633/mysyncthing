@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -379,7 +380,7 @@ func TestInspect(t *testing.T) {
 					}
 					// prefs-full: all networks and roaming, charging only, battery saver ignored, start at boot, force stop.
 					wantC := runConditions{MeteredWifi: true, MobileData: true, Roaming: true, Power: "ChargingOnly", StartOnBoot: true, PausedByUser: true}
-					if p.Conditions != wantC || p.Proxy != (proxySettings{Type: "None"}) || p.Source != "fork" {
+					if !reflect.DeepEqual(p.Conditions, wantC) || p.Proxy != (proxySettings{Type: "None"}) || p.Source != "fork" {
 						t.Errorf("conditions: %+v, proxy %+v, source %q", p.Conditions, p.Proxy, p.Source)
 					}
 					var keys []string

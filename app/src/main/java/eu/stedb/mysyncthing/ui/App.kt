@@ -87,6 +87,7 @@ private object Routes {
     const val FORK_IMPORT = "import/fork"
     const val EXPORT = "export"
     const val PROXY = "proxy"
+    const val SCHEDULE = "schedule"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
     fun ignores(id: String, first: Boolean = false) = "folder/${Uri.encode(id)}/ignores?first=$first"
@@ -198,6 +199,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         onOpenImport = { nav.navigate(Routes.FORK_IMPORT) },
                         onOpenExport = { nav.navigate(Routes.EXPORT) },
                         onOpenProxy = { nav.navigate(Routes.PROXY) },
+                        onOpenSchedule = { nav.navigate(Routes.SCHEDULE) },
                     )
                 }
                 composable(Routes.FOLDER) { entry ->
@@ -300,6 +302,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 composable(Routes.FORK_IMPORT) { ImportScreen(onBack = { nav.popBackStack() }) }
                 composable(Routes.EXPORT) { ExportScreen(onBack = { nav.popBackStack() }) }
                 composable(Routes.PROXY) { ProxyScreen(vm, core, onBack = { nav.popBackStack() }) }
+                composable(Routes.SCHEDULE) { ScheduleScreen(vm, onBack = { nav.popBackStack() }) }
                 composable(Routes.IGNORED) {
                     CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
                 }

@@ -48,6 +48,10 @@ data class RunConditions(
     val startOnBoot: Boolean = true,
     /** Set by the widget or Settings; enforced like the other conditions. */
     val pausedByUser: Boolean = false,
+    /** Sync only in [windows]. */
+    val timeSchedule: Boolean = false,
+    /** Kept while [timeSchedule] is off, so turning it on again restores them. */
+    val windows: List<SyncWindow> = emptyList(),
 )
 
 /** How the core connects to other devices, relays and discovery servers. */
@@ -130,6 +134,8 @@ class Settings internal constructor(
         it[RESPECT_BATTERY_SAVER] = c.respectBatterySaver
         it[START_ON_BOOT] = c.startOnBoot
         it[PAUSED_BY_USER] = c.pausedByUser
+        it[TIME_SCHEDULE] = c.timeSchedule
+        it[WINDOWS] = json.encodeToString(c.windows)
     }
 
     /** True once the user tapped Done on the setup checklist. */
@@ -224,6 +230,8 @@ class Settings internal constructor(
         val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
         val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
         val PROXY = stringPreferencesKey("proxy")
+        val TIME_SCHEDULE = booleanPreferencesKey("time_schedule")
+        val WINDOWS = stringPreferencesKey("sync_windows")
 
         val json = Json { ignoreUnknownKeys = true }
 
@@ -260,5 +268,18 @@ internal fun Preferences.runConditions(): RunConditions {
         respectBatterySaver = this[Settings.RESPECT_BATTERY_SAVER] ?: true,
         startOnBoot = this[Settings.START_ON_BOOT] ?: true,
         pausedByUser = this[Settings.PAUSED_BY_USER] ?: false,
+        timeSchedule = this[Settings.TIME_SCHEDULE] ?: false,
+        windows = storedWindows(),
     )
+}
+
+/**
+ * The stored time windows. One that can't be read or is not valid any more
+ * is left out; with none left, a time schedule that is on lets nothing
+ * through (see [blockedBy]), as the user wanted syncing restricted.
+ */
+private fun Preferences.storedWindows(): List<SyncWindow> {
+    val stored = this[Settings.WINDOWS] ?: return emptyList()
+    return runCatching { Settings.json.decodeFromString<List<SyncWindow>>(stored) }.getOrDefault(emptyList())
+        .filter { syncWindowError(it) == null }.take(MAX_SYNC_WINDOWS)
 }

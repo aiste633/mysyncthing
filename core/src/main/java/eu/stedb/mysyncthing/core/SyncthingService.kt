@@ -12,6 +12,7 @@ import android.os.Environment
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
@@ -19,11 +20,14 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import java.time.LocalDateTime
 
 /**
  * Keeps the Go core alive as a `specialUse` foreground service (no daily cap,
@@ -87,6 +91,7 @@ class SyncthingService : LifecycleService() {
         return START_STICKY
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     private suspend fun runCore() {
         // Without All files access the app still sees the files it wrote itself, .stfolder included, so the
         // core's folder-marker check passes and every other file would be scanned as deleted and synced as such.
@@ -117,7 +122,12 @@ class SyncthingService : LifecycleService() {
                 launch { applyPhoneDefaults(running.client) }
 
                 val device = deviceState(this@SyncthingService).stateIn(this)
-                val blockedBy = combine(settings.runConditions, device) { c, d -> c.blockedBy(d) }.distinctUntilChanged()
+                // The clock belongs to the conditions it was set for, so a changed schedule is never judged by the old one's time.
+                val timed = settings.runConditions.flatMapLatest { c ->
+                    if (c.timeSchedule) scheduleClock(this@SyncthingService, c.windows).map { c to it } else flowOf(c to LocalDateTime.now())
+                }
+                // Shared: one clock and one alarm.
+                val blockedBy = combine(timed, device) { (c, now), d -> c.blockedBy(d, now) }.stateIn(this)
                 launch { blockedBy.collect { reason -> applyConditions(running.client, reason) } }
                 combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
                     summarize(core, snap, reason, d.online)

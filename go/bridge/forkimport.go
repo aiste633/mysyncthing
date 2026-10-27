@@ -372,6 +372,64 @@ type runConditions struct {
 	RespectBatterySaver bool   `json:"respectBatterySaver"`
 	StartOnBoot         bool   `json:"startOnBoot"`
 	PausedByUser        bool   `json:"pausedByUser"`
+	TimeSchedule        bool   `json:"timeSchedule"`
+	// Kept while TimeSchedule is off. Left out when empty: the app reads a
+	// missing list as empty, but not null.
+	Windows []syncWindow `json:"windows,omitempty"`
+}
+
+// syncWindow is a time of day the app may sync in (core/Schedule.kt
+// SyncWindow): Start to End in minutes after midnight, by the phone's clock;
+// an End before Start ends the next day. Days are ISO weekdays, 1 (Monday)
+// to 7, on which the window starts.
+type syncWindow struct {
+	Start int   `json:"start"`
+	End   int   `json:"end"`
+	Days  []int `json:"days"`
+}
+
+const (
+	minutesPerDay  = 24 * 60
+	maxSyncWindows = 8
+)
+
+// check refuses what the app could not store (core/Schedule.kt syncWindowError).
+func (w syncWindow) check() error {
+	switch {
+	case w.Start < 0 || w.Start >= minutesPerDay || w.End < 0 || w.End >= minutesPerDay:
+		return fmt.Errorf("time window %d-%d: times from 0 to %d minutes", w.Start, w.End, minutesPerDay-1)
+	case w.Start == w.End:
+		return errors.New("time window: start and end are the same")
+	case len(w.Days) == 0:
+		return errors.New("time window without days")
+	}
+	seen := map[int]bool{}
+	for _, d := range w.Days {
+		if d < 1 || d > 7 || seen[d] {
+			return fmt.Errorf("time window: day %d", d)
+		}
+		seen[d] = true
+	}
+	return nil
+}
+
+// check refuses run conditions the app could not store (core/Schedule.kt scheduleError).
+func (c runConditions) check() error {
+	if !powerSources[c.Power] {
+		return fmt.Errorf("power source %q", c.Power)
+	}
+	switch {
+	case len(c.Windows) > maxSyncWindows:
+		return fmt.Errorf("%d time windows, at most %d", len(c.Windows), maxSyncWindows)
+	case c.TimeSchedule && len(c.Windows) == 0:
+		return errors.New("time schedule without time windows")
+	}
+	for _, w := range c.Windows {
+		if err := w.check(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // proxySettings is the app's proxy (core/Settings.kt ProxySettings).

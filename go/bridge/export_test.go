@@ -44,9 +44,12 @@ func settingsJSON(t testing.TB, s ownSettings) []byte {
 }
 
 var someSettings = ownSettings{
-	Version:    ownSettingsVersion,
-	Conditions: runConditions{MeteredWifi: true, MobileData: true, Power: "BatteryOnly", StartOnBoot: true},
-	Proxy:      proxySettings{Type: "Socks5", Host: "proxy.example.org", Port: 1080, User: "me", Password: "p@1:w/ord", Only: true},
+	Version: ownSettingsVersion,
+	Conditions: runConditions{
+		MeteredWifi: true, MobileData: true, Power: "BatteryOnly", StartOnBoot: true,
+		TimeSchedule: true, Windows: []syncWindow{{Start: 22 * 60, End: 7 * 60, Days: []int{1, 2, 3, 4, 5}}, {Start: 0, End: 1439, Days: []int{6, 7}}},
+	},
+	Proxy: proxySettings{Type: "Socks5", Host: "proxy.example.org", Port: 1080, User: "me", Password: "p@1:w/ord", Only: true},
 }
 
 func TestExportRoundTrip(t *testing.T) {
@@ -84,7 +87,7 @@ func TestExportRoundTrip(t *testing.T) {
 			t.Errorf("identity %v, GUI login or API key in config.xml:\n%s", b.id, b.configXML)
 		}
 		p := b.preview(statFolder)
-		if p.Source != "own" || p.Conditions != someSettings.Conditions || p.Proxy != someSettings.Proxy || len(p.NotImported) != 0 {
+		if p.Source != "own" || !reflect.DeepEqual(p.Conditions, someSettings.Conditions) || p.Proxy != someSettings.Proxy || len(p.NotImported) != 0 {
 			t.Errorf("preview %+v", p)
 		}
 		if len(p.Folders) != 1 || p.Folders[0].ID != "photo_backup_01" || len(p.Devices) != 1 || p.Devices[0].ID != fixturePeer.String() {
@@ -108,20 +111,26 @@ func TestExportRefuses(t *testing.T) {
 		password string
 		settings string
 	}{
-		"short password":          {"elevenchars", string(good)},
-		"password line break":     {"twelve chars\nlong", string(good)},
-		"password control":        {"twelve chars\x00long", string(good)},
-		"password not UTF-8":      {"twelve chars \xff long", string(good)},
-		"password too long":       {strings.Repeat("p", maxExportPassword+1), string(good)},
-		"settings not JSON":       {"", "{"},
-		"settings newer":          {"", `{"version":2}`},
-		"settings unknown field":  {"", strings.Replace(string(good), `"version":1`, `"version":1,"extra":true`, 1)},
-		"settings trailing data":  {"", string(good) + `{}`},
-		"settings bad power":      {"", strings.Replace(string(good), "BatteryOnly", "Solar", 1)},
-		"settings bad proxy type": {"", strings.Replace(string(good), `"Socks5"`, `"Socks4"`, 1)},
-		"settings bad proxy port": {"", strings.Replace(string(good), `"port":1080`, `"port":0`, 1)},
-		"settings bad proxy host": {"", strings.Replace(string(good), "proxy.example.org", "proxy example.org", 1)},
-		"settings proxy leftover": {"", settingsString(t, ownSettings{Version: 1, Conditions: runConditions{Power: "Any"}, Proxy: proxySettings{Type: "None", Host: "x"}})},
+		"short password":            {"elevenchars", string(good)},
+		"password line break":       {"twelve chars\nlong", string(good)},
+		"password control":          {"twelve chars\x00long", string(good)},
+		"password not UTF-8":        {"twelve chars \xff long", string(good)},
+		"password too long":         {strings.Repeat("p", maxExportPassword+1), string(good)},
+		"settings not JSON":         {"", "{"},
+		"settings newer":            {"", `{"version":2}`},
+		"settings unknown field":    {"", strings.Replace(string(good), `"version":1`, `"version":1,"extra":true`, 1)},
+		"settings trailing data":    {"", string(good) + `{}`},
+		"settings bad power":        {"", strings.Replace(string(good), "BatteryOnly", "Solar", 1)},
+		"settings bad proxy type":   {"", strings.Replace(string(good), `"Socks5"`, `"Socks4"`, 1)},
+		"settings bad proxy port":   {"", strings.Replace(string(good), `"port":1080`, `"port":0`, 1)},
+		"settings bad proxy host":   {"", strings.Replace(string(good), "proxy.example.org", "proxy example.org", 1)},
+		"settings window no days":   {"", strings.Replace(string(good), `"days":[6,7]`, `"days":[]`, 1)},
+		"settings window bad day":   {"", strings.Replace(string(good), `"days":[6,7]`, `"days":[6,8]`, 1)},
+		"settings window twice day": {"", strings.Replace(string(good), `"days":[6,7]`, `"days":[6,6]`, 1)},
+		"settings window same ends": {"", strings.Replace(string(good), `"end":1439`, `"end":0`, 1)},
+		"settings window past day":  {"", strings.Replace(string(good), `"end":1439`, `"end":1440`, 1)},
+		"settings schedule empty":   {"", settingsString(t, ownSettings{Version: 1, Conditions: runConditions{Power: "Any", TimeSchedule: true}, Proxy: proxySettings{Type: "None"}})},
+		"settings proxy leftover":   {"", settingsString(t, ownSettings{Version: 1, Conditions: runConditions{Power: "Any"}, Proxy: proxySettings{Type: "None", Host: "x"}})},
 	} {
 		if err := writeBackup(&bytes.Buffer{}, home, c.password, []byte(c.settings), time.Now()); err == nil {
 			t.Errorf("%s: exported", name)
@@ -157,6 +166,8 @@ func TestExportRoundTripProperty(t *testing.T) {
 	pwRunes := []rune("aZ09 -_.!äß€п中😀​")
 	prop := func(c runConditions, proxy proxyInput, pwLen uint8) bool {
 		c.Power = powers[r.Intn(len(powers))]
+		c.Windows = randomWindows(r)
+		c.TimeSchedule = c.TimeSchedule && len(c.Windows) > 0
 		p := proxySettings{Type: "None"}
 		if u, err := proxyFrom(proxy.Scheme, proxy.Host, proxy.Port, proxy.User, proxy.Password); err == nil && u != nil {
 			p = proxySettings{map[string]string{"socks5": "Socks5", "http": "Http"}[proxy.Scheme], proxy.Host, proxy.Port, proxy.User, proxy.Password, r.Intn(2) == 0}
@@ -183,6 +194,22 @@ func TestExportRoundTripProperty(t *testing.T) {
 	if err := quick.Check(prop, &quick.Config{MaxCount: 300, Rand: r}); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// randomWindows is what the app can store: up to maxSyncWindows valid windows, nil for none.
+func randomWindows(r *rand.Rand) []syncWindow {
+	var ws []syncWindow
+	for range r.Intn(maxSyncWindows + 1) {
+		w := syncWindow{Start: r.Intn(minutesPerDay), End: r.Intn(minutesPerDay)}
+		if w.End == w.Start {
+			w.End = (w.Start + 1) % minutesPerDay
+		}
+		for _, d := range r.Perm(7)[:1+r.Intn(7)] {
+			w.Days = append(w.Days, d+1)
+		}
+		ws = append(ws, w)
+	}
+	return ws
 }
 
 func FuzzReadOwnSettings(f *testing.F) {
@@ -214,6 +241,11 @@ func TestValidationContract(t *testing.T) {
 			Password string
 			OK       bool
 		}
+		SyncWindow []struct {
+			Start, End int
+			Days       []int
+			OK         bool
+		}
 	}
 	if err := json.Unmarshal(golden(t, "../validation-contract.json"), &c); err != nil {
 		t.Fatal(err)
@@ -221,6 +253,11 @@ func TestValidationContract(t *testing.T) {
 	for _, p := range c.Proxy {
 		if _, err := proxyFrom(p.Scheme, p.Host, p.Port, p.User, p.Password); (err == nil) != p.OK {
 			t.Errorf("proxy %+v: %v, want ok=%v", p, err, p.OK)
+		}
+	}
+	for _, w := range c.SyncWindow {
+		if err := (syncWindow{w.Start, w.End, w.Days}).check(); (err == nil) != w.OK {
+			t.Errorf("window %+v: %v, want ok=%v", w, err, w.OK)
 		}
 	}
 	for _, p := range c.ExportPassword {
@@ -239,7 +276,7 @@ func TestOwnSettingsContract(t *testing.T) {
 	}
 	want := someSettings
 	want.Conditions.RespectBatterySaver = true
-	if *s != want {
+	if !reflect.DeepEqual(*s, want) {
 		t.Errorf("got %+v\nwant %+v", *s, want)
 	}
 }

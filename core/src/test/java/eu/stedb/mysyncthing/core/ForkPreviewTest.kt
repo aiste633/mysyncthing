@@ -34,7 +34,10 @@ class ForkPreviewTest {
     @Test
     fun exportSettingsContract() {
         val written = ConfigExport.settingsJson(
-            RunConditions(meteredWifi = true, mobileData = true, power = PowerSource.BatteryOnly, startOnBoot = true),
+            RunConditions(
+                meteredWifi = true, mobileData = true, power = PowerSource.BatteryOnly, startOnBoot = true, timeSchedule = true,
+                windows = listOf(SyncWindow(22 * 60, 7 * 60, (1..5).toSet()), SyncWindow(0, 1439, setOf(6, 7))),
+            ),
             ProxySettings(ProxyType.Socks5, "proxy.example.org", 1080, "me", "p@1:w/ord", only = true),
         )
         val golden = File("../go/bridge/testdata/own-settings.json").readText()

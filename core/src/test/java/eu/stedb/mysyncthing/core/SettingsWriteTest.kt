@@ -14,7 +14,7 @@ import org.junit.Test
 import java.io.IOException
 
 /** A store on a phone whose storage can fill up: then every write fails as DataStore's does (ENOSPC on the temp file). */
-private class FillableStore : DataStore<Preferences> {
+internal class FillableStore : DataStore<Preferences> {
     val state = MutableStateFlow(emptyPreferences())
     var full = false
     override val data = state

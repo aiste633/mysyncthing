@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PowerSettingsNew
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Smartphone
@@ -78,6 +79,7 @@ fun SettingsScreen(
     onOpenImport: () -> Unit,
     onOpenExport: () -> Unit,
     onOpenProxy: () -> Unit,
+    onOpenSchedule: () -> Unit,
 ) {
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
@@ -144,6 +146,10 @@ fun SettingsScreen(
                         vm.setRunConditions { it.copy(roaming = v) }
                     }
                 }
+            }
+
+            SettingsGroup("Time") {
+                SettingRow("Sync times", scheduleText(rc), Icons.Default.Schedule, onClick = onOpenSchedule)
             }
 
             SettingsGroup("Power") {

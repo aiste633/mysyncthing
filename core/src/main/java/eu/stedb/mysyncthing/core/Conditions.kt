@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import java.time.LocalDateTime
 
 /** Device state relevant to run conditions. */
 data class DeviceState(
@@ -34,9 +35,12 @@ const val PAUSED_BY_USER = "Paused by you"
  * Unmetered Wi-Fi and Ethernet are always allowed. Mobile data follows its own
  * switches whether or not Android calls it metered; any other network (metered
  * Wi-Fi, a hotspot, Bluetooth or USB tethering) follows [RunConditions.meteredWifi].
+ * A time schedule comes right after the user's own pause: it is the user's
+ * plan, and its reason says when syncing resumes.
  */
-fun RunConditions.blockedBy(d: DeviceState): String? = when {
+fun RunConditions.blockedBy(d: DeviceState, now: LocalDateTime = LocalDateTime.now()): String? = when {
     pausedByUser -> PAUSED_BY_USER
+    timeSchedule && !windows.isOpen(now) -> outsideText(windows, now)
     // Offline with a network limit stays paused, so the next network is checked before the core uses it.
     !d.online && !(mobileData && meteredWifi) -> "No network"
     d.online && d.mobile && !mobileData -> "On mobile data"

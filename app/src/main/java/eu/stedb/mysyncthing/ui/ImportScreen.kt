@@ -271,6 +271,7 @@ fun conditionsText(c: RunConditions, proxy: ProxySettings): List<String> = listO
     if (c.respectBatterySaver) "Pause in battery saver: on" else "Pause in battery saver: off",
     if (c.startOnBoot) "Start at boot: on" else "Start at boot: off",
     if (c.pausedByUser) "Syncing is paused" else null,
+    "Sync times: " + if (c.timeSchedule) c.windows.joinToString("; ", transform = ::windowText) else "any time",
     "Proxy: " + if (proxy.type == ProxyType.None) "none" else proxyText(proxy),
 )
 
@@ -281,7 +282,7 @@ fun notImportedText(n: ForkNotImported): String = when (n.key) {
     "flight_mode" -> "Sync in flight mode"
     "master_sync" -> "Follow Android's auto-sync switch"
     "wifi_allowlist" -> "Sync only on chosen Wi-Fi networks"
-    "schedule" -> "Sync on a time schedule"
+    "schedule" -> "Sync for some minutes every few hours (here: Sync times, by the clock)"
     "broadcasts" -> "Control by other apps"
     "socks_proxy" -> "SOCKS proxy: not a valid address, or Tor was on"
     "http_proxy" -> "HTTP proxy: not a valid address, or another proxy was on"
