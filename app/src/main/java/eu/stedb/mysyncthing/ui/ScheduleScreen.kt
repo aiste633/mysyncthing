@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.MAX_SYNC_WINDOWS
+import eu.stedb.mysyncthing.core.NO_WINDOW
 import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.SyncWindow
 import eu.stedb.mysyncthing.core.scheduleError
@@ -123,14 +124,17 @@ private fun ScheduleForm(initial: RunConditions, save: suspend ((RunConditions) 
                     Text("Add time window", Modifier.padding(start = 8.dp))
                 }
             }
+            if (error == NO_WINDOW) {
+                Text(
+                    "$NO_WINDOW, or turn \"Only at set times\" off.",
+                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(horizontal = 32.dp, vertical = 4.dp),
+                )
+            }
             Text(
-                listOfNotNull(
-                    error.takeIf { it == "Add a time window" },
-                    "Times follow the phone's clock and time zone. While the phone is idle, Android may start or pause syncing a few minutes late.",
-                    "A window that ends before it starts runs into the next day.",
-                ).joinToString(" "),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (error == "Add a time window") MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                "Times follow the phone's clock and time zone. While the phone is idle, Android may start or pause syncing " +
+                    "a few minutes late. A window that ends before it starts runs into the next day.",
+                style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp),
             )
         }

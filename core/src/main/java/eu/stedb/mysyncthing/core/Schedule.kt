@@ -20,6 +20,9 @@ import java.util.Locale
 const val MINUTES_PER_DAY = 24 * 60
 const val MAX_SYNC_WINDOWS = 8
 
+/** [scheduleError] when the schedule is on without a window: the one check that belongs to no window. */
+const val NO_WINDOW = "Add a time window"
+
 /**
  * A time of day the core may sync in, by the phone's clock: from [start] to
  * [end], in minutes after midnight. An [end] before [start] ends the next
@@ -46,7 +49,7 @@ fun syncWindowError(w: SyncWindow): String? = when {
 /** Why the schedule can't be stored, or null. */
 fun scheduleError(on: Boolean, windows: List<SyncWindow>): String? = when {
     windows.size > MAX_SYNC_WINDOWS -> "At most $MAX_SYNC_WINDOWS time windows"
-    on && windows.isEmpty() -> "Add a time window"
+    on && windows.isEmpty() -> NO_WINDOW
     else -> windows.firstNotNullOfOrNull(::syncWindowError)
 }
 
