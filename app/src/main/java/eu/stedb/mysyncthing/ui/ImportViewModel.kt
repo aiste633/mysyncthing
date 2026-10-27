@@ -32,17 +32,18 @@ class ImportViewModel(app: Application) : AndroidViewModel(app) {
     /** What the password field holds. Kept here, not in the field, so it survives recreation. */
     var password by mutableStateOf("")
 
-    fun inspect(uri: Uri, password: String) {
+    /** Reads the backup at [uri] with [typed] as its password (empty when none was asked for yet). */
+    fun inspect(uri: Uri, typed: String) {
         if (_step.value is ImportStep.Working) return
         _step.value = ImportStep.Working("Reading the backup")
         viewModelScope.launch {
-            val next = when (val r = ForkImport.inspect(getApplication<Application>().contentResolver, uri, password)) {
-                is ForkInspection.Ok -> ImportStep.Review(uri, password, r.preview)
+            val next = when (val r = ForkImport.inspect(getApplication<Application>().contentResolver, uri, typed)) {
+                is ForkInspection.Ok -> ImportStep.Review(uri, typed, r.preview)
                 ForkInspection.NeedPassword -> ImportStep.Password(uri, ++attempt, tried = "", wrong = false)
-                ForkInspection.WrongPassword -> ImportStep.Password(uri, ++attempt, tried = password, wrong = true)
+                ForkInspection.WrongPassword -> ImportStep.Password(uri, ++attempt, tried = typed, wrong = true)
                 is ForkInspection.Failed -> ImportStep.Failed(r.message)
             }
-            this@ImportViewModel.password = (next as? ImportStep.Password)?.tried.orEmpty()
+            password = (next as? ImportStep.Password)?.tried.orEmpty()
             _step.value = next
         }
     }
