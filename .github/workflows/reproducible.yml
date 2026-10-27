@@ -3,7 +3,7 @@ name: reproducible
 # Builds the unsigned release APK twice under different conditions and requires identical
 # bytes. On pull requests, v* tags and manual runs, F-Droid's own build environment builds
 # it a third time from fdroid/eu.stedb.mysyncthing.yml. A tag then gets a draft release
-# with the APK for scripts/sign-release.sh.
+# with the APK for scripts/sign-release.sh, and the SBOM, checked against the APK's Go core.
 
 on:
   push:
@@ -73,10 +73,15 @@ jobs:
           cp app/build/outputs/apk/release/app-release-unsigned.apk \
             "$RUNNER_TEMP/out/mysyncthing-${{ steps.version.outputs.version }}-unsigned.apk"
           sha256sum "$RUNNER_TEMP"/out/*.apk
+      - name: Go modules in the APK match the SBOM
+        run: |
+          unzip -p "$RUNNER_TEMP"/out/*.apk lib/arm64-v8a/libgojni.so > "$RUNNER_TEMP/libgojni.so"
+          (cd scripts/sbom && go run . -out ../../docs -verify "$RUNNER_TEMP/libgojni.so")
+          cp docs/sbom.cdx.json "$RUNNER_TEMP/out/mysyncthing-${{ steps.version.outputs.version }}-sbom.cdx.json"
       - uses: actions/upload-artifact@v4
         with:
           name: apk-${{ matrix.leg }}
-          path: ${{ runner.temp }}/out/*.apk
+          path: ${{ runner.temp }}/out/*
     outputs:
       version: ${{ steps.version.outputs.version }}
 
@@ -170,11 +175,11 @@ jobs:
       - uses: actions/download-artifact@v5
         with:
           name: apk-a
-      - name: Draft release with the unsigned APK
+      - name: Draft release with the unsigned APK and its SBOM
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
             --title "MySyncthing ${{ needs.release.outputs.version }}" \
-            --notes "Unsigned build attached. Sign with scripts/sign-release.sh $GITHUB_REF_NAME, then publish." \
-            ./*.apk
+            --notes "Unsigned build and its SBOM (CycloneDX) attached. Sign with scripts/sign-release.sh $GITHUB_REF_NAME, then publish." \
+            ./*.apk ./*.cdx.json

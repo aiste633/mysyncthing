@@ -1,0 +1,4841 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "bom-ref": "tool:sbom",
+          "name": "scripts/sbom.sh",
+          "description": "MySyncthing's SBOM generator"
+        }
+      ]
+    },
+    "component": {
+      "type": "application",
+      "bom-ref": "pkg:android/eu.stedb.mysyncthing",
+      "name": "MySyncthing",
+      "version": "0.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "AGPL-3.0-only"
+          }
+        }
+      ],
+      "purl": "pkg:android/eu.stedb.mysyncthing@0.1.0",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/aiste633/mysyncthing"
+        }
+      ]
+    }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.activity/activity@1.13.0?type=aar",
+      "group": "androidx.activity",
+      "name": "activity",
+      "version": "1.13.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bd4f19a5f00effed0eecad0a310b1f2169b9fc66236a3ba743a222eb77747ee1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.activity/activity@1.13.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
+      "group": "androidx.activity",
+      "name": "activity-compose",
+      "version": "1.13.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2b5da3033d4924e833868e140c3edfc0c03208710b6b9fb2c9d9a47560ba55fa"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.activity/activity-ktx@1.13.0?type=aar",
+      "group": "androidx.activity",
+      "name": "activity-ktx",
+      "version": "1.13.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b5541dc5f74e35389f1e9fdca8b5770c49d2c1360de16f398ce5c1e07a003244"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.activity/activity-ktx@1.13.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+      "group": "androidx.annotation",
+      "name": "annotation-experimental",
+      "version": "1.4.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6bd4c7c7476f8260cd3bdbb81183583e93fc9f790c27dea7dc314181cbf87aa0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+      "group": "androidx.annotation",
+      "name": "annotation-jvm",
+      "version": "1.10.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ddd072ddbb553178e205517ce777b2f05aa9e412982d9ecb4eedc74f1212f697"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.annotation/annotation-jvm@1.10.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.arch.core/core-common@2.2.0",
+      "group": "androidx.arch.core",
+      "name": "core-common",
+      "version": "2.2.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "65308a06b1c00ee186cb9e19321383f043b993813f1522c47f4a3e3303bdba41"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.arch.core/core-common@2.2.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.arch.core/core-runtime@2.2.0?type=aar",
+      "group": "androidx.arch.core",
+      "name": "core-runtime",
+      "version": "2.2.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a1be5e0caa2b07623862af6ae21b3ab0718123245184d0e30dea81b53f990a47"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.arch.core/core-runtime@2.2.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.autofill/autofill@1.0.0?type=aar",
+      "group": "androidx.autofill",
+      "name": "autofill",
+      "version": "1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c9468f56e05006ea151a426c54957cd0799b8b83a579d2846dd22061f33e5ecd"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.autofill/autofill@1.0.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+      "group": "androidx.collection",
+      "name": "collection-jvm",
+      "version": "1.6.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "839fcec147704611a222159fa84e3e062f68eee80caa549ddd1222d5210a13df"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.collection/collection-jvm@1.6.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.collection/collection-ktx@1.6.0",
+      "group": "androidx.collection",
+      "name": "collection-ktx",
+      "version": "1.6.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "939b4a8697640e77d83e4e8b4c4a9d18f8130198c5961194af8dd9db9dc7c353"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.collection/collection-ktx@1.6.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.animation/animation-android@1.12.1?type=aar",
+      "group": "androidx.compose.animation",
+      "name": "animation-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4a619ca869b9724e9cf6127ead53d8fb7dd8601a931c4006b15caf5bb3bf19f8"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.animation/animation-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.animation/animation-core-android@1.12.1?type=aar",
+      "group": "androidx.compose.animation",
+      "name": "animation-core-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "29e26959b2c5645c53a42aa8302570bf8cc3644755d6ca97bf1028d08a665b97"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.animation/animation-core-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.foundation/foundation-android@1.12.1?type=aar",
+      "group": "androidx.compose.foundation",
+      "name": "foundation-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "444749ea7b5a563e530504b9035c87e47ed0fb62b9f7ba00e90af8aa81e6bfb8"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.foundation/foundation-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+      "group": "androidx.compose.foundation",
+      "name": "foundation-layout-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "274370a88621e001417e76c2d862ffad61ebc8ca2d9f151c7b60dd02d65ebe51"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.material3/material3-android@1.4.0?type=aar",
+      "group": "androidx.compose.material3",
+      "name": "material3-android",
+      "version": "1.4.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3a37e8b36df3822fe1e6059f0f9fafda8800388860477624ac1b9422c418a36e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.material3/material3-android@1.4.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.material/material-icons-core-android@1.7.8?type=aar",
+      "group": "androidx.compose.material",
+      "name": "material-icons-core-android",
+      "version": "1.7.8",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "332c06b25e662cc417fb087e76b8faa5cb249f4992ffa3360084a3d4ab882284"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.material/material-icons-core-android@1.7.8?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.material/material-icons-extended-android@1.7.8?type=aar",
+      "group": "androidx.compose.material",
+      "name": "material-icons-extended-android",
+      "version": "1.7.8",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "64e86269f1106848981dd76f0046f81b46f3bd92efb22645de8fd044c0402b61"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.material/material-icons-extended-android@1.7.8?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.material/material-ripple-android@1.12.1?type=aar",
+      "group": "androidx.compose.material",
+      "name": "material-ripple-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "795d8742165875ee96383ca64ff4cd8bc12b83efb0918f68472e7c2f9d5826df"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.material/material-ripple-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+      "group": "androidx.compose.runtime",
+      "name": "runtime-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1701a61d06d2f6144f2cd8b015abbc5ad6952eacb70c24c208cdfd2bb188dde7"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.runtime/runtime-annotation-android@1.12.1?type=aar",
+      "group": "androidx.compose.runtime",
+      "name": "runtime-annotation-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "071d6200f5f34ffb5ce69cc19ee8db577c188832bb472779213d4633eca26565"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.runtime/runtime-annotation-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.runtime/runtime-retain-android@1.12.1?type=aar",
+      "group": "androidx.compose.runtime",
+      "name": "runtime-retain-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6e32111eed0f67ef2ae70c2d9c83cb6bfb54095fe2fb2fdc800febd14d0d7a61"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.runtime/runtime-retain-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar",
+      "group": "androidx.compose.runtime",
+      "name": "runtime-saveable-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0c83d47820fbc8ffb6e3e49311ccd4755676d6f94bb8c6d8564ab4c799df8779"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+      "group": "androidx.compose.ui",
+      "name": "ui-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3f1ae17e237d9dc0a2a0f42cb04b85b8de6e12f67adc5f5c12173fe31e501cb2"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.ui/ui-geometry-android@1.12.1?type=aar",
+      "group": "androidx.compose.ui",
+      "name": "ui-geometry-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "09a23c76f5d52ea5ec61d4a78d4876940f0f033c975e5c604246f89a63532754"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.ui/ui-geometry-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar",
+      "group": "androidx.compose.ui",
+      "name": "ui-graphics-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1e6451f05ad569e306e7022b3c41d16aa75080bb2c99b59c4d67e7dbf6f428e7"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.ui/ui-text-android@1.12.1?type=aar",
+      "group": "androidx.compose.ui",
+      "name": "ui-text-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e710a5776966537df09a2e5c4ca1dacc14ca11d7b20a6af16c0e992ddd3aecd3"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.ui/ui-text-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.ui/ui-tooling-preview-android@1.12.1?type=aar",
+      "group": "androidx.compose.ui",
+      "name": "ui-tooling-preview-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e5d8e697fcfda732734e01168296682682d31e085b77ec8245e72badbc673686"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.ui/ui-tooling-preview-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+      "group": "androidx.compose.ui",
+      "name": "ui-unit-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "97d2bf062395d981435bc8d571b1d5d75587a7f26f3444671b2287f233e18ae7"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+      "group": "androidx.compose.ui",
+      "name": "ui-util-android",
+      "version": "1.12.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "cd47f06626c19a06086e16823a32e49e0a0c7d903451668da2f777d063507aa5"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0",
+      "group": "androidx.concurrent",
+      "name": "concurrent-futures",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0ce067c514a0d1049d1bebdf709e344ed3266fe9744275682937cdcb13334e9e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.core/core@1.19.1?type=aar",
+      "group": "androidx.core",
+      "name": "core",
+      "version": "1.19.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "08108ea780205bd54603088a62a6dd5378f63bd25542674be24cd4cdb8191a09"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.core/core@1.19.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+      "group": "androidx.core",
+      "name": "core-ktx",
+      "version": "1.19.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9a3e2919e64026ad18b42bf9931e8fea90a6a70e95e13a26519841e926fe5913"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+      "group": "androidx.core",
+      "name": "core-viewtree",
+      "version": "1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "dc1b678d58ebcf2bfa1587be68ff826694ce3d221251b9ef30d4d4b36297e6de"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.customview/customview-poolingcontainer@1.0.0?type=aar",
+      "group": "androidx.customview",
+      "name": "customview-poolingcontainer",
+      "version": "1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3584102fc49bf399c56e3b7be4bfe12000c46112320cd8cf85cc0a8f93f3e752"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.customview/customview-poolingcontainer@1.0.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.datastore/datastore-android@1.3.0?type=aar",
+      "group": "androidx.datastore",
+      "name": "datastore-android",
+      "version": "1.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c187fea8ed248eb25f43c71af323e6108db1d3c35945120983954f77e7769eb9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.datastore/datastore-android@1.3.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.datastore/datastore-core-android@1.3.0?type=aar",
+      "group": "androidx.datastore",
+      "name": "datastore-core-android",
+      "version": "1.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b518fe03fbc8cdd1bfaddc1c0ab8a28ba7570c42462ac0a8c6caed7a389cc875"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.datastore/datastore-core-android@1.3.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.datastore/datastore-core-okio-jvm@1.3.0",
+      "group": "androidx.datastore",
+      "name": "datastore-core-okio-jvm",
+      "version": "1.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "54cbdc3e6d477078a2f1dba43b6328870dfee23cc356da5aa1b2271151cc29a4"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.datastore/datastore-core-okio-jvm@1.3.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.datastore/datastore-preferences-android@1.3.0?type=aar",
+      "group": "androidx.datastore",
+      "name": "datastore-preferences-android",
+      "version": "1.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1a6b2952271e6f87262338eb530561d5f4b47ef4bd9aadd2793b3beae10c69b5"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.datastore/datastore-preferences-android@1.3.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.datastore/datastore-preferences-core-android@1.3.0?type=aar",
+      "group": "androidx.datastore",
+      "name": "datastore-preferences-core-android",
+      "version": "1.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "45f9b2b89e8122c347e53ed1cfd6f30850777521f078d707d5b06ffa5337876a"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.datastore/datastore-preferences-core-android@1.3.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.datastore/datastore-preferences-external-protobuf@1.3.0",
+      "group": "androidx.datastore",
+      "name": "datastore-preferences-external-protobuf",
+      "version": "1.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "59226809f449e3409058da98df384a18d24316443e4a1d657e63771b5fd87e36"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.datastore/datastore-preferences-external-protobuf@1.3.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.datastore/datastore-preferences-proto@1.3.0",
+      "group": "androidx.datastore",
+      "name": "datastore-preferences-proto",
+      "version": "1.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "dcc7a13558f43a9742aefcf2ece90b44f12c0f6c873d19f0b64460198e2d4eed"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.datastore/datastore-preferences-proto@1.3.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.emoji2/emoji2@1.4.0?type=aar",
+      "group": "androidx.emoji2",
+      "name": "emoji2",
+      "version": "1.4.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "433febd3434a45667176c76a64f3f205ca6335a6b544c5b5d57f25a38a375242"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.emoji2/emoji2@1.4.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.graphics/graphics-path@1.0.1?type=aar",
+      "group": "androidx.graphics",
+      "name": "graphics-path",
+      "version": "1.0.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8ca4032b6d79b351f0b59ad4b580eddbb9423e1652f7c958830687f1eee2ec03"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.graphics/graphics-path@1.0.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.interpolator/interpolator@1.0.0?type=aar",
+      "group": "androidx.interpolator",
+      "name": "interpolator",
+      "version": "1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "33193135a64fe21fa2c35eec6688f1a76e512606c0fc83dc1b689e37add7732a"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.interpolator/interpolator@1.0.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-common-java8@2.11.0",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-common-java8",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "895e71679cd319db8140664d650af6695b0530f5896be9b8ecccd24cc4f6674f"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-common-java8@2.11.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-common-jvm",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e6a66e67b9f63a0fb6344f165c1d872376e5fe6d235bffb138af45122cf452a9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata-core",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "39b26ef1e081fc88d7054ff1a63d0a5d71876373c33a711ab789c8228d025ad1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-process@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-process",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "9743f0c7baf27d34497b7e9a1cd497d8260251b03124507963abfaad66c3f552"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-process@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-android",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "8711865f8d3603bc05decc03bb42aab2faa8d8bc55b3b12a0a8e516b562b60ca"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-compose-android",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "7b31489e6e162143c481f14e1ae5a4dc089f8ec58e65976a0502b910c641987f"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-runtime-ktx-android@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-runtime-ktx-android",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1fead96607f8b4ebd2bc5840c6fcf08b09fc47ceb1665e4b381dce80b19f32a0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-runtime-ktx-android@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-service@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-service",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "262c24e5218c19610c12a07465cf34e2e45b9cf63eb10471013f6ba01ff18522"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-service@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-android",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "509aa5c0711e61a1571024b4f8431dc9aa20960d23cbadb01f21a33fd864352a"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-compose-android@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-compose-android",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2bafd402807bd4af05c06cf58c48cbdad09521e2145273faae90908b7712f689"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-compose-android@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-ktx@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-ktx",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "230af6c866076d320d92c22c7c44bb52afca97f6892ddf987e2906ef2919998f"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-ktx@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-viewmodel-savedstate-android",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1761707c1ddee002bd97e1a0889a5016f7cd6bd8e0b6b069bcba8b2523d63723"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.navigation/navigation-common-android@2.10.2?type=aar",
+      "group": "androidx.navigation",
+      "name": "navigation-common-android",
+      "version": "2.10.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b231c0345d98d62de551ea5ffd94a955910ac2bb3cc61ae94fca4219e7c323f2"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.navigation/navigation-common-android@2.10.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.navigation/navigation-compose-android@2.10.2?type=aar",
+      "group": "androidx.navigation",
+      "name": "navigation-compose-android",
+      "version": "2.10.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "659fd5bb30acf15f52c5a21475cf85618af603aca78660110e514b2df7df3110"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.navigation/navigation-compose-android@2.10.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.navigation/navigation-runtime-android@2.10.2?type=aar",
+      "group": "androidx.navigation",
+      "name": "navigation-runtime-android",
+      "version": "2.10.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "91a240425d3ea6702e5d8eabef52d23155e5856f6528ea33f06a5f60e3ef4b4f"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.navigation/navigation-runtime-android@2.10.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.navigationevent/navigationevent-android@1.1.2?type=aar",
+      "group": "androidx.navigationevent",
+      "name": "navigationevent-android",
+      "version": "1.1.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "40a357103ab703762bf434f424a8486be18652b4aa25110f0d635a4cef5dcd63"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.navigationevent/navigationevent-android@1.1.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.navigationevent/navigationevent-compose-android@1.1.2?type=aar",
+      "group": "androidx.navigationevent",
+      "name": "navigationevent-compose-android",
+      "version": "1.1.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ac9773dc9076d3b035ccf5494316d78a5f9abc18a8fa73fb211f92957286e1aa"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.navigationevent/navigationevent-compose-android@1.1.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.profileinstaller/profileinstaller@1.4.0?type=aar",
+      "group": "androidx.profileinstaller",
+      "name": "profileinstaller",
+      "version": "1.4.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d502141fcce902430f62b674c32aecd0f75262e7ee2cd15c74adb617cd13130a"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.profileinstaller/profileinstaller@1.4.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+      "group": "androidx.savedstate",
+      "name": "savedstate-android",
+      "version": "1.5.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c191b2b0d3ed2f765743e634f213c0e8150825547810789fc13487332bfc9cd3"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.savedstate/savedstate-compose-android@1.5.0?type=aar",
+      "group": "androidx.savedstate",
+      "name": "savedstate-compose-android",
+      "version": "1.5.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "01682c0de6796d31f9c7863bb18e65443e512e4dc95a13cc8c3d0d4931c2c10b"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.savedstate/savedstate-compose-android@1.5.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.savedstate/savedstate-ktx@1.5.0?type=aar",
+      "group": "androidx.savedstate",
+      "name": "savedstate-ktx",
+      "version": "1.5.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1de99f31e90d55828e1f00f856274410e6e3e997605a40d478e7065c38b3252e"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.savedstate/savedstate-ktx@1.5.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.startup/startup-runtime@1.2.0?type=aar",
+      "group": "androidx.startup",
+      "name": "startup-runtime",
+      "version": "1.2.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f51d361d17b30b09cfb9e2aebf301d113f99437cbf462a066092795fb60eddd2"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.startup/startup-runtime@1.2.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar",
+      "group": "androidx.tracing",
+      "name": "tracing-android",
+      "version": "2.0.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d094408d356e5d2556db33362eae90c4fe0f22856c72982dd5f744634fdeb18c"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.versionedparcelable/versionedparcelable@1.1.1?type=aar",
+      "group": "androidx.versionedparcelable",
+      "name": "versionedparcelable",
+      "version": "1.1.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "57e8d93260d18d5b9007c9eed3c64ad159de90c8609ebfc74a347cbd514535a4"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.versionedparcelable/versionedparcelable@1.1.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.webkit/webkit@1.18.0?type=aar",
+      "group": "androidx.webkit",
+      "name": "webkit",
+      "version": "1.18.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f15a0bd7d51f4bb8dffdd3a2cf5829f9a7de9ad4ba2682fa85d619032050581f"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.webkit/webkit@1.18.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.window/window@1.5.0?type=aar",
+      "group": "androidx.window",
+      "name": "window",
+      "version": "1.5.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "5de2d48aa578402f46deb5294a955cee62f0c7d8c1840ef626fc7afb8abe22f9"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.window/window@1.5.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.window/window-core-android@1.5.0?type=aar",
+      "group": "androidx.window",
+      "name": "window-core-android",
+      "version": "1.5.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d0d50db0756194a6d49a66ad8dafd17b24b4c5fbd8379375056e2eb9bdfeaf22"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.window/window-core-android@1.5.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/com.google.guava/listenablefuture@1.0",
+      "group": "com.google.guava",
+      "name": "listenablefuture",
+      "version": "1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e4ad7607e5c0477c6f890ef26a49cb8d1bb4dffb650bab4502afee64644e3069"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.google.guava/listenablefuture@1.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/com.google.zxing/core@3.4.1",
+      "group": "com.google.zxing",
+      "name": "core",
+      "version": "3.4.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "acfa30338c26267b6cab665509c2251bb96e8350bfcad89d59b949ba77011f8d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.google.zxing/core@3.4.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar",
+      "group": "com.journeyapps",
+      "name": "zxing-android-embedded",
+      "version": "4.3.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "4ab03353127c34e55cbb80fbc9a34031decbcfb1ec5e8f991944d2d494621a33"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/com.squareup.okhttp3/okhttp-android@5.5.1?type=aar",
+      "group": "com.squareup.okhttp3",
+      "name": "okhttp-android",
+      "version": "5.5.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ce00fd7751cf7e4f28ba73a0287b3cc0c62b8b83f038e428592eeef189513ee1"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.squareup.okhttp3/okhttp-android@5.5.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/com.squareup.okio/okio-jvm@3.18.1",
+      "group": "com.squareup.okio",
+      "name": "okio-jvm",
+      "version": "3.18.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b97b640557a650d15411f2be29aef558c4e422a83653cb18ba494311dbed18be"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.squareup.okio/okio-jvm@3.18.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+      "group": "org.jetbrains.kotlin",
+      "name": "kotlin-stdlib",
+      "version": "2.4.21",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bd8250210584cb659847dce9cda660f8e9906e5def7fbebcea93dc6dcb6a88a3"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/atomicfu-jvm@0.28.0",
+      "group": "org.jetbrains.kotlinx",
+      "name": "atomicfu-jvm",
+      "version": "0.28.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "39576ec46b83412ff7a2909d24cccbba90400e91f9aa67b250309bc0872ecf52"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains.kotlinx/atomicfu-jvm@0.28.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-android",
+      "version": "1.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "c2cb206d27017c7d1bf5ff179787397543d13748dbabb0d7237e1585e0b29044"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-coroutines-core-jvm",
+      "version": "1.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d1d75aa01dffbb4d1c520e67e4c4e7f5f6174718e7cb4632412503f2f0e604fa"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0",
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-serialization-core-jvm",
+      "version": "1.12.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "bcfddcac76159058ba0953af05938c17111d238cd41be7191874656454d62f1a"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0",
+      "group": "org.jetbrains.kotlinx",
+      "name": "kotlinx-serialization-json-jvm",
+      "version": "1.12.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "879eb73e46cb63253ab0fa7cca4448f5c96bca1a16ff377abcb71ebab60e0631"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jetbrains/annotations@23.0.0",
+      "group": "org.jetbrains",
+      "name": "annotations",
+      "version": "23.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "7b0f19724082cbfcbc66e5abea2b9bc92cf08a1ea11e191933ed43801eb3cd05"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains/annotations@23.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/org.jspecify/jspecify@1.0.0",
+      "group": "org.jspecify",
+      "name": "jspecify",
+      "version": "1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jspecify/jspecify@1.0.0"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go@v1.36.12-20260825204119-511051f7f437.2",
+      "name": "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go",
+      "version": "v1.36.12-20260825204119-511051f7f437.2",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go@v1.36.12-20260825204119-511051f7f437.2",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:NbnlmV26O7oZ1iM5tsCI+GEx+3ZSdrhvnKQ/eWSrLiY="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/buf.build/go/protovalidate@v1.4.0",
+      "name": "buf.build/go/protovalidate",
+      "version": "v1.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/buf.build/go/protovalidate@v1.4.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:UjLrYbt5VX7+TMOs2+pG5FhZhIG1mSfK4EIopbb4LcM="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/cel.dev/cel-go@v0.32.0",
+      "name": "cel.dev/cel-go",
+      "version": "v0.32.0",
+      "licenses": [
+        {
+          "expression": "Apache-2.0 AND BSD-3-Clause"
+        }
+      ],
+      "purl": "pkg:golang/cel.dev/cel-go@v0.32.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:irvpFKr5EuGPyxeME03ERh0rii1TX+BDAnB9eL3IvNk="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/cel.dev/expr@v0.25.3",
+      "name": "cel.dev/expr",
+      "version": "v0.25.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/cel.dev/expr@v0.25.3",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:A2jO8jwOugrrovveCWfj0KEZOfqiLgAcwjpHPhzIGw0="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.1",
+      "name": "github.com/antlr4-go/antlr/v4",
+      "version": "v4.13.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.1",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:SqQKkuVZ+zWkMMNkjy5FZe5mr5WURWnlpmOuzYWrPrQ="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/Azure/go-ntlmssp@v0.1.1",
+      "name": "github.com/Azure/go-ntlmssp",
+      "version": "v0.1.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/Azure/go-ntlmssp@v0.1.1",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:l+FM/EEMb0U9QZE7mKNEDw5Mu3mFiaa2GKOoTSsNDPw="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/beorn7/perks@v1.0.1",
+      "name": "github.com/beorn7/perks",
+      "version": "v1.0.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/beorn7/perks@v1.0.1",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/calmh/incontainer@v1.0.0",
+      "name": "github.com/calmh/incontainer",
+      "version": "v1.0.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/calmh/incontainer@v1.0.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:g2cTUtZuFGmMGX8GoykPkN1Judj2uw8/3/aEtq4Z/rg="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/calmh/xdr@v1.2.0",
+      "name": "github.com/calmh/xdr",
+      "version": "v1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/calmh/xdr@v1.2.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:GaGSNH4ZDw9kNdYqle6+RcAENiaQ8/611Ok+jQbBEeU="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/ccding/go-stun@v0.1.6",
+      "name": "github.com/ccding/go-stun",
+      "version": "v0.1.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/ccding/go-stun@v0.1.6",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:gWPd1V50Uv2RAnIlmWgoUxjdWvvXp2w1W99oGDtYvzQ="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+      "name": "github.com/cespare/xxhash/v2",
+      "version": "v2.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/go-asn1-ber/asn1-ber@v1.5.8",
+      "name": "github.com/go-asn1-ber/asn1-ber",
+      "version": "v1.5.8",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-asn1-ber/asn1-ber@v1.5.8",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:H9AZkK22UOmfX8J84ubyaZxKJZ3FMHVwn8swoMML7iQ="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/go-ldap/ldap/v3@v3.4.15",
+      "name": "github.com/go-ldap/ldap/v3",
+      "version": "v3.4.15",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/go-ldap/ldap/v3@v3.4.15",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:eRB4f4Ecn1POL1mO86+uUDlecmyWsdiJwh60bAUS4UY="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/gobwas/glob@v0.2.3",
+      "name": "github.com/gobwas/glob",
+      "version": "v0.2.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/gobwas/glob@v0.2.3",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:A4xDbljILXROh+kObIiy5kIaPYD8e96x1tgBhUI5J+Y="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/golang/snappy@v0.0.4",
+      "name": "github.com/golang/snappy",
+      "version": "v0.0.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/golang/snappy@v0.0.4",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:yAGX7huGHXlcLOEtBnF4w7FQwA26wojNCwOYAEhLjQM="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/google/uuid@v1.6.0",
+      "name": "github.com/google/uuid",
+      "version": "v1.6.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/google/uuid@v1.6.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/hashicorp/golang-lru/v2@v2.0.7",
+      "name": "github.com/hashicorp/golang-lru/v2",
+      "version": "v2.0.7",
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/hashicorp/golang-lru/v2@v2.0.7",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:a+bsQ5rvGLjzHuww6tVxozPZFVghXaHOwFs4luLUK2k="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/jackpal/gateway@v1.2.0",
+      "name": "github.com/jackpal/gateway",
+      "version": "v1.2.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/jackpal/gateway@v1.2.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:euPRe4t7JfTaqC5Lr78HXl2wSHo54XndTtiAcIxkb5g="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/jackpal/go-nat-pmp@v1.1.0",
+      "name": "github.com/jackpal/go-nat-pmp",
+      "version": "v1.1.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/jackpal/go-nat-pmp@v1.1.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:UInMLPV1VQdP860ggNiz0YxGvJH/bWzxL099y+1EdCs="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/jmoiron/sqlx@v1.4.0",
+      "name": "github.com/jmoiron/sqlx",
+      "version": "v1.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/jmoiron/sqlx@v1.4.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:1PLqN7S1UYp5t4SrVVnt4nUVNemrDAtxlulVe+Qgm3o="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/julienschmidt/httprouter@v1.3.0",
+      "name": "github.com/julienschmidt/httprouter",
+      "version": "v1.3.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/julienschmidt/httprouter@v1.3.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:U0609e9tgbseu3rBINet9P48AI/D3oJs4dN7jwJOQ1U="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/kballard/go-shellquote@v0.0.0-20180428030007-95032a82bc51",
+      "name": "github.com/kballard/go-shellquote",
+      "version": "v0.0.0-20180428030007-95032a82bc51",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/kballard/go-shellquote@v0.0.0-20180428030007-95032a82bc51",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:Z9n2FFNUXsshfwJMBgNA0RU6/i7WVaAegv3PtuIHPMs="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/mattn/go-sqlite3@v1.14.52",
+      "name": "github.com/mattn/go-sqlite3",
+      "version": "v1.14.52",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/mattn/go-sqlite3@v1.14.52",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:wVbm2Qnf4OXkqhBTSPuCRZDRnxfbVrrmiCEroVdog8U="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/miscreant/miscreant.go@v0.0.0-20200214223636-26d376326b75",
+      "name": "github.com/miscreant/miscreant.go",
+      "version": "v0.0.0-20200214223636-26d376326b75",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/miscreant/miscreant.go@v0.0.0-20200214223636-26d376326b75",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:cUVxyR+UfmdEAZGJ8IiKld1O0dbGotEnkMolG5hfMSY="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822",
+      "name": "github.com/munnerz/goautoneg",
+      "version": "v0.0.0-20191010083416-a7dc8b61c822",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:C3w9PqII01/Oq1c1nUAm88MOHcQC9l5mIlSMApZMrHA="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/pierrec/lz4/v4@v4.1.33",
+      "name": "github.com/pierrec/lz4/v4",
+      "version": "v4.1.33",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/pierrec/lz4/v4@v4.1.33",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:GjG1TJ1V4IzKP8L96muuuDNpTwd7D+l2ccXrjAbe014="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/prometheus/client_golang@v1.25.0",
+      "name": "github.com/prometheus/client_golang",
+      "version": "v1.25.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_golang@v1.25.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:cDtW1TcFsMi1RJc8khwCKB4VhzwV04aKqbYtNOXuiK0="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/prometheus/client_model@v0.6.3",
+      "name": "github.com/prometheus/client_model",
+      "version": "v0.6.3",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/client_model@v0.6.3",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:O0jaTVAYNxTHYInEPFJt5I3+sN8zqBtVMPTB1qyxiEo="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/prometheus/common@v0.72.0",
+      "name": "github.com/prometheus/common",
+      "version": "v0.72.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/common@v0.72.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:tAYsE+sPJxIncDAobm4H5aQjmox9ZxEIIqPbiffa8G4="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/prometheus/procfs@v0.22.0",
+      "name": "github.com/prometheus/procfs",
+      "version": "v0.22.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/prometheus/procfs@v0.22.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:6q9+/JL9IKAPbCmBrv9n5O5Ty3NKnciV5X7YGw0oics="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/quic-go/quic-go@v0.63.0",
+      "name": "github.com/quic-go/quic-go",
+      "version": "v0.63.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/quic-go/quic-go@v0.63.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:LIFGHI4PFUhhw2dDD1ARHdCff143ffMHwZtbnbuJ78A="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/rcrowley/go-metrics@v0.0.0-20250401214520-65e299d6c5c9",
+      "name": "github.com/rcrowley/go-metrics",
+      "version": "v0.0.0-20250401214520-65e299d6c5c9",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause-Views"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/rcrowley/go-metrics@v0.0.0-20250401214520-65e299d6c5c9",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:bsUq1dX0N8AOIL7EB/X911+m4EHsnWEHeJ0c+3TTBrg="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/shirou/gopsutil/v4@v4.26.9",
+      "name": "github.com/shirou/gopsutil/v4",
+      "version": "v4.26.9",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/shirou/gopsutil/v4@v4.26.9",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:CaBo/hBFqvlJoLvAQEKdHdf5GD97/MN2ACfyv63+2Ig="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/syncthing/notify@v0.0.0-20250528144937-c7027d4f7465",
+      "name": "github.com/syncthing/notify",
+      "version": "v0.0.0-20250528144937-c7027d4f7465",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/syncthing/notify@v0.0.0-20250528144937-c7027d4f7465",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:yhxdTGmFkAM2TFA65c3NgGwpnIkUM8oVqPX2e9S7IVg="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/syncthing/syncthing@v2.1.7",
+      "name": "github.com/syncthing/syncthing",
+      "version": "v2.1.7",
+      "description": "Syncthing core, from the go/syncthing submodule with go/patches applied",
+      "licenses": [
+        {
+          "license": {
+            "id": "MPL-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/syncthing/syncthing@v2.1.7",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/syncthing/syncthing"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:patch",
+          "value": "go/patches/0001-lib-api-let-a-GUI-change-answer-before-the-listener-.patch"
+        },
+        {
+          "name": "mysyncthing:patch",
+          "value": "go/patches/0002-lib-api-restart-the-listener-for-a-GUI-change-withou.patch"
+        },
+        {
+          "name": "mysyncthing:patch",
+          "value": "go/patches/0003-lib-dialer-set-the-proxy-at-run-time.patch"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/syndtr/goleveldb@v1.0.1-0.20220721030215-126854af5e6d",
+      "name": "github.com/syndtr/goleveldb",
+      "version": "v1.0.1-0.20220721030215-126854af5e6d",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-2-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/syndtr/goleveldb@v1.0.1-0.20220721030215-126854af5e6d",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:vfofYNRScrDdvS342BElfbETmL1Aiz3i2t0zfRj16Hs="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/thejerf/suture/v4@v4.0.6",
+      "name": "github.com/thejerf/suture/v4",
+      "version": "v4.0.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/thejerf/suture/v4@v4.0.6",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:QsuCEsCqb03xF9tPAsWAj8QOAJBgQI1c0VqJNaingg8="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/tklauser/go-sysconf@v0.4.0",
+      "name": "github.com/tklauser/go-sysconf",
+      "version": "v0.4.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/tklauser/go-sysconf@v0.4.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:7H0uAN+7RkwWRaxhYXDLqa5V3LPrJeV8wmD9dRUgPQU="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/tklauser/numcpus@v0.12.0",
+      "name": "github.com/tklauser/numcpus",
+      "version": "v0.12.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/tklauser/numcpus@v0.12.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:NR85qdvHA9pFse3x3weVZ0r0ST8R6l5RHbZrlRaqob4="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/vitrun/qart@v0.0.0-20160531060029-bf64b92db6b0",
+      "name": "github.com/vitrun/qart",
+      "version": "v0.0.0-20160531060029-bf64b92db6b0",
+      "licenses": [
+        {
+          "expression": "Apache-2.0 AND BSD-3-Clause"
+        }
+      ],
+      "purl": "pkg:golang/github.com/vitrun/qart@v0.0.0-20160531060029-bf64b92db6b0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:okhMind4q9H1OxF44gNegWkiP4H/gsTFLalHFa4OOUI="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/github.com/wlynxg/anet@v0.0.5",
+      "name": "github.com/wlynxg/anet",
+      "version": "v0.0.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/github.com/wlynxg/anet@v0.0.5",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:J3VJGi1gvo0JwZ/P1/Yc/8p63SoW98B5dHkYDmpgvvU="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.5",
+      "name": "go.yaml.in/yaml/v3",
+      "version": "v3.0.5",
+      "licenses": [
+        {
+          "expression": "Apache-2.0 AND MIT"
+        }
+      ],
+      "purl": "pkg:golang/go.yaml.in/yaml/v3@v3.0.5",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:N6y/pJk8buWs9NY5ERU2HSMfm+IuD/OtfdAnq6kESPw="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/golang.org/x/crypto@v0.58.0",
+      "name": "golang.org/x/crypto",
+      "version": "v0.58.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/crypto@v0.58.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:COkYLr4k7nDI4r6QtMML2AfzeIswWHAJthLS6K/M/54="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/golang.org/x/exp@v0.0.0-20261007192929-f45ad48fbe92",
+      "name": "golang.org/x/exp",
+      "version": "v0.0.0-20261007192929-f45ad48fbe92",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/exp@v0.0.0-20261007192929-f45ad48fbe92",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:kc+Gi2MFkd0KWtdDlVxVwjw4KB98/77usJDFj+6YFQ8="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/golang.org/x/mobile@v0.0.0-20261011034528-197770444867",
+      "name": "golang.org/x/mobile",
+      "version": "v0.0.0-20261011034528-197770444867",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/mobile@v0.0.0-20261011034528-197770444867",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:rav73cdd7OQUPgt1aIFbZQTiPNnjfueKXvfOiLCY0Ss="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/golang.org/x/net@v0.61.0",
+      "name": "golang.org/x/net",
+      "version": "v0.61.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/net@v0.61.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:RR+6j/BTBCrggOLugxa+66R8FvoN6MHlzDlZIbN9YFw="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/golang.org/x/sys@v0.49.0",
+      "name": "golang.org/x/sys",
+      "version": "v0.49.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/sys@v0.49.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:XbzkgYJHdqh/8m2Uu0W/dQv8nktxx4BFHp1M0gROTXA="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/golang.org/x/text@v0.43.0",
+      "name": "golang.org/x/text",
+      "version": "v0.43.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/text@v0.43.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:1QivrlhwAsnMOcqgOdl9my7s9OyZl8O5/UGUTJVXoWc="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/golang.org/x/time@v0.16.0",
+      "name": "golang.org/x/time",
+      "version": "v0.16.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/time@v0.16.0",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:vMb6ptszcQMkcwiRTAuNNU50gom6++Q/6gY2hDM6VDE="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20260819154853-08b0e4226688",
+      "name": "google.golang.org/genproto/googleapis/api",
+      "version": "v0.0.0-20260819154853-08b0e4226688",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20260819154853-08b0e4226688",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:ax2KzoSRIZU/M0cIxri3pKxy99vniH1PVxWC6si/eZI="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20260819154853-08b0e4226688",
+      "name": "google.golang.org/genproto/googleapis/rpc",
+      "version": "v0.0.0-20260819154853-08b0e4226688",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20260819154853-08b0e4226688",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:cYNAzI2sUwhmCcoj9TxvihSrqsxt6uIkj3rDRhSDmW4="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/google.golang.org/protobuf@v1.36.12",
+      "name": "google.golang.org/protobuf",
+      "version": "v1.36.12",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/google.golang.org/protobuf@v1.36.12",
+      "properties": [
+        {
+          "name": "mysyncthing:go.sum",
+          "value": "h1:pJOKDDOyeXErUroCihFAd5LQuwXBSpVnKGrj5o/fwxc="
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:golang/stdlib@1.26.2",
+      "name": "stdlib",
+      "version": "1.26.2",
+      "description": "Go standard library and runtime",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/stdlib@1.26.2",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/golang/go"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:generic/sqlite@3.53.4",
+      "name": "sqlite",
+      "version": "3.53.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "blessing"
+          }
+        }
+      ],
+      "purl": "pkg:generic/sqlite@3.53.4",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/sqlite/sqlite"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:bundled-in",
+          "value": "github.com/mattn/go-sqlite3"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:angular",
+      "name": "angular",
+      "version": "1.3.20",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/angular@1.3.20",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/angular/angular.js"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular.js"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular.js.LICENSE"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "eccee41c28ca53612bdc42126f21ec5e34df42d976b145b754f0fc27b339fe0f"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:angular-sanitize",
+      "name": "angular-sanitize",
+      "version": "1.3.20",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/angular-sanitize@1.3.20",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/angular/angular.js"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-sanitize.js"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-sanitize.js.LICENSE"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "2e50f0e2c0cdff529c50795b51dfa9732ed18384ec6a800bd088b14abf3c427f"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:angular-translate",
+      "name": "angular-translate",
+      "version": "2.9.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/angular-translate@2.9.0",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/angular-translate/angular-translate"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-translate.js"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-translate.js.LICENSE"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "6f3cdceeccf11d8cecb6ecf18821df22806db356c6b99c2d115085db64545280"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:angular-translate-loader-static-files",
+      "name": "angular-translate-loader-static-files",
+      "version": "2.11.0",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/angular-translate-loader-static-files@2.11.0",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/angular-translate/angular-translate"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-translate-loader-static-files.js"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-translate-loader-static-files.js.LICENSE"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "15f3fc2390bb077c4146466448b7a9cd275b82545040c31000d615ab97cdc460"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:angular-utils-pagination (dirPagination)",
+      "name": "angular-utils-pagination (dirPagination)",
+      "version": "759009c",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:github/michaelbromley/angularUtils@759009c",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/michaelbromley/angularUtils"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/README.md"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-dirPagination.js"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/angular/angular-dirPagination.js.LICENSE"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "3ad9b50f8b04bb0b48ee8883a023a198ceefc3dd5cd61c9579a30c923d1a2234"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:bootstrap (CSS)",
+      "name": "bootstrap (CSS)",
+      "version": "3.3.6",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/bootstrap@3.3.6",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/twbs/bootstrap"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/LICENSE"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/config.json"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/css/bootstrap-theme.css"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/css/bootstrap.css"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "6568b648638cb9127221f48bf17687ff44b6b8820d31367d4bfbebd89ce6792c"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:bootstrap (JavaScript)",
+      "name": "bootstrap (JavaScript)",
+      "version": "3.4.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/bootstrap@3.4.1",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/twbs/bootstrap"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/js/bootstrap.js"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "8fc934ac35dbd8b9a6a438c2543c3dc63dc13652a81cf05746ef7a4d0abdc942"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:bootstrap-icons (reception icons)",
+      "name": "bootstrap-icons (reception icons)",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/bootstrap-icons",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/twbs/icons"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/fonts/reception-0.svg"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/fonts/reception-1.svg"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/fonts/reception-2.svg"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/fonts/reception-3.svg"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/bootstrap/fonts/reception-4.svg"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "76a995214b8e8c36e2e6185c8c38cae4422e77904545c0d848cb6e979924136e"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:daterangepicker",
+      "name": "daterangepicker",
+      "version": "3.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/daterangepicker@3.1.0",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/dangrossman/daterangepicker"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/daterangepicker/LICENSE"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/daterangepicker/daterangepicker.css"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/daterangepicker/daterangepicker.js"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "22d61bf7cb91800e7bba80b81d5e73cf4ad67b5fc921e85974a1269312766634"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:fancytree",
+      "name": "fancytree",
+      "version": "2.38.5",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/jquery.fancytree@2.38.5",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/mar10/fancytree"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fancytree/LICENSE.txt"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fancytree/jquery.fancytree-all-deps.js"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "2f80db8e9e7dd24853eba33be8a37718805218850cb38db76a9cf8bec99998f2"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:fork-awesome",
+      "name": "fork-awesome",
+      "version": "1.2.0",
+      "licenses": [
+        {
+          "expression": "MIT AND OFL-1.1"
+        }
+      ],
+      "purl": "pkg:npm/fork-awesome@1.2.0",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/ForkAwesome/Fork-Awesome"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/css/LICENSE.txt"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/css/fork-awesome.css"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/css/v5-compat.css"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/fonts/LICENSE.txt"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/fonts/forkawesome-webfont.eot"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/fonts/forkawesome-webfont.svg"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/fonts/forkawesome-webfont.ttf"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/fonts/forkawesome-webfont.woff"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/fork-awesome/fonts/forkawesome-webfont.woff2"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "1d692c7d97520f0ad1c993716ed0bce55d41daf6d62b3114241dc35d3e574e06"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:humanize-duration",
+      "name": "humanize-duration",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/rasa/HumanizeDuration.js"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/HumanizeDuration.js/LICENSE.txt"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/HumanizeDuration.js/Makefile"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/HumanizeDuration.js/humanize-duration.js"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "c5b118215901b75ecfe17b663d6c4b36325e59fc6497ec79a2284ece2e85cdd7"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:jquery",
+      "name": "jquery",
+      "version": "3.7.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/jquery@3.7.1",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jquery/jquery"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/jquery/LICENSE"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/jquery/jquery-3.7.1.js"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "139167c6f3ca9829469af6d58bdb3603e322f72cb04f3ff1c376d30b8430fecc"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:jquery-ui",
+      "name": "jquery-ui",
+      "version": "1.14.1",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/jquery-ui@1.14.1",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/jquery/jquery-ui"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:bundled-in",
+          "value": "fancytree"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:moment",
+      "name": "moment",
+      "version": "2.19.4",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/moment@2.19.4",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/moment/moment"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/moment/LICENSE"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/vendor/moment/moment.js"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "602d5f2c942d525b6b397a72d4c494720e56a40f6d943cb3825aa2ff14b5a762"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "webgui:Raleway (font)",
+      "name": "Raleway (font)",
+      "version": "2.001",
+      "licenses": [
+        {
+          "license": {
+            "id": "OFL-1.1"
+          }
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/impallari/Raleway"
+        }
+      ],
+      "properties": [
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/assets/font/raleway-500.woff"
+        },
+        {
+          "name": "mysyncthing:file",
+          "value": "go/syncthing/gui/default/assets/font/raleway.css"
+        },
+        {
+          "name": "mysyncthing:files-sha256",
+          "value": "f30689732ffe1838ea79f5b675994fd685355a04ece3b0831c999749a8f6b1e1"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "pkg:maven/com.android.tools.build/gradle@9.4.1",
+      "name": "android-gradle-plugin",
+      "version": "9.4.1",
+      "scope": "excluded",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.android.tools.build/gradle@9.4.1",
+      "properties": [
+        {
+          "name": "mysyncthing:pinned-in",
+          "value": "gradle/libs.versions.toml"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "pkg:generic/android-ndk@30.0.16248370",
+      "name": "android-ndk",
+      "version": "30.0.16248370",
+      "scope": "excluded",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:generic/android-ndk@30.0.16248370",
+      "properties": [
+        {
+          "name": "mysyncthing:pinned-in",
+          "value": "gradle.properties"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "pkg:golang/toolchain@1.26.2",
+      "name": "go",
+      "version": "1.26.2",
+      "scope": "excluded",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/toolchain@1.26.2",
+      "properties": [
+        {
+          "name": "mysyncthing:pinned-in",
+          "value": "go/syncthing/go.mod"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "pkg:golang/golang.org/x/mobile/cmd/gomobile@v0.0.0-20261011034528-197770444867",
+      "name": "gomobile",
+      "version": "v0.0.0-20261011034528-197770444867",
+      "scope": "excluded",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:golang/golang.org/x/mobile/cmd/gomobile@v0.0.0-20261011034528-197770444867",
+      "properties": [
+        {
+          "name": "mysyncthing:pinned-in",
+          "value": "go/bridge/go.mod"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "pkg:generic/gradle@9.8.2",
+      "name": "gradle",
+      "version": "9.8.2",
+      "scope": "excluded",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:generic/gradle@9.8.2",
+      "properties": [
+        {
+          "name": "mysyncthing:pinned-in",
+          "value": "gradle/wrapper/gradle-wrapper.properties"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "pkg:generic/openjdk@21",
+      "name": "jdk",
+      "version": "21",
+      "scope": "excluded",
+      "licenses": [
+        {
+          "expression": "GPL-2.0-only WITH Classpath-exception-2.0"
+        }
+      ],
+      "purl": "pkg:generic/openjdk@21",
+      "properties": [
+        {
+          "name": "mysyncthing:pinned-in",
+          "value": "app/build.gradle.kts"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlin/kotlin-compiler-embeddable@2.4.21",
+      "name": "kotlin",
+      "version": "2.4.21",
+      "scope": "excluded",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/org.jetbrains.kotlin/kotlin-compiler-embeddable@2.4.21",
+      "properties": [
+        {
+          "name": "mysyncthing:pinned-in",
+          "value": "gradle/libs.versions.toml"
+        }
+      ]
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:android/eu.stedb.mysyncthing",
+      "dependsOn": [
+        "pkg:golang/github.com/syncthing/syncthing@v2.1.7",
+        "pkg:golang/github.com/thejerf/suture/v4@v4.0.6",
+        "pkg:golang/golang.org/x/mobile@v0.0.0-20261011034528-197770444867",
+        "pkg:golang/golang.org/x/sys@v0.49.0",
+        "pkg:golang/stdlib@1.26.2",
+        "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
+        "pkg:maven/androidx.compose.material/material-icons-extended-android@1.7.8?type=aar",
+        "pkg:maven/androidx.compose.material3/material3-android@1.4.0?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-tooling-preview-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.datastore/datastore-preferences-android@1.3.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-service@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.navigation/navigation-compose-android@2.10.2?type=aar",
+        "pkg:maven/androidx.webkit/webkit@1.18.0?type=aar",
+        "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar",
+        "pkg:maven/com.squareup.okhttp3/okhttp-android@5.5.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:generic/sqlite@3.53.4"
+    },
+    {
+      "ref": "pkg:golang/buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go@v1.36.12-20260825204119-511051f7f437.2",
+      "dependsOn": [
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/buf.build/go/protovalidate@v1.4.0",
+      "dependsOn": [
+        "pkg:golang/buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go@v1.36.12-20260825204119-511051f7f437.2",
+        "pkg:golang/cel.dev/cel-go@v0.32.0",
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/cel.dev/cel-go@v0.32.0",
+      "dependsOn": [
+        "pkg:golang/cel.dev/expr@v0.25.3",
+        "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.1",
+        "pkg:golang/go.yaml.in/yaml/v3@v3.0.5",
+        "pkg:golang/golang.org/x/text@v0.43.0",
+        "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20260819154853-08b0e4226688",
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/cel.dev/expr@v0.25.3",
+      "dependsOn": [
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/Azure/go-ntlmssp@v0.1.1"
+    },
+    {
+      "ref": "pkg:golang/github.com/antlr4-go/antlr/v4@v4.13.1",
+      "dependsOn": [
+        "pkg:golang/golang.org/x/exp@v0.0.0-20261007192929-f45ad48fbe92"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/beorn7/perks@v1.0.1"
+    },
+    {
+      "ref": "pkg:golang/github.com/calmh/incontainer@v1.0.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/calmh/xdr@v1.2.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/ccding/go-stun@v0.1.6"
+    },
+    {
+      "ref": "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-asn1-ber/asn1-ber@v1.5.8"
+    },
+    {
+      "ref": "pkg:golang/github.com/go-ldap/ldap/v3@v3.4.15",
+      "dependsOn": [
+        "pkg:golang/github.com/Azure/go-ntlmssp@v0.1.1",
+        "pkg:golang/github.com/go-asn1-ber/asn1-ber@v1.5.8",
+        "pkg:golang/github.com/google/uuid@v1.6.0",
+        "pkg:golang/golang.org/x/crypto@v0.58.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/gobwas/glob@v0.2.3"
+    },
+    {
+      "ref": "pkg:golang/github.com/golang/snappy@v0.0.4"
+    },
+    {
+      "ref": "pkg:golang/github.com/google/uuid@v1.6.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/hashicorp/golang-lru/v2@v2.0.7"
+    },
+    {
+      "ref": "pkg:golang/github.com/jackpal/gateway@v1.2.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/jackpal/go-nat-pmp@v1.1.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/jmoiron/sqlx@v1.4.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/julienschmidt/httprouter@v1.3.0"
+    },
+    {
+      "ref": "pkg:golang/github.com/kballard/go-shellquote@v0.0.0-20180428030007-95032a82bc51"
+    },
+    {
+      "ref": "pkg:golang/github.com/mattn/go-sqlite3@v1.14.52",
+      "dependsOn": [
+        "pkg:generic/sqlite@3.53.4"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/miscreant/miscreant.go@v0.0.0-20200214223636-26d376326b75"
+    },
+    {
+      "ref": "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822"
+    },
+    {
+      "ref": "pkg:golang/github.com/pierrec/lz4/v4@v4.1.33"
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_golang@v1.25.0",
+      "dependsOn": [
+        "pkg:golang/github.com/beorn7/perks@v1.0.1",
+        "pkg:golang/github.com/cespare/xxhash/v2@v2.3.0",
+        "pkg:golang/github.com/prometheus/client_model@v0.6.3",
+        "pkg:golang/github.com/prometheus/common@v0.72.0",
+        "pkg:golang/github.com/prometheus/procfs@v0.22.0",
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/client_model@v0.6.3",
+      "dependsOn": [
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/common@v0.72.0",
+      "dependsOn": [
+        "pkg:golang/github.com/munnerz/goautoneg@v0.0.0-20191010083416-a7dc8b61c822",
+        "pkg:golang/github.com/prometheus/client_model@v0.6.3",
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/prometheus/procfs@v0.22.0",
+      "dependsOn": [
+        "pkg:golang/golang.org/x/sys@v0.49.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/quic-go/quic-go@v0.63.0",
+      "dependsOn": [
+        "pkg:golang/golang.org/x/crypto@v0.58.0",
+        "pkg:golang/golang.org/x/net@v0.61.0",
+        "pkg:golang/golang.org/x/sys@v0.49.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/rcrowley/go-metrics@v0.0.0-20250401214520-65e299d6c5c9"
+    },
+    {
+      "ref": "pkg:golang/github.com/shirou/gopsutil/v4@v4.26.9",
+      "dependsOn": [
+        "pkg:golang/github.com/tklauser/go-sysconf@v0.4.0",
+        "pkg:golang/golang.org/x/sys@v0.49.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/syncthing/notify@v0.0.0-20250528144937-c7027d4f7465",
+      "dependsOn": [
+        "pkg:golang/golang.org/x/sys@v0.49.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/syncthing/syncthing@v2.1.7",
+      "dependsOn": [
+        "pkg:golang/buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go@v1.36.12-20260825204119-511051f7f437.2",
+        "pkg:golang/buf.build/go/protovalidate@v1.4.0",
+        "pkg:golang/github.com/calmh/incontainer@v1.0.0",
+        "pkg:golang/github.com/calmh/xdr@v1.2.0",
+        "pkg:golang/github.com/ccding/go-stun@v0.1.6",
+        "pkg:golang/github.com/go-ldap/ldap/v3@v3.4.15",
+        "pkg:golang/github.com/gobwas/glob@v0.2.3",
+        "pkg:golang/github.com/hashicorp/golang-lru/v2@v2.0.7",
+        "pkg:golang/github.com/jackpal/gateway@v1.2.0",
+        "pkg:golang/github.com/jackpal/go-nat-pmp@v1.1.0",
+        "pkg:golang/github.com/jmoiron/sqlx@v1.4.0",
+        "pkg:golang/github.com/julienschmidt/httprouter@v1.3.0",
+        "pkg:golang/github.com/kballard/go-shellquote@v0.0.0-20180428030007-95032a82bc51",
+        "pkg:golang/github.com/mattn/go-sqlite3@v1.14.52",
+        "pkg:golang/github.com/miscreant/miscreant.go@v0.0.0-20200214223636-26d376326b75",
+        "pkg:golang/github.com/pierrec/lz4/v4@v4.1.33",
+        "pkg:golang/github.com/prometheus/client_golang@v1.25.0",
+        "pkg:golang/github.com/quic-go/quic-go@v0.63.0",
+        "pkg:golang/github.com/rcrowley/go-metrics@v0.0.0-20250401214520-65e299d6c5c9",
+        "pkg:golang/github.com/shirou/gopsutil/v4@v4.26.9",
+        "pkg:golang/github.com/syncthing/notify@v0.0.0-20250528144937-c7027d4f7465",
+        "pkg:golang/github.com/syndtr/goleveldb@v1.0.1-0.20220721030215-126854af5e6d",
+        "pkg:golang/github.com/thejerf/suture/v4@v4.0.6",
+        "pkg:golang/github.com/vitrun/qart@v0.0.0-20160531060029-bf64b92db6b0",
+        "pkg:golang/github.com/wlynxg/anet@v0.0.5",
+        "pkg:golang/golang.org/x/crypto@v0.58.0",
+        "pkg:golang/golang.org/x/net@v0.61.0",
+        "pkg:golang/golang.org/x/sys@v0.49.0",
+        "pkg:golang/golang.org/x/text@v0.43.0",
+        "pkg:golang/golang.org/x/time@v0.16.0",
+        "pkg:golang/google.golang.org/protobuf@v1.36.12",
+        "webgui:Raleway (font)",
+        "webgui:angular",
+        "webgui:angular-sanitize",
+        "webgui:angular-translate",
+        "webgui:angular-translate-loader-static-files",
+        "webgui:angular-utils-pagination (dirPagination)",
+        "webgui:bootstrap (CSS)",
+        "webgui:bootstrap (JavaScript)",
+        "webgui:bootstrap-icons (reception icons)",
+        "webgui:daterangepicker",
+        "webgui:fancytree",
+        "webgui:fork-awesome",
+        "webgui:humanize-duration",
+        "webgui:jquery",
+        "webgui:moment"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/syndtr/goleveldb@v1.0.1-0.20220721030215-126854af5e6d",
+      "dependsOn": [
+        "pkg:golang/github.com/golang/snappy@v0.0.4"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/thejerf/suture/v4@v4.0.6"
+    },
+    {
+      "ref": "pkg:golang/github.com/tklauser/go-sysconf@v0.4.0",
+      "dependsOn": [
+        "pkg:golang/github.com/tklauser/numcpus@v0.12.0",
+        "pkg:golang/golang.org/x/sys@v0.49.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/tklauser/numcpus@v0.12.0",
+      "dependsOn": [
+        "pkg:golang/golang.org/x/sys@v0.49.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/github.com/vitrun/qart@v0.0.0-20160531060029-bf64b92db6b0"
+    },
+    {
+      "ref": "pkg:golang/github.com/wlynxg/anet@v0.0.5"
+    },
+    {
+      "ref": "pkg:golang/go.yaml.in/yaml/v3@v3.0.5"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/crypto@v0.58.0"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/exp@v0.0.0-20261007192929-f45ad48fbe92"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/mobile@v0.0.0-20261011034528-197770444867"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/net@v0.61.0",
+      "dependsOn": [
+        "pkg:golang/golang.org/x/sys@v0.49.0",
+        "pkg:golang/golang.org/x/text@v0.43.0"
+      ]
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/sys@v0.49.0"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/text@v0.43.0"
+    },
+    {
+      "ref": "pkg:golang/golang.org/x/time@v0.16.0"
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/genproto/googleapis/api@v0.0.0-20260819154853-08b0e4226688",
+      "dependsOn": [
+        "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20260819154853-08b0e4226688",
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/genproto/googleapis/rpc@v0.0.0-20260819154853-08b0e4226688",
+      "dependsOn": [
+        "pkg:golang/google.golang.org/protobuf@v1.36.12"
+      ]
+    },
+    {
+      "ref": "pkg:golang/google.golang.org/protobuf@v1.36.12"
+    },
+    {
+      "ref": "pkg:golang/stdlib@1.26.2"
+    },
+    {
+      "ref": "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.activity/activity@1.13.0?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.navigationevent/navigationevent-compose-android@1.1.2?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.activity/activity-ktx@1.13.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.activity/activity@1.13.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-ktx-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-ktx@2.11.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-ktx@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.activity/activity@1.13.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar",
+        "pkg:maven/androidx.navigationevent/navigationevent-android@1.1.2?type=aar",
+        "pkg:maven/androidx.profileinstaller/profileinstaller@1.4.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+        "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.arch.core/core-common@2.2.0",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.arch.core/core-runtime@2.2.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.arch.core/core-common@2.2.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.autofill/autofill@1.0.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.core/core@1.19.1?type=aar"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.collection/collection-ktx@1.6.0",
+      "dependsOn": [
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.animation/animation-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.animation/animation-core-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-geometry-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.animation/animation-core-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.foundation/foundation-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.animation/animation-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-text-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.emoji2/emoji2@1.4.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.animation/animation-core-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.material/material-icons-core-android@1.7.8?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.material/material-icons-extended-android@1.7.8?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.compose.material/material-icons-core-android@1.7.8?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.material/material-ripple-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.animation/animation-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.material3/material3-android@1.4.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.animation/animation-core-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.material/material-ripple-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-text-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-java8@2.11.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-annotation-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.runtime/runtime-annotation-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.runtime/runtime-retain-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-compose-android@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.activity/activity-ktx@1.13.0?type=aar",
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.autofill/autofill@1.0.0?type=aar",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-retain-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-geometry-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-text-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.customview/customview-poolingcontainer@1.0.0?type=aar",
+        "pkg:maven/androidx.emoji2/emoji2@1.4.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-ktx@2.11.0?type=aar",
+        "pkg:maven/androidx.profileinstaller/profileinstaller@1.4.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-compose-android@1.5.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-ktx@1.5.0?type=aar",
+        "pkg:maven/androidx.window/window@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.ui/ui-geometry-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.graphics/graphics-path@1.0.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.ui/ui-text-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.emoji2/emoji2@1.4.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.ui/ui-tooling-preview-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.collection/collection-ktx@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-geometry-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/com.google.guava/listenablefuture@1.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.core/core@1.19.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0",
+        "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+        "pkg:maven/androidx.interpolator/interpolator@1.0.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar",
+        "pkg:maven/androidx.versionedparcelable/versionedparcelable@1.1.1?type=aar",
+        "pkg:maven/com.google.guava/listenablefuture@1.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.customview/customview-poolingcontainer@1.0.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.datastore/datastore-android@1.3.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.datastore/datastore-core-android@1.3.0?type=aar",
+        "pkg:maven/androidx.datastore/datastore-core-okio-jvm@1.3.0",
+        "pkg:maven/com.squareup.okio/okio-jvm@3.18.1",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.datastore/datastore-core-android@1.3.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.datastore/datastore-core-okio-jvm@1.3.0",
+      "dependsOn": [
+        "pkg:maven/androidx.datastore/datastore-core-android@1.3.0?type=aar",
+        "pkg:maven/com.squareup.okio/okio-jvm@3.18.1",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.datastore/datastore-preferences-android@1.3.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.datastore/datastore-android@1.3.0?type=aar",
+        "pkg:maven/androidx.datastore/datastore-preferences-core-android@1.3.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.datastore/datastore-preferences-core-android@1.3.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.datastore/datastore-core-android@1.3.0?type=aar",
+        "pkg:maven/androidx.datastore/datastore-core-okio-jvm@1.3.0",
+        "pkg:maven/androidx.datastore/datastore-preferences-proto@1.3.0",
+        "pkg:maven/com.squareup.okio/okio-jvm@3.18.1",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/atomicfu-jvm@0.28.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.datastore/datastore-preferences-external-protobuf@1.3.0"
+    },
+    {
+      "ref": "pkg:maven/androidx.datastore/datastore-preferences-proto@1.3.0",
+      "dependsOn": [
+        "pkg:maven/androidx.datastore/datastore-preferences-external-protobuf@1.3.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.emoji2/emoji2@1.4.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-process@2.11.0?type=aar",
+        "pkg:maven/androidx.startup/startup-runtime@1.2.0?type=aar"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.graphics/graphics-path@1.0.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.interpolator/interpolator@1.0.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-common-java8@2.11.0",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.arch.core/core-common@2.2.0",
+        "pkg:maven/androidx.arch.core/core-runtime@2.2.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-process@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/androidx.startup/startup-runtime@1.2.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.arch.core/core-common@2.2.0",
+        "pkg:maven/androidx.arch.core/core-runtime@2.2.0?type=aar",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.profileinstaller/profileinstaller@1.4.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-ktx-android@2.11.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-runtime-ktx-android@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-service@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-compose-android@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-ktx@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.navigation/navigation-common-android@2.10.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar",
+        "pkg:maven/androidx.profileinstaller/profileinstaller@1.4.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-ktx@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.navigation/navigation-compose-android@2.10.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
+        "pkg:maven/androidx.activity/activity@1.13.0?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.animation/animation-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.animation/animation-core-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-saveable-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-compose-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar",
+        "pkg:maven/androidx.navigation/navigation-common-android@2.10.2?type=aar",
+        "pkg:maven/androidx.navigation/navigation-runtime-android@2.10.2?type=aar",
+        "pkg:maven/androidx.navigationevent/navigationevent-compose-android@1.1.2?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-compose-android@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.navigation/navigation-runtime-android@2.10.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.activity/activity-ktx@1.13.0?type=aar",
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-runtime-ktx-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-ktx@2.11.0?type=aar",
+        "pkg:maven/androidx.navigation/navigation-common-android@2.10.2?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.navigationevent/navigationevent-android@1.1.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.compose.runtime/runtime-annotation-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.navigationevent/navigationevent-compose-android@1.1.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.navigationevent/navigationevent-android@1.1.2?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.profileinstaller/profileinstaller@1.4.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0",
+        "pkg:maven/androidx.startup/startup-runtime@1.2.0?type=aar",
+        "pkg:maven/com.google.guava/listenablefuture@1.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.core/core-viewtree@1.0.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.savedstate/savedstate-compose-android@1.5.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.savedstate/savedstate-ktx@1.5.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.startup/startup-runtime@1.2.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.versionedparcelable/versionedparcelable@1.1.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.webkit/webkit@1.18.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.window/window-core-android@1.5.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.window/window@1.5.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.collection/collection-jvm@1.6.0",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.window/window-core-android@1.5.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/com.google.guava/listenablefuture@1.0"
+    },
+    {
+      "ref": "pkg:maven/com.google.zxing/core@3.4.1"
+    },
+    {
+      "ref": "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/com.google.zxing/core@3.4.1"
+      ]
+    },
+    {
+      "ref": "pkg:maven/com.squareup.okhttp3/okhttp-android@5.5.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.startup/startup-runtime@1.2.0?type=aar",
+        "pkg:maven/com.squareup.okio/okio-jvm@3.18.1",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/com.squareup.okio/okio-jvm@3.18.1",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains/annotations@23.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/org.jetbrains.kotlinx/atomicfu-jvm@0.28.0",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains/annotations@23.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
+      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0",
+      "dependsOn": [
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/org.jetbrains/annotations@23.0.0"
+    },
+    {
+      "ref": "pkg:maven/org.jspecify/jspecify@1.0.0"
+    },
+    {
+      "ref": "webgui:Raleway (font)"
+    },
+    {
+      "ref": "webgui:angular"
+    },
+    {
+      "ref": "webgui:angular-sanitize"
+    },
+    {
+      "ref": "webgui:angular-translate"
+    },
+    {
+      "ref": "webgui:angular-translate-loader-static-files"
+    },
+    {
+      "ref": "webgui:angular-utils-pagination (dirPagination)"
+    },
+    {
+      "ref": "webgui:bootstrap (CSS)"
+    },
+    {
+      "ref": "webgui:bootstrap (JavaScript)"
+    },
+    {
+      "ref": "webgui:bootstrap-icons (reception icons)"
+    },
+    {
+      "ref": "webgui:daterangepicker"
+    },
+    {
+      "ref": "webgui:fancytree",
+      "dependsOn": [
+        "webgui:jquery-ui"
+      ]
+    },
+    {
+      "ref": "webgui:fork-awesome"
+    },
+    {
+      "ref": "webgui:humanize-duration"
+    },
+    {
+      "ref": "webgui:jquery"
+    },
+    {
+      "ref": "webgui:jquery-ui"
+    },
+    {
+      "ref": "webgui:moment"
+    }
+  ]
+}

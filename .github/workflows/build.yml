@@ -48,6 +48,31 @@ jobs:
           name: app-debug
           path: app/build/outputs/apk/debug/*.apk
 
+  # The committed SBOM (docs/sbom.*) must match what the dependencies are now. Its own job:
+  # read-only, no secrets, and the SBOM tools never run in the build that makes the APK.
+  sbom:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          submodules: true
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go/syncthing/go.mod
+          cache-dependency-path: |
+            go/bridge/go.sum
+            scripts/sbom/go.sum
+      - name: Android SDK platform
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" > /dev/null
+      - uses: gradle/actions/setup-gradle@v5
+      - name: SBOM matches the dependencies
+        run: scripts/sbom.sh --check
+
   privacy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
