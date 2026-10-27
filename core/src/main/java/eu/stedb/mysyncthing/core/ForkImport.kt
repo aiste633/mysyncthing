@@ -109,29 +109,32 @@ object ForkImport {
         deleteBackup: Boolean,
     ): String? = withContext(Dispatchers.IO + NonCancellable) {
         val settings = Settings(context)
-        SyncthingService.stop(context)
-        try {
-            withTimeout(60_000) { SyncthingCore.state.first { it is CoreState.Stopped || it is CoreState.Failed } }
-            val home = File(context.filesDir, "syncthing")
-            withFd(context.contentResolver, uri) { fd ->
-                Stbridge.importForkBackup(fd.toLong(), password, home.absolutePath, keepIdentity)
+        replaceSetup(SyncthingCore.homeLock, object : SetupReplacement {
+            override suspend fun stopCore() {
+                SyncthingService.stop(context)
+                withTimeout(60_000) { SyncthingCore.state.first { it is CoreState.Stopped || it is CoreState.Failed } }
             }
-        } catch (e: Exception) {
-            SyncthingService.start(context)
-            return@withContext sentence(e.message ?: e.toString())
-        }
-        settings.update { conditions.applyTo(it) }
-        settings.setConditionPause(null) // the paused devices it remembers are the old setup's
-        // Without this the service takes the config without a database for a move from another
-        // phone and says so; the import screen already tells what the import means.
-        settings.setFreshDatabaseExpected(true)
-        val deleted = !deleteBackup || delete(context.contentResolver, uri)
-        SyncthingService.start(context)
-        if (deleted) null else "Imported, but the backup file could not be deleted. Delete it yourself: it holds the device's private key."
-    }
 
-    /** Go errors start lower-case; shown on their own, they are sentences. */
-    private fun sentence(message: String) = message.replaceFirstChar { it.uppercaseChar() }
+            override fun install() {
+                val home = File(context.filesDir, "syncthing")
+                withFd(context.contentResolver, uri) { fd ->
+                    Stbridge.importForkBackup(fd.toLong(), password, home.absolutePath, keepIdentity)
+                }
+            }
+
+            override suspend fun applySettings() {
+                settings.update { conditions.applyTo(it) }
+                settings.setConditionPause(null) // the paused devices it remembers are the old setup's
+                // Without this the service takes the config without a database for a move from another
+                // phone and says so; the import screen already tells what the import means.
+                settings.setFreshDatabaseExpected(true)
+            }
+
+            override fun removeBackup() = !deleteBackup || delete(context.contentResolver, uri)
+
+            override fun startCore() = SyncthingService.start(context)
+        })
+    }
 
     private inline fun <T> withFd(resolver: ContentResolver, uri: Uri, block: (Int) -> T): T =
         (resolver.openFileDescriptor(uri, "r") ?: error("Cannot open the backup")).use { block(it.fd) }
@@ -143,3 +146,37 @@ object ForkImport {
         }
     }.getOrDefault(false)
 }
+
+/** The steps of replacing the core's setup, apart so their order can be tested. */
+internal interface SetupReplacement {
+    suspend fun stopCore()
+    fun install()
+    suspend fun applySettings()
+    /** False if the backup should have been deleted and wasn't. */
+    fun removeBackup(): Boolean
+    fun startCore()
+}
+
+/**
+ * Runs [r] under [lock], from stopping the core to the last settings write, so
+ * no start (rotation, boot, the app opening) can come in between and run the
+ * old setup or the new one with the old settings. The core is started again
+ * after the lock is released, also when stopping or installing failed.
+ */
+internal suspend fun replaceSetup(lock: HomeLock, r: SetupReplacement): String? {
+    val outcome = lock.use {
+        try {
+            r.stopCore()
+            r.install()
+        } catch (e: Exception) {
+            return@use sentence(e.message ?: e.toString())
+        }
+        r.applySettings()
+        if (r.removeBackup()) null else "Imported, but the backup file could not be deleted. Delete it yourself: it holds the device's private key."
+    }
+    r.startCore()
+    return outcome
+}
+
+/** Go errors start lower-case; shown on their own, they are sentences. */
+internal fun sentence(message: String) = message.replaceFirstChar { it.uppercaseChar() }

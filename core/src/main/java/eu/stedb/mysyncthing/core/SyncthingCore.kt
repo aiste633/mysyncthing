@@ -31,6 +31,9 @@ object SyncthingCore {
 
     val version: String get() = Stbridge.version()
 
+    /** Held by the service while it starts the core, and by an import while it replaces the setup. */
+    internal val homeLock = HomeLock()
+
     internal suspend fun start(home: File, credentials: Credentials) = withContext(serial) {
         if (Stbridge.isRunning()) return@withContext
         _state.value = CoreState.Starting
