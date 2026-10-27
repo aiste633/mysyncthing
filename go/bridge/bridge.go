@@ -83,6 +83,11 @@ func startLocked(p params) error {
 		return err
 	}
 
+	if err := applyProxyLocked(); err != nil {
+		cncl()
+		return fmt.Errorf("proxy: %w", err)
+	}
+
 	sdb, err := syncthing.OpenDatabase(locations.Get(locations.Database), deleteRetention)
 	if err != nil {
 		cncl()

@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -90,6 +91,7 @@ type fixtureConfig struct {
 	SelfName string
 	Peer     protocol.DeviceID
 	Folders  []fixtureFolder
+	Paused   bool // every folder and device, as after a run condition paused syncing
 }
 
 // A Fork config.xml as the backups have it, trimmed to what matters; the core
@@ -102,6 +104,9 @@ var configTmpl = template.Must(template.New("config").Parse(`<configuration vers
         <device id="{{$.Peer}}" introducedBy=""></device>
         <versioning type="trashcan"><param key="cleanoutDays" val="14"></param></versioning>
         <markerName>.stfolder</markerName>
+        {{- if $.Paused}}
+        <paused>true</paused>
+        {{- end}}
         {{- if eq $.Version 37}}
         <weakHashThresholdPct>25</weakHashThresholdPct>
         <disableTempIndexes>false</disableTempIndexes>
@@ -114,6 +119,9 @@ var configTmpl = template.Must(template.New("config").Parse(`<configuration vers
     <device id="{{.Peer}}" name="Example peer" compression="metadata" introducer="false">
         <address>tcp://192.0.2.10:22000</address>
         <autoAcceptFolders>true</autoAcceptFolders>
+        {{- if .Paused}}
+        <paused>true</paused>
+        {{- end}}
     </device>
     <gui enabled="true" tls="true">
         <address>127.0.0.1:8384</address>
@@ -234,6 +242,12 @@ func newBackup(t testing.TB, version int, ed bool, folders ...fixtureFolder) bac
 		{"index-v2/main.db", []byte("not read")},
 	}
 	return b
+}
+
+// setPaused pauses every folder and device in the backup's config.xml.
+func (b *backupFixture) setPaused(t testing.TB) {
+	b.cfg.Paused = true
+	b.entries[0].data = b.cfg.xml(t)
 }
 
 func (b backupFixture) zip(t testing.TB, password string) []byte {
@@ -377,16 +391,16 @@ func TestInspect(t *testing.T) {
 					if fmt.Sprint(p.Folders) != fmt.Sprint(want) {
 						t.Errorf("folders:\n got %+v\nwant %+v", p.Folders, want)
 					}
-					// prefs-full: all networks, charging only, battery saver ignored, start at boot, force stop.
-					wantC := forkConditions{ChargingOnly: true, StartOnBoot: true, PausedByUser: true}
-					if p.Conditions != wantC {
-						t.Errorf("conditions: %+v", p.Conditions)
+					// prefs-full: all networks and roaming, charging only, battery saver ignored, start at boot; force stop is not imported.
+					wantC := runConditions{MeteredWifi: true, MobileData: true, Roaming: true, Power: "ChargingOnly", StartOnBoot: true}
+					if !reflect.DeepEqual(p.Conditions, wantC) || p.Proxy != (proxySettings{Type: "None"}) || p.Source != "fork" {
+						t.Errorf("conditions: %+v, proxy %+v, source %q", p.Conditions, p.Proxy, p.Source)
 					}
 					var keys []string
 					for _, n := range p.NotImported {
 						keys = append(keys, n.Key+":"+n.Subject)
 					}
-					wantN := "flight_mode: master_sync: wifi_allowlist: environment: folder_conditions:Photos folder_script:Photos device_conditions:Example peer"
+					wantN := "force_stop: flight_mode: master_sync: wifi_allowlist: environment: folder_conditions:Photos folder_script:Photos device_conditions:Example peer"
 					if strings.Join(keys, " ") != wantN {
 						t.Errorf("not imported:\n got %s\nwant %s", strings.Join(keys, " "), wantN)
 					}
@@ -469,6 +483,7 @@ func TestImportAndStart(t *testing.T) {
 
 			missing := filepath.Join(dir, "storage", "Camera")
 			fx := newBackup(t, 37, false, fixtureFolder{"photo_backup_01", "Photos", missing, "sendreceive"})
+			fx.setPaused(t) // taken while Fork paused everything
 			f := filepath.Join(dir, "backup.zip")
 			os.WriteFile(f, fx.zip(t, "pw"), 0o600)
 			fd, _ := os.Open(f)
@@ -516,17 +531,24 @@ func TestImportAndStart(t *testing.T) {
 
 			var folders []struct {
 				Path    string
+				Paused  bool
 				Devices []struct{ DeviceID string }
 			}
-			var devices []struct{ DeviceID string }
+			var devices []struct {
+				DeviceID string
+				Paused   bool
+			}
 			getJSON(t, "/rest/config/folders", &folders)
 			getJSON(t, "/rest/config/devices", &devices)
-			if len(folders) != 1 || folders[0].Path != missing {
+			if len(folders) != 1 || folders[0].Path != missing || folders[0].Paused {
 				t.Fatalf("folders: %+v", folders)
 			}
 			var ids []string
 			for _, d := range devices {
 				ids = append(ids, d.DeviceID)
+				if d.Paused {
+					t.Errorf("device %s still paused", d.DeviceID)
+				}
 			}
 			var shared []string
 			for _, d := range folders[0].Devices {
@@ -567,52 +589,72 @@ func getJSON(t *testing.T, path string, v any) {
 
 func sorted(s ...string) []string { return slices.Sorted(slices.Values(s)) }
 
-// The networks the app may use never exceed Fork's, and when the app has an
-// exact equivalent, it is the one chosen.
+// The networks the app may use never exceed Fork's, and match them exactly
+// unless Fork avoided Wi-Fi altogether, which the app can't (and reports).
 func TestNetworkMappingProperty(t *testing.T) {
-	type nets struct{ unmeteredWifi, meteredWifi, mobile bool }
-	allowedByApp := func(c forkConditions) nets {
-		return nets{true, !c.UnmeteredOnly, !c.WifiOnly && !c.UnmeteredOnly}
-	}
-	choices := []forkConditions{{}, {WifiOnly: true}, {UnmeteredOnly: true}, {WifiOnly: true, UnmeteredOnly: true}}
-	subset := func(a, b nets) bool {
-		return (!a.unmeteredWifi || b.unmeteredWifi) && (!a.meteredWifi || b.meteredWifi) && (!a.mobile || b.mobile)
-	}
-	prop := func(wifi, metered, mobile, setWifi, setMetered, setMobile bool) bool {
+	type nets struct{ unmeteredWifi, meteredWifi, mobile, roaming bool }
+	prop := func(wifi, metered, mobile, roaming bool, set uint8) bool {
 		prefs := map[string]any{}
-		if setWifi {
-			prefs["run_on_wifi"] = wifi
-		} else {
-			wifi = true
+		def := []bool{true, false, false, false}
+		for i, v := range []struct {
+			key string
+			v   *bool
+		}{{"run_on_wifi", &wifi}, {"run_on_metered_wifi", &metered}, {"run_on_mobile_data", &mobile}, {"run_on_roaming", &roaming}} {
+			if set&(1<<i) != 0 {
+				prefs[v.key] = *v.v
+			} else {
+				*v.v = def[i]
+			}
 		}
-		if setMetered {
-			prefs["run_on_metered_wifi"] = metered
-		} else {
-			metered = false
-		}
-		if setMobile {
-			prefs["run_on_mobile_data"] = mobile
-		} else {
-			mobile = false
-		}
-		fork := nets{wifi, wifi && metered, mobile}
-		c, notes := mapForkPrefs(prefs, config.Configuration{})
-		got := allowedByApp(c)
-		exact := false
-		for _, ch := range choices {
-			exact = exact || allowedByApp(ch) == fork
-		}
+		fork := nets{wifi, wifi && metered, mobile, mobile && roaming}
+		c, _, notes := mapForkPrefs(prefs, config.Configuration{})
+		got := nets{true, c.MeteredWifi, c.MobileData, c.MobileData && c.Roaming}
 		noted := false
 		for _, n := range notes {
 			noted = noted || n.Key == "networks"
 		}
-		if exact {
-			return got == fork && !noted
+		if !wifi {
+			return got == nets{true, false, fork.mobile, fork.roaming} && noted
 		}
-		return (subset(got, fork) || !fork.unmeteredWifi) && noted
+		return got == fork && !noted
 	}
 	if err := quick.Check(prop, &quick.Config{MaxCount: 2000}); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestForkPowerAndProxy(t *testing.T) {
+	cases := []struct {
+		prefs map[string]any
+		power string
+		proxy proxySettings
+		notes string
+	}{
+		{map[string]any{}, "Any", proxySettings{Type: "None"}, ""},
+		{map[string]any{"power_source": "ac_power"}, "ChargingOnly", proxySettings{Type: "None"}, ""},
+		{map[string]any{"power_source": "battery_power"}, "BatteryOnly", proxySettings{Type: "None"}, ""},
+		{map[string]any{"power_source": "nuclear"}, "Any", proxySettings{Type: "None"}, ""},
+		{map[string]any{"use_tor": true}, "Any", torProxy, ""},
+		{map[string]any{"use_tor": true, "socks_proxy_address": "socks5://192.0.2.2:1080"}, "Any", torProxy, "socks_proxy"},
+		{map[string]any{"socks_proxy_address": " socks5://192.0.2.2:1080 "}, "Any", proxySettings{Type: "Socks5", Host: "192.0.2.2", Port: 1080}, ""},
+		{map[string]any{"socks_proxy_address": "socks5://me:pw@example.org:1080"}, "Any", proxySettings{Type: "Socks5", Host: "example.org", Port: 1080, User: "me", Password: "pw"}, ""},
+		{map[string]any{"http_proxy_address": "http://proxy.example.org:3128"}, "Any", proxySettings{Type: "Http", Host: "proxy.example.org", Port: 3128}, ""},
+		{map[string]any{"socks_proxy_address": "socks5://a.example.org:1", "http_proxy_address": "http://b.example.org:2"}, "Any", proxySettings{Type: "Socks5", Host: "a.example.org", Port: 1}, "http_proxy"},
+		{map[string]any{"socks_proxy_address": "192.0.2.2:1080"}, "Any", proxySettings{Type: "None"}, "socks_proxy"},
+		{map[string]any{"socks_proxy_address": "socks5://proxy.example.org"}, "Any", proxySettings{Type: "None"}, "socks_proxy"},
+		{map[string]any{"socks_proxy_address": "socks5://proxy.example.org:99999"}, "Any", proxySettings{Type: "None"}, "socks_proxy"},
+		{map[string]any{"http_proxy_address": "https://proxy.example.org:443"}, "Any", proxySettings{Type: "None"}, "http_proxy"},
+		{map[string]any{"http_proxy_address": "http://proxy.example.org:80/path"}, "Any", proxySettings{Type: "None"}, "http_proxy"},
+	}
+	for _, c := range cases {
+		got, proxy, notes := mapForkPrefs(c.prefs, config.Configuration{})
+		var keys []string
+		for _, n := range notes {
+			keys = append(keys, n.Key)
+		}
+		if got.Power != c.power || proxy != c.proxy || strings.Join(keys, " ") != c.notes {
+			t.Errorf("%v: power %s, proxy %+v, notes %v", c.prefs, got.Power, proxy, keys)
+		}
 	}
 }
 
@@ -621,6 +663,7 @@ func TestNetworkMappingProperty(t *testing.T) {
 func TestPrefsWrongTypesProperty(t *testing.T) {
 	keys := []string{"run_on_wifi", "run_on_metered_wifi", "run_on_mobile_data", "power_source",
 		"btnStateForceStartStop", "respect_battery_saving", "always_run_in_background", "use_tor",
+		"run_on_roaming", "socks_proxy_address", "http_proxy_address",
 		"environment_variables", "sc_folder_a_b_custom_sync_conditions"}
 	values := []any{nil, "true", int32(1), int64(2), float32(1), []string{"x"}, true, false, ""}
 	prop := func(picks []uint8) bool {
@@ -653,12 +696,14 @@ func TestWriteDummyForkBackups(t *testing.T) {
 		{"fork-1.27-like", "full", "", 37, false},
 		{"fork-2.1-like", "minimal", "", config.CurrentVersion, true},
 		{"fork-2.1-encrypted", "full", "test-password", config.CurrentVersion, false},
+		{"fork-2.1-proxy", "proxy", "", config.CurrentVersion, true},
 	} {
 		dir := filepath.Join(out, d.name)
 		os.MkdirAll(filepath.Join(dir, "index-v2"), 0o700)
 		fx := newBackup(t, d.version, d.ed,
 			fixtureFolder{"photo_backup_01", "Photos", root + "/" + d.name + "/photos", "sendonly"},
 			fixtureFolder{"docs", "Docs", root + "/" + d.name + "/docs", "sendreceive"})
+		fx.cfg.Paused = d.prefs == "full" // and Fork's pause button on: the import still starts syncing
 		for name, data := range map[string][]byte{
 			"config.xml": fx.cfg.xml(t), "cert.pem": fx.id.certPEM, "key.pem": fx.id.keyPEM,
 			"https-cert.pem": fx.id.certPEM, "https-key.pem": fx.id.keyPEM,
@@ -676,10 +721,12 @@ func TestWriteDummyForkBackups(t *testing.T) {
 // reads the same file.
 func TestPreviewJSONContract(t *testing.T) {
 	p := forkPreview{
+		Source:   "fork",
 		DeviceID: "SELF-ID", DeviceName: "Old phone", ConfigVersion: 37,
 		Folders:     []previewFolder{{"photo_backup_01", "Photos", "/storage/emulated/0/DCIM/Camera", "sendonly", true, false}},
 		Devices:     []previewDevice{{"PEER-ID", "Example peer"}},
-		Conditions:  forkConditions{UnmeteredOnly: true, RespectBatterySaver: true},
+		Conditions:  runConditions{MobileData: true, Power: "BatteryOnly", RespectBatterySaver: true},
+		Proxy:       torProxy,
 		NotImported: []notImported{{"networks", ""}, {"folder_conditions", "Photos"}},
 	}
 	got, err := json.MarshalIndent(p, "", "  ")

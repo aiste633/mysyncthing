@@ -111,7 +111,7 @@ private fun ChangeRow(r: RecentChange, s: Snapshot) {
     val dir = c.path.substringBeforeLast('/', "")
     SettingRow(
         c.path.substringAfterLast('/'),
-        listOfNotNull(folder + if (dir.isEmpty()) "" else "/$dir", what, clockText(r.time)).joinToString(" · "),
+        listOfNotNull(folder + if (dir.isEmpty()) "" else "/$dir", what, exactTimeText(r.time)).joinToString(" · "),
         icon = when {
             c.type == "dir" -> Icons.Default.Folder
             deleted -> Icons.Default.Delete

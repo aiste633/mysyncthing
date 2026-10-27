@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- A bar the height of the search bar, centred in its cell however tall the launcher's rows are:
+     app mark and hairline (so the widget reads as Syncthing; left out when narrow, see StatusWidget),
      status icon, two lines of text, pause button. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
@@ -16,6 +17,24 @@
     android:orientation="horizontal"
     android:paddingStart="14dp"
     android:paddingEnd="6dp">
+
+    <ImageView
+        android:id="@+id/widget_app_mark"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:layout_marginEnd="10dp"
+        android:importantForAccessibility="no"
+        android:src="@drawable/widget_ic_app"
+        android:tint="@color/widget_text" />
+
+    <ImageView
+        android:id="@+id/widget_app_rule"
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:layout_marginEnd="10dp"
+        android:alpha="0.45"
+        android:background="@color/widget_text_secondary"
+        android:importantForAccessibility="no" />
 
     <ImageView
         android:id="@+id/widget_status_icon"

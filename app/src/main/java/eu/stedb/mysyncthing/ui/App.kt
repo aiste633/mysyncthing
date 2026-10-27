@@ -85,6 +85,9 @@ private object Routes {
     const val DEFAULT_IGNORES = "defaults/ignores"
     const val DEVICE_DEFAULTS = "defaults/device"
     const val FORK_IMPORT = "import/fork"
+    const val EXPORT = "export"
+    const val PROXY = "proxy"
+    const val SCHEDULE = "schedule"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
     fun ignores(id: String, first: Boolean = false) = "folder/${Uri.encode(id)}/ignores?first=$first"
@@ -105,7 +108,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         if (!permissions.storage || setupDone == false) {
             val rc by vm.runConditions.collectAsStateWithLifecycle()
             SetupScreen(
-                permissions, rc.wifiOnly, onWifiOnly = { v -> vm.setRunConditions { it.copy(wifiOnly = v) } }, onDone = vm::finishSetup,
+                permissions, rc.mobileData, onMobileData = { v -> vm.setRunConditions { it.copy(mobileData = v) } }, onDone = vm::finishSetup,
             )
             return@AppTheme
         }
@@ -194,6 +197,9 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         onOpenDeviceDefaults = { nav.navigate(Routes.DEVICE_DEFAULTS) },
                         onOpenAbout = { nav.navigate(Routes.ABOUT) },
                         onOpenImport = { nav.navigate(Routes.FORK_IMPORT) },
+                        onOpenExport = { nav.navigate(Routes.EXPORT) },
+                        onOpenProxy = { nav.navigate(Routes.PROXY) },
+                        onOpenSchedule = { nav.navigate(Routes.SCHEDULE) },
                     )
                 }
                 composable(Routes.FOLDER) { entry ->
@@ -294,6 +300,9 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 composable(Routes.ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
                 // Not behind CoreGate: the import stops and restarts the core itself.
                 composable(Routes.FORK_IMPORT) { ImportScreen(onBack = { nav.popBackStack() }) }
+                composable(Routes.EXPORT) { ExportScreen(onBack = { nav.popBackStack() }) }
+                composable(Routes.PROXY) { ProxyScreen(vm, core, onBack = { nav.popBackStack() }) }
+                composable(Routes.SCHEDULE) { ScheduleScreen(vm, onBack = { nav.popBackStack() }) }
                 composable(Routes.IGNORED) {
                     CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
                 }

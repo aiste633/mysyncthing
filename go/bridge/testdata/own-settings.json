@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "conditions": {
+    "meteredWifi": true,
+    "mobileData": true,
+    "roaming": false,
+    "power": "BatteryOnly",
+    "respectBatterySaver": true,
+    "startOnBoot": true,
+    "timeSchedule": true,
+    "windows": [
+      {
+        "start": 1320,
+        "end": 420,
+        "days": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      },
+      {
+        "start": 0,
+        "end": 1439,
+        "days": [
+          6,
+          7
+        ]
+      }
+    ]
+  },
+  "proxy": {
+    "type": "Socks5",
+    "host": "proxy.example.org",
+    "port": 1080,
+    "user": "me",
+    "password": "p@1:w/ord",
+    "only": true
+  }
+}

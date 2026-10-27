@@ -5,7 +5,7 @@
 // the preferences map with ObjectOutputStream, the zip with zip4j. Synthetic content
 // only. Run through gen.sh, which supplies zip4j on the class path.
 //
-//   prefs <out.dat> <variant>                  variants: full, minimal, typed
+//   prefs <out.dat> <variant>                  variants: full, minimal, proxy, typed
 //   zip <dir> <out.zip> [password]             Fork's export of a config dir
 //   golden <outdir>                            AES zips of known text for the reader tests
 
@@ -32,6 +32,7 @@ public class GenForkFixtures {
             case "prefs" -> prefs(a[1], a[2]);
             case "zip" -> forkZip(new File(a[1]), new File(a[2]), a.length > 3 ? a[3] : "");
             case "golden" -> golden(new File(a[1]));
+            case "unzip" -> unzip(new File(a[1]), new File(a[2]), a.length > 3 ? a[3] : ""); // reads the app's export, as Fork would
             default -> throw new IllegalArgumentException(a[0]);
         }
     }
@@ -107,6 +108,13 @@ public class GenForkFixtures {
                 m.put("sc_device_" + peer + "_custom_sync_conditions", true);
                 m.put("device_lastseen_" + peer, "2026-01-02T03:04:05+0100");
             }
+            case "proxy" -> { // Fork with a SOCKS proxy (adb reverse makes the PC's port 1080 local), on battery only
+                m.put("power_source", "battery_power");
+                m.put("run_on_metered_wifi", false);
+                m.put("run_on_mobile_data", true);
+                m.put("run_on_roaming", false);
+                m.put("socks_proxy_address", "socks5://127.0.0.1:1080");
+            }
             case "typed" -> { // each value type once, for the reader
                 m.put("bool", true);
                 m.put("int", -7);
@@ -174,6 +182,12 @@ public class GenForkFixtures {
                 p.setAesVersion(version);
                 z.addStream(new java.io.ByteArrayInputStream((byte[]) e[2]), p);
             }
+        }
+    }
+
+    static void unzip(File zip, File dir, String password) throws Exception {
+        try (ZipFile z = password.isEmpty() ? new ZipFile(zip) : new ZipFile(zip, password.toCharArray())) {
+            z.extractAll(dir.getPath());
         }
     }
 }

@@ -119,7 +119,7 @@ fun rememberNotificationRequest(state: PermissionState): () -> Unit {
  * even after the required one is granted; Settings shows the same rows.
  */
 @Composable
-fun SetupScreen(state: PermissionState, wifiOnly: Boolean, onWifiOnly: (Boolean) -> Unit, onDone: () -> Unit) {
+fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Boolean) -> Unit, onDone: () -> Unit) {
     val requestNotifications = rememberNotificationRequest(state)
     // Surface sets the text colour for dark mode; there is no Scaffold here.
     Surface(Modifier.fillMaxSize(), color = AppColors.background) {
@@ -138,9 +138,9 @@ fun SetupScreen(state: PermissionState, wifiOnly: Boolean, onWifiOnly: (Boolean)
             }
             Card(colors = AppColors.card(), border = AppColors.cardBorder()) {
                 SwitchRow(
-                    "Sync on mobile data", if (wifiOnly) "Off: only on Wi-Fi or Ethernet. You can change it in Settings." else "On: also uses mobile data",
-                    !wifiOnly, Icons.Default.SignalCellularAlt,
-                ) { onWifiOnly(!it) }
+                    "Sync on mobile data", if (mobileData) "On: also uses mobile data, not while roaming" else "Off: only on Wi-Fi or Ethernet. You can change it in Settings.",
+                    mobileData, Icons.Default.SignalCellularAlt, onMobileData,
+                )
             }
             Button(onClick = onDone, enabled = state.storage, shape = ButtonShape, modifier = Modifier.fillMaxWidth()) { Text("Done") }
         }

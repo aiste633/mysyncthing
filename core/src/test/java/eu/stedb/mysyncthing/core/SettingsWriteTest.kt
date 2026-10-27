@@ -14,7 +14,7 @@ import org.junit.Test
 import java.io.IOException
 
 /** A store on a phone whose storage can fill up: then every write fails as DataStore's does (ENOSPC on the temp file). */
-private class FillableStore : DataStore<Preferences> {
+internal class FillableStore : DataStore<Preferences> {
     val state = MutableStateFlow(emptyPreferences())
     var full = false
     override val data = state
@@ -32,15 +32,17 @@ class SettingsWriteTest {
     fun writesOnAFullStorageFailWithoutThrowing() = runBlocking {
         val store = FillableStore()
         val settings = Settings(store)
-        assertTrue(settings.update { it.copy(chargingOnly = true) })
+        assertTrue(settings.update { it.copy(power = PowerSource.ChargingOnly) })
         store.full = true
         assertFalse(settings.update { it.copy(respectBatterySaver = false) })
         assertFalse(settings.setSetupDone())
         assertFalse(settings.setMovedFromOtherPhone(true))
         assertFalse(settings.setConditionPause(setOf("A")))
+        assertFalse(settings.setProxy(ProxySettings.TOR))
         // Nothing changed: what was stored before the storage filled up stays.
         val c = settings.runConditions.first()
-        assertTrue(c.chargingOnly)
+        assertEquals(PowerSource.ChargingOnly, c.power)
+        assertEquals(ProxySettings(), settings.proxy.first())
         assertTrue(c.respectBatterySaver)
         assertFalse(settings.setupDone.first())
         store.full = false

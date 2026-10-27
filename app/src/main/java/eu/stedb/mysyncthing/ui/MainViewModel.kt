@@ -10,6 +10,7 @@ import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.RestClient
 import eu.stedb.mysyncthing.core.RestoreResult
 import eu.stedb.mysyncthing.core.restoreDatedNow
+import eu.stedb.mysyncthing.core.ProxySettings
 import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.Snapshot
@@ -38,12 +39,15 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.decodeFromJsonElement
@@ -332,9 +336,39 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         save { settings.update(transform) }
     }
 
+    /** The stored run conditions (not [runConditions]'s placeholder before they are read). */
+    suspend fun loadRunConditions(): RunConditions = settings.runConditions.first()
+
+    /** Like [setRunConditions], for a form that closes only once it is stored. */
+    suspend fun saveRunConditions(transform: (RunConditions) -> RunConditions): Boolean =
+        settings.update(transform).also { if (!it) _message.send(NOT_SAVED) }
+
     /** A settings write; it fails (and changes nothing) when the phone's storage is full. */
     private fun save(write: suspend () -> Boolean) {
         viewModelScope.launch { if (!write()) _message.send(NOT_SAVED) }
+    }
+
+    val proxy: StateFlow<ProxySettings?> = settings.proxy.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /**
+     * Stores the proxy and hands it to the bridge; a running core restarts to
+     * use it. False when the bridge refused it or it couldn't be stored (the
+     * reason goes to the snackbar).
+     */
+    suspend fun setProxy(p: ProxySettings): Boolean {
+        // The bridge waits for a start or stop in progress.
+        runCatching { withContext(Dispatchers.IO) { SyncthingCore.setProxy(p) } }.onFailure {
+            _message.send("Proxy not saved: ${it.message}")
+            return false
+        }
+        if (!settings.setProxy(p)) {
+            // Back to the stored proxy, so the next start or restart doesn't use one the app forgot.
+            runCatching { withContext(Dispatchers.IO) { SyncthingCore.setProxy(settings.proxy.first()) } }
+            _message.send(NOT_SAVED)
+            return false
+        }
+        if (client != null) restartCore()
+        return true
     }
 }
 

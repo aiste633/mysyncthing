@@ -13,6 +13,9 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
+import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.security.SecureRandom
 import java.util.Base64
@@ -25,16 +28,61 @@ private val Context.dataStore by preferencesDataStore("settings")
  */
 data class Credentials(val apiKey: String, val guiUser: String, val guiPassword: String)
 
-/** When the core is allowed to sync. All false means "always". */
+/** Which power source the core may sync on. */
+@Serializable
+enum class PowerSource { Any, ChargingOnly, BatteryOnly }
+
+/**
+ * When the core is allowed to sync. Unmetered Wi-Fi and Ethernet are always
+ * allowed; the network switches add the others (see [blockedBy]). Serialized
+ * with the bridge's names (go/bridge runConditions) for import and export.
+ */
+@Serializable
 data class RunConditions(
-    val wifiOnly: Boolean = false,
-    val unmeteredOnly: Boolean = false,
-    val chargingOnly: Boolean = false,
+    /** Metered Wi-Fi and Ethernet, hotspots and tethering. */
+    val meteredWifi: Boolean = true,
+    val mobileData: Boolean = false,
+    /** Mobile data abroad; only with [mobileData]. */
+    val roaming: Boolean = false,
+    val power: PowerSource = PowerSource.Any,
     val respectBatterySaver: Boolean = true,
     val startOnBoot: Boolean = true,
-    /** Set by the widget or Settings; enforced like the other conditions. */
-    val pausedByUser: Boolean = false,
+    /**
+     * Set by the widget or Settings; enforced like the other conditions. Never
+     * in a backup: an import keeps this phone's own (go/bridge unpause).
+     */
+    @Transient val pausedByUser: Boolean = false,
+    /** Sync only in [windows]. */
+    val timeSchedule: Boolean = false,
+    /** Kept while [timeSchedule] is off, so turning it on again restores them. */
+    val windows: List<SyncWindow> = emptyList(),
 )
+
+/** How the core connects to other devices, relays and discovery servers. */
+@Serializable
+enum class ProxyType(val scheme: String) { None(""), Socks5("socks5"), Http("http") }
+
+/**
+ * A proxy for the core (go/bridge SetProxy). With [only], nothing goes around
+ * it: no direct fallback, no QUIC, no NAT port mapping. The local network is
+ * always reached directly.
+ */
+@Serializable
+data class ProxySettings(
+    val type: ProxyType = ProxyType.None,
+    val host: String = "",
+    val port: Int = 0,
+    val user: String = "",
+    val password: String = "",
+    val only: Boolean = false,
+) {
+    override fun toString() = "ProxySettings($type, $host, $port, user=${user.isNotEmpty()}, password=${password.isNotEmpty()}, only=$only)"
+
+    companion object {
+        /** Orbot and other Tor apps listen here. */
+        val TOR = ProxySettings(ProxyType.Socks5, "127.0.0.1", 9050, only = true)
+    }
+}
 
 /**
  * The app's own settings. Writes fail when the phone's storage is full; they
@@ -79,20 +127,27 @@ class Settings internal constructor(
 
     suspend fun update(transform: (RunConditions) -> RunConditions): Boolean = write {
         val c = transform(it.runConditions())
-        it[WIFI_ONLY] = c.wifiOnly
-        it[UNMETERED_ONLY] = c.unmeteredOnly
-        it[CHARGING_ONLY] = c.chargingOnly
+        it[METERED_WIFI] = c.meteredWifi
+        it[MOBILE_DATA] = c.mobileData
+        it[ROAMING] = c.roaming
+        it[POWER] = c.power.name
+        // Read only when the keys above are missing (see runConditions).
+        it.remove(WIFI_ONLY)
+        it.remove(UNMETERED_ONLY)
+        it.remove(CHARGING_ONLY)
         it[RESPECT_BATTERY_SAVER] = c.respectBatterySaver
         it[START_ON_BOOT] = c.startOnBoot
         it[PAUSED_BY_USER] = c.pausedByUser
+        it[TIME_SCHEDULE] = c.timeSchedule
+        it[WINDOWS] = json.encodeToString(c.windows)
     }
 
     /** True once the user tapped Done on the setup checklist. */
     val setupDone: Flow<Boolean> = store.data.map { it[SETUP_DONE] ?: false }
 
-    /** Also stores the Wi-Fi choice, whose default depends on [SETUP_DONE] (see [runConditions]). */
+    /** Also stores the mobile data choice, whose default depends on [SETUP_DONE] (see [runConditions]). */
     suspend fun setSetupDone(): Boolean = write {
-        it[WIFI_ONLY] = it.runConditions().wifiOnly
+        it[MOBILE_DATA] = it.runConditions().mobileData
         it[SETUP_DONE] = true
     }
 
@@ -130,6 +185,18 @@ class Settings internal constructor(
     }
 
     /**
+     * The proxy the core starts with. An unreadable stored value becomes one
+     * the bridge refuses, so the core fails to start with a "proxy" error
+     * instead of connecting directly.
+     */
+    val proxy: Flow<ProxySettings> = store.data.map { p ->
+        val stored = p[PROXY] ?: return@map ProxySettings()
+        runCatching { json.decodeFromString<ProxySettings>(stored) }.getOrDefault(ProxySettings(ProxyType.Socks5, only = true))
+    }
+
+    suspend fun setProxy(p: ProxySettings): Boolean = write { it[PROXY] = json.encodeToString(p) }
+
+    /**
      * Devices the user had paused before a run condition paused everything,
      * so resuming does not undo the user's own choice. Null when not paused by us.
      */
@@ -138,17 +205,6 @@ class Settings internal constructor(
     suspend fun setConditionPause(userPaused: Set<String>?): Boolean =
         write { if (userPaused == null) it.remove(CONDITION_PAUSE) else it[CONDITION_PAUSE] = userPaused }
 
-    private fun Preferences.runConditions() = RunConditions(
-        // Mobile data can cost money, so new installs start on Wi-Fi only (setup asks).
-        // Installs set up before that had no stored value and meant "any network".
-        wifiOnly = this[WIFI_ONLY] ?: (this[SETUP_DONE] != true),
-        unmeteredOnly = this[UNMETERED_ONLY] ?: false,
-        chargingOnly = this[CHARGING_ONLY] ?: false,
-        respectBatterySaver = this[RESPECT_BATTERY_SAVER] ?: true,
-        startOnBoot = this[START_ON_BOOT] ?: true,
-        pausedByUser = this[PAUSED_BY_USER] ?: false,
-    )
-
     private fun Preferences.credentials(): Credentials? {
         val key = this[API_KEY] ?: return null
         val user = this[GUI_USER] ?: return null
@@ -156,10 +212,16 @@ class Settings internal constructor(
         return Credentials(key, user, password)
     }
 
-    private companion object {
+    internal companion object {
         val API_KEY = stringPreferencesKey("api_key")
         val GUI_USER = stringPreferencesKey("gui_user")
         val GUI_PASSWORD = stringPreferencesKey("gui_password")
+        val METERED_WIFI = booleanPreferencesKey("metered_wifi")
+        val MOBILE_DATA = booleanPreferencesKey("mobile_data")
+        val ROAMING = booleanPreferencesKey("roaming")
+        val POWER = stringPreferencesKey("power")
+
+        // Before metered Wi-Fi, mobile data and power became separate choices.
         val WIFI_ONLY = booleanPreferencesKey("wifi_only")
         val UNMETERED_ONLY = booleanPreferencesKey("unmetered_only")
         val CHARGING_ONLY = booleanPreferencesKey("charging_only")
@@ -171,6 +233,11 @@ class Settings internal constructor(
         val MOVED = booleanPreferencesKey("moved_from_other_phone")
         val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
         val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
+        val PROXY = stringPreferencesKey("proxy")
+        val TIME_SCHEDULE = booleanPreferencesKey("time_schedule")
+        val WINDOWS = stringPreferencesKey("sync_windows")
+
+        val json = Json { ignoreUnknownKeys = true }
 
         /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */
         const val TOKEN_CHARS = 64
@@ -184,3 +251,39 @@ class Settings internal constructor(
 
 /** A Stop made in boot [stoppedAt] holds in boot [now]; with the boot unknown (-1), until the user starts again. */
 internal fun stopHolds(stoppedAt: Int?, now: Int): Boolean = stoppedAt != null && stoppedAt == now
+
+/**
+ * Stored run conditions. Values from before the separate network and power
+ * choices are read only while the new keys are missing, and never allow more
+ * than they did: "unmetered only" also allowed unmetered mobile data, which
+ * now counts as mobile data and stays off.
+ */
+internal fun Preferences.runConditions(): RunConditions {
+    // Mobile data can cost money, so new installs start without it (setup asks).
+    // Installs set up before that had no stored value and meant "any network".
+    val wifiOnly = this[Settings.WIFI_ONLY] ?: (this[Settings.SETUP_DONE] != true)
+    val unmeteredOnly = this[Settings.UNMETERED_ONLY] ?: false
+    return RunConditions(
+        meteredWifi = this[Settings.METERED_WIFI] ?: !unmeteredOnly,
+        mobileData = this[Settings.MOBILE_DATA] ?: (!wifiOnly && !unmeteredOnly),
+        roaming = this[Settings.ROAMING] ?: false,
+        power = this[Settings.POWER]?.let { v -> PowerSource.entries.find { it.name == v } }
+            ?: if (this[Settings.CHARGING_ONLY] == true) PowerSource.ChargingOnly else PowerSource.Any,
+        respectBatterySaver = this[Settings.RESPECT_BATTERY_SAVER] ?: true,
+        startOnBoot = this[Settings.START_ON_BOOT] ?: true,
+        pausedByUser = this[Settings.PAUSED_BY_USER] ?: false,
+        timeSchedule = this[Settings.TIME_SCHEDULE] ?: false,
+        windows = storedWindows(),
+    )
+}
+
+/**
+ * The stored time windows. One that can't be read or is not valid any more
+ * is left out; with none left, a time schedule that is on lets nothing
+ * through (see [blockedBy]), as the user wanted syncing restricted.
+ */
+private fun Preferences.storedWindows(): List<SyncWindow> {
+    val stored = this[Settings.WINDOWS] ?: return emptyList()
+    return runCatching { Settings.json.decodeFromString<List<SyncWindow>>(stored) }.getOrDefault(emptyList())
+        .filter { syncWindowError(it) == null }.take(MAX_SYNC_WINDOWS)
+}

@@ -14,11 +14,15 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import java.time.LocalDateTime
 
 /** Device state relevant to run conditions. */
 data class DeviceState(
     val online: Boolean = false,
     val wifi: Boolean = false,
+    /** Mobile data, also behind a VPN; false on Wi-Fi even when the phone shares mobile data too. */
+    val mobile: Boolean = false,
+    val roaming: Boolean = false,
     val unmetered: Boolean = false,
     val charging: Boolean = false,
     val batterySaver: Boolean = false,
@@ -26,12 +30,24 @@ data class DeviceState(
 
 const val PAUSED_BY_USER = "Paused by you"
 
-/** Null when syncing is allowed, otherwise a short reason for the notification/UI. */
-fun RunConditions.blockedBy(d: DeviceState): String? = when {
+/**
+ * Null when syncing is allowed, otherwise a short reason for the notification/UI.
+ * Unmetered Wi-Fi and Ethernet are always allowed. Mobile data follows its own
+ * switches whether or not Android calls it metered; any other network (metered
+ * Wi-Fi, a hotspot, Bluetooth or USB tethering) follows [RunConditions.meteredWifi].
+ * A time schedule comes right after the user's own pause: it is the user's
+ * plan, and its reason says when syncing resumes.
+ */
+fun RunConditions.blockedBy(d: DeviceState, now: LocalDateTime = LocalDateTime.now()): String? = when {
     pausedByUser -> PAUSED_BY_USER
-    wifiOnly && !d.wifi -> "Not on Wi-Fi"
-    unmeteredOnly && !d.unmetered -> "Network is metered"
-    chargingOnly && !d.charging -> "Not charging"
+    timeSchedule && !windows.isOpen(now) -> outsideText(windows, now)
+    // Offline with a network limit stays paused, so the next network is checked before the core uses it.
+    !d.online && !(mobileData && meteredWifi) -> "No network"
+    d.online && d.mobile && !mobileData -> "On mobile data"
+    d.online && d.mobile && d.roaming && !roaming -> "Roaming"
+    d.online && !d.mobile && !d.unmetered && !meteredWifi -> if (d.wifi) "Wi-Fi is metered" else "Network is metered"
+    power == PowerSource.ChargingOnly && !d.charging -> "Not charging"
+    power == PowerSource.BatteryOnly && d.charging -> "Charging"
     respectBatterySaver && d.batterySaver -> "Battery saver on"
     else -> null
 }
@@ -44,14 +60,7 @@ private fun network(context: Context): Flow<DeviceState> = callbackFlow {
     val cm = context.getSystemService(ConnectivityManager::class.java)
     val cb = object : ConnectivityManager.NetworkCallback() {
         override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-            trySend(
-                DeviceState(
-                    online = true,
-                    wifi = caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                        caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET),
-                    unmetered = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
-                )
-            )
+            trySend(networkState(caps::hasTransport, caps::hasCapability))
         }
 
         override fun onLost(network: Network) {
@@ -61,6 +70,19 @@ private fun network(context: Context): Flow<DeviceState> = callbackFlow {
     trySend(DeviceState())
     cm.registerDefaultNetworkCallback(cb)
     awaitClose { cm.unregisterNetworkCallback(cb) }
+}
+
+/** The default network's state from its transports and capabilities (NetworkCapabilities constants). */
+internal fun networkState(hasTransport: (Int) -> Boolean, hasCapability: (Int) -> Boolean): DeviceState {
+    val wifi = hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    val mobile = !wifi && hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+    return DeviceState(
+        online = true,
+        wifi = wifi,
+        mobile = mobile,
+        roaming = mobile && !hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_ROAMING),
+        unmetered = hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED),
+    )
 }
 
 private fun power(context: Context): Flow<DeviceState> = callbackFlow {

@@ -285,3 +285,103 @@ fun isDiscoveryServer(s: String): Boolean {
     val query = a.rest.substringAfter('?', "")
     return a.rest.substringBefore('?').let { it.isEmpty() || it.startsWith("/") } && queryIdValid(query)
 }
+
+// Proxy fields: the bridge refuses the same (go/bridge/proxy.go proxyFrom), and
+// go/bridge/testdata/validation-contract.json pins both to the same cases.
+
+/** An IPv4 address as Go's net.ParseIP takes it: four 0-255 fields, no leading zeros. */
+private fun isIPv4(s: String): Boolean {
+    val parts = s.split('.')
+    return parts.size == 4 && parts.all { p ->
+        p.length in 1..3 && p.all { it in '0'..'9' } && (p == "0" || p[0] != '0') && p.toInt() <= 255
+    }
+}
+
+/** An IPv6 address as Go's net.ParseIP takes it: no brackets, no zone, IPv4 only in the last 32 bits. */
+private fun isIPv6(s: String): Boolean {
+    val halves = s.split("::")
+    if (':' !in s || halves.size > 2) return false
+    // The 16-bit groups in one side of "::", or null when one is not hex.
+    fun groups(part: String, last: Boolean): Int? {
+        if (part.isEmpty()) return 0
+        val g = part.split(':')
+        return g.withIndex().sumOf { (i, x) ->
+            when {
+                last && i == g.lastIndex && '.' in x -> if (isIPv4(x)) 2 else return null
+                x.length in 1..4 && x.all { it in '0'..'9' || it.lowercaseChar() in 'a'..'f' } -> 1
+                else -> return null
+            }
+        }
+    }
+    if (halves.size == 1) return groups(s, last = true) == 8
+    val n = (groups(halves[0], last = false) ?: return false) + (groups(halves[1], last = true) ?: return false)
+    return n <= 7
+}
+
+/** A DNS name (RFC 1123 labels, ASCII); a last label of digits only is a mistyped IPv4 address. */
+private fun isHostName(s: String): Boolean {
+    if (s.isEmpty() || s.length > 253) return false
+    val labels = s.removeSuffix(".").split('.')
+    return labels.last().any { it !in '0'..'9' } && labels.all { l ->
+        l.length in 1..63 && l.first() != '-' && l.last() != '-' && l.all { it in 'a'..'z' || it in 'A'..'Z' || it in '0'..'9' || it == '-' }
+    }
+}
+
+fun proxyHostError(host: String): String? = when {
+    host.isEmpty() -> "Required"
+    host.startsWith("[") -> "Without brackets, for example ::1"
+    isIPv4(host) || isIPv6(host) || isHostName(host) -> null
+    else -> "An IP address or a host name"
+}
+
+fun proxyPortError(s: String): String? = when {
+    otherDigits(s) -> USE_ASCII_DIGITS
+    s.isBlank() -> "Required"
+    (wholeNumber(s) ?: 0) in 1..65535 -> null
+    else -> "A port from 1 to 65535"
+}
+
+/** UTF-16 that Go receives unchanged: a lone surrogate would arrive as U+FFFD. */
+private fun String.validUnicode(): Boolean = indices.all { i ->
+    val c = this[i]
+    when {
+        c.isHighSurrogate() -> i + 1 < length && this[i + 1].isLowSurrogate()
+        c.isLowSurrogate() -> i > 0 && this[i - 1].isHighSurrogate()
+        else -> true
+    }
+}
+
+private fun String.utf8Size(): Int = toByteArray(Charsets.UTF_8).size
+
+/** User name or password for the proxy; SOCKS5 (RFC 1929) carries at most 255 bytes each. */
+fun proxyCredentialError(s: String): String? = when {
+    !s.validUnicode() || s.any { it.isISOControl() } -> "No line breaks or control characters"
+    s.utf8Size() > 255 -> "Too long: at most 255 bytes"
+    else -> null
+}
+
+fun proxyUserError(user: String, password: String): String? =
+    proxyCredentialError(user) ?: if (user.isEmpty() && password.isNotEmpty()) "Needed with a password" else null
+
+/** All proxy fields as the bridge gets them; null when it takes them. [scheme] "" is no proxy. */
+fun proxyError(scheme: String, host: String, port: Int, user: String, password: String): String? = when (scheme) {
+    "" -> null
+    "socks5", "http" -> proxyHostError(host)
+        ?: (if (port in 1..65535) null else "A port from 1 to 65535")
+        ?: proxyUserError(user, password) ?: proxyCredentialError(password)
+    else -> "Unknown proxy type"
+}
+
+/** The shortest export password: WinZip AES stretches it with only 1000 PBKDF2 rounds. */
+const val MIN_EXPORT_PASSWORD = 12
+
+/** Why [password] can't protect an export (go/bridge ExportPasswordError); empty means none. Used as typed. */
+fun exportPasswordError(password: String): String? = when {
+    password.isEmpty() -> null
+    !password.validUnicode() || password.any { it.isISOControl() } -> "No line breaks or control characters"
+    password.codePointCount(0, password.length) < MIN_EXPORT_PASSWORD -> "At least $MIN_EXPORT_PASSWORD characters"
+    password.utf8Size() > 1024 -> "Too long"
+    else -> null
+}
+
+fun exportRepeatError(password: String, repeat: String): String? = if (password == repeat) null else "Not the same password"
