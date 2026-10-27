@@ -137,8 +137,8 @@ object ProblemNotifications {
         return NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.widget_ic_problem)
             .setContentTitle(title)
-            .setContentText(p.error)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(p.error))
+            .setContentText(problemText(p.error))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(problemText(p.error)))
             .setContentIntent(open)
             .setOnlyAlertOnce(true) // a changed message on a shown one updates silently
             .setCategory(NotificationCompat.CATEGORY_ERROR)

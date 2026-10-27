@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.stedb.mysyncthing.core.problemText
 import eu.stedb.mysyncthing.core.FileEntry
 import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.NeedPage
@@ -141,11 +142,11 @@ fun FailedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> U
     LaunchedEffect(folder, st?.errors) { errors = vm.folderErrors(folder) }
     var query by rememberSaveable { mutableStateOf("") }
     val all = errors.orEmpty()
-    val shown = if (query.isBlank()) all else all.filter { query.trim().lowercase() in (it.path + " " + it.error).lowercase() }
+    val shown = if (query.isBlank()) all else all.filter { failedItemMatches(it, query) }
 
     FileList("Failed items", onBack, actions = {
         TextButton(enabled = all.isNotEmpty(), onClick = {
-            val text = all.joinToString("\n") { "${it.path}: ${it.error}" }
+            val text = failedItemsCopy(all)
             context.getSystemService(ClipboardManager::class.java).setPrimaryClip(ClipData.newPlainText("Failed items", text))
         }) { Text("Copy all") }
     }) {
@@ -159,7 +160,7 @@ fun FailedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> U
         }
         if (errors == null) item("loading") { Note("Loading") }
         else if (shown.isEmpty()) item("none") { Note(if (all.isEmpty()) "Nothing failed." else "No match.") }
-        section(null, shown) { e -> FileRow(e.path, e.error, detailColor = MaterialTheme.colorScheme.error) }
+        section(null, shown) { e -> FileRow(e.path, problemText(e.error), detailColor = MaterialTheme.colorScheme.error) }
     }
 }
 
@@ -232,3 +233,10 @@ private fun needDetail(e: FileEntry) = when {
     e.isDirectory -> "Folder"
     else -> bytes(e.size)
 }
+
+/** "Copy all" of Failed items: the core's own texts, which a bug report or a forum needs, not [problemText]'s. */
+internal fun failedItemsCopy(errors: List<FileError>): String = errors.joinToString("\n") { "${it.path}: ${it.error}" }
+
+/** Search in Failed items finds a row by its path, the core's text, or the text shown for it. */
+internal fun failedItemMatches(e: FileError, query: String): Boolean =
+    query.trim().lowercase() in (e.path + " " + e.error + " " + problemText(e.error)).lowercase()
