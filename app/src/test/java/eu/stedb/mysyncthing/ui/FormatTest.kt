@@ -61,10 +61,20 @@ class FormatTest {
     fun twelveHourClockFollowsPhone() {
         val h12 = En.with(is24Hour = false)
         val now = java.time.ZonedDateTime.parse("2026-10-25T14:00:00Z")
-        assertEquals("12:03 pm", whenText("2026-10-25T12:03:41.5Z", now)!!.resolve(h12))
-        assertEquals("yesterday, 10:10 pm", whenText("2026-10-24T22:10:00Z", now)!!.resolve(h12))
-        assertEquals("3 Oct 2025, 6:42 pm", whenText("2025-10-03T18:42:00+00:00", now)!!.resolve(h12))
-        assertEquals("6:02:12 pm", exactTimeText("2026-10-24T18:02:12Z", now).resolve(h12))
+        assertEquals("12:03\u202Fpm", whenText("2026-10-25T12:03:41.5Z", now)!!.resolve(h12))
+        assertEquals("yesterday, 10:10\u202Fpm", whenText("2026-10-24T22:10:00Z", now)!!.resolve(h12))
+        assertEquals("3 Oct 2025, 6:42\u202Fpm", whenText("2025-10-03T18:42:00+00:00", now)!!.resolve(h12))
+        assertEquals("6:02:12\u202Fpm", exactTimeText("2026-10-24T18:02:12Z", now).resolve(h12))
+    }
+
+    /** Dates follow the phone's region: month first in the US, Italian month names in Italy (as seen on Android 16). */
+    @Test
+    fun datesFollowRegion() {
+        val now = java.time.ZonedDateTime.parse("2026-10-25T14:00:00Z")
+        val t = "2025-10-03T18:42:00Z"
+        assertEquals("Oct 3, 2025, 6:42\u202FPM", whenText(t, now)!!.resolve(En.with(is24Hour = false, locale = java.util.Locale.US)))
+        assertEquals("3 ott 2025, 18:42", whenText(t, now)!!.resolve(En.with(locale = java.util.Locale.ITALY)))
+        assertEquals("26 ott, 19:59", whenText("2026-10-26T19:59:00Z", now.plusDays(3))!!.resolve(En.with(locale = java.util.Locale.ITALY)))
     }
 
     /** Numbers take the language's decimal separator; units stay SI and glued with a no-break space. */

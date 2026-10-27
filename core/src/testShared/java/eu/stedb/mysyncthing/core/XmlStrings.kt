@@ -13,9 +13,10 @@ import javax.xml.parsers.DocumentBuilderFactory
  * where there are no Resources. Resource IDs are matched to names through the
  * generated R classes. Text is unescaped as aapt2 does for the cases our files
  * use; a value it would refuse (an unescaped apostrophe) fails here too.
- * Plurals follow English: "one" for 1, else "other". Times use the patterns Android
- * gives en-GB for the skeletons the app uses, with a 24 h clock unless [is24Hour] is false;
- * numbers follow [locale].
+ * Plurals follow English: "one" for 1, else "other". Dates, times and numbers follow
+ * [locale] (en-GB by default) with a 24 h clock unless [is24Hour] is false: the JDK's CLDR
+ * data, which gives the same text as Android 16's ICU (checked on the emulator, including
+ * the narrow no-break space before "pm").
  */
 class XmlStrings(
     private val dirs: List<File>,
@@ -58,25 +59,23 @@ class XmlStrings(
         return forms[if (count == 1) "one" else "other"] ?: forms.getValue("other")
     }
 
+    /** The skeleton as ICU takes it, in the order the JDK's requested template wants ("dMMMy" is "yMMMd"). */
     override fun time(value: TemporalAccessor, skeleton: String): String =
-        DateTimeFormatter.ofPattern(PATTERNS[skeleton] ?: error("no en-GB pattern for skeleton $skeleton"), Locale.UK).format(value)
+        (OF_LOCALIZED_PATTERN.invoke(null, skeleton.toList().sortedBy { TEMPLATE_ORDER.indexOf(it) }.joinToString("")) as DateTimeFormatter)
+            .withLocale(locale).format(value)
 
-    /** The same English strings with another clock setting, or numbers as [locale] writes them (times stay en-GB). */
+    /** The same English strings with another clock setting, or dates and numbers as [locale] writes them. */
     fun with(is24Hour: Boolean = this.is24Hour, locale: Locale = this.locale) = XmlStrings(dirs, classes, is24Hour, locale)
 
     /** Every string and plural form, for checks over all of them. */
     val all: Map<String, String> get() = strings + plurals.flatMap { (n, f) -> f.map { (q, v) -> "$n/$q" to v } }
 
     private companion object {
-        /** DateFormat.getBestDateTimePattern(Locale.UK, skeleton) on Android 16. */
-        val PATTERNS = mapOf(
-            "Hm" to "HH:mm", "hm" to "h:mm a",
-            "Hms" to "HH:mm:ss", "hms" to "h:mm:ss a",
-            "dMMM" to "d MMM", "dMMMy" to "d MMM y",
-            "dMMMHm" to "d MMM, HH:mm", "dMMMhm" to "d MMM, h:mm a",
-            "dMMMyHm" to "d MMM y, HH:mm", "dMMMyhm" to "d MMM y, h:mm a",
-            "EEE" to "EEE",
-        )
+        /** Field order of [DateTimeFormatter.ofLocalizedPattern]'s requested template. */
+        const val TEMPLATE_ORDER = "GyQMwEdBhHjCmsvz"
+
+        /** JDK 19+; tests compile against android.jar, which lacks it, and run on JDK 21. */
+        val OF_LOCALIZED_PATTERN: java.lang.reflect.Method = DateTimeFormatter::class.java.getMethod("ofLocalizedPattern", String::class.java)
 
         fun names(rClasses: List<Class<*>>, type: String): Map<Int, String> = rClasses
             .mapNotNull { r -> r.classes.find { it.simpleName == type } }

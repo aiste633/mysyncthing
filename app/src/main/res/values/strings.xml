@@ -265,6 +265,8 @@
     <string name="connection_relay">Relay</string>
     <!-- %1$s: one of the connection_* texts, %2$s: the address, e.g. tcp://192.0.2.1:22000 -->
     <string name="connection_with_address">%1$s · %2$s</string>
+    <!-- Transfer speed, download then upload. %1$s: download rate, %2$s: upload rate, e.g. 1.2 MB/s -->
+    <string name="speed_down_up">↓ %1$s · ↑ %2$s</string>
 
     <!-- This phone\'s connectivity. Listening: addresses Syncthing accepts connections on. Discovery: ways to find other devices.
          %1$d of %2$d listening addresses work; %3$d of %4$d discovery methods work -->

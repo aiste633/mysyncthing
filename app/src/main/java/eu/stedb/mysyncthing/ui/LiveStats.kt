@@ -7,7 +7,6 @@ import eu.stedb.mysyncthing.core.ServiceStatus
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.SystemStatus
 import eu.stedb.mysyncthing.core.UiText
-import eu.stedb.mysyncthing.core.joined
 import eu.stedb.mysyncthing.core.raw
 import eu.stedb.mysyncthing.core.text
 
@@ -73,4 +72,4 @@ fun unusedHere(st: ServiceStatus): UiText? {
 /** An IPv6 address as Go writes it in dial errors: "[2001:db8::1]:443". */
 private val IPV6_LITERAL = Regex("""\[[0-9A-Fa-f:.]*:[0-9A-Fa-f:.]*]""")
 
-fun speedText(s: Speed): UiText = listOf(raw("↓ "), rateText(s.down), raw(" · ↑ "), rateText(s.up)).joined("")
+fun speedText(s: Speed): UiText = text(R.string.speed_down_up, rateText(s.down), rateText(s.up))

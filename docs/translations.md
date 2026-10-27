@@ -71,4 +71,5 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
   number (`%d`). And it fails when a `UiText` value goes into a string template, a `+` with
   a string or a formatting call without being resolved (it would show the data class).
 - `XmlStrings.with(is24Hour = false)` and `.with(locale = Locale.ITALY)` test the 12 h
-  clock and another language's numbers on the JVM.
+  clock and another language's dates and numbers on the JVM. Dates come from the JDK's CLDR
+  data, which gives the same text as Android 16 (a 12 h time has U+202F before "pm").
