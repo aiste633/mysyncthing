@@ -319,6 +319,14 @@ fun CheckRow(title: String, value: String?, checked: Boolean, onChange: (Boolean
         modifier = Modifier.toggleable(checked, role = Role.Checkbox, onValueChange = onChange),
     )
 
+/** Like [CheckRow], with a radio button: one choice of several. */
+@Composable
+fun RadioRow(title: String, value: String?, selected: Boolean, onSelect: () -> Unit) =
+    SettingRowLayout(
+        title, value, icon = null, trailing = { RadioButton(selected, onClick = null) },
+        modifier = Modifier.selectable(selected, role = Role.RadioButton, onClick = onSelect),
+    )
+
 @Composable
 private fun SettingRowLayout(
     title: String,

@@ -76,6 +76,7 @@ func TestGUILoginLocked(t *testing.T) {
 		`{"user": "someone"}`,
 		`{"insecureAdminAccess": true}`,
 		`{"metricsWithoutAuth": true}`,
+		`{"apiKey": "another-key"}`,
 	} {
 		if code := patch(body); code == http.StatusOK {
 			t.Errorf("%s: accepted", body)

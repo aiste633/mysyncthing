@@ -84,6 +84,7 @@ private object Routes {
     const val FOLDER_DEFAULTS = "defaults/folder"
     const val DEFAULT_IGNORES = "defaults/ignores"
     const val DEVICE_DEFAULTS = "defaults/device"
+    const val FORK_IMPORT = "import/fork"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
     fun ignores(id: String, first: Boolean = false) = "folder/${Uri.encode(id)}/ignores?first=$first"
@@ -192,6 +193,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         onOpenFolderDefaults = { nav.navigate(Routes.FOLDER_DEFAULTS) },
                         onOpenDeviceDefaults = { nav.navigate(Routes.DEVICE_DEFAULTS) },
                         onOpenAbout = { nav.navigate(Routes.ABOUT) },
+                        onOpenImport = { nav.navigate(Routes.FORK_IMPORT) },
                     )
                 }
                 composable(Routes.FOLDER) { entry ->
@@ -290,6 +292,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     CoreGate(core) { VersionsScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
                 }
                 composable(Routes.ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
+                // Not behind CoreGate: the import stops and restarts the core itself.
+                composable(Routes.FORK_IMPORT) { ImportScreen(onBack = { nav.popBackStack() }) }
                 composable(Routes.IGNORED) {
                     CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
                 }

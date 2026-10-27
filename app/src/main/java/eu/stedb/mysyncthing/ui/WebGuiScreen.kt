@@ -126,6 +126,7 @@ private const val HIDE_APP_MANAGED = """(function () {
     '#settings-gui .form-group:has(#Address)',
     '#settings-gui .row:has(#user)',
     '#settings-gui .row:has(#UseTLS)',
+    '#settings-general .form-group:has(button[ng-click="setAPIKey(tmpGUI)"])',
     '#advancedAccordion > .panel:has(#guiConfig)',
     '#advancedAccordion > .panel:has(#ldapConfig)',
   ].join(', ') + ' { display: none !important; }';

@@ -70,7 +70,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 ## Security audit (2026-10-25)
 - Web GUI login: 64 random characters for user and password (`Settings.credentials()`, earlier short ones are replaced). `go/bridge` subscribes `guiGuard`, which refuses any config change to the GUI login or access settings (e.g. from the web GUI's settings); `TestGUILoginLocked` covers it. The WebView hides Log Out, which would reload into the login page.
-- WebView: Google usage metrics and Safe Browsing off (manifest meta-data); it only loads loopback. Injected CSS (`HIDE_APP_MANAGED` in `WebGuiScreen.kt`) hides Log Out, Shut Down and the GUI login/address/HTTPS/LDAP settings; recheck its selectors when bumping Syncthing.
+- WebView: Google usage metrics and Safe Browsing off (manifest meta-data); it only loads loopback. Injected CSS (`HIDE_APP_MANAGED` in `WebGuiScreen.kt`) hides Log Out, Shut Down, the API key and the GUI login/address/HTTPS/LDAP settings; recheck its selectors when bumping Syncthing.
 - Restart from the web GUI (or a database reset) restarts the core in place in `go/bridge` (`watch`): same address, `IsRunning` stays true. `SyncStatus.follow` resets its event cursor after an error, because a restarted core counts events from 1.
 - Phone migration (`res/xml/data_extraction_rules.xml`): device transfer carries config.xml, cert/key and the DataStore, never the database (a stale database plus a partial file copy would spread deletions). Cloud backup stays off. The service flags "config but no `index-v2`" as moved, and the app shows a one-time note to stop Syncthing on the old phone.
 - Folder review from an intent opens only for a real pending offer (MainActivity is exported). Request notifications: no IP, and a public version for the lock screen.
@@ -119,6 +119,22 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Ask before pushing or opening a PR; one short-lived branch and PR per step, deleted after merge.
 - Finish every check locally first (unit tests, lint, emulator and phone checks) and push or open a PR only when all of them pass; GitHub CI comes last (user's rule, 2026-10-25).
 - Propose GUI designs and get the user's answer before building them.
+
+## Import from Syncthing-Fork (2026-10-26)
+- Settings > System > "Import from Syncthing-Fork" (`ui/ImportScreen.kt`, `core/ForkImport.kt`, `go/bridge/forkimport.go`). Fork's backup is a zip4j zip (default `backups/syncthing/config.zip`, optional WinZip AES-256) with config.xml, cert/key, HTTPS cert/key, `sharedpreferences.dat` (Java-serialized map) and the index database.
+- Read in Go, in memory: only config.xml, cert.pem, key.pem, sharedpreferences.dat (size caps, exact names). Database and HTTPS files ignored. All four encrypted or none (`mixes` error). Own WinZip AES on stdlib (`zipaes.go`); allowlisted Java-serialization reader with a fixed class hierarchy (`javaprefs.go`, never ObjectInputStream).
+- Never imports the database: with sequence 0 the core treats each folder as new and creates a missing directory and `.stfolder` itself, so nothing missing can spread as a deletion.
+- Identity: take over the backup's ID (default) or keep this phone's (old ID removed from devices and folders). New setup is staged next to the home dir and swapped in with `renameat2(RENAME_EXCHANGE)`.
+- The core accepts the config API key besides `STGUIAPIKEY`; `applyAndroidDefaults` now writes the app's key into the config and `guiGuard` locks it, so an imported key never works.
+- Fork prefs mapped to run conditions only, never allowing a network Fork avoided; everything without an equivalent is listed as "not imported" (keys in `mapForkPrefs`, texts in `notImportedText`).
+- `SyncthingCore.homeLock` (`HomeLock`): the service runs its whole start (database check, core start) under it and the import runs from stopping the core to its last settings write under it, so a start from any path (rotation, boot, app opening, a future ON_START) waits for the import and then runs the new setup. Order tested in `ReplaceSetupTest` (`replaceSetup`).
+- `fresh_database_expected` (DataStore) stops the "moved from another phone" note after every import: the import's done screen says it.
+- Wizard state and work live in `ImportViewModel` (survive rotation and font changes; in memory only, as steps hold the password). `ForkImport.import` runs `NonCancellable`: once the core is stopped, the swap, settings, backup delete and restart always finish (an emulator check found rotation cut it short and left the key-holding zip). Each password attempt is keyed (`Password.attempt`) so "Wrong password" shows. User choices on the steps (identity, delete, dialogs) use `rememberSaveable`; the typed password lives in `ImportViewModel.password`, never in saved state.
+- Numbers and units are joined by a no-break space (`withUnit` in `Format.kt`), so "2.8 kB" never wraps between them at large font sizes.
+- F-Droid's scanner refuses the zip fixtures, so `fdroid/eu.stedb.mysyncthing.yml` has `scandelete: go/bridge/testdata/fork` (tests only; the APK build never reads it).
+- Fixtures: synthetic only. `go/bridge/testdata/fork/gen.sh` regenerates goldens with zip4j 2.11.6 (Fork's library, hash-pinned) and `gen.sh dummy DIR` makes full dummy backups for emulators (paths under `/storage/emulated/0/mysyncthing-test-import`, password of the encrypted one: `test-password`). Identities are generated per test; no keys or device IDs are committed (the leak check would flag IDs in text files).
+- Tests: Go goldens, hostile inputs, import + core start, `testing/quick` properties, fuzz targets `FuzzReadJavaPrefs`, `FuzzReadForkBackup` (fuzzing found a superclass cycle, fixed). JSON contract `testdata/fork/preview.json` is checked by both Go and Kotlin tests.
+- Design, field map and the security review of BasicSync's and Fork's backup crypto: project file `design/fork-import.md` (not in the repo).
 
 ## Input validation audit (2026-10-26)
 - Table of every field and its check: `docs/input-validation.md`. Form checks live in `ui/Validation.kt`; where the core has a rule they port it (device ID check characters, `SanitizePath`, listener/discovery URL rules) and name the Go file.

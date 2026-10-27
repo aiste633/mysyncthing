@@ -117,6 +117,18 @@ class Settings internal constructor(
 
     suspend fun setMovedFromOtherPhone(moved: Boolean): Boolean = write { it[MOVED] = moved }
 
+    /** Set by an import: the next start finds no database, and the import screen has explained why. */
+    suspend fun setFreshDatabaseExpected(expected: Boolean): Boolean = write { it[FRESH_DATABASE] = expected }
+
+    /** Whether [setFreshDatabaseExpected] was set, clearing it; false when it can't be cleared. */
+    suspend fun takeFreshDatabaseExpected(): Boolean {
+        var expected = false
+        return write {
+            expected = it[FRESH_DATABASE] ?: false
+            it.remove(FRESH_DATABASE)
+        } && expected
+    }
+
     /**
      * Devices the user had paused before a run condition paused everything,
      * so resuming does not undo the user's own choice. Null when not paused by us.
@@ -157,6 +169,7 @@ class Settings internal constructor(
         val CONDITION_PAUSE = stringSetPreferencesKey("condition_pause")
         val SETUP_DONE = booleanPreferencesKey("setup_done")
         val MOVED = booleanPreferencesKey("moved_from_other_phone")
+        val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
         val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
 
         /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */

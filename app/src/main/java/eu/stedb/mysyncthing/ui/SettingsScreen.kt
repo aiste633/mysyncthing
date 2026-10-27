@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatterySaver
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.PauseCircle
@@ -69,6 +70,7 @@ fun SettingsScreen(
     onOpenFolderDefaults: () -> Unit,
     onOpenDeviceDefaults: () -> Unit,
     onOpenAbout: () -> Unit,
+    onOpenImport: () -> Unit,
 ) {
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
@@ -189,6 +191,10 @@ fun SettingsScreen(
                         restartNeeded = false
                     }
                 }
+                SettingRow(
+                    "Import from Syncthing-Fork", "Folders, devices and settings from a Fork backup",
+                    Icons.Default.FileOpen, onClick = onOpenImport,
+                )
             }
 
             SettingsGroup("Permissions") {

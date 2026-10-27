@@ -149,7 +149,7 @@ func prepare(early *suture.Supervisor, p params) (tls.Certificate, config.Wrappe
 		return tls.Certificate{}, nil, nil, fmt.Errorf("config: %w", err)
 	}
 	early.Add(cfg)
-	if err := applyAndroidDefaults(cfg, p.guiUser, p.guiPassword); err != nil {
+	if err := applyAndroidDefaults(cfg, p.apiKey, p.guiUser, p.guiPassword); err != nil {
 		return tls.Certificate{}, nil, nil, fmt.Errorf("config defaults: %w", err)
 	}
 	cfg.Subscribe(guiGuard{})
@@ -254,16 +254,19 @@ func Version() string {
 	return build.Version
 }
 
-// applyAndroidDefaults enforces settings the app relies on.
-func applyAndroidDefaults(cfg config.Wrapper, user, password string) error {
+// applyAndroidDefaults enforces settings the app relies on. The core accepts
+// the config's API key next to STGUIAPIKEY, so the config gets the app's key
+// too: a key from elsewhere (an imported config) must not stay valid.
+func applyAndroidDefaults(cfg config.Wrapper, apiKey, user, password string) error {
 	gui := cfg.GUI()
 	needPassword := gui.User != user || gui.CompareHashedPassword(password) != nil
-	if !needPassword && lockOf(gui) == lockOf(locked(gui)) && !cfg.Options().StartBrowser {
+	if !needPassword && gui.APIKey == apiKey && lockOf(gui) == lockOf(locked(gui)) && !cfg.Options().StartBrowser {
 		return nil
 	}
 	var hashErr error
 	w, err := cfg.Modify(func(c *config.Configuration) {
 		c.GUI = locked(c.GUI)
+		c.GUI.APIKey = apiKey
 		c.Options.StartBrowser = false
 		if needPassword {
 			c.GUI.User = user
@@ -297,19 +300,20 @@ func locked(gui config.GUIConfiguration) config.GUIConfiguration {
 // guiAccess is the part of the GUI config that decides who can get in.
 type guiAccess struct {
 	enabled, tls, insecureAdmin, skipHostCheck, openMetrics bool
-	user, password                                          string
+	user, password, apiKey                                  string
 	authMode                                                config.AuthMode
 }
 
 func lockOf(g config.GUIConfiguration) guiAccess {
 	return guiAccess{
 		g.Enabled, g.RawUseTLS, g.InsecureAdminAccess, g.InsecureSkipHostCheck, g.MetricsWithoutAuth,
-		g.User, g.Password, g.AuthMode,
+		g.User, g.Password, g.APIKey, g.AuthMode,
 	}
 }
 
 // guiGuard refuses config changes, such as a save in the web GUI's settings,
-// that would change the GUI login or open the GUI to other apps on the device.
+// that would change the GUI login or API key, or open the GUI to other apps on
+// the device.
 type guiGuard struct{}
 
 var errGUILocked = errors.New("the GUI login and access settings are managed by MySyncthing")

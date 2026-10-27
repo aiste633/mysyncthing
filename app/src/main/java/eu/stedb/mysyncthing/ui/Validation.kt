@@ -43,9 +43,9 @@ fun amountError(s: String, unit: String, emptyOk: Boolean = false): String? {
     if (otherDigits(s)) return USE_ASCII_DIGITS
     val v = decimal(s) ?: return if (s.trim().startsWith("-")) "0 or more" else "Enter a number"
     return when {
-        unit == "%" && v > 100 -> "Up to 100 %"
-        unit == "kB/s" && v * 1e3 > MAX_LIMIT_BYTES -> "Up to ${number(MAX_LIMIT_BYTES / 1e3)} kB/s"
-        unit == "MB/s" && v * 1e6 > MAX_LIMIT_BYTES -> "Up to ${number(MAX_LIMIT_BYTES / 1e6)} MB/s"
+        unit == "%" && v > 100 -> "Up to ${withUnit(100, "%")}"
+        unit == "kB/s" && v * 1e3 > MAX_LIMIT_BYTES -> "Up to ${withUnit(number(MAX_LIMIT_BYTES / 1e3), "kB/s")}"
+        unit == "MB/s" && v * 1e6 > MAX_LIMIT_BYTES -> "Up to ${withUnit(number(MAX_LIMIT_BYTES / 1e6), "MB/s")}"
         else -> null
     }
 }

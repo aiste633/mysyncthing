@@ -20,14 +20,15 @@ pathspec=(. ':(exclude)gradle/verification-metadata.xml' ':(exclude)go/bridge/go
 public_hosts=(
   github.com githubusercontent.com gitlab.com f-droid.org
   syncthing.net
-  android.com google.com gradle.org
+  android.com google.com gradle.org maven.org
   anthropic.com claude.ai claude.com
   gnu.org fsf.org apache.org mozilla.org
   example.com example.org example.net
 )
 # Loopback, any, and the documentation ranges of RFC 5737 / RFC 3849.
 allowed_ip='^(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.[0-9]+|198\.51\.100\.[0-9]+|203\.0\.113\.[0-9]+|::1?|2001:db8:.*)$'
-allowed_email='^(noreply@[a-z.]+|[0-9]+\+[A-Za-z0-9-]+@users\.noreply\.github\.com|[^@]+@example\.(com|org|net))$'
+# Also Kotlin's labelled this (this@SomeClass.member), which looks like an address.
+allowed_email='^(noreply@[a-z.]+|[0-9]+\+[A-Za-z0-9-]+@users\.noreply\.github\.com|[^@]+@example\.(com|org|net)|this@[A-Z][A-Za-z0-9]*\.[a-z][A-Za-z0-9]*)$'
 allowed_host='^(localhost|127\.0\.0\.1|\$\{.*\}|<.*>)$'
 
 # --- What counts as a personal detail.

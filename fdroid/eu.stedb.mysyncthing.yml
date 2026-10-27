@@ -33,6 +33,7 @@ Builds:
       - yes
     scandelete:
       - go/syncthing/lib/model/testdata
+      - go/bridge/testdata/fork
     ndk: 30.0.16248370
 
 # Fill in before submitting: the SHA-256 that scripts/sign-release.sh prints.
