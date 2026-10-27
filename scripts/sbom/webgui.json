@@ -1,0 +1,144 @@
+{
+  "comment": "Third-party files in Syncthing's web GUI (go/syncthing/gui), which the core embeds. They carry no machine-readable metadata, so versions and licences are read off the files by hand. Every file under */vendor/ and */assets/font/ must belong to exactly one entry, and sha256 pins the entry's files: scripts/sbom.sh fails when either changes (a Syncthing update) and prints the new sha256 to set after checking the entry.",
+  "components": [
+    {
+      "name": "angular",
+      "version": "1.3.20",
+      "licenses": "MIT",
+      "purl": "pkg:npm/angular@1.3.20",
+      "url": "https://github.com/angular/angular.js",
+      "files": ["default/vendor/angular/angular.js"],
+      "sha256": "eccee41c28ca53612bdc42126f21ec5e34df42d976b145b754f0fc27b339fe0f"
+    },
+    {
+      "name": "angular-sanitize",
+      "version": "1.3.20",
+      "licenses": "MIT",
+      "purl": "pkg:npm/angular-sanitize@1.3.20",
+      "url": "https://github.com/angular/angular.js",
+      "files": ["default/vendor/angular/angular-sanitize.js"],
+      "sha256": "2e50f0e2c0cdff529c50795b51dfa9732ed18384ec6a800bd088b14abf3c427f"
+    },
+    {
+      "name": "angular-translate",
+      "version": "2.9.0",
+      "licenses": "MIT",
+      "purl": "pkg:npm/angular-translate@2.9.0",
+      "url": "https://github.com/angular-translate/angular-translate",
+      "files": ["default/vendor/angular/angular-translate.js"],
+      "sha256": "6f3cdceeccf11d8cecb6ecf18821df22806db356c6b99c2d115085db64545280"
+    },
+    {
+      "name": "angular-translate-loader-static-files",
+      "version": "2.11.0",
+      "licenses": "MIT",
+      "purl": "pkg:npm/angular-translate-loader-static-files@2.11.0",
+      "url": "https://github.com/angular-translate/angular-translate",
+      "files": ["default/vendor/angular/angular-translate-loader-static-files.js"],
+      "sha256": "15f3fc2390bb077c4146466448b7a9cd275b82545040c31000d615ab97cdc460"
+    },
+    {
+      "name": "angular-utils-pagination (dirPagination)",
+      "version": "759009c",
+      "licenses": "MIT",
+      "purl": "pkg:github/michaelbromley/angularUtils@759009c",
+      "url": "https://github.com/michaelbromley/angularUtils",
+      "files": ["default/vendor/angular/angular-dirPagination.js", "default/vendor/angular/README.md"],
+      "sha256": "3ad9b50f8b04bb0b48ee8883a023a198ceefc3dd5cd61c9579a30c923d1a2234"
+    },
+    {
+      "name": "bootstrap (CSS)",
+      "version": "3.3.6",
+      "licenses": "MIT",
+      "purl": "pkg:npm/bootstrap@3.3.6",
+      "url": "https://github.com/twbs/bootstrap",
+      "files": ["default/vendor/bootstrap/css/", "default/vendor/bootstrap/config.json", "default/vendor/bootstrap/LICENSE"],
+      "sha256": "6568b648638cb9127221f48bf17687ff44b6b8820d31367d4bfbebd89ce6792c"
+    },
+    {
+      "name": "bootstrap (JavaScript)",
+      "version": "3.4.1",
+      "licenses": "MIT",
+      "purl": "pkg:npm/bootstrap@3.4.1",
+      "url": "https://github.com/twbs/bootstrap",
+      "files": ["default/vendor/bootstrap/js/"],
+      "sha256": "8fc934ac35dbd8b9a6a438c2543c3dc63dc13652a81cf05746ef7a4d0abdc942"
+    },
+    {
+      "name": "bootstrap-icons (reception icons)",
+      "licenses": "MIT",
+      "purl": "pkg:npm/bootstrap-icons",
+      "url": "https://github.com/twbs/icons",
+      "files": ["default/vendor/bootstrap/fonts/reception-"],
+      "sha256": "76a995214b8e8c36e2e6185c8c38cae4422e77904545c0d848cb6e979924136e"
+    },
+    {
+      "name": "daterangepicker",
+      "version": "3.1",
+      "licenses": "MIT",
+      "purl": "pkg:npm/daterangepicker@3.1.0",
+      "url": "https://github.com/dangrossman/daterangepicker",
+      "files": ["default/vendor/daterangepicker/"],
+      "sha256": "22d61bf7cb91800e7bba80b81d5e73cf4ad67b5fc921e85974a1269312766634"
+    },
+    {
+      "name": "fancytree",
+      "version": "2.38.5",
+      "licenses": "MIT",
+      "purl": "pkg:npm/jquery.fancytree@2.38.5",
+      "url": "https://github.com/mar10/fancytree",
+      "files": ["default/vendor/fancytree/"],
+      "sha256": "2f80db8e9e7dd24853eba33be8a37718805218850cb38db76a9cf8bec99998f2"
+    },
+    {
+      "name": "jquery-ui",
+      "version": "1.14.1",
+      "licenses": "MIT",
+      "purl": "pkg:npm/jquery-ui@1.14.1",
+      "url": "https://github.com/jquery/jquery-ui",
+      "bundledIn": "fancytree"
+    },
+    {
+      "name": "fork-awesome",
+      "version": "1.2.0",
+      "licenses": "MIT AND OFL-1.1",
+      "purl": "pkg:npm/fork-awesome@1.2.0",
+      "url": "https://github.com/ForkAwesome/Fork-Awesome",
+      "files": ["default/vendor/fork-awesome/"],
+      "sha256": "1d692c7d97520f0ad1c993716ed0bce55d41daf6d62b3114241dc35d3e574e06"
+    },
+    {
+      "name": "humanize-duration",
+      "licenses": "MIT",
+      "url": "https://github.com/rasa/HumanizeDuration.js",
+      "files": ["default/vendor/HumanizeDuration.js/"],
+      "sha256": "c5b118215901b75ecfe17b663d6c4b36325e59fc6497ec79a2284ece2e85cdd7"
+    },
+    {
+      "name": "jquery",
+      "version": "3.7.1",
+      "licenses": "MIT",
+      "purl": "pkg:npm/jquery@3.7.1",
+      "url": "https://github.com/jquery/jquery",
+      "files": ["default/vendor/jquery/"],
+      "sha256": "139167c6f3ca9829469af6d58bdb3603e322f72cb04f3ff1c376d30b8430fecc"
+    },
+    {
+      "name": "moment",
+      "version": "2.19.4",
+      "licenses": "MIT",
+      "purl": "pkg:npm/moment@2.19.4",
+      "url": "https://github.com/moment/moment",
+      "files": ["default/vendor/moment/"],
+      "sha256": "602d5f2c942d525b6b397a72d4c494720e56a40f6d943cb3825aa2ff14b5a762"
+    },
+    {
+      "name": "Raleway (font)",
+      "version": "2.001",
+      "licenses": "OFL-1.1",
+      "url": "https://github.com/impallari/Raleway",
+      "files": ["default/assets/font/"],
+      "sha256": "f30689732ffe1838ea79f5b675994fd685355a04ece3b0831c999749a8f6b1e1"
+    }
+  ]
+}
