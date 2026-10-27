@@ -70,6 +70,7 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): Str
 }
 
 /** A folder path as saved: trimmed, without a trailing "/", and /sdcard, the old name of internal storage, spelled out. */
+@Suppress("SdCardPath") // recognises the aliases a user may type; it doesn't build paths from them
 fun folderPath(path: String): String {
     val p = path.trim().trimEnd('/')
     val alias = listOf("/sdcard", "/storage/self/primary").find { p == it || p.startsWith("$it/") } ?: return p
