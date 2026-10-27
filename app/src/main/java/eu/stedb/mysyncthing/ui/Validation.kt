@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing.ui
 
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.num
 import eu.stedb.mysyncthing.core.plural
 import eu.stedb.mysyncthing.core.text
 
@@ -48,9 +49,9 @@ fun amountError(s: String, unit: String, emptyOk: Boolean = false): UiText? {
     if (otherDigits(s)) return USE_ASCII_DIGITS
     val v = decimal(s) ?: return text(if (s.trim().startsWith("-")) R.string.error_not_negative else R.string.error_number)
     return when {
-        unit == "%" && v > 100 -> text(R.string.error_up_to, withUnit(100, "%"))
-        unit == "kB/s" && v * 1e3 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(number(MAX_LIMIT_BYTES / 1e3), "kB/s"))
-        unit == "MB/s" && v * 1e6 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(number(MAX_LIMIT_BYTES / 1e6), "MB/s"))
+        unit == "%" && v > 100 -> text(R.string.error_up_to, withUnit(num(100), "%"))
+        unit == "kB/s" && v * 1e3 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(numberText(MAX_LIMIT_BYTES / 1e3), "kB/s"))
+        unit == "MB/s" && v * 1e6 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(numberText(MAX_LIMIT_BYTES / 1e6), "MB/s"))
         else -> null
     }
 }

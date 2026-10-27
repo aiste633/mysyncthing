@@ -185,9 +185,10 @@ class ScheduleTest {
 
     @Test
     fun timesAre24HourWithAsciiDigits() {
-        assertEquals("00:00", timeText(0))
-        assertEquals("13:05", timeText(13 * 60 + 5))
-        assertEquals("23:59", timeText(MINUTES_PER_DAY - 1))
+        assertEquals("00:00", timeText(0).en())
+        assertEquals("13:05", timeText(13 * 60 + 5).en())
+        assertEquals("23:59", timeText(MINUTES_PER_DAY - 1).en())
+        assertEquals("1:05 pm", timeText(13 * 60 + 5).resolve(En.with(is24Hour = false)))
     }
 
     /** Whatever is stored (an older or damaged value): no crash, only valid windows, at most 8. */

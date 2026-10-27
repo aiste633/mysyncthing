@@ -1,8 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.UiText
-import eu.stedb.mysyncthing.core.text
 import android.app.Application
 import android.net.Uri
 import androidx.compose.runtime.getValue
@@ -10,9 +7,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.ForkImport
 import eu.stedb.mysyncthing.core.ForkInspection
 import eu.stedb.mysyncthing.core.ForkPreview
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

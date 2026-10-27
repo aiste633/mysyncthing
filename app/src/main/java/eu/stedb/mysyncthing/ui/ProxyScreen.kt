@@ -1,10 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.UiText
-import eu.stedb.mysyncthing.core.joined
-import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,14 +26,19 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.ProxySettings
 import eu.stedb.mysyncthing.core.ProxyType
+import eu.stedb.mysyncthing.core.UiText
+import eu.stedb.mysyncthing.core.joined
+import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.launch
 
 /** The proxy the core connects through (go/bridge SetProxy). Saving restarts a running core. */

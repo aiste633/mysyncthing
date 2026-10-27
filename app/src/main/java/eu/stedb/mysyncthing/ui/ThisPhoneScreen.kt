@@ -1,7 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
@@ -17,8 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.ServiceStatus
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.SyncState
@@ -38,7 +38,7 @@ fun ThisPhoneScreen(s: Snapshot, vm: MainViewModel, onBack: () -> Unit) {
                         Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     } else {
                         val muted = MaterialTheme.colorScheme.onSurfaceVariant
-                        l.total?.let { Text(speedText(it), style = MaterialTheme.typography.bodyMedium, color = muted) }
+                        l.total?.let { Text(speedText(it).asString(), style = MaterialTheme.typography.bodyMedium, color = muted) }
                         Text(
                             stringResource(R.string.this_phone_traffic, bytes(l.connections.total.inBytesTotal), bytes(l.connections.total.outBytesTotal)),
                             style = MaterialTheme.typography.bodySmall, color = muted,

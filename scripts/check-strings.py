@@ -16,6 +16,11 @@ getString and their plural forms): it must pass as many arguments as the
 string has placeholders, since a missing one crashes at run time, and no
 formatted text where the string expects a number (%d).
 
+And it checks that a UiText (from a function declared to return one) never
+reaches text unresolved: inside a string template, next to a string with +,
+or as an argument of stringResource, getString and the like, which would
+show the object instead of the words. Call .asString() or resolve() there.
+
 Usage: scripts/check-strings.py      (from anywhere in the repository)
 """
 import re
@@ -229,27 +234,126 @@ def check_uses(src, formats):
                 yield line, f"{name}: %{k}$d gets text: {args[k - 1]}"
 
 
+def masked(src):
+    """[src] with comments and the text of string literals blanked (template code kept), and the template code spans."""
+    out, spans, i, n = list(src), [], 0, len(src)
+
+    def blank(a, b):
+        for k in range(a, b):
+            if out[k] != "\n":
+                out[k] = " "
+
+    def string(i):
+        """i is just after the opening quote; returns the index after the closing one."""
+        while i < n:
+            c = src[i]
+            if c == "\\":
+                blank(i, i + 2); i += 2; continue
+            if c == '"':
+                return i + 1
+            if c == "$" and src.startswith("${", i):
+                blank(i, i + 2)
+                end = code(i + 2)
+                spans.append((i + 2, end - 1)); blank(end - 1, end)
+                i = end; continue
+            blank(i, i + 1); i += 1
+        return i
+
+    def code(i):
+        """Code up to the brace closing an open one; returns the index after it."""
+        depth = 1
+        while i < n:
+            if src.startswith('"""', i):
+                j = src.index('"""', i + 3) + 3; blank(i, j); i = j; continue
+            c = src[i]
+            if c == '"':
+                i = string(i + 1); continue
+            depth += c == "{"
+            depth -= c == "}"
+            if depth == 0:
+                return i + 1
+            i += 1
+        return i
+
+    while i < n:
+        if src.startswith("//", i):
+            j = src.find("\n", i); j = n if j < 0 else j
+            blank(i, j); i = j; continue
+        if src.startswith("/*", i):
+            j = src.find("*/", i + 2) + 2; blank(i, j); i = j; continue
+        if src.startswith('"""', i):
+            j = src.index('"""', i + 3) + 3
+            while j < n and src[j] == '"':
+                j += 1
+            blank(i, j); i = j; continue
+        c = src[i]
+        if c == "'":
+            j = src.index("'", i + 2 if src[i + 1] == "\\" else i + 1) + 1; blank(i, j); i = j; continue
+        if c == '"':
+            i = string(i + 1); continue
+        i += 1
+    return "".join(out), spans
+
+
+# Calls that turn their arguments into text with toString().
+FORMATTING = re.compile(r"\b(stringResource|pluralStringResource|getString|getQuantityString|format|append)\s*\($")
+RESOLVED = re.compile(r"\s*\??\.(asString|resolve|en)\(")
+# Functions and constructors that make a UiText.
+MAKERS = {"text", "plural", "raw", "num", "time", "joined"}
+
+
+def uitext_functions(sources):
+    """Names of top-level functions declared to return UiText, or written as one of the [MAKERS]."""
+    names = set(MAKERS)
+    for src in sources:
+        for m in re.finditer(r"\bfun\s+(?:<[^>]*>\s*)?(?:[\w.<>?]+\.)?(\w+)\s*\(", src):
+            end = closing(src, m.end() - 1)
+            rest = src[end + 1:end + 200]
+            if re.match(r"\s*:\s*UiText\b", rest) or re.match(r"\s*=\s*(?:" + "|".join(MAKERS) + r")\(", rest):
+                names.add(m.group(1))
+    return names
+
+
+def check_unresolved(src, names):
+    """Lines where a UiText from [names] is turned into text without being resolved."""
+    code, spans = masked(src)
+    for m in re.finditer(r"(?<![\w.])(" + "|".join(sorted(names)) + r")\(", code):
+        if re.search(r"\bfun\s+(?:[\w.<>?]+\.)?$", code[max(0, m.start() - 60):m.start()]):
+            continue
+        end = closing(code, m.end() - 1) + 1
+        if RESOLVED.match(code, end):
+            continue
+        line = src.count("\n", 0, m.start()) + 1
+        if any(a <= m.start() < b for a, b in spans):
+            yield line, f"{m.group(1)}(...) in a string template shows the object, not the words"
+        elif re.search(r'"\s*\+\s*$', src[:m.start()]) or re.match(r'\s*\+\s*"', src[end:]):
+            yield line, f"{m.group(1)}(...) added to a string shows the object, not the words"
+        elif FORMATTING.search(call_before(code[max(0, m.start() - 400):m.start()])):
+            yield line, f"{m.group(1)}(...) as a formatting argument shows the object, not the words"
+
+
 def main():
     top = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
     formats = placeholders(top)
+    files = [p for root in ROOTS for p in sorted((top / root).rglob("*.kt"))]
+    names = uitext_functions(p.read_text(encoding="utf-8") for p in files)
     found = 0
-    for root in ROOTS:
-        for path in sorted((top / root).rglob("*.kt")):
-            rel = path.relative_to(top).as_posix()
-            src = path.read_text(encoding="utf-8")
-            for line, problem in check_uses(src, formats):
-                print(f"::error file={rel},line={line}::{problem}")
-                found += 1
-            for line, text, before in literals(src):
-                words = text.replace("{}", " ")
-                if not (WORDS.search(words) or CAPITALISED.match(text) or TEMPLATE_WORD.search(text)):
-                    continue
-                if DEVELOPER.search(call_before(before)) or TO_STRING.search(before):
-                    continue
-                if any(re.search(f, rel) and re.fullmatch(t, text) for f, t in ALLOWED):
-                    continue
-                print(f"::error file={rel},line={line}::Text in code, not in strings.xml: \"{text}\"")
-                found += 1
+    for path in files:
+        rel = path.relative_to(top).as_posix()
+        src = path.read_text(encoding="utf-8")
+        for line, problem in list(check_uses(src, formats)) + list(check_unresolved(src, names)):
+            print(f"::error file={rel},line={line}::{problem}")
+            found += 1
+        for line, text, before in literals(src):
+            words = text.replace("{}", " ")
+            if not (WORDS.search(words) or CAPITALISED.match(text) or TEMPLATE_WORD.search(text)):
+                continue
+            if DEVELOPER.search(call_before(before)) or TO_STRING.search(before):
+                continue
+            if any(re.search(f, rel) and re.fullmatch(t, text) for f, t in ALLOWED):
+                continue
+            print(f"::error file={rel},line={line}::Text in code, not in strings.xml: \"{text}\"")
+            found += 1
     if found:
         print(f"{found} problem(s). Text for people goes in res/values/strings.xml; a literal that must stay "
               "goes on the allowlist in scripts/check-strings.py with the reason.", file=sys.stderr)

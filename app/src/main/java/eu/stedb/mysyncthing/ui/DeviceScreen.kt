@@ -1,9 +1,5 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.text
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,10 +29,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.text
 
 /** Settings and status of one remote device. */
 @Composable
@@ -77,7 +77,7 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                         Text(it.asString(), style = MaterialTheme.typography.bodyMedium, color = muted)
                     }
                     if (conn?.connected == true) {
-                        live?.devices?.get(id)?.let { Text(speedText(it), style = MaterialTheme.typography.bodyMedium, color = muted) }
+                        live?.devices?.get(id)?.let { Text(speedText(it).asString(), style = MaterialTheme.typography.bodyMedium, color = muted) }
                         Text(
                             stringResource(R.string.device_traffic, bytes(conn.inBytesTotal), bytes(conn.outBytesTotal)),
                             style = MaterialTheme.typography.bodySmall, color = muted,

@@ -1,12 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.annotation.StringRes
-import androidx.compose.ui.res.stringResource
-import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.resolve
-import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -33,10 +28,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,16 +41,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
-import androidx.navigation.navArgument
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.SyncthingService
+import eu.stedb.mysyncthing.core.resolve
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 private enum class Tab(val route: String, @param:StringRes val label: Int, val icon: ImageVector) {
     Folders("folders", R.string.tab_folders, Icons.Default.Folder),
