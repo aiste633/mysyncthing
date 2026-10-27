@@ -104,6 +104,13 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Add folder and Add device ask "Discard changes?" on Back once edited (`rememberDiscardGuard`).
 - Add folder type is an inline radio list with hints. Numbers keep a space before % (SI style, user confirmed).
 
+## Stress-test fixes (2026-10-27)
+- Every `Settings` write goes through `write()`, which returns false on an IOException (DataStore's ENOSPC when the storage is full) instead of throwing from a launched coroutine; the app shows `NOT_SAVED`. Only `credentials()` throws, and that ends in a failed core start. New writes must use `write()`.
+- The core runs from `SyncthingService.onStartCommand` (a `run` Job), not onCreate: any plain start retries a failed one; a run ends when the core fails, and `failed()` clears the notices of a core that no longer runs. Notice collectors map an unloaded snapshot to null so a new run posts them again.
+- The app asks for a start on every ON_START (`startUnlessStopped`). A Stop by the user (Settings or the notification, `stopByUser` / ACTION_STOP) is stored with `Settings.Global.BOOT_COUNT` and holds until an explicit Start or the next real boot. Android 15+ sends a package-targeted BOOT_COMPLETED when an app leaves the stopped state (first start after a force-stop or an install), so that broadcast is no proof of a boot. `SyncthingCore.stoppedByUser` mirrors the Stop for `CoreGate` (stopped screen only after a user's Stop, else the Starting spinner).
+- `BootReceiver` reads settings under `goAsync` on an IO thread (a `runBlocking` read on the main thread caused an ANR).
+- `problemText()` (core) puts upstream's disk-space errors in plain words for folder errors and failed items; Copy all keeps the core's text.
+
 ## Working rules
 - Usage reporting: ask once natively at first start with upstream's wording and condition (urAccepted > -1, urSeen < urVersionMax), never pre-answer it; Settings has a switch. User's wish, out of respect for upstream.
 - This file is public on purpose, so any session can resume the work. Nothing about the user's network or machine (hostnames, IPs, usernames, device IDs, home paths, personal e-mail) may go into it, or into code, comments, commit messages or PR text. Use placeholders. Local test notes live in Claude's own memory folder, not in the repo.
