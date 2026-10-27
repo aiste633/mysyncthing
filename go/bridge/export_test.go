@@ -157,6 +157,45 @@ func TestExportPasswordError(t *testing.T) {
 	}
 }
 
+// The longest password the app's import form allows still reaches the
+// backup; one past the bridge's bound is refused before any key derivation.
+func TestImportPasswordBound(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "backup")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	longest := strings.Repeat("€", 1024) // 1024 characters, 3 bytes each
+	if _, err := InspectForkBackup(int(f.Fd()), longest); err == nil || strings.Contains(err.Error(), "password longer") {
+		t.Errorf("1024 characters: %v", err)
+	}
+	if _, err := InspectForkBackup(int(f.Fd()), longest+"x"); err == nil || !strings.Contains(err.Error(), "password longer") {
+		t.Errorf("past the bound: %v", err)
+	}
+}
+
+// Property: the window check agrees with a plain reading of its rules, for
+// any numbers, in range or not.
+func TestSyncWindowCheckProperty(t *testing.T) {
+	r := rand.New(rand.NewSource(31))
+	pick := func(lo, hi int) int { return lo + r.Intn(hi-lo+1) }
+	for range 20000 {
+		w := syncWindow{Start: pick(-3, minutesPerDay+2), End: pick(-3, minutesPerDay+2)}
+		for range r.Intn(9) {
+			w.Days = append(w.Days, pick(-1, 9))
+		}
+		days := map[int]bool{}
+		ok := w.Start >= 0 && w.Start < minutesPerDay && w.End >= 0 && w.End < minutesPerDay && w.Start != w.End && len(w.Days) > 0
+		for _, d := range w.Days {
+			ok = ok && d >= 1 && d <= 7 && !days[d]
+			days[d] = true
+		}
+		if err := w.check(); (err == nil) != ok {
+			t.Fatalf("%+v: %v, want ok=%v", w, err, ok)
+		}
+	}
+}
+
 // Property: any settings the app can store, and any password it accepts,
 // come back from an export unchanged.
 func TestExportRoundTripProperty(t *testing.T) {

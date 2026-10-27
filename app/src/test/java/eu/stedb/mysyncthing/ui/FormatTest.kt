@@ -182,6 +182,17 @@ class FormatTest {
         }
     }
 
+    /** Whatever the core sends as a time: no crash, and either nothing or a 24-hour clock with ASCII digits. */
+    @Test
+    fun exactTimesOfAnyText() {
+        val now = java.time.ZonedDateTime.of(2026, 10, 25, 12, 0, 0, 0, java.time.ZoneId.of("Europe/Rome"))
+        val clock = Regex("^([01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d( · .*)?$")
+        forAll(oneOf(anyText, { "+999999999-12-31T23:59:59Z" }, { "-999999999-01-01T00:00:00+18:00" }, { now.minusSeconds(nextLong(-1, 4000)).toOffsetDateTime().toString() + chars(" x", 0, 2) })) { s ->
+            val text = exactTimeText(s, now)
+            assertTrue("$s -> $text", text.isEmpty() || clock.matches(text))
+        }
+    }
+
     @Test
     fun revertVerbsAgree() {
         assertEquals(

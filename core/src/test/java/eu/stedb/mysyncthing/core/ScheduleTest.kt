@@ -189,4 +189,36 @@ class ScheduleTest {
         assertEquals("13:05", timeText(13 * 60 + 5))
         assertEquals("23:59", timeText(MINUTES_PER_DAY - 1))
     }
+
+    /** Whatever is stored (an older or damaged value): no crash, only valid windows, at most 8. */
+    @Test
+    fun anyStoredWindowsReadSafely() {
+        val r = Random(32)
+        val pieces = listOf("[", "]", "{", "}", ",", ":", "\"start\"", "\"end\"", "\"days\"", "-1", "0", "1439", "1440", "7", "8", "null", "true", "\"x\"", "99999999999")
+        repeat(20_000) {
+            val stored = when (r.nextInt(3)) {
+                0 -> List(r.nextInt(0, 30)) { pieces.random(r) }.joinToString("")
+                1 -> Settings.json.encodeToString(List(r.nextInt(0, 12)) { SyncWindow(r.nextInt(-2, 1442), r.nextInt(-2, 1442), List(r.nextInt(0, 4)) { r.nextInt(-1, 9) }.toSet()) })
+                else -> String(CharArray(r.nextInt(0, 40)) { r.nextInt(0, 0x3000).toChar() })
+            }
+            val ws = mutablePreferencesOf(Settings.TIME_SCHEDULE to true, Settings.WINDOWS to stored).runConditions().windows
+            assertTrue(stored, ws.size <= MAX_SYNC_WINDOWS && ws.all { syncWindowError(it) == null })
+        }
+    }
+
+    /** Property: what the form lets through (no [scheduleError]) is what the rules allow. */
+    @Test
+    fun theFormLetsThroughOnlyValidSchedules() {
+        val r = Random(33)
+        repeat(20_000) {
+            val on = r.nextBoolean()
+            val ws = List(r.nextInt(0, 10)) {
+                SyncWindow(r.nextInt(-2, 1442), r.nextInt(-2, 1442), List(r.nextInt(0, 3)) { r.nextInt(0, 9) }.toSet())
+            }
+            val valid = ws.size <= MAX_SYNC_WINDOWS && (!on || ws.isNotEmpty()) && ws.all {
+                it.start in 0..1439 && it.end in 0..1439 && it.start != it.end && it.days.isNotEmpty() && it.days.all { d -> d in 1..7 }
+            }
+            assertEquals("$on $ws", valid, scheduleError(on, ws) == null)
+        }
+    }
 }

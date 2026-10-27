@@ -90,7 +90,14 @@ func ImportForkBackup(fd int, password, homeDir string, keepIdentity bool) error
 	return b.install(homeDir, keepIdentity)
 }
 
+// maxImportPassword bounds what reaches the key derivation: the app allows
+// 1024 characters (ui/ImportScreen.kt MAX_BACKUP_PASSWORD), at most 3 bytes each in UTF-8.
+const maxImportPassword = 3 * 1024
+
 func readForkBackupFd(fd int, password string) (*forkBackup, error) {
+	if len(password) > maxImportPassword {
+		return nil, fmt.Errorf("password longer than %d bytes", maxImportPassword)
+	}
 	dup, err := syscall.Dup(fd)
 	if err != nil {
 		return nil, err

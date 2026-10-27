@@ -33,6 +33,7 @@ Go fuzz targets and tests in `go/bridge`.
 | Time window (Sync times) | Start and end 00:00-23:59 from the 24-hour time picker, not the same time; an end before the start runs into the next day; at least one weekday; at most 8 windows; "Only at set times" needs a window | `syncWindowError()`, `scheduleError()` in `core/Schedule.kt`; Save stays off while one fails | `syncWindow.check`, `runConditions.check` in `go/bridge/forkimport.go` (export and import) |
 | Export password (Export a backup) | Empty (no encryption, with a warning) or at least 12 characters (WinZip AES has a fixed 1000 PBKDF2 rounds), at most 1024 UTF-8 bytes, valid Unicode, no control characters | `exportPasswordError()`, counted in code points; lone surrogates refused | `ExportPasswordError` in `go/bridge/export.go`, checked again before writing |
 | Export password again | The same text | `exportRepeatError()` | n/a |
+| Backup password (Import a backup) | Non-empty, at most 1024 characters, used exactly as typed | `backupPasswordError()` | `readForkBackupFd` refuses more than 3072 bytes (1024 characters of up to 3 bytes) before any key derivation |
 | Ignore patterns (Folder, Defaults) | One pattern per line, valid for the core's parser; `#include` files must exist | `CheckIgnores` in the bridge runs the core's own parser before saving; the core's answer is checked too | `lib/model` saves any patterns and answers 200, then the folder stops with an error |
 | Search (Restore versions, Failed items) | Any text | None needed: plain substring match | Not sent |
 | Switches (run conditions, watcher, introducer, ...) | On or off | n/a | n/a |
@@ -64,6 +65,6 @@ inputs run with every `go test`.
 | `FuzzRESTConfig` | PUT/PATCH bodies to the config API of a running core | The app's login still starts a session, a wrong password doesn't, REST needs credentials |
 | `FuzzCheckIgnores` | Ignore pattern text | Whatever `CheckIgnores` accepts loads without error once written |
 | `FuzzProxyFrom` | Proxy scheme, host, port, user, password | Either refused, or the proxy URL it builds parses back to the same URL |
-| `FuzzReadOwnSettings` | `mysyncthing.json` | Either refused, or it re-encodes and reads back to the same settings |
+| `FuzzReadOwnSettings` | `mysyncthing.json` (run conditions with time windows, proxy) | Either refused, or it re-encodes and reads back to the same settings |
 
 Run without network access: a fuzzed config can turn on usage reporting or discovery.
