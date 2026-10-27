@@ -1,0 +1,184 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 23:10:06 +0000
+Subject: [PATCH] lib/api: restart the listener for a GUI change without the 
+ supervisor
+
+A change to the GUI settings ends Serve so that the listener restarts with
+the new settings. The supervisor counts every return as a failure: after
+more than 5 within about 30 s (suture's defaults, which the main supervisor
+uses) it backs off for 15 s, and the GUI and API are unreachable that long.
+Six GUI changes in a row, e.g. trying themes in the web GUI or a program
+that sets GUI options one at a time, are enough.
+
+Restart the listener inside Serve instead. A real failure (the listener
+can't be opened, Serve fails) still returns to the supervisor.
+---
+ lib/api/api.go              | 16 ++++++++++++
+ lib/api/api_restart_test.go | 44 ++++++++++++++++++++++++++++++++
+ lib/api/api_test.go         | 50 +++++++++++++++++++++----------------
+ 3 files changed, 88 insertions(+), 22 deletions(-)
+
+diff --git a/lib/api/api.go b/lib/api/api.go
+index 1b6339f..6ee627e 100644
+--- a/lib/api/api.go
++++ b/lib/api/api.go
+@@ -218,7 +218,22 @@ func sendJSON(w http.ResponseWriter, jsonObject any) {
+ 	fmt.Fprintf(w, "%s\n", bs)
+ }
+ 
++// errConfigChanged ends one run of serve so that the listener restarts with the new
++// GUI settings.
++var errConfigChanged = errors.New("GUI settings changed")
++
+ func (s *service) Serve(ctx context.Context) error {
++	// A GUI change restarts the listener here, not through the supervisor: the
++	// supervisor counts every return as a failure and, after a few changes in a row,
++	// would back off and leave the GUI and API unreachable for a while.
++	for {
++		if err := s.serve(ctx); !errors.Is(err, errConfigChanged) {
++			return err
++		}
++	}
++}
++
++func (s *service) serve(ctx context.Context) error {
+ 	listener, err := s.getListener(s.cfg.GUI())
+ 	if err != nil {
+ 		select {
+@@ -452,6 +467,7 @@ func (s *service) Serve(ctx context.Context) error {
+ 		// The request that made the change is still saving the config. Let it, and any
+ 		// other config change in flight, answer first, however long saving takes.
+ 		s.configWrites.wait()
++		err = errConfigChanged
+ 	case err = <-s.exitChan:
+ 	case err = <-serveError:
+ 		// Restart due to listen/serve failure
+diff --git a/lib/api/api_restart_test.go b/lib/api/api_restart_test.go
+index 3b6c06c..1ffc561 100644
+--- a/lib/api/api_restart_test.go
++++ b/lib/api/api_restart_test.go
+@@ -20,6 +20,8 @@ import (
+ 	"github.com/syncthing/syncthing/lib/config"
+ 	"github.com/syncthing/syncthing/lib/events"
+ 	"github.com/syncthing/syncthing/lib/protocol"
++	"github.com/syncthing/syncthing/lib/svcutil"
++	"github.com/thejerf/suture/v4"
+ )
+ 
+ // slowSave makes saving config.xml slower than the listener's shutdown timeout
+@@ -124,3 +126,45 @@ func TestConcurrentGUIChangesAnswered(t *testing.T) {
+ 		}
+ 	}
+ }
++
++// Each GUI change restarts the listener. Under the core's supervisor (default
++// failure threshold 5, backoff 15 s) the GUI and API must stay reachable after many
++// changes in a row: the restarts are not failures.
++func TestRepeatedGUIChangesKeepAPIUp(t *testing.T) {
++	t.Parallel()
++
++	cfg := config.Configuration{GUI: config.GUIConfiguration{RawAddress: "127.0.0.1:0", APIKey: testAPIKey}}
++	w := config.Wrap(filepath.Join(t.TempDir(), "config.xml"), cfg, protocol.LocalDeviceID, events.NoopLogger)
++	ctx, cancel := context.WithCancel(context.Background())
++	served := make(chan struct{})
++	go func() {
++		w.Serve(ctx)
++		close(served)
++	}()
++	t.Cleanup(func() {
++		cancel()
++		<-served
++	})
++
++	started := make(chan string)
++	svc := newTestService(t, w)
++	svc.started = started
++	supervisor := suture.New("main", svcutil.SpecWithDebugLogger())
++	supervisor.Add(svc)
++	supervisor.ServeBackground(ctx)
++	baseURL := "http://" + <-started
++
++	themes := []string{"dark", "light"}
++	for i := range 10 {
++		if err := patchTheme(baseURL, themes[i%2]); err != nil {
++			t.Fatal(err)
++		}
++		select {
++		case addr := <-started:
++			// The port is chosen anew on each restart.
++			baseURL = "http://" + addr
++		case <-time.After(5 * time.Second):
++			t.Fatalf("GUI and API not back 5 s after change %d", i+1)
++		}
++	}
++}
+diff --git a/lib/api/api_test.go b/lib/api/api_test.go
+index bbf902e..33fac00 100644
+--- a/lib/api/api_test.go
++++ b/lib/api/api_test.go
+@@ -1017,29 +1017,8 @@ func startHTTP(t *testing.T, cfg config.Wrapper) string {
+ }
+ 
+ func startHTTPWithShutdownTimeout(t *testing.T, cfg config.Wrapper, shutdownTimeout time.Duration) string {
+-	m := new(modelmocks.Model)
+-	assetDir := "../../gui"
+-	eventSub := new(eventmocks.BufferedSubscription)
+-	diskEventSub := new(eventmocks.BufferedSubscription)
+-	discoverer := new(discovermocks.Manager)
+-	connections := new(connmocks.Service)
+-	errorLog := slogutil.NewRecorder(0)
+-	systemLog := slogutil.NewRecorder(0)
+ 	addrChan := make(chan string)
+-	mockedSummary := &modelmocks.FolderSummaryService{}
+-	mockedSummary.SummaryReturns(new(model.FolderSummary), nil)
+-
+-	// Instantiate the API service
+-	urService := ur.New(cfg, m, connections, false)
+-	mdb, err := sqlite.Open(t.TempDir())
+-	if err != nil {
+-		t.Fatal(err)
+-	}
+-	t.Cleanup(func() {
+-		mdb.Close()
+-	})
+-	kdb := db.NewMiscDB(mdb)
+-	svc := New(protocol.LocalDeviceID, cfg, assetDir, "syncthing", m, eventSub, diskEventSub, events.NoopLogger, discoverer, connections, urService, mockedSummary, errorLog, systemLog, false, kdb).(*service)
++	svc := newTestService(t, cfg)
+ 	svc.started = addrChan
+ 
+ 	if shutdownTimeout > 0 {
+@@ -1071,6 +1050,33 @@ func startHTTPWithShutdownTimeout(t *testing.T, cfg config.Wrapper, shutdownTime
+ 	return baseURL
+ }
+ 
++// newTestService is an API service on cfg with mocked dependencies, not started.
++func newTestService(t *testing.T, cfg config.Wrapper) *service {
++	t.Helper()
++	m := new(modelmocks.Model)
++	assetDir := "../../gui"
++	eventSub := new(eventmocks.BufferedSubscription)
++	diskEventSub := new(eventmocks.BufferedSubscription)
++	discoverer := new(discovermocks.Manager)
++	connections := new(connmocks.Service)
++	errorLog := slogutil.NewRecorder(0)
++	systemLog := slogutil.NewRecorder(0)
++	mockedSummary := &modelmocks.FolderSummaryService{}
++	mockedSummary.SummaryReturns(new(model.FolderSummary), nil)
++
++	// Instantiate the API service
++	urService := ur.New(cfg, m, connections, false)
++	mdb, err := sqlite.Open(t.TempDir())
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() {
++		mdb.Close()
++	})
++	kdb := db.NewMiscDB(mdb)
++	return New(protocol.LocalDeviceID, cfg, assetDir, "syncthing", m, eventSub, diskEventSub, events.NoopLogger, discoverer, connections, urService, mockedSummary, errorLog, systemLog, false, kdb).(*service)
++}
++
+ func TestCSRFRequired(t *testing.T) {
+ 	t.Parallel()
+ 

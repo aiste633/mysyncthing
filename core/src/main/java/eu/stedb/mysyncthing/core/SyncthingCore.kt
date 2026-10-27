@@ -31,6 +31,10 @@ object SyncthingCore {
 
     val version: String get() = Stbridge.version()
 
+    /** Why the core would fail on these ignore patterns, or null; [folderPath] "" for the defaults (go/bridge CheckIgnores). */
+    fun checkIgnores(folderPath: String, lines: List<String>): String? =
+        Stbridge.checkIgnores(folderPath, lines.joinToString("\n")).ifEmpty { null }
+
     /**
      * Starts the core with the login [login] gives; any failure on the
      * way, storing new credentials included, ends in [CoreState.Failed].

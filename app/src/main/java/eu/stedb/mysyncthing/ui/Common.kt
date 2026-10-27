@@ -535,7 +535,7 @@ fun <T> grouped(items: List<T>, group: (T) -> String): Map<String, List<T>> =
 
 /** A speed limit in kB/s or MB/s; empty or 0 means no limit. Returns KiB/s, as the core stores it. */
 @Composable
-fun SpeedLimitDialog(title: String, kib: Int, onDismiss: () -> Unit, onSave: (Int) -> Unit) {
+fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (Long) -> Unit) {
     val (v0, u0) = limitSi(kib)
     var value by rememberSaveable { mutableStateOf(if (kib > 0) number(v0) else "") }
     var unit by rememberSaveable { mutableStateOf(u0) }

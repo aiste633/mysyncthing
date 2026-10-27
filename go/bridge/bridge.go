@@ -10,11 +10,14 @@ package stbridge
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"os"
+	"regexp"
 	"sync"
 	"time"
 
@@ -61,10 +64,6 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 	if app != nil {
 		return errors.New("already running")
 	}
-	if apiKey == "" || guiUser == "" || guiPassword == "" {
-		return errors.New("apiKey, guiUser and guiPassword are required")
-	}
-
 	addr, err := freeLoopbackAddr()
 	if err != nil {
 		return err
@@ -74,47 +73,15 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 
 // startLocked starts the core; the caller holds mu.
 func startLocked(p params) error {
-	homeDir := p.homeDir
-	// Env overrides are read by lib/config on every access.
-	os.Setenv("STGUIADDRESS", p.addr)
-	os.Setenv("STGUIAPIKEY", p.apiKey)
-	os.Setenv("STNOUPGRADE", "1")
-
-	if err := locations.SetBaseDir(locations.ConfigBaseDir, homeDir); err != nil {
-		return err
-	}
-	if err := locations.SetBaseDir(locations.DataBaseDir, homeDir); err != nil {
-		return err
-	}
-	if err := syncthing.EnsureDir(homeDir, 0o700); err != nil {
-		return err
-	}
-
-	slog.Info(build.LongVersion) //nolint:sloglint
-
-	cert, err := syncthing.LoadOrGenerateCertificate(locations.Get(locations.CertFile), locations.Get(locations.KeyFile))
-	if err != nil {
-		return fmt.Errorf("certificate: %w", err)
-	}
-
 	ctx, cncl := context.WithCancel(context.Background())
 	early := suture.New("early", svcutil.SpecWithDebugLogger())
 	earlyDone := early.ServeBackground(ctx)
 
-	evLogger := events.NewLogger()
-	early.Add(evLogger)
-
-	cfg, err := syncthing.LoadConfigAtStartup(locations.Get(locations.ConfigFile), cert, evLogger, false, false)
+	cert, cfg, evLogger, err := prepare(early, p)
 	if err != nil {
 		cncl()
-		return fmt.Errorf("config: %w", err)
+		return err
 	}
-	early.Add(cfg)
-	if err := applyAndroidDefaults(cfg, p.guiUser, p.guiPassword); err != nil {
-		cncl()
-		return fmt.Errorf("config defaults: %w", err)
-	}
-	cfg.Subscribe(guiGuard{})
 
 	sdb, err := syncthing.OpenDatabase(locations.Get(locations.Database), deleteRetention)
 	if err != nil {
@@ -140,6 +107,75 @@ func startLocked(p params) error {
 	guiAddr = p.addr
 	go watch(a, p)
 	return nil
+}
+
+// prepare sets up homeDir and loads the identity and config the core starts
+// with, with the GUI locked to the app's login. The config and event logger
+// run under early.
+func prepare(early *suture.Supervisor, p params) (tls.Certificate, config.Wrapper, events.Logger, error) {
+	for _, s := range []string{p.apiKey, p.guiUser, p.guiPassword} {
+		if !token.MatchString(s) {
+			return tls.Certificate{}, nil, nil, errors.New("apiKey, guiUser and guiPassword must be 1 to 72 characters of A-Z, a-z, 0-9, - and _")
+		}
+	}
+	homeDir := p.homeDir
+	// Env overrides are read by lib/config on every access.
+	os.Setenv("STGUIADDRESS", p.addr)
+	os.Setenv("STGUIAPIKEY", p.apiKey)
+	os.Setenv("STNOUPGRADE", "1")
+
+	if err := locations.SetBaseDir(locations.ConfigBaseDir, homeDir); err != nil {
+		return tls.Certificate{}, nil, nil, err
+	}
+	if err := locations.SetBaseDir(locations.DataBaseDir, homeDir); err != nil {
+		return tls.Certificate{}, nil, nil, err
+	}
+	if err := syncthing.EnsureDir(homeDir, 0o700); err != nil {
+		return tls.Certificate{}, nil, nil, err
+	}
+
+	slog.Info(build.LongVersion) //nolint:sloglint
+
+	cert, err := loadOrGenerateCertificate(locations.Get(locations.CertFile), locations.Get(locations.KeyFile))
+	if err != nil {
+		return tls.Certificate{}, nil, nil, fmt.Errorf("certificate: %w", err)
+	}
+
+	evLogger := events.NewLogger()
+	early.Add(evLogger)
+
+	cfg, err := syncthing.LoadConfigAtStartup(locations.Get(locations.ConfigFile), cert, evLogger, false, false)
+	if err != nil {
+		return tls.Certificate{}, nil, nil, fmt.Errorf("config: %w", err)
+	}
+	early.Add(cfg)
+	if err := applyAndroidDefaults(cfg, p.guiUser, p.guiPassword); err != nil {
+		return tls.Certificate{}, nil, nil, fmt.Errorf("config defaults: %w", err)
+	}
+	cfg.Subscribe(guiGuard{})
+	return cert, cfg, evLogger, nil
+}
+
+// token is what the app's credentials look like (Settings.randomToken): safe
+// in an HTTP header and in Basic auth (no ":"), never taken for a bcrypt hash
+// (no "$"), and within the 72 bytes bcrypt reads.
+var token = regexp.MustCompile(`^[A-Za-z0-9_-]{1,72}$`)
+
+// loadOrGenerateCertificate loads this device's identity, or creates one when
+// there is none yet. Unlike upstream's LoadOrGenerateCertificate it never
+// replaces files it can't read: a damaged or foreign cert or key would
+// otherwise turn the phone silently into a new device its peers don't know.
+func loadOrGenerateCertificate(certFile, keyFile string) (tls.Certificate, error) {
+	_, certErr := os.Stat(certFile)
+	_, keyErr := os.Stat(keyFile)
+	if errors.Is(certErr, fs.ErrNotExist) && errors.Is(keyErr, fs.ErrNotExist) {
+		return syncthing.GenerateCertificate(certFile, keyFile)
+	}
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("this device's identity (cert.pem, key.pem) is unreadable: %w", err)
+	}
+	return cert, nil
 }
 
 // watch handles the core exiting on its own. A restart asked for in the web
@@ -225,19 +261,26 @@ func applyAndroidDefaults(cfg config.Wrapper, user, password string) error {
 	if !needPassword && lockOf(gui) == lockOf(locked(gui)) && !cfg.Options().StartBrowser {
 		return nil
 	}
+	var hashErr error
 	w, err := cfg.Modify(func(c *config.Configuration) {
 		c.GUI = locked(c.GUI)
 		c.Options.StartBrowser = false
 		if needPassword {
 			c.GUI.User = user
-			_ = c.GUI.SetPassword(password)
+			hashErr = c.GUI.SetPassword(password)
 		}
 	})
 	if err != nil {
 		return err
 	}
 	w.Wait()
-	return nil
+	if hashErr != nil {
+		// Unreachable with a valid token; fail closed rather than run with the old login.
+		return fmt.Errorf("GUI password: %w", hashErr)
+	}
+	// Modify only changes the running config; saving keeps config.xml locked
+	// too, and spares the next start a bcrypt hash.
+	return cfg.Save()
 }
 
 // locked returns gui with every setting that guards access set the app's way.

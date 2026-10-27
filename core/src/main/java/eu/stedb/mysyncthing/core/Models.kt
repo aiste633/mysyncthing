@@ -64,8 +64,8 @@ data class Options(
     val urAccepted: Int = 0,
     val urSeen: Int = 0,
     /** KiB/s, 0 for no limit. */
-    val maxRecvKbps: Int = 0,
-    val maxSendKbps: Int = 0,
+    val maxRecvKbps: Long = 0,
+    val maxSendKbps: Long = 0,
     val limitBandwidthInLan: Boolean = false,
     val localAnnounceEnabled: Boolean = true,
     val globalAnnounceEnabled: Boolean = true,
@@ -110,8 +110,8 @@ data class Device(
     val introducer: Boolean = false,
     val autoAcceptFolders: Boolean = false,
     /** KiB/s, 0 for no limit. */
-    val maxSendKbps: Int = 0,
-    val maxRecvKbps: Int = 0,
+    val maxSendKbps: Long = 0,
+    val maxRecvKbps: Long = 0,
     /** 0 lets Syncthing choose. */
     val numConnections: Int = 0,
     val group: String = "",
@@ -186,7 +186,7 @@ data class FileError(val path: String = "", val error: String = "")
 data class FolderErrors(val errors: List<FileError>? = null)
 
 @Serializable
-data class Ignores(val ignore: List<String>? = null)
+data class Ignores(val ignore: List<String>? = null, val error: String? = null)
 
 @Serializable
 data class FolderStatus(
