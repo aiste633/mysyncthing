@@ -63,14 +63,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val setupDone: StateFlow<Boolean?> = settings.setupDone.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     fun finishSetup() {
-        viewModelScope.launch { settings.setSetupDone() }
+        save { settings.setSetupDone() }
     }
 
     val movedFromOtherPhone: StateFlow<Boolean> =
         settings.movedFromOtherPhone.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
     fun dismissMovedNote() {
-        viewModelScope.launch { settings.setMovedFromOtherPhone(false) }
+        save { settings.setMovedFromOtherPhone(false) }
     }
 
     /** Followed by the service, so the screens add no extra event long-poll. */
@@ -323,6 +323,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun setRunConditions(transform: (RunConditions) -> RunConditions) {
-        viewModelScope.launch { settings.update(transform) }
+        save { settings.update(transform) }
+    }
+
+    /** A settings write; it fails (and changes nothing) when the phone's storage is full. */
+    private fun save(write: suspend () -> Boolean) {
+        viewModelScope.launch { if (!write()) _message.send(NOT_SAVED) }
     }
 }
+
+/** Snackbar text for a settings write that failed. */
+const val NOT_SAVED = "Not saved: the phone's storage may be full"

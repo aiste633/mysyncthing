@@ -123,7 +123,8 @@ class SyncthingService : LifecycleService() {
             val pausedByUs = settings.conditionPause()
             if (reason != null && pausedByUs == null) {
                 val userPaused = client.devices().filter { it.paused }.map { it.deviceID }.toSet()
-                settings.setConditionPause(userPaused)
+                // Unrecorded, the pause would never be undone; the next change of conditions tries again.
+                if (!settings.setConditionPause(userPaused)) return@runCatching
                 client.setAllPaused(true)
             } else if (reason == null && pausedByUs != null) {
                 client.devices().filter { it.deviceID !in pausedByUs }.forEach { client.setDevicePaused(it.deviceID, false) }

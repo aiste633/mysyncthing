@@ -1,6 +1,8 @@
 package eu.stedb.mysyncthing.core
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -10,6 +12,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 import java.security.SecureRandom
 import java.util.Base64
 
@@ -32,9 +35,26 @@ data class RunConditions(
     val pausedByUser: Boolean = false,
 )
 
-class Settings(context: Context) {
-    private val store = context.applicationContext.dataStore
+/**
+ * The app's own settings. Writes fail when the phone's storage is full; they
+ * return false then (the stored values stay as they were) instead of throwing,
+ * as a throw from a launched coroutine would crash the app.
+ */
+class Settings internal constructor(private val store: DataStore<Preferences>) {
+    constructor(context: Context) : this(context.applicationContext.dataStore)
 
+    /** Every write but [credentials]'s goes through here. */
+    private suspend fun write(block: (MutablePreferences) -> Unit): Boolean = try {
+        store.edit(block)
+        true
+    } catch (e: IOException) {
+        false
+    }
+
+    /**
+     * Throws [IOException] when new credentials can't be stored: the core must
+     * not start with a login the next start would not know.
+     */
     suspend fun credentials(): Credentials {
         val prefs = store.data.first()
         prefs.credentials()?.takeIf { it.guiPassword.length >= TOKEN_CHARS }?.let { return it }
@@ -50,35 +70,29 @@ class Settings(context: Context) {
 
     val runConditions: Flow<RunConditions> = store.data.map { it.runConditions() }
 
-    suspend fun update(transform: (RunConditions) -> RunConditions) {
-        store.edit {
-            val c = transform(it.runConditions())
-            it[WIFI_ONLY] = c.wifiOnly
-            it[UNMETERED_ONLY] = c.unmeteredOnly
-            it[CHARGING_ONLY] = c.chargingOnly
-            it[RESPECT_BATTERY_SAVER] = c.respectBatterySaver
-            it[START_ON_BOOT] = c.startOnBoot
-            it[PAUSED_BY_USER] = c.pausedByUser
-        }
+    suspend fun update(transform: (RunConditions) -> RunConditions): Boolean = write {
+        val c = transform(it.runConditions())
+        it[WIFI_ONLY] = c.wifiOnly
+        it[UNMETERED_ONLY] = c.unmeteredOnly
+        it[CHARGING_ONLY] = c.chargingOnly
+        it[RESPECT_BATTERY_SAVER] = c.respectBatterySaver
+        it[START_ON_BOOT] = c.startOnBoot
+        it[PAUSED_BY_USER] = c.pausedByUser
     }
 
     /** True once the user tapped Done on the setup checklist. */
     val setupDone: Flow<Boolean> = store.data.map { it[SETUP_DONE] ?: false }
 
     /** Also stores the Wi-Fi choice, whose default depends on [SETUP_DONE] (see [runConditions]). */
-    suspend fun setSetupDone() {
-        store.edit {
-            it[WIFI_ONLY] = it.runConditions().wifiOnly
-            it[SETUP_DONE] = true
-        }
+    suspend fun setSetupDone(): Boolean = write {
+        it[WIFI_ONLY] = it.runConditions().wifiOnly
+        it[SETUP_DONE] = true
     }
 
     /** True after a phone migration brought the identity along, until the user has seen the note. */
     val movedFromOtherPhone: Flow<Boolean> = store.data.map { it[MOVED] ?: false }
 
-    suspend fun setMovedFromOtherPhone(moved: Boolean) {
-        store.edit { it[MOVED] = moved }
-    }
+    suspend fun setMovedFromOtherPhone(moved: Boolean): Boolean = write { it[MOVED] = moved }
 
     /**
      * Devices the user had paused before a run condition paused everything,
@@ -86,9 +100,8 @@ class Settings(context: Context) {
      */
     suspend fun conditionPause(): Set<String>? = store.data.first()[CONDITION_PAUSE]
 
-    suspend fun setConditionPause(userPaused: Set<String>?) {
-        store.edit { if (userPaused == null) it.remove(CONDITION_PAUSE) else it[CONDITION_PAUSE] = userPaused }
-    }
+    suspend fun setConditionPause(userPaused: Set<String>?): Boolean =
+        write { if (userPaused == null) it.remove(CONDITION_PAUSE) else it[CONDITION_PAUSE] = userPaused }
 
     private fun Preferences.runConditions() = RunConditions(
         // Mobile data can cost money, so new installs start on Wi-Fi only (setup asks).
