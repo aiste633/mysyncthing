@@ -82,3 +82,11 @@ jobs:
           fetch-depth: 0
       - name: No personal details in files, commits or history
         run: scripts/check-leaks.sh
+
+  strings:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - name: Text for people only in strings.xml
+        run: scripts/check-strings.py

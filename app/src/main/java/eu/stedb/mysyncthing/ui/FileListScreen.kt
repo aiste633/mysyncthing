@@ -117,7 +117,7 @@ fun RemoteNeedScreen(s: Snapshot, device: String, folder: String, vm: MainViewMo
         }
         val list = files
         when {
-            list == null -> item("loading") { Note("Loading") }
+            list == null -> item("loading") { Note(stringResource(R.string.loading)) }
             list.isEmpty() -> item("none") { Note(stringResource(R.string.remote_need_none, name)) }
             else -> {
                 section(null, list) { e -> FileRow(e.name, needDetail(e)) }
@@ -145,7 +145,7 @@ fun LocalChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: (
         }
         val list = files
         when {
-            list == null -> item("loading") { Note("Loading") }
+            list == null -> item("loading") { Note(stringResource(R.string.loading)) }
             list.isEmpty() -> item("none") { Note(stringResource(R.string.files_no_local_changes)) }
             else -> {
                 section(null, list) { e -> FileRow(e.name, if (e.deleted) stringResource(R.string.files_deleted) else needDetail(e)) }

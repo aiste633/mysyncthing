@@ -6,7 +6,7 @@
     Placeholders: %1$s, %2$d… keep their number; their order may change.
     Units (kB, MB/s, %, d, h, min) and the name Syncthing are never translated.
 -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">MySyncthing</string>
 
     <!-- Common actions -->
@@ -101,6 +101,7 @@
     <!-- How often a folder is fully rescanned -->
     <string name="rescan_never">Never</string>
     <string name="rescan_daily">Once a day</string>
+    <!-- English "one" leaves out the number; where "one" also covers numbers such as 21, keep %1$d in it -->
     <plurals name="rescan_every_days">
         <item quantity="one">Every day</item>
         <item quantity="other">Every %1$d\u00A0days</item>
@@ -498,7 +499,8 @@
 
     <!-- Why a form value can\'t be saved; shown under the field -->
     <string name="error_required">Required</string>
-    <string name="error_ascii_digits">Use the digits 0-9</string>
+    <!-- The digits 0 to 9 as a Latin keyboard types them: digits of other scripts are refused -->
+    <string name="error_ascii_digits" tools:ignore="TypographyDashes">Use the digits 0-9</string>
     <!-- %1$d: the smallest number allowed -->
     <string name="error_whole_number">A whole number, %1$d or more</string>
     <string name="error_not_negative">0 or more</string>
@@ -963,4 +965,9 @@
     <string name="lib_zxing">ZXing and ZXing Android Embedded</string>
     <string name="lib_syncthing">Syncthing and the Go libraries it uses</string>
     <string name="lib_syncthing_licence">MPL-2.0, with MIT, BSD and Apache-2.0 parts</string>
+
+    <!-- Time of a recent change. %1$s: time, such as 18:02:12 -->
+    <string name="exact_time_just_now">%1$s · just now</string>
+    <!-- %1$s: time, such as 18:02:12; %2$s: minutes, such as "5 min" -->
+    <string name="exact_time_ago">%1$s · %2$s ago</string>
 </resources>

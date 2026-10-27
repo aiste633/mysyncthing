@@ -89,14 +89,14 @@ fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: L
  * The exact 24 h time to the second, for rows under a [dayText] heading, with
  * how long ago within the last hour: "18:02:12 · 5 min ago". "" when unreadable.
  */
-fun exactTimeText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): String {
-    val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return ""
+fun exactTimeText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): UiText {
+    val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return raw("")
     val clock = t.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
     val ago = java.time.Duration.between(t, now).seconds
     return when {
-        ago < 0 || ago >= 3600 -> clock // a clock set back, or long enough ago for the time alone
-        ago < 60 -> "$clock · just now"
-        else -> "$clock · ${withUnit(ago / 60, "min")} ago"
+        ago < 0 || ago >= 3600 -> raw(clock) // a clock set back, or long enough ago for the time alone
+        ago < 60 -> text(R.string.exact_time_just_now, clock)
+        else -> text(R.string.exact_time_ago, clock, withUnit(ago / 60, "min"))
     }
 }
 
