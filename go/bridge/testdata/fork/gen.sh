@@ -3,6 +3,8 @@
 #   gen.sh             the committed goldens in this directory (no keys in them)
 #   gen.sh dummy DIR   complete dummy backups for emulator tests (synthetic keys,
 #                      IDs and paths; not committed)
+#   gen.sh unzip ZIP DIR [PASSWORD]
+#                      extracts an export of this app with zip4j (interop check)
 # Needs Java 21+ and Go; downloads zip4j once and checks its hash.
 set -euo pipefail
 
@@ -16,7 +18,13 @@ if ! echo "$zip4j_sha256  $jar" | sha256sum -c --status 2>/dev/null; then
   curl -sSfL -o "$jar" "https://repo1.maven.org/maven2/net/lingala/zip4j/zip4j/$zip4j_version/zip4j-$zip4j_version.jar"
   echo "$zip4j_sha256  $jar" | sha256sum -c --status
 fi
-gen() { java -cp "$jar" "$here/GenForkFixtures.java" "$@"; }
+# Java decodes arguments in the locale's charset: a non-ASCII password needs UTF-8.
+gen() { LC_ALL=C.UTF-8 java -cp "$jar" "$here/GenForkFixtures.java" "$@"; }
+
+if [ "${1:-}" = unzip ]; then
+  gen unzip "$2" "$3" "${4:-}"
+  exit 0
+fi
 
 if [ "${1:-}" = dummy ]; then
   out="$(realpath -m "$2")"

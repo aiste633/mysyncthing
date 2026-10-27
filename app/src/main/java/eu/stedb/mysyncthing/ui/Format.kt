@@ -80,9 +80,20 @@ fun dayText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now(), locale: L
     }
 }
 
-/** Just the 24 h clock time, for rows under a [dayText] heading. */
-fun clockText(rfc3339: String, zone: java.time.ZoneId = java.time.ZoneId.systemDefault()): String =
-    runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(zone).format(DateTimeFormatter.ofPattern("HH:mm")) }.getOrDefault("")
+/**
+ * The exact 24 h time to the second, for rows under a [dayText] heading, with
+ * how long ago within the last hour: "18:02:12 · 5 min ago". "" when unreadable.
+ */
+fun exactTimeText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): String {
+    val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return ""
+    val clock = t.format(DateTimeFormatter.ofPattern("HH:mm:ss"))
+    val ago = java.time.Duration.between(t, now).seconds
+    return when {
+        ago < 0 || ago >= 3600 -> clock // a clock set back, or long enough ago for the time alone
+        ago < 60 -> "$clock · just now"
+        else -> "$clock · ${withUnit(ago / 60, "min")} ago"
+    }
+}
 
 val PULL_ORDERS = listOf(
     "random" to "Random",

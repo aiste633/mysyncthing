@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "conditions": {
+    "meteredWifi": true,
+    "mobileData": true,
+    "roaming": false,
+    "power": "BatteryOnly",
+    "respectBatterySaver": true,
+    "startOnBoot": true,
+    "pausedByUser": false
+  },
+  "proxy": {
+    "type": "Socks5",
+    "host": "proxy.example.org",
+    "port": 1080,
+    "user": "me",
+    "password": "p@1:w/ord",
+    "only": true
+  }
+}

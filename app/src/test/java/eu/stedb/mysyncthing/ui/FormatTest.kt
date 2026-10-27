@@ -63,6 +63,7 @@ class FormatTest {
             val texts = listOf(
                 bytes(r.nextLong(0, Long.MAX_VALUE) shr r.nextInt(63)), rate(r.nextLong(0, 1L shl 40)),
                 duration(r.nextLong(0, 1L shl 30)), rescanText(r.nextInt(-10, 1 shl 20)), limitText(r.nextLong(-5, 1L shl 40)),
+                exactTimeText(java.time.ZonedDateTime.now().minusSeconds(r.nextLong(-100, 7200)).toOffsetDateTime().toString()),
             )
             texts.forEach { assertFalse(it, Regex("\\d [a-zA-Z%]").containsMatchIn(it)) }
         }
@@ -154,7 +155,31 @@ class FormatTest {
         assertEquals("Yesterday", dayText("2026-10-24T23:59:00Z", now, java.util.Locale.UK))
         assertEquals("3 Oct", dayText("2026-10-03T10:00:00Z", now, java.util.Locale.UK))
         assertEquals("3 Oct 2025", dayText("2025-10-03T10:00:00Z", now, java.util.Locale.UK))
-        assertEquals("18:02", clockText("2026-10-24T18:02:12.123456789+00:00", java.time.ZoneOffset.UTC))
+        assertEquals("18:02:12", exactTimeText("2026-10-24T18:02:12.123456789+00:00", now))
+    }
+
+    @Test
+    fun exactTimes() {
+        val now = java.time.ZonedDateTime.of(2026, 10, 25, 12, 0, 0, 0, java.time.ZoneOffset.ofHours(1))
+        assertEquals("11:59:30 · just now", exactTimeText("2026-10-25T10:59:30Z", now))
+        assertEquals("11:55:00 · 5\u00A0min ago", exactTimeText("2026-10-25T11:55:00+01:00", now))
+        assertEquals("11:00:01 · 59\u00A0min ago", exactTimeText("2026-10-25T11:00:01+01:00", now))
+        assertEquals("11:00:00", exactTimeText("2026-10-25T11:00:00+01:00", now))
+        assertEquals("12:00:05", exactTimeText("2026-10-25T12:00:05+01:00", now)) // ahead of the phone's clock
+        assertEquals("", exactTimeText("not a time", now))
+    }
+
+    /** Every readable time shows its seconds in the phone's zone; how long ago only within the hour before now. */
+    @Test
+    fun exactTimesProperty() {
+        val now = java.time.ZonedDateTime.of(2026, 10, 25, 12, 0, 0, 0, java.time.ZoneId.of("Europe/Rome"))
+        forAll({ nextLong(-7200, 200_000) to nextInt(-12, 13) }) { (secondsAgo, offset) ->
+            val t = now.toInstant().minusSeconds(secondsAgo).atOffset(java.time.ZoneOffset.ofHours(offset))
+            val text = exactTimeText(t.toString(), now)
+            val clock = t.atZoneSameInstant(now.zone).format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"))
+            assertTrue(text, text.startsWith(clock))
+            assertEquals(text, secondsAgo in 0 until 3600, " · " in text)
+        }
     }
 
     @Test

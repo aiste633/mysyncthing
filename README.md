@@ -12,7 +12,9 @@ See your sync status at a glance, without opening the app. The widget is a singl
 
 - Folders and devices as clear cards with colour and icon status, in Material You colours and dark mode.
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning.
-- Run conditions: Wi-Fi only, unmetered only, while charging, not in battery saver.
+- Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver.
+- Connect through a SOCKS5 or HTTP proxy, such as Tor with Orbot, optionally with nothing going around it.
+- Export the setup to a zip, optionally AES-256 encrypted, and import it, or a Syncthing-Fork backup, on another phone.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.
 - Notifies you of new devices and shared folders (with Review and Ignore) and of folders that stop syncing.
 - Works with TalkBack: every button is named and every switch and checkbox reads as on or off.

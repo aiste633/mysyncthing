@@ -1,0 +1,429 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Mon, 26 Oct 2026 23:50:00 +0000
+Subject: [PATCH] lib/dialer: set the proxy at run time
+
+The proxy comes from all_proxy and ALL_PROXY_NO_FALLBACK, which are read
+once per process (x/net/proxy caches the environment). An app that runs
+the core in its own process cannot change the proxy without restarting
+that process.
+
+Add dialer.SetProxy, which replaces the proxy for later dials. Literal
+loopback, private and link-local addresses are dialed directly, as they
+never leave the local network. With no fallback, QUIC (UDP, which the
+proxies do not carry; its listener also runs STUN) and NAT port mapping
+(it announces the public address) are off, so nothing goes around the
+proxy. Without SetProxy the environment applies as before.
+---
+diff --git a/lib/connections/proxyonly_test.go b/lib/connections/proxyonly_test.go
+new file mode 100644
+index 0000000..4d3a519
+--- /dev/null
++++ b/lib/connections/proxyonly_test.go
+@@ -0,0 +1,38 @@
++// Copyright (C) 2026 The Syncthing Authors.
++//
++// This Source Code Form is subject to the terms of the Mozilla Public
++// License, v. 2.0. If a copy of the MPL was not distributed with this file,
++// You can obtain one at https://mozilla.org/MPL/2.0/.
++
++package connections
++
++import (
++	"net/url"
++	"testing"
++
++	"github.com/syncthing/syncthing/lib/config"
++	"github.com/syncthing/syncthing/lib/dialer"
++)
++
++func TestQUICOffWhenProxyOnly(t *testing.T) {
++	t.Cleanup(func() { _ = dialer.SetProxy(nil, false) })
++	proxy := &url.URL{Scheme: "socks5", Host: "127.0.0.1:9050"}
++	for _, noFallback := range []bool{false, true} {
++		if err := dialer.SetProxy(proxy, noFallback); err != nil {
++			t.Fatal(err)
++		}
++		want := error(nil)
++		if noFallback {
++			want = errProxyOnly
++		}
++		if err := (quicDialerFactory{}).Valid(config.Configuration{}); err != want {
++			t.Errorf("noFallback %v: QUIC dialer %v, want %v", noFallback, err, want)
++		}
++		if err := (&quicListenerFactory{}).Valid(config.Configuration{}); err != want {
++			t.Errorf("noFallback %v: QUIC listener %v, want %v", noFallback, err, want)
++		}
++		if err := (tcpDialerFactory{}).Valid(config.Configuration{}); err != nil {
++			t.Errorf("noFallback %v: TCP dialer %v", noFallback, err)
++		}
++	}
++}
+diff --git a/lib/connections/quic_dial.go b/lib/connections/quic_dial.go
+index fea0bd2..df837c9 100644
+--- a/lib/connections/quic_dial.go
++++ b/lib/connections/quic_dial.go
+@@ -20,6 +20,7 @@ import (
+ 
+ 	"github.com/syncthing/syncthing/lib/config"
+ 	"github.com/syncthing/syncthing/lib/connections/registry"
++	"github.com/syncthing/syncthing/lib/dialer"
+ 	"github.com/syncthing/syncthing/lib/protocol"
+ )
+ 
+@@ -116,7 +117,9 @@ func (quicDialerFactory) AlwaysWAN() bool {
+ }
+ 
+ func (quicDialerFactory) Valid(_ config.Configuration) error {
+-	// Always valid
++	if dialer.NoFallback() {
++		return errProxyOnly
++	}
+ 	return nil
+ }
+ 
+diff --git a/lib/connections/quic_listen.go b/lib/connections/quic_listen.go
+index 2615d8d..15c1769 100644
+--- a/lib/connections/quic_listen.go
++++ b/lib/connections/quic_listen.go
+@@ -24,6 +24,7 @@ import (
+ 	"github.com/syncthing/syncthing/internal/slogutil"
+ 	"github.com/syncthing/syncthing/lib/config"
+ 	"github.com/syncthing/syncthing/lib/connections/registry"
++	"github.com/syncthing/syncthing/lib/dialer"
+ 	"github.com/syncthing/syncthing/lib/nat"
+ 	"github.com/syncthing/syncthing/lib/stun"
+ 	"github.com/syncthing/syncthing/lib/svcutil"
+@@ -248,6 +249,11 @@ func (t *quicListener) NATType() string {
+ type quicListenerFactory struct{}
+ 
+ func (*quicListenerFactory) Valid(config.Configuration) error {
++	// Also keeps STUN, which runs in the listener, from telling the
++	// outside this device's address.
++	if dialer.NoFallback() {
++		return errProxyOnly
++	}
+ 	return nil
+ }
+ 
+diff --git a/lib/connections/service.go b/lib/connections/service.go
+index cd0dd70..5666171 100644
+--- a/lib/connections/service.go
++++ b/lib/connections/service.go
+@@ -63,6 +63,8 @@ var (
+ 	// These are specific explanations for errUnsupported.
+ 	errDisabled   = fmt.Errorf("%w: disabled by configuration", errUnsupported)
+ 	errDeprecated = fmt.Errorf("%w: deprecated", errUnsupported)
++	// QUIC is UDP, which the dialer's proxies do not carry.
++	errProxyOnly = fmt.Errorf("%w: disabled while all connections must go through the proxy", errUnsupported)
+ 
+ 	// Various reasons to reject a connection
+ 	errNetworkNotAllowed      = errors.New("network not allowed")
+diff --git a/lib/dialer/internal.go b/lib/dialer/internal.go
+index 0c27301..816385d 100644
+--- a/lib/dialer/internal.go
++++ b/lib/dialer/internal.go
+@@ -18,19 +18,30 @@ import (
+ 	"net/url"
+ 	"os"
+ 	"sync"
++	"sync/atomic"
+ 	"time"
+ 
+ 	"golang.org/x/net/proxy"
+ )
+ 
+-var noFallback = os.Getenv("ALL_PROXY_NO_FALLBACK") != ""
++// proxyState is the proxy dials go through: proxy.Direct when there is none.
++// It starts from the environment (all_proxy, ALL_PROXY_NO_FALLBACK), which
++// is read once per process; SetProxy replaces it at run time.
++type proxyState struct {
++	dialer     proxy.Dialer
++	noFallback bool
++}
++
++var current atomic.Pointer[proxyState]
+ 
+ func init() {
+ 	proxy.RegisterDialerType("socks", socksDialerFunction)
+ 	proxy.RegisterDialerType("http", httpDialerFunction)
+ 	proxy.RegisterDialerType("https", httpDialerFunction)
+ 
+-	if proxyDialer := proxy.FromEnvironment(); proxyDialer != proxy.Direct {
++	current.Store(&proxyState{proxy.FromEnvironment(), os.Getenv("ALL_PROXY_NO_FALLBACK") != ""})
++	if proxyDialer := current.Load().dialer; proxyDialer != proxy.Direct {
++		noFallback := current.Load().noFallback
+ 		http.DefaultTransport = &http.Transport{
+ 			DialContext:         DialContext,
+ 			Proxy:               http.ProxyFromEnvironment,
+diff --git a/lib/dialer/public.go b/lib/dialer/public.go
+index 1844af9..a32d338 100644
+--- a/lib/dialer/public.go
++++ b/lib/dialer/public.go
+@@ -11,6 +11,8 @@ import (
+ 	"errors"
+ 	"fmt"
+ 	"net"
++	"net/url"
++	"strings"
+ 	"time"
+ 
+ 	"github.com/syncthing/syncthing/lib/connections/registry"
+@@ -64,8 +66,56 @@ func SetTrafficClass(conn net.Conn, class int) error {
+ 	}
+ }
+ 
++// SetProxy makes later dials go through the proxy at u (a URL with the
++// scheme socks5, http or https, and an optional user and password), or
++// directly when u is nil. With noFallback a failed proxy dial is not retried directly, and
++// QUIC and NAT port mapping, which would bypass the proxy, are off (see
++// NoFallback). Literal loopback, private and link-local addresses are always
++// dialed directly: they never leave the local network. Connections that are
++// already open are kept.
++func SetProxy(u *url.URL, noFallback bool) error {
++	if u == nil {
++		current.Store(&proxyState{dialer: proxy.Direct})
++		return nil
++	}
++	d, err := proxy.FromURL(u, proxy.Direct)
++	if err != nil {
++		return err
++	}
++	current.Store(&proxyState{localDirect{d}, noFallback})
++	return nil
++}
++
++// localDirect dials literal loopback, private and link-local addresses
++// directly and everything else through the proxy.
++type localDirect struct{ proxy proxy.Dialer }
++
++func (l localDirect) Dial(network, addr string) (net.Conn, error) {
++	return l.DialContext(context.Background(), network, addr)
++}
++
++func (l localDirect) DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
++	if host, _, err := net.SplitHostPort(addr); err == nil {
++		host, _, _ = strings.Cut(host, "%") // the zone of a link-local address
++		if ip := net.ParseIP(host); ip != nil && (ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast()) {
++			return proxy.Direct.DialContext(ctx, network, addr)
++		}
++	}
++	if cd, ok := l.proxy.(proxy.ContextDialer); ok {
++		return cd.DialContext(ctx, network, addr)
++	}
++	return l.proxy.Dial(network, addr)
++}
++
++// NoFallback is true when a proxy is set and nothing may go around it.
++func NoFallback() bool {
++	s := current.Load()
++	return s.dialer != proxy.Direct && s.noFallback
++}
++
+ func dialContextWithFallback(ctx context.Context, fallback proxy.ContextDialer, network, addr string) (net.Conn, error) {
+-	dialer, ok := proxy.FromEnvironment().(proxy.ContextDialer)
++	state := current.Load()
++	dialer, ok := state.dialer.(proxy.ContextDialer)
+ 	if !ok {
+ 		return nil, errUnexpectedInterfaceType
+ 	}
+@@ -74,7 +124,7 @@ func dialContextWithFallback(ctx context.Context, fallback proxy.ContextDialer,
+ 		l.Debugf("Dialing direct result %s %s: %v %v", network, addr, conn, err)
+ 		return conn, err
+ 	}
+-	if noFallback {
++	if state.noFallback {
+ 		conn, err := dialer.DialContext(ctx, network, addr)
+ 		l.Debugf("Dialing no fallback result %s %s: %v %v", network, addr, conn, err)
+ 		if err != nil {
+@@ -107,7 +157,7 @@ func DialContext(ctx context.Context, network, addr string) (net.Conn, error) {
+ func DialContextReusePortFunc(registry *registry.Registry) func(ctx context.Context, network, addr string) (net.Conn, error) {
+ 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
+ 		// If proxy is configured, there is no point trying to reuse listen addresses.
+-		if proxy.FromEnvironment() != proxy.Direct {
++		if current.Load().dialer != proxy.Direct {
+ 			return DialContext(ctx, network, addr)
+ 		}
+ 
+diff --git a/lib/dialer/setproxy_test.go b/lib/dialer/setproxy_test.go
+new file mode 100644
+index 0000000..85f8cd7
+--- /dev/null
++++ b/lib/dialer/setproxy_test.go
+@@ -0,0 +1,108 @@
++// Copyright (C) 2026 The Syncthing Authors.
++//
++// This Source Code Form is subject to the terms of the Mozilla Public
++// License, v. 2.0. If a copy of the MPL was not distributed with this file,
++// You can obtain one at https://mozilla.org/MPL/2.0/.
++
++package dialer
++
++import (
++	"bufio"
++	"context"
++	"net"
++	"net/http"
++	"net/url"
++	"testing"
++	"time"
++)
++
++// connectProxy answers every CONNECT with 200 and reports its target.
++func connectProxy(t *testing.T) (*url.URL, <-chan string) {
++	t.Helper()
++	ln, err := net.Listen("tcp", "127.0.0.1:0")
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { ln.Close() })
++	targets := make(chan string, 8)
++	go func() {
++		for {
++			c, err := ln.Accept()
++			if err != nil {
++				return
++			}
++			go func() {
++				defer c.Close()
++				req, err := http.ReadRequest(bufio.NewReader(c))
++				if err != nil {
++					return
++				}
++				targets <- req.Method + " " + req.Host
++				_, _ = c.Write([]byte("HTTP/1.1 200 OK\r\n\r\n"))
++				time.Sleep(100 * time.Millisecond)
++			}()
++		}
++	}()
++	return &url.URL{Scheme: "http", Host: ln.Addr().String()}, targets
++}
++
++func TestSetProxy(t *testing.T) {
++	t.Cleanup(func() { _ = SetProxy(nil, false) })
++	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
++	defer cancel()
++
++	proxyURL, targets := connectProxy(t)
++	if err := SetProxy(proxyURL, true); err != nil {
++		t.Fatal(err)
++	}
++	if !NoFallback() {
++		t.Fatal("NoFallback is false with a proxy set without fallback")
++	}
++
++	// A name goes to the proxy unresolved.
++	c, err := DialContext(ctx, "tcp", "relay.example.org:22067")
++	if err != nil {
++		t.Fatal(err)
++	}
++	c.Close()
++	if got := <-targets; got != "CONNECT relay.example.org:22067" {
++		t.Fatalf("proxy got %q", got)
++	}
++
++	// The local network is dialed directly.
++	local, err := net.Listen("tcp", "127.0.0.1:0")
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer local.Close()
++	c, err = DialContext(ctx, "tcp", local.Addr().String())
++	if err != nil {
++		t.Fatal(err)
++	}
++	c.Close()
++	select {
++	case got := <-targets:
++		t.Fatalf("local dial went to the proxy: %q", got)
++	case <-time.After(200 * time.Millisecond):
++	}
++
++	// Without fallback, a proxy that is down fails the dial.
++	dead := &url.URL{Scheme: "socks5", Host: local.Addr().String()}
++	local.Close()
++	if err := SetProxy(dead, true); err != nil {
++		t.Fatal(err)
++	}
++	if _, err := DialContext(ctx, "tcp", "relay.example.org:22067"); err == nil {
++		t.Fatal("dial succeeded with the proxy down and no fallback")
++	}
++
++	if err := SetProxy(nil, true); err != nil {
++		t.Fatal(err)
++	}
++	if NoFallback() {
++		t.Fatal("NoFallback is true without a proxy")
++	}
++	if err := SetProxy(&url.URL{Scheme: "ftp", Host: "127.0.0.1:21"}, false); err == nil {
++		t.Fatal("unknown proxy scheme accepted")
++	}
++}
+diff --git a/lib/nat/proxyonly_test.go b/lib/nat/proxyonly_test.go
+new file mode 100644
+index 0000000..62532bd
+--- /dev/null
++++ b/lib/nat/proxyonly_test.go
+@@ -0,0 +1,32 @@
++// Copyright (C) 2026 The Syncthing Authors.
++//
++// This Source Code Form is subject to the terms of the Mozilla Public
++// License, v. 2.0. If a copy of the MPL was not distributed with this file,
++// You can obtain one at https://mozilla.org/MPL/2.0/.
++
++package nat
++
++import (
++	"net/url"
++	"testing"
++
++	"github.com/syncthing/syncthing/lib/config"
++	"github.com/syncthing/syncthing/lib/dialer"
++	"github.com/syncthing/syncthing/lib/protocol"
++)
++
++func TestNATOffWhenProxyOnly(t *testing.T) {
++	t.Cleanup(func() { _ = dialer.SetProxy(nil, false) })
++	on := config.Configuration{Options: config.OptionsConfiguration{NATEnabled: true}}
++	proxy := &url.URL{Scheme: "socks5", Host: "127.0.0.1:9050"}
++	for _, noFallback := range []bool{false, true} {
++		if err := dialer.SetProxy(proxy, noFallback); err != nil {
++			t.Fatal(err)
++		}
++		s := &Service{id: protocol.EmptyDeviceID, processScheduled: make(chan struct{}, 1)}
++		s.CommitConfiguration(on, on)
++		if s.enabled == noFallback {
++			t.Errorf("noFallback %v: NAT enabled %v", noFallback, s.enabled)
++		}
++	}
++}
+diff --git a/lib/nat/service.go b/lib/nat/service.go
+index 112bc46..f797833 100644
+--- a/lib/nat/service.go
++++ b/lib/nat/service.go
+@@ -19,6 +19,7 @@ import (
+ 
+ 	"github.com/syncthing/syncthing/internal/slogutil"
+ 	"github.com/syncthing/syncthing/lib/config"
++	"github.com/syncthing/syncthing/lib/dialer"
+ 	"github.com/syncthing/syncthing/lib/protocol"
+ )
+ 
+@@ -46,12 +47,15 @@ func NewService(id protocol.DeviceID, cfg config.Wrapper) *Service {
+ }
+ 
+ func (s *Service) CommitConfiguration(_, to config.Configuration) bool {
++	// A port mapping would announce this device's public address, which a
++	// proxy that nothing may go around is meant to hide.
++	enabled := to.Options.NATEnabled && !dialer.NoFallback()
+ 	s.mut.Lock()
+-	if !s.enabled && to.Options.NATEnabled {
++	if !s.enabled && enabled {
+ 		slog.Debug("Starting NAT service")
+ 		s.enabled = true
+ 		s.scheduleProcess()
+-	} else if s.enabled && !to.Options.NATEnabled {
++	} else if s.enabled && !enabled {
+ 		slog.Debug("Stopping NAT service")
+ 		s.enabled = false
+ 	}

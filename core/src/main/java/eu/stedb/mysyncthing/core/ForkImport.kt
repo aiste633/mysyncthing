@@ -15,15 +15,20 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
 
-/** What a Syncthing-Fork backup holds, as the import will apply it (go/bridge/forkimport.go). */
+/**
+ * What a backup holds, as the import will apply it (go/bridge/forkimport.go):
+ * a Syncthing-Fork backup ([source] "fork") or this app's export ("own").
+ */
 @Serializable
 data class ForkPreview(
+    val source: String = "fork",
     val deviceID: String,
     val deviceName: String = "",
     val configVersion: Int = 0,
     val folders: List<ForkFolder> = emptyList(),
     val devices: List<ForkDevice> = emptyList(),
-    val conditions: ForkConditions = ForkConditions(),
+    val conditions: RunConditions = RunConditions(),
+    val proxy: ProxySettings = ProxySettings(),
     val notImported: List<ForkNotImported> = emptyList(),
 )
 
@@ -42,21 +47,6 @@ data class ForkFolder(
 @Serializable
 data class ForkDevice(val id: String, val name: String = "")
 
-@Serializable
-data class ForkConditions(
-    val wifiOnly: Boolean = false,
-    val unmeteredOnly: Boolean = false,
-    val chargingOnly: Boolean = false,
-    val respectBatterySaver: Boolean = true,
-    val startOnBoot: Boolean = true,
-    val pausedByUser: Boolean = false,
-) {
-    fun applyTo(c: RunConditions) = c.copy(
-        wifiOnly = wifiOnly, unmeteredOnly = unmeteredOnly, chargingOnly = chargingOnly,
-        respectBatterySaver = respectBatterySaver, startOnBoot = startOnBoot, pausedByUser = pausedByUser,
-    )
-}
-
 /** A Fork setting without an equivalent here; [subject] names its folder or device. */
 @Serializable
 data class ForkNotImported(val key: String, val subject: String = "")
@@ -69,9 +59,9 @@ sealed interface ForkInspection {
 }
 
 /**
- * Imports a Syncthing-Fork backup (Fork: Settings > Import and Export). The
- * bridge reads it; this stops and restarts the core around the change and
- * stores the run conditions.
+ * Imports a Syncthing-Fork backup (Fork: Settings > Import and Export) or this
+ * app's own export (ConfigExport). The bridge reads it; this stops and
+ * restarts the core around the change and stores the run conditions and proxy.
  */
 object ForkImport {
     /** Where Fork writes its backup unless the user changed the path. */
@@ -105,7 +95,8 @@ object ForkImport {
         uri: Uri,
         password: String,
         keepIdentity: Boolean,
-        conditions: ForkConditions,
+        conditions: RunConditions,
+        proxy: ProxySettings,
         deleteBackup: Boolean,
     ): String? = withContext(Dispatchers.IO + NonCancellable) {
         val settings = Settings(context)
@@ -123,7 +114,8 @@ object ForkImport {
             }
 
             override suspend fun applySettings() = listOf(
-                settings.update { conditions.applyTo(it) },
+                settings.update { conditions },
+                settings.setProxy(proxy),
                 settings.setConditionPause(null), // the paused devices it remembers are the old setup's
                 // Without this the service takes the config without a database for a move from another
                 // phone and says so; the import screen already tells what the import means.

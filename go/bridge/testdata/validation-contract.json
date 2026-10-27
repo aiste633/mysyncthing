@@ -1,0 +1,674 @@
+{
+ "proxy": [
+  {
+   "scheme": "socks5",
+   "host": "127.0.0.1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "0.0.0.0",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "203.0.113.255",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "198.51.100.0",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "::1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "::",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8::1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8::7",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "::192.0.2.1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8::3:4:5:6:7",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8:0:0:0:0:0:1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8::ABC",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "proxy.example.org",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "proxy.example.org.",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p-1.example",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "a.b-c.d",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "xn--prxy-0ra.example",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "localhost",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "123abc.example",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "a1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "192.0.2.999",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "192.0.2.01",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "192.0.2.4.5",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "10.0.0",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "[::1]",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "::1%lo",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8::1%wlan0",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": ":::1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8::2::3",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "12345::1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "g::1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8:3:4:5:6:7:8:9",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8:3:4:5:6:7",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "proxy.example.org:1080",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "me@example.org",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p/x",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p q",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": " p",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p ",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "-p",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p-",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "a..b",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": ".",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": ".p",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "prøxy",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p_q",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.a.aa",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "192.0.2.",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "192.0.2.4.",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p\n",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "http",
+   "host": "p",
+   "port": 1,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "http",
+   "host": "p",
+   "port": 65535,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 0,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 65536,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": -1,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks4",
+   "host": "p",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "https",
+   "host": "p",
+   "port": 443,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "SOCKS5",
+   "host": "p",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "",
+   "host": "",
+   "port": 0,
+   "user": "",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "me",
+   "password": "p@1:/w?#rd",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "me",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "",
+   "password": "secret",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu",
+   "password": "ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "uuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "me",
+   "password": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "üüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüü",
+   "password": "",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "üüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüü",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "me\n",
+   "password": "",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "me",
+   "password": "a\u0000b",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "me",
+   "password": "ab",
+   "ok": false
+  },
+  {
+   "scheme": "socks5",
+   "host": "p",
+   "port": 1080,
+   "user": "me",
+   "password": "a​b",
+   "ok": true
+  },
+  {
+   "scheme": "socks5",
+   "host": "2001:db8::192.0.2.1",
+   "port": 1080,
+   "user": "",
+   "password": "",
+   "ok": true
+  }
+ ],
+ "exportPassword": [
+  {
+   "password": "",
+   "ok": true
+  },
+  {
+   "password": "123456789012",
+   "ok": true
+  },
+  {
+   "password": "twelve chars",
+   "ok": true
+  },
+  {
+   "password": "ünïcödé-pässwörd",
+   "ok": true
+  },
+  {
+   "password": "密码密码密码密码密码密码",
+   "ok": true
+  },
+  {
+   "password": "😀😀😀😀😀😀😀😀😀😀😀😀",
+   "ok": true
+  },
+  {
+   "password": "12345678901",
+   "ok": false
+  },
+  {
+   "password": "密码密码密码密码密码",
+   "ok": false
+  },
+  {
+   "password": "😀😀😀😀😀😀😀😀😀😀😀",
+   "ok": false
+  },
+  {
+   "password": "tab\tinside long",
+   "ok": false
+  },
+  {
+   "password": "line\nbreak inside",
+   "ok": false
+  },
+  {
+   "password": "deletecharacter",
+   "ok": false
+  },
+  {
+   "password": "zero-width ​ is format",
+   "ok": true
+  },
+  {
+   "password": "pppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+   "ok": true
+  },
+  {
+   "password": "ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp",
+   "ok": false
+  },
+  {
+   "password": "üüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüü",
+   "ok": true
+  },
+  {
+   "password": "üüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüüü",
+   "ok": false
+  }
+ ]
+}

@@ -147,3 +147,12 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Fuzz callbacks need an HTTP client timeout: an input running over ~10 s is killed as a hang with no message.
 - `TestHostCheck` in `lib/api` hangs in the cloud container (no IPv6 loopback); skip it there with `-skip '^TestHostCheck$'`.
 - Open: an offered folder whose ID holds `/` or a control character can be accepted but not edited natively (REST paths can't carry it).
+
+## Fork features: run conditions, proxy, export, exact times (2026-10-27)
+- Run conditions (`core/Settings.kt` `RunConditions`, `core/Conditions.kt`): unmetered Wi-Fi/Ethernet always; metered Wi-Fi (incl. hotspots and tethering), mobile data, roaming (only with mobile data) and power (`Any`, `ChargingOnly`, `BatteryOnly`) are separate. Old keys (`wifi_only`, `unmetered_only`, `charging_only`) migrate on read (`Preferences.runConditions()`, `SettingsMigrationTest`); roaming starts off. Offline under any network limit shows "No network".
+- Proxy (`ProxySettings`, `ui/ProxyScreen.kt`, `go/bridge/proxy.go`): SOCKS5 or HTTP CONNECT, optional user/password, "only through the proxy". `go/patches/0003` adds `dialer.SetProxy` (x/net/proxy caches the environment once per process, so env vars can't change it at run time); the bridge applies it at every core start; saving restarts a running core. Literal loopback/private/link-local IPs are dialed directly. Proxy-only also turns off QUIC (UDP; its listener runs STUN) and NAT port mapping. An unreadable stored proxy fails closed (the core doesn't start).
+- Export (`core/ConfigExport.kt`, `ui/ExportScreen.kt`, `go/bridge/export.go`): zip with config.xml (GUI login and API key stripped), cert.pem, key.pem and `mysyncthing.json` (run conditions + proxy, version 1, read strictly). With a password every entry is WinZip AES-256 AE-2 (min 12 characters: fixed 1000 PBKDF2 rounds); checked both ways against zip4j. The import (`forkimport.go`) reads both Fork's and this app's backups (`ForkPreview.source`).
+- Recent changes rows show `exactTimeText`: "HH:mm:ss · N min ago" within the hour, plain time otherwise, under the day headings.
+- Go/Kotlin contracts: `go/bridge/testdata/validation-contract.json` (proxy fields, export password) and `own-settings.json`. Fuzz targets `FuzzProxyFrom`, `FuzzReadOwnSettings`.
+- Leak check: test IPs only from the documentation ranges, hosts `*.example.org`; write URLs with a scheme as `"socks5" + "://..."`.
+

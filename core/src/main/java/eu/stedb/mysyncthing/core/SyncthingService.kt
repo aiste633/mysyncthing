@@ -107,7 +107,7 @@ class SyncthingService : LifecycleService() {
             // A Fork import leaves no database either, but explains that itself (ForkImport).
             val fresh = settings.takeFreshDatabaseExpected()
             if (File(home, "config.xml").exists() && !File(home, "index-v2").exists() && !fresh) settings.setMovedFromOtherPhone(true)
-            SyncthingCore.start(home, settings::credentials)
+            SyncthingCore.start(home, settings::credentials, settings.proxy.first())
         }
         val running = SyncthingCore.state.first { it !is CoreState.Starting }
         if (running !is CoreState.Running) return failed(running, "Failed to start")

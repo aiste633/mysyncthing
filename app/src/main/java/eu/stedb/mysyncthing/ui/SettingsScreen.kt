@@ -41,6 +41,10 @@ import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Smartphone
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.TravelExplore
+import androidx.compose.material.icons.filled.VpnLock
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +58,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.PowerSource
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
 import eu.stedb.mysyncthing.core.SyncthingService
@@ -71,9 +76,13 @@ fun SettingsScreen(
     onOpenDeviceDefaults: () -> Unit,
     onOpenAbout: () -> Unit,
     onOpenImport: () -> Unit,
+    onOpenExport: () -> Unit,
+    onOpenProxy: () -> Unit,
 ) {
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
+    val proxy by vm.proxy.collectAsStateWithLifecycle()
+    var powerDialog by rememberSaveable { mutableStateOf(false) }
     val requestNotifications = rememberNotificationRequest(permissions)
     var rename by rememberSaveable { mutableStateOf(false) }
     val running = core is CoreState.Running
@@ -121,17 +130,25 @@ fun SettingsScreen(
                 )
             }
 
-            SettingsGroup("Sync only when") {
-                Toggle("On Wi-Fi or Ethernet", "Pause on mobile data", Icons.Default.Wifi, rc.wifiOnly) { v ->
-                    vm.setRunConditions { it.copy(wifiOnly = v) }
+            SettingsGroup("Sync on") {
+                SettingRow("Unmetered Wi-Fi and Ethernet", "Always", Icons.Default.Wifi)
+                Toggle(
+                    "Metered Wi-Fi and hotspots", "Wi-Fi that Android or you marked as metered, another phone's hotspot, tethering",
+                    Icons.Default.NetworkCheck, rc.meteredWifi,
+                ) { v -> vm.setRunConditions { it.copy(meteredWifi = v) } }
+                Toggle("Mobile data", "Can cost money on a limited plan", Icons.Default.SignalCellularAlt, rc.mobileData) { v ->
+                    vm.setRunConditions { it.copy(mobileData = v) }
                 }
-                Toggle("On unmetered networks", "Pause on hotspots and metered Wi-Fi", Icons.Default.NetworkCheck, rc.unmeteredOnly) { v ->
-                    vm.setRunConditions { it.copy(unmeteredOnly = v) }
+                if (rc.mobileData) {
+                    Toggle("Mobile data while roaming", "Abroad or on another network, where data can cost extra", Icons.Default.TravelExplore, rc.roaming) { v ->
+                        vm.setRunConditions { it.copy(roaming = v) }
+                    }
                 }
-                Toggle("Charging", "Pause while on battery", Icons.Default.BatteryChargingFull, rc.chargingOnly) { v ->
-                    vm.setRunConditions { it.copy(chargingOnly = v) }
-                }
-                Toggle("Battery saver is off", "Pause while battery saver is on", Icons.Default.BatterySaver, rc.respectBatterySaver) { v ->
+            }
+
+            SettingsGroup("Power") {
+                SettingRow("Sync when", powerText(rc.power), Icons.Default.BatteryChargingFull) { powerDialog = true }
+                Toggle("Pause in battery saver", "Syncing waits while battery saver is on", Icons.Default.BatterySaver, rc.respectBatterySaver) { v ->
                     vm.setRunConditions { it.copy(respectBatterySaver = v) }
                 }
             }
@@ -147,8 +164,9 @@ fun SettingsScreen(
                 )
             }
 
-            opts?.let { o ->
-                SettingsGroup("Network") {
+            // The proxy is the app's setting, so it can be changed while the core is stopped or failed.
+            SettingsGroup("Network") {
+                opts?.let { o ->
                     SettingRow("Download limit", limitText(o.maxRecvKbps), Icons.Default.Download) { dialog = NetDialog.Recv }
                     SettingRow("Upload limit", limitText(o.maxSendKbps), Icons.Default.Upload) { dialog = NetDialog.Send }
                     Toggle(
@@ -156,6 +174,9 @@ fun SettingsScreen(
                         Icons.Default.Lan, o.limitBandwidthInLan,
                     ) { v -> change(o.copy(limitBandwidthInLan = v), "Limit") { put("limitBandwidthInLan", v) } }
                 }
+                SettingRow("Proxy", proxy?.let(::proxyText), Icons.Default.VpnLock, onClick = onOpenProxy)
+            }
+            opts?.let { o ->
                 SettingsGroup("Finding devices") {
                     Toggle("Local network", "Find devices on the same Wi-Fi", Icons.Default.Router, o.localAnnounceEnabled) { v ->
                         change(o.copy(localAnnounceEnabled = v), "Local discovery") { put("localAnnounceEnabled", v) }
@@ -192,7 +213,11 @@ fun SettingsScreen(
                     }
                 }
                 SettingRow(
-                    "Import from Syncthing-Fork", "Folders, devices and settings from a Fork backup",
+                    "Export a backup", "Folders, devices, this phone's identity and sync settings, as a zip file",
+                    Icons.Default.SaveAlt, onClick = onOpenExport,
+                )
+                SettingRow(
+                    "Import a backup", "From this app's export or a Syncthing-Fork backup",
                     Icons.Default.FileOpen, onClick = onOpenImport,
                 )
             }
@@ -254,6 +279,13 @@ fun SettingsScreen(
         null -> {}
     }
 
+    if (powerDialog) {
+        ChoiceDialog(
+            "Sync when", PowerSource.entries.map { it to powerText(it) }, rc.power, describe = ::powerHint,
+            onDismiss = { powerDialog = false },
+        ) { p -> powerDialog = false; vm.setRunConditions { it.copy(power = p) } }
+    }
+
     if (rename) {
         TextDialog("Device name", s.myName, "Name", supporting = "Other devices see this name", onDismiss = { rename = false }) {
             vm.renameDevice(s.myId, it); rename = false
@@ -273,4 +305,16 @@ private fun listText(list: List<String>, defaultText: String): String =
 
 private fun JsonObjectBuilder.putStrings(key: String, list: List<String>) {
     putJsonArray(key) { list.forEach { add(JsonPrimitive(it)) } }
+}
+
+fun powerText(p: PowerSource): String = when (p) {
+    PowerSource.Any -> "Charging or on battery"
+    PowerSource.ChargingOnly -> "Only while charging"
+    PowerSource.BatteryOnly -> "Only on battery"
+}
+
+private fun powerHint(p: PowerSource): String? = when (p) {
+    PowerSource.Any -> null
+    PowerSource.ChargingOnly -> "Pauses when unplugged"
+    PowerSource.BatteryOnly -> "Pauses while plugged in"
 }

@@ -38,15 +38,20 @@ object SyncthingCore {
     fun checkIgnores(folderPath: String, lines: List<String>): String? =
         Stbridge.checkIgnores(folderPath, lines.joinToString("\n")).ifEmpty { null }
 
+    /** Sets the proxy for the next start or restart; throws when the bridge refuses it (see ProxySettings). */
+    fun setProxy(p: ProxySettings) = Stbridge.setProxy(p.type.scheme, p.host, p.port.toLong(), p.user, p.password, p.only)
+
     /**
-     * Starts the core with the login [login] gives; any failure on the
-     * way, storing new credentials included, ends in [CoreState.Failed].
+     * Starts the core with the login [login] gives, through [proxy]; any
+     * failure on the way, storing new credentials included, ends in
+     * [CoreState.Failed].
      */
-    internal suspend fun start(home: File, login: suspend () -> Credentials) = withContext(serial) {
+    internal suspend fun start(home: File, login: suspend () -> Credentials, proxy: ProxySettings) = withContext(serial) {
         if (Stbridge.isRunning()) return@withContext
         _state.value = CoreState.Starting
         _state.value = try {
             val credentials = login()
+            setProxy(proxy)
             Stbridge.start(home.absolutePath, credentials.apiKey, credentials.guiUser, credentials.guiPassword)
             val address = Stbridge.guiAddress()
             val client = RestClient(address, credentials.apiKey)

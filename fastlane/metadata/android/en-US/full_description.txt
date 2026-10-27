@@ -5,7 +5,9 @@
 <li>Folder and device settings, with Material You colours and dark mode</li>
 <li>Notifications for new devices and shared folders, with Review and Ignore</li>
 <li>Runs as a foreground service and starts at boot</li>
-<li>Run conditions: Wi-Fi only, unmetered networks only, charging only, pause in battery saver</li>
+<li>Run conditions: metered Wi-Fi, mobile data and roaming each on or off, only while charging or only on battery, pause in battery saver</li>
+<li>SOCKS5 or HTTP proxy, such as Tor with Orbot</li>
+<li>Backup export, optionally AES-256 encrypted, and import, also from Syncthing-Fork</li>
 <li>Syncthing's own web interface is built in for advanced settings</li>
 </ul>
 <p>The Syncthing core (v2) runs inside the app. Reaching folders anywhere on shared storage needs the "All files access" permission.</p>

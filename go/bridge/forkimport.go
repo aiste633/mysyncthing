@@ -13,9 +13,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -29,7 +31,8 @@ import (
 // Import of a Syncthing-Fork backup (Fork's Settings > Import and Export): a
 // zip, optionally WinZip-AES encrypted, holding config.xml, cert.pem, key.pem,
 // sharedpreferences.dat, the GUI's HTTPS certificate and the index database.
-// Only the first four are read, in memory. The database is never imported:
+// Only the first four are read, in memory. The app's own export (export.go)
+// has the same layout with mysyncthing.json in place of the preferences. The database is never imported:
 // with an empty one the core treats every folder as new, so a file missing on
 // this phone can not be mistaken for a deletion and spread to other devices.
 
@@ -39,6 +42,7 @@ var forkEntries = map[string]int64{
 	"cert.pem":              64 << 10,
 	"key.pem":               64 << 10,
 	"sharedpreferences.dat": 1 << 20,
+	ownSettingsFile:         64 << 10,
 }
 
 type forkBackup struct {
@@ -47,7 +51,8 @@ type forkBackup struct {
 	configXML       []byte
 	cfg             config.Configuration // migrated to the current version
 	configVersion   int
-	prefs           map[string]any
+	prefs           map[string]any // Fork's preferences
+	own             *ownSettings   // or the app's own settings
 }
 
 // ErrNeedPassword and ErrWrongPassword return the messages of the errors the
@@ -173,6 +178,14 @@ func readForkBackup(r io.ReaderAt, size int64, password string) (*forkBackup, er
 		return nil, fmt.Errorf("config.xml: %w", err)
 	}
 
+	if data["sharedpreferences.dat"] != nil && data[ownSettingsFile] != nil {
+		return nil, errors.New("not a Syncthing backup: it holds settings of two apps")
+	}
+	if js := data[ownSettingsFile]; js != nil {
+		if b.own, err = readOwnSettings(js); err != nil {
+			return nil, fmt.Errorf("%s: %w", ownSettingsFile, err)
+		}
+	}
 	if dat := data["sharedpreferences.dat"]; dat != nil {
 		if b.prefs, err = readJavaPrefs(dat); err != nil {
 			return nil, fmt.Errorf("sharedpreferences.dat: %w", err)
@@ -287,12 +300,14 @@ func writeFileSync(path string, data []byte) error {
 
 // forkPreview is what the app shows before importing.
 type forkPreview struct {
+	Source        string          `json:"source"` // "fork" or "own" (this app's export)
 	DeviceID      string          `json:"deviceID"`
 	DeviceName    string          `json:"deviceName"`
 	ConfigVersion int             `json:"configVersion"`
 	Folders       []previewFolder `json:"folders"`
 	Devices       []previewDevice `json:"devices"`
-	Conditions    forkConditions  `json:"conditions"`
+	Conditions    runConditions   `json:"conditions"`
+	Proxy         proxySettings   `json:"proxy"`
 	NotImported   []notImported   `json:"notImported"`
 }
 
@@ -328,7 +343,12 @@ func (b *forkBackup) preview(stat func(config.FolderConfiguration) (bool, bool))
 		exists, marker := stat(f)
 		p.Folders = append(p.Folders, previewFolder{f.ID, f.Label, f.Path, f.Type.String(), exists, marker})
 	}
-	p.Conditions, p.NotImported = mapForkPrefs(b.prefs, b.cfg)
+	if b.own != nil {
+		p.Source, p.Conditions, p.Proxy, p.NotImported = "own", b.own.Conditions, b.own.Proxy, []notImported{}
+	} else {
+		p.Source = "fork"
+		p.Conditions, p.Proxy, p.NotImported = mapForkPrefs(b.prefs, b.cfg)
+	}
 	return p
 }
 
@@ -343,14 +363,66 @@ func statFolder(f config.FolderConfiguration) (exists, marker bool) {
 	}
 }
 
-// forkConditions are the app's run conditions (core/Settings.kt RunConditions).
-type forkConditions struct {
-	WifiOnly            bool `json:"wifiOnly"`
-	UnmeteredOnly       bool `json:"unmeteredOnly"`
-	ChargingOnly        bool `json:"chargingOnly"`
-	RespectBatterySaver bool `json:"respectBatterySaver"`
-	StartOnBoot         bool `json:"startOnBoot"`
-	PausedByUser        bool `json:"pausedByUser"`
+// runConditions are the app's run conditions (core/Settings.kt RunConditions).
+type runConditions struct {
+	MeteredWifi         bool   `json:"meteredWifi"`
+	MobileData          bool   `json:"mobileData"`
+	Roaming             bool   `json:"roaming"`
+	Power               string `json:"power"` // Any, ChargingOnly, BatteryOnly
+	RespectBatterySaver bool   `json:"respectBatterySaver"`
+	StartOnBoot         bool   `json:"startOnBoot"`
+	PausedByUser        bool   `json:"pausedByUser"`
+}
+
+// proxySettings is the app's proxy (core/Settings.kt ProxySettings).
+type proxySettings struct {
+	Type     string `json:"type"` // None, Socks5, Http
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	User     string `json:"user"`
+	Password string `json:"password"`
+	Only     bool   `json:"only"`
+}
+
+var (
+	proxySchemes = map[string]string{"None": "", "Socks5": "socks5", "Http": "http"}
+	powerSources = map[string]bool{"Any": true, "ChargingOnly": true, "BatteryOnly": true}
+	torProxy     = proxySettings{Type: "Socks5", Host: "127.0.0.1", Port: 9050, Only: true}
+)
+
+// check refuses what the app could not apply: SetProxy's rules.
+func (p proxySettings) check() error {
+	scheme, ok := proxySchemes[p.Type]
+	if !ok {
+		return fmt.Errorf("proxy type %q", p.Type)
+	}
+	if scheme == "" {
+		if p != (proxySettings{Type: "None"}) {
+			return errors.New("proxy fields without a proxy type")
+		}
+		return nil
+	}
+	_, err := proxyFrom(scheme, p.Host, p.Port, p.User, p.Password)
+	return err
+}
+
+// forkProxy reads a proxy address as Fork stores it: a URL with the scheme
+// socks5 or http, a host and a port.
+func forkProxy(addr, wantScheme string) (proxySettings, bool) {
+	u, err := url.Parse(strings.TrimSpace(addr))
+	if err != nil || u.Scheme != wantScheme || u.Path != "" && u.Path != "/" || u.RawQuery != "" || u.Fragment != "" {
+		return proxySettings{}, false
+	}
+	port, err := strconv.Atoi(u.Port())
+	if err != nil {
+		return proxySettings{}, false
+	}
+	p := proxySettings{Type: map[string]string{"socks5": "Socks5", "http": "Http"}[wantScheme], Host: u.Hostname(), Port: port}
+	if u.User != nil {
+		p.User = u.User.Username()
+		p.Password, _ = u.User.Password()
+	}
+	return p, p.check() == nil
 }
 
 // notImported is a Fork setting the app has no equivalent for. Key is stable
@@ -360,15 +432,15 @@ type notImported struct {
 	Subject string `json:"subject,omitempty"`
 }
 
-// mapForkPrefs maps Fork's preferences to the app's run conditions, with
-// Fork's defaults for missing keys (Fork stores only changed ones).
+// mapForkPrefs maps Fork's preferences to the app's run conditions and
+// proxy, with Fork's defaults for missing keys (Fork stores only changed ones).
 //
-// Networks: the app never syncs on a network Fork would not have used, since
-// that could cost mobile data. Fork allows unmetered Wi-Fi (run_on_wifi),
-// metered Wi-Fi (also run_on_metered_wifi) and mobile data (run_on_mobile_data);
-// the app's choices allow all three, Wi-Fi only, or unmetered only. The
-// widest choice inside Fork's set is taken; anything narrower is reported.
-func mapForkPrefs(prefs map[string]any, cfg config.Configuration) (forkConditions, []notImported) {
+// Networks: Fork allows unmetered Wi-Fi (run_on_wifi), metered Wi-Fi (also
+// run_on_metered_wifi), mobile data (run_on_mobile_data) and roaming (also
+// run_on_roaming); the app has the same choices, except that it always
+// allows unmetered Wi-Fi. Fork without Wi-Fi gets no metered Wi-Fi either and
+// is reported. The app never syncs on a network Fork would not have used.
+func mapForkPrefs(prefs map[string]any, cfg config.Configuration) (runConditions, proxySettings, []notImported) {
 	boolean := func(key string, def bool) bool {
 		if v, ok := prefs[key].(bool); ok {
 			return v
@@ -385,30 +457,23 @@ func mapForkPrefs(prefs map[string]any, cfg config.Configuration) (forkCondition
 	note := func(key, subject string) { out = append(out, notImported{key, subject}) }
 
 	wifi := boolean("run_on_wifi", true)
-	meteredWifi := wifi && boolean("run_on_metered_wifi", false)
 	mobile := boolean("run_on_mobile_data", false)
-	c := forkConditions{
+	c := runConditions{
+		MeteredWifi:         wifi && boolean("run_on_metered_wifi", false),
+		MobileData:          mobile,
+		Roaming:             mobile && boolean("run_on_roaming", false),
+		Power:               "Any",
 		RespectBatterySaver: boolean("respect_battery_saving", true),
 		StartOnBoot:         boolean("always_run_in_background", false),
 	}
-	switch {
-	case wifi && meteredWifi && mobile:
-	case wifi && meteredWifi:
-		c.WifiOnly = true
-	case wifi && !mobile:
-		c.WifiOnly, c.UnmeteredOnly = true, true
-	case wifi: // mobile data but not metered Wi-Fi
-		c.UnmeteredOnly = true
-		note("networks", "")
-	default: // mobile data only, or no network at all
-		c.WifiOnly, c.UnmeteredOnly = true, true
+	if !wifi {
 		note("networks", "")
 	}
 	switch str("power_source", "ac_and_battery_power") {
 	case "ac_power":
-		c.ChargingOnly = true
+		c.Power = "ChargingOnly"
 	case "battery_power":
-		note("battery_only", "")
+		c.Power = "BatteryOnly"
 	}
 	switch v, _ := prefs["btnStateForceStartStop"].(int32); v {
 	case 1:
@@ -417,9 +482,26 @@ func mapForkPrefs(prefs map[string]any, cfg config.Configuration) (forkCondition
 		c.PausedByUser = true
 	}
 
-	if mobile && !boolean("run_on_roaming", false) {
-		note("roaming", "")
+	// Tor wins over the addresses, as in Fork; one proxy is taken.
+	proxy := proxySettings{Type: "None"}
+	if boolean("use_tor", false) {
+		proxy = torProxy
 	}
+	for _, s := range []struct{ pref, scheme, key string }{
+		{"socks_proxy_address", "socks5", "socks_proxy"},
+		{"http_proxy_address", "http", "http_proxy"},
+	} {
+		addr := strings.TrimSpace(str(s.pref, ""))
+		if addr == "" {
+			continue
+		}
+		if p, ok := forkProxy(addr, s.scheme); ok && proxy.Type == "None" {
+			proxy = p
+		} else {
+			note(s.key, "")
+		}
+	}
+
 	for _, s := range []struct {
 		pref, key string
 	}{
@@ -428,22 +510,13 @@ func mapForkPrefs(prefs map[string]any, cfg config.Configuration) (forkCondition
 		{"use_wifi_whitelist", "wifi_allowlist"},
 		{"run_on_time_schedule", "schedule"},
 		{"broadcast_service_control", "broadcasts"},
-		{"use_tor", "tor"},
 	} {
 		if boolean(s.pref, false) {
 			note(s.key, "")
 		}
 	}
-	for _, s := range []struct {
-		pref, key string
-	}{
-		{"socks_proxy_address", "socks_proxy"},
-		{"http_proxy_address", "http_proxy"},
-		{"environment_variables", "environment"},
-	} {
-		if strings.TrimSpace(str(s.pref, "")) != "" {
-			note(s.key, "")
-		}
+	if strings.TrimSpace(str("environment_variables", "")) != "" {
+		note("environment", "")
 	}
 	// Per-object keys are "sc_folder_<id>_<setting>"; folder IDs may contain
 	// "_", so they are matched against the config's IDs, never split.
@@ -460,5 +533,5 @@ func mapForkPrefs(prefs map[string]any, cfg config.Configuration) (forkCondition
 			note("device_conditions", cmp.Or(d.Name, d.DeviceID.Short().String()))
 		}
 	}
-	return c, out
+	return c, proxy, out
 }

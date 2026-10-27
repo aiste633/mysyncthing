@@ -43,15 +43,18 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import eu.stedb.mysyncthing.core.ForkConditions
 import eu.stedb.mysyncthing.core.ForkFolder
 import eu.stedb.mysyncthing.core.ForkImport
 import eu.stedb.mysyncthing.core.ForkNotImported
 import eu.stedb.mysyncthing.core.ForkPreview
+import eu.stedb.mysyncthing.core.PowerSource
+import eu.stedb.mysyncthing.core.ProxySettings
+import eu.stedb.mysyncthing.core.ProxyType
+import eu.stedb.mysyncthing.core.RunConditions
 import java.io.File
 
 /**
- * Import of a Syncthing-Fork backup: pick the file, enter its password if it
+ * Import of this app's export or a Syncthing-Fork backup: pick the file, enter its password if it
  * has one, review what is imported and what is not, then replace this phone's
  * setup. The steps live in [ImportViewModel].
  */
@@ -92,7 +95,7 @@ fun ImportScreen(onBack: () -> Unit, vm: ImportViewModel = viewModel()) {
                         s.problem,
                         "Syncthing restarted with the imported setup and is checking every folder again. " +
                             "Identical files are recognised and not transferred.",
-                        if (s.keepIdentity) "This phone now has the backup's device ID: stop or uninstall Syncthing-Fork " +
+                        if (s.keepIdentity) "This phone now has the backup's device ID: stop or uninstall Syncthing " +
                             "where the backup came from, or both will disturb each other's connections." else null,
                     ).joinToString("\n\n"),
                 )
@@ -112,8 +115,8 @@ private fun ChooseStep(onFound: (File) -> Unit, onPick: () -> Unit) {
     val found = remember { ForkImport.defaultBackup.takeIf { it.isFile } }
     Note(
         "Bring your setup over",
-        "In Syncthing-Fork, export a backup (Settings > Import and Export). This phone then gets its folders, " +
-            "devices and settings. The files in the folders are not part of the backup.",
+        "Choose a backup exported by this app (Settings > Export a backup), or by Syncthing-Fork (Settings > Import and Export). " +
+            "This phone then gets its folders, devices and settings. The files in the folders are not part of the backup.",
     )
     if (found != null) {
         SettingsGroup("Backup found") {
@@ -138,7 +141,7 @@ private fun PasswordStep(tried: String, wrong: Boolean, password: String, onChan
     var show by rememberSaveable { mutableStateOf(false) }
     var edited by rememberSaveable { mutableStateOf(false) }
     val problem = backupPasswordError(password, wrong && password == tried)
-    Note("Password protected", "Enter the password the backup was exported with in Syncthing-Fork.")
+    Note("Password protected", "Enter the password the backup was exported with.")
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         OutlinedTextField(
             password, { onChange(it); edited = true },
@@ -169,7 +172,8 @@ private fun ReviewStep(p: ForkPreview, onImport: (keepIdentity: Boolean, deleteB
     SettingsGroup("Device ID") {
         RadioRow(
             "Take over \"${p.deviceName.ifEmpty { shortId(p.deviceID) }}\" (${shortId(p.deviceID)})",
-            "Other devices keep syncing with this phone as before. Syncthing-Fork must not run under this ID any more.",
+            "Other devices keep syncing with this phone as before. " +
+                (if (p.source == "own") "The phone the backup came from" else "Syncthing-Fork") + " must not run under this ID any more.",
             keepIdentity,
         ) { keepIdentity = true }
         RadioRow(
@@ -185,7 +189,7 @@ private fun ReviewStep(p: ForkPreview, onImport: (keepIdentity: Boolean, deleteB
         p.devices.forEach { d -> SettingRow(d.name.ifEmpty { shortId(d.id) }, shortId(d.id), Icons.Default.Devices) }
     }
     SettingsGroup("Sync settings") {
-        conditionsText(p.conditions).forEach { SettingRow(it) }
+        conditionsText(p.conditions, p.proxy).forEach { SettingRow(it) }
     }
     if (p.notImported.isNotEmpty()) {
         SettingsGroup("Not imported") {
@@ -257,33 +261,30 @@ fun folderImportText(f: ForkFolder): String {
     }
 }
 
-fun conditionsText(c: ForkConditions): List<String> = listOfNotNull(
-    when {
-        c.wifiOnly && c.unmeteredOnly -> "On unmetered Wi-Fi"
-        c.wifiOnly -> "On Wi-Fi or Ethernet"
-        c.unmeteredOnly -> "On unmetered networks"
-        else -> "On any network"
-    },
-    if (c.chargingOnly) "While charging" else null,
-    if (c.respectBatterySaver) "Battery saver is off" else null,
+fun conditionsText(c: RunConditions, proxy: ProxySettings): List<String> = listOfNotNull(
+    "On " + listOfNotNull(
+        "unmetered Wi-Fi",
+        "metered Wi-Fi".takeIf { c.meteredWifi },
+        (if (c.roaming) "mobile data, also roaming" else "mobile data").takeIf { c.mobileData },
+    ).joinToString(", "),
+    powerText(c.power).takeIf { c.power != PowerSource.Any },
+    if (c.respectBatterySaver) "Pause in battery saver: on" else "Pause in battery saver: off",
     if (c.startOnBoot) "Start at boot: on" else "Start at boot: off",
     if (c.pausedByUser) "Syncing is paused" else null,
+    "Proxy: " + if (proxy.type == ProxyType.None) "none" else proxyText(proxy),
 )
 
 /** A Fork setting this app has no equivalent for, for people. */
 fun notImportedText(n: ForkNotImported): String = when (n.key) {
-    "networks" -> "Fork's network choice: no exact match here; set to the closest one that uses no network Fork avoided"
-    "battery_only" -> "Sync only on battery"
+    "networks" -> "Not syncing on Wi-Fi: here unmetered Wi-Fi is always used, metered Wi-Fi is off"
     "force_start" -> "Force start (sync regardless of conditions)"
-    "roaming" -> "Pause while roaming"
     "flight_mode" -> "Sync in flight mode"
     "master_sync" -> "Follow Android's auto-sync switch"
     "wifi_allowlist" -> "Sync only on chosen Wi-Fi networks"
     "schedule" -> "Sync on a time schedule"
     "broadcasts" -> "Control by other apps"
-    "tor" -> "Connect through Tor"
-    "socks_proxy" -> "SOCKS proxy"
-    "http_proxy" -> "HTTP proxy"
+    "socks_proxy" -> "SOCKS proxy: not a valid address, or Tor was on"
+    "http_proxy" -> "HTTP proxy: not a valid address, or another proxy was on"
     "environment" -> "Environment variables for Syncthing"
     "folder_conditions" -> "Own sync conditions of folder ${n.subject}"
     "folder_script" -> "Script after syncing folder ${n.subject}"
