@@ -182,7 +182,7 @@ fun SettingsScreen(
                     is CoreState.Stopped, is CoreState.Failed ->
                         SettingRow("Start Syncthing", null, Icons.Default.PowerSettingsNew) { SyncthingService.start(context) }
                     else -> SettingRow("Stop Syncthing", "Until you start it again or the phone restarts", Icons.Default.PowerSettingsNew) {
-                        SyncthingService.stop(context)
+                        SyncthingService.stopByUser(context)
                     }
                 }
                 if (running) {

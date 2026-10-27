@@ -1,15 +1,19 @@
 package eu.stedb.mysyncthing.core
 
 import android.content.Context
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import java.io.IOException
 import java.security.SecureRandom
 import java.util.Base64
 
@@ -32,9 +36,32 @@ data class RunConditions(
     val pausedByUser: Boolean = false,
 )
 
-class Settings(context: Context) {
-    private val store = context.applicationContext.dataStore
+/**
+ * The app's own settings. Writes fail when the phone's storage is full; they
+ * return false then (the stored values stay as they were) instead of throwing,
+ * as a throw from a launched coroutine would crash the app.
+ */
+class Settings internal constructor(
+    private val store: DataStore<Preferences>,
+    /** Which boot of the phone this is; -1 when unknown. */
+    private val bootCount: () -> Int = { -1 },
+) {
+    constructor(context: Context) : this(context.applicationContext.dataStore, {
+        android.provider.Settings.Global.getInt(context.contentResolver, android.provider.Settings.Global.BOOT_COUNT, -1)
+    })
 
+    /** Every write but [credentials]'s goes through here. */
+    private suspend fun write(block: (MutablePreferences) -> Unit): Boolean = try {
+        store.edit(block)
+        true
+    } catch (e: IOException) {
+        false
+    }
+
+    /**
+     * Throws [IOException] when new credentials can't be stored: the core must
+     * not start with a login the next start would not know.
+     */
     suspend fun credentials(): Credentials {
         val prefs = store.data.first()
         prefs.credentials()?.takeIf { it.guiPassword.length >= TOKEN_CHARS }?.let { return it }
@@ -50,35 +77,45 @@ class Settings(context: Context) {
 
     val runConditions: Flow<RunConditions> = store.data.map { it.runConditions() }
 
-    suspend fun update(transform: (RunConditions) -> RunConditions) {
-        store.edit {
-            val c = transform(it.runConditions())
-            it[WIFI_ONLY] = c.wifiOnly
-            it[UNMETERED_ONLY] = c.unmeteredOnly
-            it[CHARGING_ONLY] = c.chargingOnly
-            it[RESPECT_BATTERY_SAVER] = c.respectBatterySaver
-            it[START_ON_BOOT] = c.startOnBoot
-            it[PAUSED_BY_USER] = c.pausedByUser
-        }
+    suspend fun update(transform: (RunConditions) -> RunConditions): Boolean = write {
+        val c = transform(it.runConditions())
+        it[WIFI_ONLY] = c.wifiOnly
+        it[UNMETERED_ONLY] = c.unmeteredOnly
+        it[CHARGING_ONLY] = c.chargingOnly
+        it[RESPECT_BATTERY_SAVER] = c.respectBatterySaver
+        it[START_ON_BOOT] = c.startOnBoot
+        it[PAUSED_BY_USER] = c.pausedByUser
     }
 
     /** True once the user tapped Done on the setup checklist. */
     val setupDone: Flow<Boolean> = store.data.map { it[SETUP_DONE] ?: false }
 
     /** Also stores the Wi-Fi choice, whose default depends on [SETUP_DONE] (see [runConditions]). */
-    suspend fun setSetupDone() {
-        store.edit {
-            it[WIFI_ONLY] = it.runConditions().wifiOnly
-            it[SETUP_DONE] = true
-        }
+    suspend fun setSetupDone(): Boolean = write {
+        it[WIFI_ONLY] = it.runConditions().wifiOnly
+        it[SETUP_DONE] = true
+    }
+
+    /**
+     * The user stopped Syncthing (Settings or the notification): the app then
+     * doesn't start it when it opens, until the user starts it or the phone
+     * restarts. Stored as the boot it happened in, so it ends by itself with the
+     * next boot. A broadcast can't tell: Android 15+ also sends BOOT_COMPLETED
+     * when the app leaves the stopped state (a force-stop, an install).
+     */
+    val stoppedByUser: Flow<Boolean> = store.data.map { stopHolds(it[STOPPED_AT_BOOT], bootCount()) }
+
+    /** Writes only a change: it is asked on every start. */
+    suspend fun setStoppedByUser(stopped: Boolean): Boolean = when {
+        stoppedByUser.first() == stopped -> true
+        stopped -> write { it[STOPPED_AT_BOOT] = bootCount() }
+        else -> write { it.remove(STOPPED_AT_BOOT) }
     }
 
     /** True after a phone migration brought the identity along, until the user has seen the note. */
     val movedFromOtherPhone: Flow<Boolean> = store.data.map { it[MOVED] ?: false }
 
-    suspend fun setMovedFromOtherPhone(moved: Boolean) {
-        store.edit { it[MOVED] = moved }
-    }
+    suspend fun setMovedFromOtherPhone(moved: Boolean): Boolean = write { it[MOVED] = moved }
 
     /** Set by an import: the next start finds no database, and the import screen has explained why. */
     suspend fun setFreshDatabaseExpected(expected: Boolean) {
@@ -101,9 +138,8 @@ class Settings(context: Context) {
      */
     suspend fun conditionPause(): Set<String>? = store.data.first()[CONDITION_PAUSE]
 
-    suspend fun setConditionPause(userPaused: Set<String>?) {
-        store.edit { if (userPaused == null) it.remove(CONDITION_PAUSE) else it[CONDITION_PAUSE] = userPaused }
-    }
+    suspend fun setConditionPause(userPaused: Set<String>?): Boolean =
+        write { if (userPaused == null) it.remove(CONDITION_PAUSE) else it[CONDITION_PAUSE] = userPaused }
 
     private fun Preferences.runConditions() = RunConditions(
         // Mobile data can cost money, so new installs start on Wi-Fi only (setup asks).
@@ -137,6 +173,7 @@ class Settings(context: Context) {
         val SETUP_DONE = booleanPreferencesKey("setup_done")
         val MOVED = booleanPreferencesKey("moved_from_other_phone")
         val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
+        val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
 
         /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */
         const val TOKEN_CHARS = 64
@@ -147,3 +184,6 @@ class Settings(context: Context) {
         }
     }
 }
+
+/** A Stop made in boot [stoppedAt] holds in boot [now]; with the boot unknown (-1), until the user starts again. */
+internal fun stopHolds(stoppedAt: Int?, now: Int): Boolean = stoppedAt != null && stoppedAt == now

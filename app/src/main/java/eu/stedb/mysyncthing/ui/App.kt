@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import android.net.Uri
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -32,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -107,7 +110,13 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
             return@AppTheme
         }
         if (setupDone == null) return@AppTheme
-        LaunchedEffect(Unit) { SyncthingService.start(context) }
+        // Each time the app comes to the front, not only at its first composition, so a failed start is
+        // tried again. A Stop by the user holds: ON_START also comes with a rotation or the screen turning on.
+        val scope = rememberCoroutineScope()
+        LifecycleStartEffect(Unit) {
+            scope.launch { SyncthingService.startUnlessStopped(context) }
+            onStopOrDispose {}
+        }
 
         val nav = rememberNavController()
         val snackbar = remember { SnackbarHostState() }

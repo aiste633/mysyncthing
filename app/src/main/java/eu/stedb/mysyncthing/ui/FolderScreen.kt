@@ -40,6 +40,7 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.TextButton
 import androidx.compose.ui.text.input.KeyboardType
+import eu.stedb.mysyncthing.core.problemText
 import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.FolderStats
@@ -95,7 +96,7 @@ fun FolderScreen(
                         )
                     }
                     st?.error?.ifEmpty { null }?.let {
-                        Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                        Text(problemText(it), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
                     }
                     status.progress?.let { ProgressBar(it, look.color) }
                     if (st != null && f.needsReview(st)) {
@@ -144,7 +145,7 @@ fun FolderScreen(
             }
             if (errors.isNotEmpty()) {
                 SettingsGroup("Failed items") {
-                    errors.take(FAILED_PREVIEW).forEach { SettingRow(it.path, it.error) }
+                    errors.take(FAILED_PREVIEW).forEach { SettingRow(it.path, problemText(it.error)) }
                     if (errors.size > FAILED_PREVIEW) {
                         SettingRow(
                             "See all ${errors.size}", null,
