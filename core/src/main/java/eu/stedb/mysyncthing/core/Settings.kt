@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import java.io.IOException
 import java.security.SecureRandom
@@ -46,8 +47,11 @@ data class RunConditions(
     val power: PowerSource = PowerSource.Any,
     val respectBatterySaver: Boolean = true,
     val startOnBoot: Boolean = true,
-    /** Set by the widget or Settings; enforced like the other conditions. */
-    val pausedByUser: Boolean = false,
+    /**
+     * Set by the widget or Settings; enforced like the other conditions. Never
+     * in a backup: an import keeps this phone's own (go/bridge unpause).
+     */
+    @Transient val pausedByUser: Boolean = false,
     /** Sync only in [windows]. */
     val timeSchedule: Boolean = false,
     /** Kept while [timeSchedule] is off, so turning it on again restores them. */

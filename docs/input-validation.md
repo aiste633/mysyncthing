@@ -49,7 +49,7 @@ Go fuzz targets and tests in `go/bridge`.
 | Bridge `Start` credentials | 1 to 72 characters of `A-Z a-z 0-9 - _`, as `Settings` makes them; anything else is refused before a file is written |
 | `config.xml`, `cert.pem`, `key.pem` at start | An unreadable identity stops the start instead of being replaced by a new device ID; the GUI login and lock are applied and saved, or the start fails |
 | Web GUI config changes | `guiGuard` refuses any change to the GUI login or access settings |
-| Run conditions and proxy in an imported backup | `mysyncthing.json` (this app's export) is read strictly: version 1, no unknown or trailing data, a known power source, time windows checked as above, the proxy checked as above; Fork's proxy address fields go through the same check, a bad one is listed as not imported |
+| Run conditions and proxy in an imported backup | `mysyncthing.json` (this app's export) is read strictly: version 1, no unknown or trailing data (also no pause: a backup never pauses syncing; device and folder pauses in config.xml are cleared on export and import), a known power source, time windows checked as above, the proxy checked as above; Fork's proxy address fields go through the same check, a bad one is listed as not imported |
 | Stored time windows | An unreadable or invalid stored window is left out; with none left and "Only at set times" on, nothing syncs (fails closed) |
 | Stored proxy setting | An unreadable stored value becomes "SOCKS5, nothing else" with no host, which the bridge refuses: the core then does not start rather than connect directly |
 

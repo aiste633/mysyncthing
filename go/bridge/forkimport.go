@@ -236,6 +236,7 @@ func (b *forkBackup) install(homeDir string, keepIdentity bool) error {
 	// The old install's GUI login and API key go; the app sets its own at the next start.
 	cfg.GUI.User, cfg.GUI.Password, cfg.GUI.APIKey = "", "", ""
 	cfg.Options.StartBrowser = false
+	unpause(&cfg) // also for exports from other apps, or older ones
 
 	var buf bytes.Buffer
 	if err := cfg.WriteXML(&buf); err != nil {
@@ -287,6 +288,19 @@ func (b *forkBackup) withIdentity(id protocol.DeviceID) (config.Configuration, e
 	}
 	cfg.Defaults.Folder.Devices = drop(cfg.Defaults.Folder.Devices)
 	return cfg, nil
+}
+
+// unpause resumes every device and folder. A pause is the phone's state at
+// the time (often a run condition's pause of all devices), not a setting: a
+// setup taken from a backup starts syncing, and this phone's own pause
+// switch and run conditions decide from there.
+func unpause(cfg *config.Configuration) {
+	for i := range cfg.Devices {
+		cfg.Devices[i].Paused = false
+	}
+	for i := range cfg.Folders {
+		cfg.Folders[i].Paused = false
+	}
 }
 
 func writeFileSync(path string, data []byte) error {
@@ -370,7 +384,8 @@ func statFolder(f config.FolderConfiguration) (exists, marker bool) {
 	}
 }
 
-// runConditions are the app's run conditions (core/Settings.kt RunConditions).
+// runConditions are the app's run conditions (core/Settings.kt RunConditions),
+// without the user's pause: a backup never pauses syncing (see unpause).
 type runConditions struct {
 	MeteredWifi         bool   `json:"meteredWifi"`
 	MobileData          bool   `json:"mobileData"`
@@ -378,7 +393,6 @@ type runConditions struct {
 	Power               string `json:"power"` // Any, ChargingOnly, BatteryOnly
 	RespectBatterySaver bool   `json:"respectBatterySaver"`
 	StartOnBoot         bool   `json:"startOnBoot"`
-	PausedByUser        bool   `json:"pausedByUser"`
 	TimeSchedule        bool   `json:"timeSchedule"`
 	// Kept while TimeSchedule is off. Left out when empty: the app reads a
 	// missing list as empty, but not null.
@@ -544,7 +558,7 @@ func mapForkPrefs(prefs map[string]any, cfg config.Configuration) (runConditions
 	case 1:
 		note("force_start", "")
 	case 2:
-		c.PausedByUser = true
+		note("force_stop", "")
 	}
 
 	// Tor wins over the addresses, as in Fork; one proxy is taken.

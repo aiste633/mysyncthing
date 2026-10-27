@@ -35,7 +35,8 @@ class ForkPreviewTest {
     fun exportSettingsContract() {
         val written = ConfigExport.settingsJson(
             RunConditions(
-                meteredWifi = true, mobileData = true, power = PowerSource.BatteryOnly, startOnBoot = true, timeSchedule = true,
+                // Paused, but a backup never holds the pause.
+                meteredWifi = true, mobileData = true, power = PowerSource.BatteryOnly, startOnBoot = true, pausedByUser = true, timeSchedule = true,
                 windows = listOf(SyncWindow(22 * 60, 7 * 60, (1..5).toSet()), SyncWindow(0, 1439, setOf(6, 7))),
             ),
             ProxySettings(ProxyType.Socks5, "proxy.example.org", 1080, "me", "p@1:w/ord", only = true),

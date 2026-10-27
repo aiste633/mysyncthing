@@ -158,6 +158,7 @@ func writeBackup(w io.Writer, homeDir, password string, settingsJSON []byte, now
 		return fmt.Errorf("config.xml: %w", err)
 	}
 	cfg.GUI.User, cfg.GUI.Password, cfg.GUI.APIKey = "", "", ""
+	unpause(&cfg)
 	var cfgBuf bytes.Buffer
 	if err := cfg.WriteXML(&cfgBuf); err != nil {
 		return err

@@ -7,7 +7,6 @@
     "power": "BatteryOnly",
     "respectBatterySaver": true,
     "startOnBoot": true,
-    "pausedByUser": false,
     "timeSchedule": true,
     "windows": [
       {

@@ -77,7 +77,8 @@ class ImportTextTest {
             assertEquals(c.mobileData, "mobile data" in networks)
             assertEquals(c.mobileData && c.roaming, "roaming" in networks)
             assertEquals(c.power != PowerSource.Any, powerText(c.power) in lines)
-            assertEquals(c.pausedByUser, "Syncing is paused" in lines)
+            // A backup never pauses: the phone's own switch is kept.
+            assertFalse(lines.any { "pause" in it.lowercase() && !it.startsWith("Pause in battery saver") })
             assertEquals(1, lines.count { it.startsWith("Start at boot") })
             assertEquals(proxy.type == ProxyType.None, "Proxy: none" in lines)
             val times = lines.single { it.startsWith("Sync times: ") }
@@ -89,7 +90,7 @@ class ImportTextTest {
     @Test
     fun notImportedTexts() {
         val keys = listOf(
-            "networks", "force_start", "flight_mode", "master_sync", "wifi_allowlist",
+            "networks", "force_start", "force_stop", "flight_mode", "master_sync", "wifi_allowlist",
             "schedule", "broadcasts", "socks_proxy", "http_proxy", "environment",
         )
         keys.forEach { assertFalse("$it has no text", notImportedText(ForkNotImported(it)).contains('_')) }

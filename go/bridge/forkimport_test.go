@@ -91,6 +91,7 @@ type fixtureConfig struct {
 	SelfName string
 	Peer     protocol.DeviceID
 	Folders  []fixtureFolder
+	Paused   bool // every folder and device, as after a run condition paused syncing
 }
 
 // A Fork config.xml as the backups have it, trimmed to what matters; the core
@@ -103,6 +104,9 @@ var configTmpl = template.Must(template.New("config").Parse(`<configuration vers
         <device id="{{$.Peer}}" introducedBy=""></device>
         <versioning type="trashcan"><param key="cleanoutDays" val="14"></param></versioning>
         <markerName>.stfolder</markerName>
+        {{- if $.Paused}}
+        <paused>true</paused>
+        {{- end}}
         {{- if eq $.Version 37}}
         <weakHashThresholdPct>25</weakHashThresholdPct>
         <disableTempIndexes>false</disableTempIndexes>
@@ -115,6 +119,9 @@ var configTmpl = template.Must(template.New("config").Parse(`<configuration vers
     <device id="{{.Peer}}" name="Example peer" compression="metadata" introducer="false">
         <address>tcp://192.0.2.10:22000</address>
         <autoAcceptFolders>true</autoAcceptFolders>
+        {{- if .Paused}}
+        <paused>true</paused>
+        {{- end}}
     </device>
     <gui enabled="true" tls="true">
         <address>127.0.0.1:8384</address>
@@ -235,6 +242,12 @@ func newBackup(t testing.TB, version int, ed bool, folders ...fixtureFolder) bac
 		{"index-v2/main.db", []byte("not read")},
 	}
 	return b
+}
+
+// setPaused pauses every folder and device in the backup's config.xml.
+func (b *backupFixture) setPaused(t testing.TB) {
+	b.cfg.Paused = true
+	b.entries[0].data = b.cfg.xml(t)
 }
 
 func (b backupFixture) zip(t testing.TB, password string) []byte {
@@ -378,8 +391,8 @@ func TestInspect(t *testing.T) {
 					if fmt.Sprint(p.Folders) != fmt.Sprint(want) {
 						t.Errorf("folders:\n got %+v\nwant %+v", p.Folders, want)
 					}
-					// prefs-full: all networks and roaming, charging only, battery saver ignored, start at boot, force stop.
-					wantC := runConditions{MeteredWifi: true, MobileData: true, Roaming: true, Power: "ChargingOnly", StartOnBoot: true, PausedByUser: true}
+					// prefs-full: all networks and roaming, charging only, battery saver ignored, start at boot; force stop is not imported.
+					wantC := runConditions{MeteredWifi: true, MobileData: true, Roaming: true, Power: "ChargingOnly", StartOnBoot: true}
 					if !reflect.DeepEqual(p.Conditions, wantC) || p.Proxy != (proxySettings{Type: "None"}) || p.Source != "fork" {
 						t.Errorf("conditions: %+v, proxy %+v, source %q", p.Conditions, p.Proxy, p.Source)
 					}
@@ -387,7 +400,7 @@ func TestInspect(t *testing.T) {
 					for _, n := range p.NotImported {
 						keys = append(keys, n.Key+":"+n.Subject)
 					}
-					wantN := "flight_mode: master_sync: wifi_allowlist: environment: folder_conditions:Photos folder_script:Photos device_conditions:Example peer"
+					wantN := "force_stop: flight_mode: master_sync: wifi_allowlist: environment: folder_conditions:Photos folder_script:Photos device_conditions:Example peer"
 					if strings.Join(keys, " ") != wantN {
 						t.Errorf("not imported:\n got %s\nwant %s", strings.Join(keys, " "), wantN)
 					}
@@ -470,6 +483,7 @@ func TestImportAndStart(t *testing.T) {
 
 			missing := filepath.Join(dir, "storage", "Camera")
 			fx := newBackup(t, 37, false, fixtureFolder{"photo_backup_01", "Photos", missing, "sendreceive"})
+			fx.setPaused(t) // taken while Fork paused everything
 			f := filepath.Join(dir, "backup.zip")
 			os.WriteFile(f, fx.zip(t, "pw"), 0o600)
 			fd, _ := os.Open(f)
@@ -517,17 +531,24 @@ func TestImportAndStart(t *testing.T) {
 
 			var folders []struct {
 				Path    string
+				Paused  bool
 				Devices []struct{ DeviceID string }
 			}
-			var devices []struct{ DeviceID string }
+			var devices []struct {
+				DeviceID string
+				Paused   bool
+			}
 			getJSON(t, "/rest/config/folders", &folders)
 			getJSON(t, "/rest/config/devices", &devices)
-			if len(folders) != 1 || folders[0].Path != missing {
+			if len(folders) != 1 || folders[0].Path != missing || folders[0].Paused {
 				t.Fatalf("folders: %+v", folders)
 			}
 			var ids []string
 			for _, d := range devices {
 				ids = append(ids, d.DeviceID)
+				if d.Paused {
+					t.Errorf("device %s still paused", d.DeviceID)
+				}
 			}
 			var shared []string
 			for _, d := range folders[0].Devices {
@@ -682,6 +703,7 @@ func TestWriteDummyForkBackups(t *testing.T) {
 		fx := newBackup(t, d.version, d.ed,
 			fixtureFolder{"photo_backup_01", "Photos", root + "/" + d.name + "/photos", "sendonly"},
 			fixtureFolder{"docs", "Docs", root + "/" + d.name + "/docs", "sendreceive"})
+		fx.cfg.Paused = d.prefs == "full" // and Fork's pause button on: the import still starts syncing
 		for name, data := range map[string][]byte{
 			"config.xml": fx.cfg.xml(t), "cert.pem": fx.id.certPEM, "key.pem": fx.id.keyPEM,
 			"https-cert.pem": fx.id.certPEM, "https-key.pem": fx.id.keyPEM,

@@ -26,7 +26,6 @@
     "power": "BatteryOnly",
     "respectBatterySaver": true,
     "startOnBoot": false,
-    "pausedByUser": false,
     "timeSchedule": false
   },
   "proxy": {

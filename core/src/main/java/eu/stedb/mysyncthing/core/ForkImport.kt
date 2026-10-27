@@ -114,7 +114,7 @@ object ForkImport {
             }
 
             override suspend fun applySettings() = listOf(
-                settings.update { conditions },
+                settings.update { conditions.copy(pausedByUser = it.pausedByUser) },
                 settings.setProxy(proxy),
                 settings.setConditionPause(null), // the paused devices it remembers are the old setup's
                 // Without this the service takes the config without a database for a move from another

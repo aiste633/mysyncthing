@@ -25,6 +25,7 @@ func exportHome(t testing.TB) (string, backupFixture) {
 	t.Helper()
 	fx := newBackup(t, config.CurrentVersion, true,
 		fixtureFolder{"photo_backup_01", "Photos", "/storage/emulated/0/mysyncthing-test/photos", "sendonly"})
+	fx.setPaused(t) // exported while a run condition pauses syncing
 	home := t.TempDir()
 	for name, data := range map[string][]byte{"config.xml": fx.cfg.xml(t), "cert.pem": fx.id.certPEM, "key.pem": fx.id.keyPEM} {
 		if err := os.WriteFile(filepath.Join(home, name), data, 0o600); err != nil {
@@ -54,6 +55,9 @@ var someSettings = ownSettings{
 
 func TestExportRoundTrip(t *testing.T) {
 	home, fx := exportHome(t)
+	if c, _ := os.ReadFile(filepath.Join(home, "config.xml")); bytes.Count(c, []byte("<paused>true</paused>")) != 2 {
+		t.Fatalf("the home is not paused:\n%s", c)
+	}
 	for _, password := range []string{"", "correct horse battery", "пароль-пароль-✓"} {
 		var buf bytes.Buffer
 		if err := writeBackup(&buf, home, password, settingsJSON(t, someSettings), time.Date(2026, 10, 26, 23, 0, 0, 0, time.UTC)); err != nil {
@@ -85,6 +89,16 @@ func TestExportRoundTrip(t *testing.T) {
 		if b.id != fx.id.id || bytes.Contains(b.configXML, []byte("fork-user")) || bytes.Contains(b.configXML, []byte("fork-api-key")) ||
 			bytes.Contains(b.configXML, []byte("$2a$")) {
 			t.Errorf("identity %v, GUI login or API key in config.xml:\n%s", b.id, b.configXML)
+		}
+		for _, d := range b.cfg.Devices {
+			if d.Paused {
+				t.Errorf("device %s exported paused", d.DeviceID)
+			}
+		}
+		for _, f := range b.cfg.Folders {
+			if f.Paused {
+				t.Errorf("folder %s exported paused", f.ID)
+			}
 		}
 		p := b.preview(statFolder)
 		if p.Source != "own" || !reflect.DeepEqual(p.Conditions, someSettings.Conditions) || p.Proxy != someSettings.Proxy || len(p.NotImported) != 0 {
@@ -120,6 +134,7 @@ func TestExportRefuses(t *testing.T) {
 		"settings newer":            {"", `{"version":2}`},
 		"settings unknown field":    {"", strings.Replace(string(good), `"version":1`, `"version":1,"extra":true`, 1)},
 		"settings trailing data":    {"", string(good) + `{}`},
+		"settings pause":            {"", strings.Replace(string(good), `"startOnBoot":true`, `"startOnBoot":true,"pausedByUser":false`, 1)},
 		"settings bad power":        {"", strings.Replace(string(good), "BatteryOnly", "Solar", 1)},
 		"settings bad proxy type":   {"", strings.Replace(string(good), `"Socks5"`, `"Socks4"`, 1)},
 		"settings bad proxy port":   {"", strings.Replace(string(good), `"port":1080`, `"port":0`, 1)},

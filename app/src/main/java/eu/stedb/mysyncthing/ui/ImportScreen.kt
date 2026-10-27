@@ -270,7 +270,6 @@ fun conditionsText(c: RunConditions, proxy: ProxySettings): List<String> = listO
     powerText(c.power).takeIf { c.power != PowerSource.Any },
     if (c.respectBatterySaver) "Pause in battery saver: on" else "Pause in battery saver: off",
     if (c.startOnBoot) "Start at boot: on" else "Start at boot: off",
-    if (c.pausedByUser) "Syncing is paused" else null,
     "Sync times: " + if (c.timeSchedule) c.windows.joinToString("; ", transform = ::windowText) else "any time",
     "Proxy: " + if (proxy.type == ProxyType.None) "none" else proxyText(proxy),
 )
@@ -279,6 +278,7 @@ fun conditionsText(c: RunConditions, proxy: ProxySettings): List<String> = listO
 fun notImportedText(n: ForkNotImported): String = when (n.key) {
     "networks" -> "Not syncing on Wi-Fi: here unmetered Wi-Fi is always used, metered Wi-Fi is off"
     "force_start" -> "Force start (sync regardless of conditions)"
+    "force_stop" -> "Syncing paused by hand (here only this phone's own pause counts)"
     "flight_mode" -> "Sync in flight mode"
     "master_sync" -> "Follow Android's auto-sync switch"
     "wifi_allowlist" -> "Sync only on chosen Wi-Fi networks"
