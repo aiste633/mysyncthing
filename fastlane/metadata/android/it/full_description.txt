@@ -12,3 +12,4 @@
 <li>In inglese e in italiano, nella lingua del telefono o in una scelta solo per l'app; date, orari e numeri come li scrive la regione del telefono</li>
 </ul>
 <p>Il nucleo di Syncthing (v2) funziona all'interno dell'app. Per raggiungere le cartelle ovunque nella memoria condivisa serve l'autorizzazione "Accesso a tutti i file".</p>
+<p>Nessuna pubblicità, nessun tracciamento. Privacy: <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">cosa conserva l'app e cosa esce dal telefono</a> (in inglese).</p>

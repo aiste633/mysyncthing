@@ -12,3 +12,4 @@
 <li>In English and Italian, in the phone's language or one chosen for the app alone; dates, times and numbers as the phone's region writes them</li>
 </ul>
 <p>The Syncthing core (v2) runs inside the app. Reaching folders anywhere on shared storage needs the "All files access" permission.</p>
+<p>No ads, no tracking. Privacy: <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">what the app keeps and what leaves the phone</a>.</p>
