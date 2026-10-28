@@ -43,6 +43,15 @@
             android:name=".ClearProblemsReceiver"
             android:exported="false" />
 
+        <!-- Sent by the system for a new phone language, and to this app alone for its own language. -->
+        <receiver
+            android:name=".LocaleReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.LOCALE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".BootReceiver"
             android:exported="true">

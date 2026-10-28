@@ -107,6 +107,14 @@
     <!-- %1$s: the free space Syncthing keeps, e.g. "1 %" or "2 GB". "Keep free" is a folder setting. -->
     <string name="problem_folder_space_keeps">Too little free space where this folder is (Syncthing keeps %1$s free). Free some space, or lower \"Keep free\" in the folder\'s settings.</string>
     <string name="problem_storage_full">The phone\'s storage is full. Free some space, then try again.</string>
+    <string name="problem_folder_missing">The folder is no longer on the phone. Put it back where it was, or remove it from Syncthing.</string>
+    <!-- .stfolder is a file name: keep it as it is -->
+    <string name="problem_folder_marker_missing">The folder\'s .stfolder marker is gone, so Syncthing stops rather than delete files on other devices. If the folder is complete, create an empty folder named .stfolder in it.</string>
+    <string name="problem_folder_not_folder">The folder\'s path leads to a file, not a folder.</string>
+    <string name="problem_permission_denied">Syncthing may not read or change this file or folder.</string>
+    <string name="problem_peers_gone">The devices that had this file disconnected, or it changed while syncing. Syncthing tries again later.</string>
+    <string name="problem_no_version">No connected device has this version of the file. Syncthing tries again when one connects.</string>
+    <string name="problem_not_rescanned">The file changed and has not been scanned yet. Syncthing tries again later.</string>
     <!-- Notification title. %1$d: number of the core's notices -->
     <plurals name="problems_title">
         <item quantity="one">Syncthing has a problem</item>

@@ -1,9 +1,11 @@
 package eu.stedb.mysyncthing.core
 
 /**
- * The core's error texts for people, where upstream's wording is technical:
- * a full disk is named as such, without database paths and percentages. Any
- * other text is kept as it is.
+ * The core's error texts for people, in the app's language, where upstream's
+ * wording is technical: a full disk is named as such, without database paths
+ * and percentages. The core's messages are English; the ones people meet most
+ * (a folder that stopped, a file that failed) get the app's words, any other
+ * text is kept as it is.
  *
  * Used for a folder's error and a single file's ("syncing: insufficient space
  * in folder ..." when a pull fails on "Keep free"). Upstream: lib/model/folder.go
@@ -21,6 +23,15 @@ fun problemText(raw: String): UiText {
         "insufficient space in folder" in raw ->
             required?.let { text(R.string.problem_folder_space_keeps, it) } ?: text(R.string.problem_folder_space)
         "no space left on device" in raw.lowercase() -> text(R.string.problem_storage_full)
+        // lib/config/folderconfiguration.go: a folder's error.
+        "folder marker missing" in raw -> text(R.string.problem_folder_marker_missing)
+        "folder path missing" in raw -> text(R.string.problem_folder_missing)
+        "folder path not a directory" in raw -> text(R.string.problem_folder_not_folder)
+        // lib/model/folder_sendrecv.go: a file's error; the OS's EACCES for either.
+        "permission denied" in raw.lowercase() -> text(R.string.problem_permission_denied)
+        "peers who had this file went away" in raw -> text(R.string.problem_peers_gone)
+        "no connected device has the required version" in raw -> text(R.string.problem_no_version)
+        "file modified but not rescanned" in raw -> text(R.string.problem_not_rescanned)
         else -> raw(raw)
     }
 }
