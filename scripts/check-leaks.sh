@@ -89,7 +89,10 @@ while IFS= read -r line; do
     [[ "$text" == *"://$hp"* || "$text" == *"@$hp"* ]] && continue # URL hosts are checked above
     is_public_host "$h" || report "$commit: host:port that is not on the public allowlist"
   done
-  [ -z "$(matches "$lan_name")" ] || report "$commit: local network name"
+  for n in $(matches "$lan_name"); do
+    [ "$n" = jdk.internal ] && continue # the JDK's own packages, named in JVM flags
+    report "$commit: local network name"
+  done
   [ -z "$(matches "$unc")" ] || report "$commit: Windows network path"
   for ua in $(matches "$user_at_host"); do
     [[ "$ua" =~ $user_at_host_ok ]] || report "$commit: user@host"

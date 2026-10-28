@@ -13,7 +13,8 @@ uses anyone's real folders, devices or backups.
 
 | Area | How | Result |
 |---|---|---|
-| Every push | Build, Go and Kotlin unit tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
+| Every push | Build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
+| Screen tests | 14 screens in light, dark, the largest font and Italian, compared with reference images; forms; TalkBack names | 56 reference images, on every push |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 8 Go fuzz targets on what reaches the core | 1 core bug found and fixed; long runs clean |
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
@@ -30,7 +31,7 @@ protected: a change reaches it only through a pull request whose checks have pas
 
 | Job | What it checks |
 |---|---|
-| `android` | Builds the Go core and the app; runs the tests of the patched core package (`lib/api`), `go vet` and the Go bridge tests (which also run every fuzz target's seed inputs), the Kotlin unit tests and Android lint. Then `scripts/manifest-surface.py` compares the release app's permissions and the components other apps can reach, from the merged manifest of all libraries, with the committed list ([manifest-surface.txt](manifest-surface.txt)): a library that adds a permission shows up in review, not in a release |
+| `android` | Builds the Go core and the app; runs the tests of the patched core package (`lib/api`), `go vet` and the Go bridge tests (which also run every fuzz target's seed inputs), the Kotlin unit tests, the screen tests (below) and Android lint. Then `scripts/manifest-surface.py` compares the release app's permissions and the components other apps can reach, from the merged manifest of all libraries, with the committed list ([manifest-surface.txt](manifest-surface.txt)): a library that adds a permission shows up in review, not in a release |
 | `strings` | `scripts/check-strings.py`: text for people only in string resources, so it can be translated, and every string used with the number of arguments it expects (a missing one crashes at run time) |
 | `privacy` | `scripts/check-leaks.sh`: no personal detail (addresses, host names, device IDs, home paths, e-mail addresses) in any file, commit message or commit identity in the whole history. It works by allowlist: anything that is not a known public host or a placeholder fails, so a new kind of leak is caught without updating a list |
 | `sbom` | Regenerates the [software bill of materials](sbom.md) and fails if it differs from the committed one, or if a dependency has a licence it has not seen before |
@@ -52,6 +53,24 @@ migration and writes on a full disk, the Syncthing-Fork import preview, and the 
 and stop the real Syncthing core in-process and check the GUI lock, restarts in place, the
 proxy, the backup export (round trip, wrong passwords, known-answer tests of the AES zip
 format) and the Fork import.
+
+## Screen tests
+
+The app's real screens run on the JVM (Robolectric, Android 16) with made-up folders and
+devices: three folders (up to date, syncing, stopped by an error), three devices (on the LAN,
+through a relay, offline) and a folder offer. No real device ID, name or address is used.
+
+- Screenshots: 14 screens, from the first-run checklist to the export form, each in light,
+  dark, the largest font (200 %) and Italian: 56 images in `app/src/test/screenshots/`. CI
+  compares every screen with its image and attaches the difference when one changes.
+- TalkBack: on every screen, every control that can be tapped or switched must have a name.
+- Forms: the device ID check character, a device already added, the suggested path for an
+  offered folder, proxy and export password errors, "Discard changes?" only after a change,
+  and a shown password marking the window secure.
+
+Both checks were tried on purpose against a broken screen, and both failed as they should.
+Dialogs with a text field are left out: on Robolectric they never settle. They are checked by
+hand on the emulators.
 
 ## Input validation and property tests
 
@@ -247,4 +266,5 @@ every push. See [README](../README.md#reproducible-builds-and-releases).
 - The roaming run condition: emulators cannot simulate roaming.
 - Battery and CPU use were not measured; the soak ran on Android 16 only.
 - Flash writes of a release build.
-- There are no automated UI tests in CI; the screens are checked by hand for each change.
+- Flows across screens with a real core (pairing, accepting a folder, restoring a version) are
+  checked by hand; the screen tests use made-up data.

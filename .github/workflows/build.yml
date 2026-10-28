@@ -41,15 +41,23 @@ jobs:
       - name: Go bridge tests
         working-directory: go/bridge
         run: go vet . && go test .
-      - name: Build, unit tests, lint
+      - name: Build, unit tests, screen tests, lint
         # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
-        run: ./gradlew --no-daemon :app:assembleDebug testDebugUnitTest :app:lintDebug :app:processReleaseManifest
+        # verifyRoborazziDebug runs the unit tests with the screenshots compared to app/src/test/screenshots.
+        run: ./gradlew --no-daemon :app:assembleDebug testDebugUnitTest :app:verifyRoborazziDebug :app:lintDebug :app:processReleaseManifest
       - name: Permissions and exported components as committed
         run: scripts/manifest-surface.py --check
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/*.apk
+      - name: Screenshots that differ, with their diff images
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: screenshot-diffs
+          path: app/build/outputs/roborazzi/
+          if-no-files-found: ignore
 
   # The committed SBOM (docs/sbom.*) must match what the dependencies are now. Its own job:
   # read-only, no secrets, and the SBOM tools never run in the build that makes the APK.

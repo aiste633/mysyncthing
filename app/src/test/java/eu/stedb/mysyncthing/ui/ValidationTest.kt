@@ -87,21 +87,8 @@ class ValidationTest {
 
     /** An ID's 52 data characters, valid to the last spare bits, and its check characters as lib/protocol/luhn.go makes them. */
     private val validId: Gen<String> = {
-        val b32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-        val data = chars(b32, 51, 51) + "AQ".random(this) // the 52nd character carries 1 bit
-        data.chunked(13).joinToString("") { it + luhn(it) }.chunked(7).joinToString("-")
-    }
-
-    private fun luhn(s: String): Char {
-        val b32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-        var factor = 1
-        var sum = 0
-        for (c in s) {
-            val addend = factor * b32.indexOf(c)
-            factor = 3 - factor
-            sum += addend / 32 + addend % 32
-        }
-        return b32[(32 - sum % 32) % 32]
+        val data = chars("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", 51, 51) + "AQ".random(this) // the 52nd character carries 1 bit
+        idFromData(data)
     }
 
     @Test
