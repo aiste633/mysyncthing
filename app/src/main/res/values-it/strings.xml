@@ -220,7 +220,7 @@
     <string name="item_local_changes">Modifiche locali</string>
     <string name="item_out_of_sync">Non sincronizzato</string>
     <string name="item_scanning">Scansione in corso</string>
-    <string name="item_not_shared">Non condiviso</string>
+    <string name="item_not_shared">Non condivisa</string>
     <string name="item_disconnected">Disconnesso</string>
 
     <string name="connection_lan">LAN</string>
@@ -490,10 +490,12 @@
     <string name="on_all_devices">Su tutti i dispositivi</string>
     <string name="folder_contents">%1$s · %2$s · %3$s</string>
     <string name="shared_with">Condivisa con</string>
+    <string name="shared_with_not">Non condivisa</string>
     <string name="restore_versions">Ripristina versioni</string>
     <string name="restore_versions_hint">Recupera i file modificati o eliminati da altri dispositivi</string>
     <string name="folder_rescan_hint">Trova ciò che il monitoraggio non vede.</string>
     <string name="folder_keep_free_hint">Sotto questa soglia la sincronizzazione si mette in pausa.</string>
+    <string name="folder_remove">Rimuovi cartella</string>
     <string name="folder_remove_hint">Smette di sincronizzarla. I file su questo telefono restano.</string>
     <string name="folder_name">Nome della cartella</string>
     <string name="folder_group">Gruppo della cartella</string>
@@ -526,6 +528,7 @@
     <string name="device_to_send">Ancora da inviare</string>
     <string name="device_shared_folders">Cartelle condivise</string>
     <string name="device_no_folders_hint">Aggiungine una nella scheda Cartelle</string>
+    <string name="device_remove">Rimuovi dispositivo</string>
     <string name="device_remove_hint">Non può più sincronizzarsi con questo telefono.</string>
     <string name="device_group">Gruppo del dispositivo</string>
     <string name="device_group_hint">I dispositivi di un gruppo sono elencati insieme. Solo su questo telefono.</string>

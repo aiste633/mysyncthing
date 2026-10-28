@@ -31,8 +31,8 @@
         <item quantity="many">%1$d richieste in attesa</item>
         <item quantity="other">%1$d richieste in attesa</item>
     </plurals>
-    <string name="status_new_device">Un nuovo dispositivo vuole connettersi</string>
-    <string name="status_new_folder">Una nuova cartella condivisa con te</string>
+    <string name="status_new_device">Nuovo dispositivo vuole connettersi</string>
+    <string name="status_new_folder">Nuova cartella condivisa</string>
     <plurals name="status_folders_review">
         <item quantity="one">%1$d cartella da esaminare</item>
         <item quantity="many">%1$d cartelle da esaminare</item>
@@ -54,7 +54,7 @@
     </plurals>
     <string name="two_sentences">%1$s %2$s</string>
 
-    <string name="pause_reason_user">In pausa per tua scelta</string>
+    <string name="pause_reason_user">Pausa manuale</string>
     <string name="pause_reason_no_network">nessuna rete</string>
     <string name="pause_reason_mobile_data">dati mobili</string>
     <string name="pause_reason_roaming">in roaming</string>
@@ -119,7 +119,7 @@
     <string name="widget_resume">Riprendi la sincronizzazione</string>
     <string name="widget_start">Avvia Syncthing</string>
     <string name="widget_not_running">Non in esecuzione</string>
-    <string name="widget_no_device">Nessun dispositivo connesso</string>
+    <string name="widget_no_device">Nessuna connessione</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d dispositivo connesso</item>
         <item quantity="many">%1$d dispositivi connessi</item>

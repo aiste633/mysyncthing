@@ -256,6 +256,7 @@
     <string name="item_local_changes">Local changes</string>
     <string name="item_out_of_sync">Out of sync</string>
     <string name="item_scanning">Scanning</string>
+    <!-- A folder shared with no other device -->
     <string name="item_not_shared">Not shared</string>
     <string name="item_disconnected">Disconnected</string>
 
@@ -586,11 +587,14 @@
     <!-- %1$s: number of files, %2$s: number of folders, %3$s: total size -->
     <string name="folder_contents">%1$s · %2$s · %3$s</string>
     <string name="shared_with">Shared with</string>
+    <!-- Under a device in a folder's "Shared with" list: the folder is not shared with this device -->
+    <string name="shared_with_not">Not shared</string>
     <string name="restore_versions">Restore versions</string>
     <string name="restore_versions_hint">Get back files changed or deleted by other devices</string>
     <!-- Hint after how often the folder is fully rescanned; watching for changes is a folder setting -->
     <string name="folder_rescan_hint">Catches what watching misses.</string>
     <string name="folder_keep_free_hint">Syncing pauses below this.</string>
+    <string name="folder_remove">Remove folder</string>
     <string name="folder_remove_hint">Stops syncing it. Files on this phone stay.</string>
     <string name="folder_name">Folder name</string>
     <string name="folder_group">Folder group</string>
@@ -628,6 +632,7 @@
     <string name="device_to_send">Still to send</string>
     <string name="device_shared_folders">Shared folders</string>
     <string name="device_no_folders_hint">Add one on the Folders tab</string>
+    <string name="device_remove">Remove device</string>
     <string name="device_remove_hint">It can no longer sync with this phone.</string>
     <string name="device_group">Device group</string>
     <string name="device_group_hint">Devices in a group are listed together. Only on this phone.</string>

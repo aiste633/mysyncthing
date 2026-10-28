@@ -3,6 +3,7 @@ package eu.stedb.mysyncthing.ui
 import android.os.StatFs
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -113,7 +114,7 @@ fun FolderScreen(
                             },
                             style = MaterialTheme.typography.bodyMedium,
                         )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             FilledTonalButton(shape = ButtonShape, onClick = if (local) onOpenChanges else onOpenNeed) { Text(stringResource(R.string.folder_show_changes)) }
                             FilledTonalButton(shape = ButtonShape, onClick = { dialog = if (local) FolderDialog.Revert else FolderDialog.Override }) {
                                 Icon(Icons.AutoMirrored.Filled.Undo, null, Modifier.size(18.dp))
@@ -122,7 +123,7 @@ fun FolderScreen(
                             }
                         }
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 4.dp)) {
                         FilledTonalButton(shape = ButtonShape, onClick = { vm.setFolderPaused(id, !f.paused) }) {
                             Icon(if (f.paused) Icons.Default.PlayArrow else Icons.Default.Pause, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(6.dp))
@@ -182,7 +183,7 @@ fun FolderScreen(
                 s.devices.forEach { dev ->
                     val entry = f.devices.find { it.deviceID == dev.deviceID }
                     // A device's sync state only means something for folders it shares.
-                    val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null).text else text(R.string.item_not_shared)
+                    val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null).text else text(R.string.shared_with_not)
                     CheckRow(
                         dev.name.ifEmpty { shortId(dev.deviceID) }, listOfNotNull(state, encryptionText(dev, entry)).map { it.asString() }.joinToString(" · "), entry != null,
                     ) { if (sharesEncrypted(dev, entry)) encrypt = dev.deviceID else vm.setShared(f, dev.deviceID, it) }
@@ -214,7 +215,7 @@ fun FolderScreen(
             }
 
             SettingsGroup(stringResource(R.string.action_remove)) {
-                SettingRow(stringResource(R.string.op_remove_folder), stringResource(R.string.folder_remove_hint), icon = Icons.Default.Delete, danger = true) {
+                SettingRow(stringResource(R.string.folder_remove), stringResource(R.string.folder_remove_hint), icon = Icons.Default.Delete, danger = true) {
                     dialog = FolderDialog.Remove
                 }
             }

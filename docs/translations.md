@@ -103,7 +103,15 @@ unless one was chosen in the web GUI itself.
   It also fails when a use of a string resource passes fewer or more arguments than the
   string has placeholders (a missing one crashes at run time), or text where it expects a
   number (`%d`). And it fails when a `UiText` value goes into a string template, a `+` with
-  a string or a formatting call without being resolved (it would show the data class).
+  a string or a formatting call without being resolved (it would show the data class), and
+  when a list holding a `UiText` is joined with `joinToString` or holds one next to text
+  (use `joined()`, or resolve each one first).
+- One string, one use: a text that is a heading in one place and an action or a state of
+  something else in another gets two strings, since other languages may need different
+  words or genders (`folder_remove` / `op_remove_folder`, `item_not_shared` /
+  `shared_with_not`).
+- Buttons that sit side by side go in a `FlowRow`, so a longer language or a large font
+  size moves one to the next line instead of breaking a word.
 - `XmlStrings.with(is24Hour = false)` and `.with(locale = Locale.ITALY)` test the 12 h
   clock and another language's dates and numbers on the JVM. Dates come from the JDK's CLDR
   data, which gives the same text as Android 16 (a 12 h time has U+202F before "pm").
