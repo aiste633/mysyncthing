@@ -27,6 +27,8 @@ data class Snapshot(
     val pendingDevices: Map<String, PendingDevice> = emptyMap(),
     val pendingFolders: Map<String, PendingFolder> = emptyMap(),
     val systemErrors: List<SystemError> = emptyList(),
+    /** The core's local discovery setting (options.localAnnounceEnabled). */
+    val localDiscovery: Boolean = false,
 )
 
 /**
@@ -115,6 +117,7 @@ object SyncStatus {
         val pendingDevices = async { c.pendingDevices() }
         val pendingFolders = async { c.pendingFolders() }
         val errors = async { runCatching { c.systemErrors() }.getOrDefault(emptyList()) }
+        val options = async { c.options() }
         val me = myId.await()
         val folderList = folders.await()
         val allDevices = devices.await()
@@ -133,6 +136,7 @@ object SyncStatus {
             pendingDevices = pendingDevices.await(),
             pendingFolders = pendingFolders.await(),
             systemErrors = errors.await(),
+            localDiscovery = options.await().localAnnounceEnabled,
         )
     }
 }

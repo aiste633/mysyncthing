@@ -134,6 +134,7 @@ class SyncthingService : LifecycleService() {
                 // Shared: one clock and one alarm.
                 val blockedBy = combine(timed, device) { (c, now), d -> c.blockedBy(d, now) }.stateIn(this)
                 launch { blockedBy.collect { reason -> applyConditions(running.client, reason) } }
+                launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
                 combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
                     summarize(core, snap, reason, d.online)
                 }.collect { summary ->
