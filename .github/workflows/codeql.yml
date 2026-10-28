@@ -1,0 +1,84 @@
+name: codeql
+
+# CodeQL static analysis with a real build, so it sees the Kotlin app and the whole Go core
+# with our patches; GitHub's default setup can build neither. Runs on main, weekly and by hand,
+# and on pull requests only when they change this file (a full build per language; the build
+# workflow covers PRs).
+# Needs Settings > Code security > CodeQL analysis set to "Advanced": GitHub refuses uploads
+# from a workflow while its default setup is on.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths: [.github/workflows/codeql.yml]
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: actions
+            build-mode: none
+          - language: python
+            build-mode: none
+          - language: go
+            build-mode: manual
+          - language: java-kotlin
+            build-mode: manual
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          submodules: ${{ matrix.build-mode == 'manual' }}
+      - if: matrix.build-mode == 'manual'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go/syncthing/go.mod
+          cache: false
+      - if: matrix.language == 'java-kotlin'
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: 21
+      - if: matrix.language == 'java-kotlin'
+        name: Android SDK platform and NDK
+        run: |
+          ndk="$(sed -n 's/^mysyncthing\.ndkVersion=//p' gradle.properties)"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0" "ndk;$ndk" > /dev/null
+      - if: matrix.language == 'java-kotlin'
+        uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+        with:
+          cache-disabled: true
+      # The core as the app builds it: our patches applied, web GUI assets generated.
+      - if: matrix.build-mode == 'manual'
+        name: Patch the core
+        run: |
+          go/patch.sh
+          (cd go/syncthing && go generate ./lib/api/auto)
+      - uses: github/codeql-action/init@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+      - if: matrix.language == 'go'
+        name: Build the Go bridge and the core it links
+        working-directory: go/bridge
+        run: go build ./...
+      - if: matrix.language == 'java-kotlin'
+        name: Build the app
+        run: ./gradlew --no-daemon --no-build-cache :app:assembleDebug
+      - uses: github/codeql-action/analyze@9b3254085494b55a0f7c4c2b3d2d52cc712ce370 # v4.39.1
+        with:
+          category: /language:${{ matrix.language }}
