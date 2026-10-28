@@ -2,14 +2,16 @@
 <p><b>Widget per la schermata Home:</b> una sola riga sottile mostra se è tutto sincronizzato, se la sincronizzazione è in corso (con l'avanzamento), in pausa o richiede la tua attenzione, e quali dispositivi sono connessi. Il suo pulsante mette in pausa e riprende la sincronizzazione.</p>
 <ul>
 <li>Associa i dispositivi con il codice QR o l'ID dispositivo, e accetta le cartelle condivise con te, con posizione, tipo di cartella e controllo versione suggeriti</li>
-<li>Impostazioni di cartelle e dispositivi, con i colori di Material You e il tema scuro</li>
+<li>Schermate native Material 3 per le impostazioni di cartelle e dispositivi, con i colori di Material You e il tema scuro</li>
 <li>Notifiche per nuovi dispositivi e cartelle condivise, con Esamina e Ignora</li>
-<li>Funziona come servizio in primo piano e si avvia all'accensione</li>
+<li>Funziona tutto il giorno come servizio in primo piano, senza il limite di 6 ore dei servizi di sincronizzazione dati, e si avvia all'accensione</li>
 <li>Condizioni di sincronizzazione: Wi-Fi a consumo, dati mobili e roaming attivabili uno per uno, solo in carica o solo a batteria, pausa con il risparmio energetico, solo in orari scelti della settimana</li>
 <li>Proxy SOCKS5 o HTTP, per esempio Tor con Orbot</li>
-<li>Esportazione del backup, facoltativamente crittografato con AES-256, e importazione, anche da Syncthing-Fork</li>
+<li>Passaggio facile da Syncthing-Fork: importa il suo backup, anche crittografato; esporta la tua configurazione, facoltativamente crittografata con AES-256</li>
 <li>L'interfaccia web di Syncthing è integrata per le impostazioni avanzate</li>
 <li>In inglese e in italiano, nella lingua del telefono o in una scelta solo per l'app; date, orari e numeri come li scrive la regione del telefono</li>
 </ul>
-<p>Il nucleo di Syncthing (v2) funziona all'interno dell'app. Per raggiungere le cartelle ovunque nella memoria condivisa serve l'autorizzazione "Accesso a tutti i file".</p>
-<p>Nessuna pubblicità, nessun tracciamento. Privacy: <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">cosa conserva l'app e cosa esce dal telefono</a> (in inglese).</p>
+<p><b>Privacy:</b> niente tracciamento, pubblicità o statistiche, e nessun account. Le statistiche anonime di utilizzo di Syncthing restano disattivate se non le accetti. Il backup nel cloud è disattivato, quindi le chiavi del dispositivo non finiscono mai in un cloud; il trasferimento da telefono a telefono verso un nuovo telefono le porta con sé, quindi poi ferma Syncthing sul vecchio telefono. <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">Cosa conserva l'app e cosa esce dal telefono</a> (in inglese).</p>
+<p><b>Leggera per batteria e memoria flash:</b> a riposo l'app scrive circa 0,02–0,14 MB all'ora sulla memoria flash e non tiene file di log.</p>
+<p><b>Robusta e collaudata:</b> ogni dato inserito è controllato secondo le regole del nucleo stesso, con test basati su proprietà, fuzzing del codice Go, una verifica di sicurezza, test di carico con 50.000 file e memoria piena, una prova di memoria di 10 ore e test di interruzione. Build riproducibili e una distinta completa dei componenti software (SBOM) permettono a chiunque di verificare che cosa contiene l'APK.</p>
+<p>Il nucleo ufficiale di Syncthing (v2) funziona all'interno dell'app, con alcune piccole correzioni documentate. Per raggiungere le cartelle ovunque nella memoria condivisa serve l'autorizzazione "Accesso a tutti i file".</p>

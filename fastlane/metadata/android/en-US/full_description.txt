@@ -2,14 +2,16 @@
 <p><b>Home-screen widget:</b> one slim row shows whether everything is up to date, syncing (with progress), paused or needs your attention, and which devices are connected. Its button pauses and resumes syncing.</p>
 <ul>
 <li>Pair devices by QR code or device ID, and accept folders shared with you, with a suggested location, folder type and file versioning</li>
-<li>Folder and device settings, with Material You colours and dark mode</li>
+<li>Native Material 3 screens for folder and device settings, with Material You colours and dark mode</li>
 <li>Notifications for new devices and shared folders, with Review and Ignore</li>
-<li>Runs as a foreground service and starts at boot</li>
+<li>Runs as a foreground service all day, without the 6-hour limit of data-sync services, and starts at boot</li>
 <li>Run conditions: metered Wi-Fi, mobile data and roaming each on or off, only while charging or only on battery, pause in battery saver, only at set times of the week</li>
 <li>SOCKS5 or HTTP proxy, such as Tor with Orbot</li>
-<li>Backup export, optionally AES-256 encrypted, and import, also from Syncthing-Fork</li>
+<li>Easy switch from Syncthing-Fork: import its backup, encrypted ones too; export your own setup, optionally AES-256 encrypted</li>
 <li>Syncthing's own web interface is built in for advanced settings</li>
 <li>In English and Italian, in the phone's language or one chosen for the app alone; dates, times and numbers as the phone's region writes them</li>
 </ul>
-<p>The Syncthing core (v2) runs inside the app. Reaching folders anywhere on shared storage needs the "All files access" permission.</p>
-<p>No ads, no tracking. Privacy: <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">what the app keeps and what leaves the phone</a>.</p>
+<p><b>Private:</b> no tracking, advertising or analytics, and no account. Syncthing's anonymous usage reporting is off unless you agree to it. Cloud backup is off, so the device keys never go to a cloud; a phone-to-phone transfer to a new phone carries them, so stop Syncthing on the old phone afterwards. <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">What the app keeps and what leaves the phone</a>.</p>
+<p><b>Light on battery and flash:</b> when idle, the app writes about 0.02–0.14 MB an hour to flash, and it keeps no log files.</p>
+<p><b>Hardened and tested:</b> every input checked against the core's own rules with property tests, Go fuzzing, a security audit, stress tests with 50,000 files and full storage, a 10-hour memory soak, and interruption tests. Reproducible builds and a full software bill of materials let anyone check what the APK contains.</p>
+<p>The official Syncthing core (v2) runs inside the app, with a few small documented fixes. Reaching folders anywhere on shared storage needs the "All files access" permission.</p>
