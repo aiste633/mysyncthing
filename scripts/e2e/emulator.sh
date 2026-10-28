@@ -11,6 +11,7 @@ image="system-images;android-$api;default;x86_64"
 avd="e2e-$api"
 bin="$ANDROID_HOME/cmdline-tools/latest/bin"
 
+[ -e /dev/kvm ] || { echo "no /dev/kvm: the x86_64 emulator needs KVM" >&2; exit 1; }
 # GitHub's Linux runners have KVM, but only root may open it.
 if [ -e /dev/kvm ] && [ ! -w /dev/kvm ]; then
   echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules >/dev/null
@@ -19,8 +20,9 @@ if [ -e /dev/kvm ] && [ ! -w /dev/kvm ]; then
 fi
 
 # Only what is missing: on a PC the emulator and platform tools are shared with other AVDs.
+# E2E_SDK_UPDATE=1 (CI) installs the current emulator instead of whatever the runner image has.
 missing=()
-[ -x "$ANDROID_HOME/emulator/emulator" ] || missing+=(emulator)
+[ -x "$ANDROID_HOME/emulator/emulator" ] && [ "${E2E_SDK_UPDATE:-0}" != 1 ] || missing+=(emulator)
 [ -x "$ANDROID_HOME/platform-tools/adb" ] || missing+=(platform-tools)
 [ -d "$ANDROID_HOME/system-images/android-$api/default/x86_64" ] || missing+=("$image")
 if [ ${#missing[@]} -gt 0 ]; then
@@ -28,17 +30,24 @@ if [ ${#missing[@]} -gt 0 ]; then
   "$bin/sdkmanager" --install "${missing[@]}" >/dev/null
 fi
 echo no | "$bin/avdmanager" create avd --force -n "$avd" -k "$image" -d pixel_7 >/dev/null
+"$ANDROID_HOME/emulator/emulator" -version | head -n 1
 
+log="${E2E_EMULATOR_LOG:-$(mktemp)}"
 "$ANDROID_HOME/emulator/emulator" -avd "$avd" -no-window -no-audio -no-boot-anim -no-snapshot \
-  -gpu swiftshader_indirect -memory 4096 >"${E2E_EMULATOR_LOG:-/dev/null}" 2>&1 &
+  -gpu swiftshader_indirect -memory 4096 >"$log" 2>&1 &
+emu=$!
 
+# Waits for the boot, but gives up with the emulator's own output if it exits or takes over 10 minutes.
 adb="$ANDROID_HOME/platform-tools/adb"
-"$adb" wait-for-device
-for _ in $(seq 1 180); do
-  [ "$("$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ] && break
+booted() { [ "$("$adb" shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')" = 1 ]; }
+for _ in $(seq 1 300); do
+  booted && break
+  if ! kill -0 "$emu" 2>/dev/null; then
+    echo "emulator exited before booting:" >&2; tail -n 50 "$log" >&2; exit 1
+  fi
   sleep 2
 done
-[ "$("$adb" shell getprop sys.boot_completed | tr -d '\r')" = 1 ] || { echo "emulator did not boot" >&2; exit 1; }
+booted || { echo "emulator did not boot in 10 minutes:" >&2; tail -n 50 "$log" >&2; exit 1; }
 # Screen on and unlocked, so the tests' activity comes to the front.
 "$adb" shell input keyevent KEYCODE_WAKEUP
 "$adb" shell wm dismiss-keyguard

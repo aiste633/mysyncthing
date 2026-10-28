@@ -90,11 +90,14 @@ jobs:
         with:
           name: e2e-inputs
       - name: Emulator
+        timeout-minutes: 15
         env:
           API: ${{ matrix.api }}
           E2E_EMULATOR_LOG: build/e2e/emulator.log
+          E2E_SDK_UPDATE: "1"
         run: mkdir -p build/e2e && scripts/e2e/emulator.sh "$API"
       - name: End-to-end tests
+        timeout-minutes: 25
         run: |
           chmod +x go/build/e2e-peer
           scripts/e2e/run.py --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
