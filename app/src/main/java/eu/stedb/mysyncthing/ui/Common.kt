@@ -272,7 +272,7 @@ fun ProblemsCard(errors: List<SystemError>, onClear: () -> Unit) {
                 )
                 errors.reversed().forEach { e ->
                     Text(
-                        listOfNotNull(whenText(e.time), e.text).joinToString(" · "),
+                        listOfNotNull(whenText(e.time)?.asString(), e.text).joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall, color = fg,
                     )
                 }

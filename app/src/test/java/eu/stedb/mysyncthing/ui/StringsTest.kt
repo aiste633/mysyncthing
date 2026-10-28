@@ -6,7 +6,7 @@ import org.junit.Test
 
 /** The English strings parse as aapt2 reads them (En fails on an unescaped apostrophe or a name used twice). */
 class StringsTest {
-    private val placeholder = Regex("%(\\d+\\$)?[-#+ 0,(]*\\d*(\\.\\d+)?[a-zA-Z%]")
+    private val placeholder = PLACEHOLDER
 
     /** Every form takes the arguments of "other"; English "one" may leave out the count ("Every day"). */
     @Test

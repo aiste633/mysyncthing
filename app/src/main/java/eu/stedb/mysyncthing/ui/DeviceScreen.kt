@@ -153,7 +153,7 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
             }
 
             SettingsGroup(stringResource(R.string.action_remove)) {
-                SettingRow(stringResource(R.string.op_remove_device), stringResource(R.string.device_remove_hint), icon = Icons.Default.Delete, danger = true) {
+                SettingRow(stringResource(R.string.device_remove), stringResource(R.string.device_remove_hint), icon = Icons.Default.Delete, danger = true) {
                     dialog = DeviceDialog.Remove
                 }
             }

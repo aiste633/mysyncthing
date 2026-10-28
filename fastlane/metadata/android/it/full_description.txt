@@ -1,0 +1,14 @@
+<p>MySyncthing esegue <a href="https://syncthing.net">Syncthing</a> su Android 15 e 16. Syncthing mantiene sincronizzate le cartelle tra i tuoi dispositivi, in modo diretto e crittografato, senza un servizio cloud in mezzo.</p>
+<p><b>Widget per la schermata Home:</b> una sola riga sottile mostra se è tutto sincronizzato, se la sincronizzazione è in corso (con l'avanzamento), in pausa o richiede la tua attenzione, e quali dispositivi sono connessi. Il suo pulsante mette in pausa e riprende la sincronizzazione.</p>
+<ul>
+<li>Associa i dispositivi con il codice QR o l'ID dispositivo, e accetta le cartelle condivise con te, con posizione, tipo di cartella e controllo versione suggeriti</li>
+<li>Impostazioni di cartelle e dispositivi, con i colori di Material You e il tema scuro</li>
+<li>Notifiche per nuovi dispositivi e cartelle condivise, con Esamina e Ignora</li>
+<li>Funziona come servizio in primo piano e si avvia all'accensione</li>
+<li>Condizioni di sincronizzazione: Wi-Fi a consumo, dati mobili e roaming attivabili uno per uno, solo in carica o solo a batteria, pausa con il risparmio energetico, solo in orari scelti della settimana</li>
+<li>Proxy SOCKS5 o HTTP, per esempio Tor con Orbot</li>
+<li>Esportazione del backup, facoltativamente crittografato con AES-256, e importazione, anche da Syncthing-Fork</li>
+<li>L'interfaccia web di Syncthing è integrata per le impostazioni avanzate</li>
+<li>In inglese e in italiano, nella lingua del telefono o in una scelta solo per l'app; date, orari e numeri come li scrive la regione del telefono</li>
+</ul>
+<p>Il nucleo di Syncthing (v2) funziona all'interno dell'app. Per raggiungere le cartelle ovunque nella memoria condivisa serve l'autorizzazione "Accesso a tutti i file".</p>

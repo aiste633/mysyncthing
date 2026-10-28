@@ -20,6 +20,8 @@ And it checks that a UiText (from a function declared to return one) never
 reaches text unresolved: inside a string template, next to a string with +,
 or as an argument of stringResource, getString and the like, which would
 show the object instead of the words. Call .asString() or resolve() there.
+The same goes for a list that holds a UiText next to text, or a list of
+UiText joined with joinToString: use joined(), or resolve each one first.
 
 Usage: scripts/check-strings.py      (from anywhere in the repository)
 """
@@ -334,6 +336,46 @@ def check_unresolved(src, names):
             yield line, f"{m.group(1)}(...) as a formatting argument shows the object, not the words"
 
 
+# Builders whose elements a joinToString later turns into text with toString().
+COLLECTION = re.compile(r"(?<![\w.])(listOf|listOfNotNull|setOf|arrayOf|mutableListOf|sequenceOf)\s*\(")
+FILTERING = re.compile(r"\s*\??\.(takeIf|takeUnless)\s*\{")
+JOIN = re.compile(r"\s*\.joinToString\(")
+
+
+def is_uitext(arg, names):
+    """Whether the expression is a call to one of [names], at most followed by takeIf { } or takeUnless { }."""
+    m = re.match(r"(" + "|".join(sorted(names)) + r")\(", arg)
+    if not m:
+        return False
+    end = closing(arg, m.end() - 1) + 1
+    while end < len(arg) and (f := FILTERING.match(arg, end)):
+        end = closing(arg, f.end() - 1) + 1
+    return not arg[end:].strip()
+
+
+# An expression that is surely text: a literal, a resolved UiText, or a string resource.
+TEXT = re.compile(r'^"|\??\.asString\(\)$|^(stringResource|pluralStringResource|getString|getQuantityString)\('
+                  r'|\{\s*(stringResource|pluralStringResource)\(.*\}$', re.S)
+
+
+def check_collections(src, names):
+    """Lines where a list holding a UiText is joined with joinToString, or holds one next to text."""
+    code, _ = masked(src)
+    for m in COLLECTION.finditer(code):
+        end = closing(code, m.end() - 1)
+        args = arguments(code[m.end():end])
+        if not any(is_uitext(a, names) for a in args):
+            continue
+        line = src.count("\n", 0, m.start()) + 1
+        if (j := JOIN.match(code, end + 1)):
+            after = closing(code, j.end() - 1) + 1
+            if not re.match(r"\s*\{", code[after:]) and "transform" not in code[j.end():after]:
+                yield line, f"{m.group(1)}(...) holds a UiText; joinToString shows the object, use joined() or resolve each one"
+                continue
+        if any(TEXT.search(a) for a in args):
+            yield line, f"{m.group(1)}(...) mixes a UiText with text; joined, it shows the object, not the words"
+
+
 def main():
     top = Path(subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip())
     formats = placeholders(top)
@@ -343,7 +385,8 @@ def main():
     for path in files:
         rel = path.relative_to(top).as_posix()
         src = path.read_text(encoding="utf-8")
-        for line, problem in list(check_uses(src, formats)) + list(check_unresolved(src, names)):
+        problems = list(check_uses(src, formats)) + list(check_unresolved(src, names)) + list(check_collections(src, names))
+        for line, problem in problems:
             print(f"::error file={rel},line={line}::{problem}")
             found += 1
         for line, text, before in literals(src):

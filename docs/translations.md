@@ -22,6 +22,17 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
 `values/strings.xml`, file mask `values-*/strings.xml`), and one for the fastlane folder
 (format "Fastlane metadata").
 
+## Languages
+
+| Language | Folder | App and core | Store text |
+|---|---|---|---|
+| English (source) | `values`, `en-US` | all | all |
+| Italian | `values-it`, `it` | all | all |
+
+`TranslationsTest` checks every translation against English: each name must exist in
+English, and each string must take the same placeholders (a plural's "one" may leave out
+the number).
+
 ## Choosing the language
 
 The app follows the phone's language. Android's per-app language page (Settings > Apps >
@@ -47,9 +58,10 @@ unless one was chosen in the web GUI itself.
 
 - Each string with placeholders has a comment saying what they hold. Keep `%1$s`, `%2$d`
   and their numbers; the order in the sentence may change.
-- Plurals (`<plurals>`) need the forms your language uses. Where English leaves out the
-  number in "one" ("Every day"), keep `%1$d` if "one" also covers other numbers in your
-  language (such as 21).
+- Plurals (`<plurals>`) need every form Android lists for your language; lint fails on a
+  missing one. Italian also has `many` (round millions); where its text is the same, repeat
+  `other`. Where English leaves out the number in "one" ("Every day"), keep `%1$d` if "one"
+  also covers other numbers in your language (such as 21).
 - Units are SI symbols and are not translated: kB, MB/s, %, d, h, min, s. They follow the
   number after a non-breaking space (` `).
 - Names stay as they are: Syncthing, Syncthing-Fork, Tor, Orbot, SOCKS5, HTTP, QUIC,
@@ -91,7 +103,15 @@ unless one was chosen in the web GUI itself.
   It also fails when a use of a string resource passes fewer or more arguments than the
   string has placeholders (a missing one crashes at run time), or text where it expects a
   number (`%d`). And it fails when a `UiText` value goes into a string template, a `+` with
-  a string or a formatting call without being resolved (it would show the data class).
+  a string or a formatting call without being resolved (it would show the data class), and
+  when a list holding a `UiText` is joined with `joinToString` or holds one next to text
+  (use `joined()`, or resolve each one first).
+- One string, one use: a text that is a heading in one place and an action or a state of
+  something else in another gets two strings, since other languages may need different
+  words or genders (`folder_remove` / `op_remove_folder`, `item_not_shared` /
+  `shared_with_not`).
+- Buttons that sit side by side go in a `FlowRow`, so a longer language or a large font
+  size moves one to the next line instead of breaking a word.
 - `XmlStrings.with(is24Hour = false)` and `.with(locale = Locale.ITALY)` test the 12 h
   clock and another language's dates and numbers on the JVM. Dates come from the JDK's CLDR
   data, which gives the same text as Android 16 (a 12 h time has U+202F before "pm").
