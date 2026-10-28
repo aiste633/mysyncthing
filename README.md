@@ -21,7 +21,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Works with TalkBack: every button is named and every switch and checkbox reads as on or off.
 - Syncthing's own web GUI is built in for anything the app does not cover, signed in automatically and private to the app.
 - Reproducible builds: every build of a release gives a byte-identical APK, so anyone can check that a release APK was built from this source.
-- No tracking: no analytics or crash-reporting libraries. Syncthing's anonymous usage reporting is asked once and is off unless you say yes.
+- No tracking: no analytics or crash-reporting libraries. Syncthing's anonymous usage reporting is asked once and is off unless you say yes. What the app keeps and what leaves the phone: [privacy](docs/privacy.md).
 
 ## Screenshots
 
@@ -102,6 +102,11 @@ echo vX.Y.Z > ../syncthing.version
 ../patch.sh   # a patch that no longer applies: drop it if the release has the fix, else rebase it
 cd ../bridge && go mod tidy && go test .
 ```
+
+## Privacy and security
+
+- [Privacy](docs/privacy.md): what the app keeps on the phone, what goes to Syncthing's public servers and how to turn each off, permissions, your rights under the GDPR.
+- [Security policy](SECURITY.md): report a vulnerability privately through GitHub, never in a public issue.
 
 ## Translations
 
