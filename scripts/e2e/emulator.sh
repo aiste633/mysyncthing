@@ -29,6 +29,10 @@ if [ ${#missing[@]} -gt 0 ]; then
   yes | "$bin/sdkmanager" --licenses >/dev/null || true
   "$bin/sdkmanager" --install "${missing[@]}" >/dev/null
 fi
+# One AVD directory for both tools: avdmanager and the emulator otherwise look in different
+# places when ANDROID_USER_HOME is set, as on GitHub's runners.
+export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
+mkdir -p "$ANDROID_AVD_HOME"
 echo no | "$bin/avdmanager" create avd --force -n "$avd" -k "$image" -d pixel_7 >/dev/null
 # The emulator links system libraries a minimal Linux may lack (GitHub's runner image has no
 # libpulse). Its own libraries are bundled under emulator/ and found by its launcher, not by ldd.
