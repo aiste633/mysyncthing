@@ -1,7 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
 import android.annotation.SuppressLint
+import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
+import android.util.Log
 import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -17,6 +19,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
+import java.io.ByteArrayInputStream
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.Base64
@@ -42,16 +45,18 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                 WebView(ctx).apply {
                     settings.javaScriptEnabled = true
                     settings.domStorageEnabled = true
+                    // Nothing on the phone outside the GUI: no content:// or file:// URLs.
+                    settings.allowContentAccess = false
+                    settings.allowFileAccess = false
+                    val debuggable = ctx.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
                     webViewClient = object : WebViewClient() {
                         private var retries = 0
                         private var failed = false
                         private val refused = AtomicInteger()
 
                         // Stay on the local GUI; never send credentials elsewhere.
-                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                            val u = request.url
-                            return "${u.scheme}://${u.authority}" != origin
-                        }
+                        override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean =
+                            !onGui(request.url.toString(), origin)
 
                         // Some settings (e.g. the theme) restart the GUI listener, and the GUI reloads
                         // into that gap of about 0.1 s. Chromium would draw its error page before
@@ -60,7 +65,14 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                         // itself. After about 30 s the load goes ahead and shows the real error.
                         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
                             val u = request.url
-                            if (!request.isForMainFrame || request.method != "GET" || "${u.scheme}://${u.authority}" != origin) return null
+                            // The GUI's files all come from the core. Any other request (another site, a content://
+                            // or file:// URL) gets an empty answer, so a script slipped into the old GUI (AngularJS
+                            // 1.3, e.g. through a peer's device name) can load nothing in and send nothing out.
+                            if (!guiMayLoad(u.toString(), origin)) {
+                                if (debuggable) Log.w("WebGui", "Refused $u")
+                                return refused()
+                            }
+                            if (!request.isForMainFrame || request.method != "GET" || !onGui(u.toString(), origin)) return null
                             if (listening(u.host ?: return null, u.port)) {
                                 refused.set(0)
                                 return null
@@ -75,14 +87,14 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
 
                         override fun onPageFinished(view: WebView, url: String) {
                             if (!failed) retries = 0
-                            if (url.startsWith("$origin/")) view.evaluateJavascript(HIDE_APP_MANAGED, null)
+                            if (onGui(url, origin)) view.evaluateJavascript(HIDE_APP_MANAGED, null)
                         }
 
                         // The port went away between the check above and the load: retry for a while
                         // instead of staying on the error page.
                         override fun onReceivedError(view: WebView, request: WebResourceRequest, error: WebResourceError) {
                             val u = request.url
-                            if (!request.isForMainFrame || "${u.scheme}://${u.authority}" != origin) return
+                            if (!request.isForMainFrame || !onGui(u.toString(), origin)) return
                             if (error.errorCode != ERROR_CONNECT) return
                             failed = true
                             if (retries++ < 30) view.postDelayed({
@@ -105,6 +117,20 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
         )
     }
 }
+
+/**
+ * Whether [url] is on the core's GUI at [origin] (`http://127.0.0.1:<port>`). WebView hands over
+ * canonical URLs, so a prefix check is exact; the character after it rules out `:<port>0` and
+ * `:<port>@elsewhere`.
+ */
+internal fun onGui(url: String, origin: String): Boolean =
+    url.startsWith(origin) && (url.length == origin.length || url[origin.length] in "/?#")
+
+/** Whether the web GUI may load [url]: the GUI itself, or inline `data:` content, which reaches nothing. */
+internal fun guiMayLoad(url: String, origin: String): Boolean = onGui(url, origin) || url.startsWith("data:")
+
+/** The answer to a request the web GUI may not make: empty, 403. */
+private fun refused() = WebResourceResponse("text/plain", "utf-8", 403, "Forbidden", emptyMap(), ByteArrayInputStream(ByteArray(0)))
 
 /** Whether something accepts connections on the loopback [port]. */
 private fun listening(host: String, port: Int): Boolean =

@@ -64,6 +64,7 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 	if app != nil {
 		return errors.New("already running")
 	}
+	filterStdout()
 	addr, err := freeLoopbackAddr()
 	if err != nil {
 		return err

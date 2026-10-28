@@ -17,13 +17,10 @@ import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.FolderOpen
 import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -32,7 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,6 +55,8 @@ import eu.stedb.mysyncthing.core.joined
 import eu.stedb.mysyncthing.core.plural
 import eu.stedb.mysyncthing.core.raw
 import eu.stedb.mysyncthing.core.text
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 
 /**
@@ -115,20 +114,27 @@ fun ImportScreen(onBack: () -> Unit, vm: ImportViewModel = viewModel()) {
     }
 }
 
+private class FoundBackup(val file: File, val modified: Long, val size: Long)
+
 @Composable
 private fun ChooseStep(onFound: (File) -> Unit, onPick: () -> Unit) {
-    val found = remember { ForkImport.defaultBackup.takeIf { it.isFile } }
+    // Looked up off the main thread: it is on shared storage.
+    val found by produceState<FoundBackup?>(null) {
+        value = withContext(Dispatchers.IO) {
+            ForkImport.defaultBackup.takeIf { it.isFile }?.let { FoundBackup(it, it.lastModified(), it.length()) }
+        }
+    }
     Note(
         stringResource(R.string.import_intro_title),
         stringResource(R.string.import_intro),
     )
-    if (found != null) {
+    found?.let {
         SettingsGroup(stringResource(R.string.import_found)) {
             SettingRow(
-                wrapPath(displayPath(found.path).asString()),
-                "${dateTimeText(found.lastModified()).asString()}, ${bytes(found.length())}",
+                wrapPath(displayPath(it.file.path).asString()),
+                "${dateTimeText(it.modified).asString()}, ${bytes(it.size)}",
                 Icons.Default.Folder,
-            ) { onFound(found) }
+            ) { onFound(it.file) }
         }
     }
     Row(Modifier.padding(16.dp)) {
@@ -155,9 +161,7 @@ private fun PasswordStep(tried: String, wrong: Boolean, password: String, onChan
             visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             trailingIcon = {
-                IconButton(onClick = { show = !show }) {
-                    Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, stringResource(if (show) R.string.password_hide else R.string.password_show))
-                }
+                PasswordVisibilityButton(show) { show = !show }
             },
             modifier = Modifier.fillMaxWidth(),
         )

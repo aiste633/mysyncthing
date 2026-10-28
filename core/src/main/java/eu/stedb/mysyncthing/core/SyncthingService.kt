@@ -13,6 +13,7 @@ import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.LocalDateTime
 
@@ -107,13 +109,14 @@ class SyncthingService : LifecycleService() {
         ProblemNotifications.noFileAccess(this, false)
         updateNotification(text(R.string.status_starting))
 
-        val home = File(filesDir, "syncthing")
+        val home = withContext(Dispatchers.IO) { File(filesDir, "syncthing") }
         // Locked: a start during an import waits for it, then sees its setup and settings.
         SyncthingCore.homeLock.use {
             // A phone migration copies the identity and config but not the database (data_extraction_rules.xml).
             // A Fork import leaves no database either, but explains that itself (ForkImport).
             val fresh = settings.takeFreshDatabaseExpected()
-            if (File(home, "config.xml").exists() && !File(home, "index-v2").exists() && !fresh) settings.setMovedFromOtherPhone(true)
+            val moved = !fresh && withContext(Dispatchers.IO) { File(home, "config.xml").exists() && !File(home, "index-v2").exists() }
+            if (moved) settings.setMovedFromOtherPhone(true)
             SyncthingCore.start(home, settings::credentials, settings.proxy.first())
         }
         val running = SyncthingCore.state.first { it !is CoreState.Starting }
