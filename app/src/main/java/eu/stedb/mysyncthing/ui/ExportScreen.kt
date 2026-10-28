@@ -16,13 +16,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.SaveAlt
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -133,9 +130,7 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
                 supportingText = { Text(passwordError?.asString() ?: pluralStringResource(R.plurals.export_password_hint, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD)) },
                 visualTransformation = transformation, keyboardOptions = keyboard,
                 trailingIcon = {
-                    IconButton(onClick = { show = !show }) {
-                        Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, stringResource(if (show) R.string.password_hide else R.string.password_show))
-                    }
+                    PasswordVisibilityButton(show) { show = !show }
                 },
                 modifier = Modifier.fillMaxWidth(),
             )

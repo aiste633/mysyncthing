@@ -5,7 +5,9 @@ package eu.stedb.mysyncthing.ui
 import android.animation.ValueAnimator
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.view.WindowManager
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -44,6 +46,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.HourglassTop
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -71,6 +75,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,6 +87,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -90,9 +96,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.R as CoreR
 import eu.stedb.mysyncthing.core.Summary
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.SyncthingCore
@@ -100,7 +108,6 @@ import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.SystemError
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.problemText
-import eu.stedb.mysyncthing.core.R as CoreR
 
 /**
  * System bars plus the camera cutout, without the keyboard. Material's bars only
@@ -644,4 +651,22 @@ fun ListEditDialog(
         confirmButton = { TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text(stringResource(R.string.action_save)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
+}
+
+/**
+ * The show/hide button of a password field. While the password shows as plain text, its window
+ * (the screen's, or a dialog's) is kept out of screenshots, screen recordings and Recents.
+ */
+@Composable
+fun PasswordVisibilityButton(show: Boolean, onToggle: () -> Unit) {
+    val view = LocalView.current
+    val activity = LocalActivity.current
+    DisposableEffect(show, view, activity) {
+        val window = (view.parent as? DialogWindowProvider)?.window ?: activity?.window
+        if (show) window?.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        onDispose { if (show) window?.clearFlags(WindowManager.LayoutParams.FLAG_SECURE) }
+    }
+    IconButton(onClick = onToggle) {
+        Icon(if (show) Icons.Default.VisibilityOff else Icons.Default.Visibility, stringResource(if (show) R.string.password_hide else R.string.password_show))
+    }
 }

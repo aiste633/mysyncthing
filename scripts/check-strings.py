@@ -47,7 +47,7 @@ ALLOWED = [
     # Date patterns, made locale-aware separately.
     (r"ui/Format\.kt", r"d MMM( yyyy)?(, HH:mm)?"),
     # HTTP protocol words.
-    (r"ui/WebGuiScreen\.kt", r"Basic |Authorization"),
+    (r"ui/WebGuiScreen\.kt", r"Basic |Authorization|Forbidden"),
 ]
 
 # Messages for developers: logs, exceptions and preconditions stay English.
