@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.roborazzi)
 }
 
 android {
@@ -52,6 +53,8 @@ android {
     }
     buildFeatures { compose = true }
     packaging { jniLibs { useLegacyPackaging = false } }
+    // Screen tests run on Robolectric, which needs the merged resources.
+    testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
 kotlin { jvmToolchain(21) }
@@ -60,6 +63,8 @@ kotlin { jvmToolchain(21) }
 androidComponents {
     onVariants { v -> v.hostTests.values.forEach { it.sources.kotlin?.addStaticSourceDirectory("../core/src/testShared/java") } }
 }
+
+val robolectricSdk: Configuration by configurations.creating
 
 dependencies {
     implementation(project(":core"))
@@ -77,7 +82,39 @@ dependencies {
     implementation(libs.zxing.embedded)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
+    testImplementation(platform(libs.compose.bom))
+    testImplementation(libs.compose.ui.test.junit4)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.androidx.test.junit)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.roborazzi)
+    testImplementation(libs.roborazzi.compose)
+    testImplementation(libs.roborazzi.junit.rule)
+    // createComposeRule's empty activity; debug builds only, never in a release.
+    debugImplementation(libs.compose.ui.test.manifest)
+    robolectricSdk(libs.robolectric.android.all)
 }
+
+// Robolectric's Android jar is a Gradle dependency, so gradle/verification-metadata.xml checks
+// it like any other; Robolectric runs offline and never downloads one itself.
+val robolectricJars = layout.buildDirectory.dir("robolectric")
+val robolectricSync = tasks.register<Sync>("robolectricSdk") {
+    from(robolectricSdk)
+    into(robolectricJars)
+}
+tasks.withType<Test>().configureEach {
+    dependsOn(robolectricSync)
+    systemProperty("robolectric.offline", "true")
+    systemProperty("robolectric.dependency.dir", robolectricJars.get().asFile.path)
+    // Real rendering (Skia), for the screenshots.
+    systemProperty("robolectric.graphicsMode", "NATIVE")
+    // Android 16's shared memory setup reaches into FileDescriptor internals.
+    jvmArgs("--add-exports=java.base/jdk.internal.access=ALL-UNNAMED", "--add-opens=java.base/java.io=ALL-UNNAMED")
+}
+
+// Reference screenshots live in the repository; unit test runs compare against them
+// (CI runs verifyRoborazziDebug). After a deliberate change: ./gradlew recordRoborazziDebug
+roborazzi { outputDir.set(file("src/test/screenshots")) }
 
 /**
  * English, and each translation that covers at least 90 % of the translatable
