@@ -13,8 +13,9 @@ uses anyone's real folders, devices or backups.
 
 | Area | How | Result |
 |---|---|---|
-| Every push | Build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
+| Every push | Build, Go and Kotlin unit tests, screen tests, emulator end-to-end tests on Android 15 and 16, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
 | Screen tests | 14 screens in light, dark, the largest font and Italian, compared with reference images; forms; TalkBack names | 56 reference images, on every push |
+| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, process death, All files access taken away, monkey | Android 15 and 16, on every push |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 8 Go fuzz targets on what reaches the core | 1 core bug found and fixed; long runs clean |
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
@@ -32,6 +33,7 @@ protected: a change reaches it only through a pull request whose checks have pas
 | Job | What it checks |
 |---|---|
 | `android` | Builds the Go core and the app; runs the tests of the patched core package (`lib/api`), `go vet` and the Go bridge tests (which also run every fuzz target's seed inputs), the Kotlin unit tests, the screen tests (below) and Android lint. Then `scripts/manifest-surface.py` compares the release app's permissions and the components other apps can reach, from the merged manifest of all libraries, with the committed list ([manifest-surface.txt](manifest-surface.txt)): a library that adds a permission shows up in review, not in a release |
+| `e2e` | The end-to-end tests (below) on an Android 15 and an Android 16 emulator, with the APKs and test peer the `android` job built |
 | `strings` | `scripts/check-strings.py`: text for people only in string resources, so it can be translated, and every string used with the number of arguments it expects (a missing one crashes at run time) |
 | `privacy` | `scripts/check-leaks.sh`: no personal detail (addresses, host names, device IDs, home paths, e-mail addresses) in any file, commit message or commit identity in the whole history. It works by allowlist: anything that is not a known public host or a placeholder fails, so a new kind of leak is caught without updating a list |
 | `sbom` | Regenerates the [software bill of materials](sbom.md) and fails if it differs from the committed one, or if a dependency has a licence it has not seen before |
@@ -69,8 +71,31 @@ through a relay, offline) and a folder offer. No real device ID, name or address
   and a shown password marking the window secure.
 
 Both checks were tried on purpose against a broken screen, and both failed as they should.
-Dialogs with a text field are left out: on Robolectric they never settle. They are checked by
-hand on the emulators.
+Dialogs with a text field are left out: on Robolectric they never settle. The end-to-end
+tests cover them on the emulators.
+
+## End-to-end tests
+
+The debug app runs on an emulator (plain Android 15 and 16 images, Pixel 7) against a real
+Syncthing peer built from the same patched core. The peer runs on the build machine's loopback
+only, with discovery, relays and NAT off, so it never meets a real device; it reaches the
+emulator through `adb`. `scripts/e2e/run.py` runs the steps in order, and refuses to run on a
+real phone.
+
+| Step | What must hold |
+|---|---|
+| Pairing | Fresh install: the checklist, the usage question, the peer added by typing its ID, the peer's folder offer accepted with Trash can versioning |
+| Sync both ways | 21 files from the peer arrive; a file written on the phone reaches the peer, which then sees the phone at 100 % |
+| Restore a version | The peer changes a file; the old one is restored from the phone's Trash can, and the peer gets it back too |
+| Run conditions | Wi-Fi off (mobile data, which is off for syncing by default): the peer loses the phone; Wi-Fi on: it comes back |
+| Typed text | Text typed in a rename dialog and a list dialog survives the screen being recreated; afterwards only one copy of the screen stays in memory |
+| Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
+| Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
+| All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
+| Monkey | 2,500 random events with a fixed seed: no crash, no freeze |
+
+The run also fails on any app crash in the log, and counts StrictMode reports. On the PC
+emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
 
 ## Input validation and property tests
 
@@ -266,5 +291,4 @@ every push. See [README](../README.md#reproducible-builds-and-releases).
 - The roaming run condition: emulators cannot simulate roaming.
 - Battery and CPU use were not measured; the soak ran on Android 16 only.
 - Flash writes of a release build.
-- Flows across screens with a real core (pairing, accepting a folder, restoring a version) are
-  checked by hand; the screen tests use made-up data.
+- The end-to-end tests use one peer on loopback: no relays, discovery, NAT or slow networks.
