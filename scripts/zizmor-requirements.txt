@@ -1,0 +1,4 @@
+# zizmor, the workflow linter in build.yml (job "workflows"). One wheel, no dependencies.
+# To bump: pip download zizmor==<version> --no-deps --platform manylinux_2_28_x86_64 --only-binary=:all:
+# and replace the version and the wheel's sha256 below.
+zizmor==1.31.1 --hash=sha256:58e878eb2dbd2c6183c105e1ac28c14f7dd1eca44a783f1fe2a69647d012c410

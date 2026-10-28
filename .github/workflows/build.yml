@@ -14,6 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          persist-credentials: false
           submodules: true
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
@@ -42,7 +43,9 @@ jobs:
         run: go vet . && go test .
       - name: Build, unit tests, lint
         # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
-        run: ./gradlew --no-daemon :app:assembleDebug testDebugUnitTest :app:lintDebug
+        run: ./gradlew --no-daemon :app:assembleDebug testDebugUnitTest :app:lintDebug :app:processReleaseManifest
+      - name: Permissions and exported components as committed
+        run: scripts/manifest-surface.py --check
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-debug
@@ -56,6 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          persist-credentials: false
           submodules: true
       - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
@@ -79,6 +83,7 @@ jobs:
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: No personal details in files, commits or history
         run: scripts/check-leaks.sh
@@ -88,5 +93,24 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
       - name: Text for people only in strings.xml
         run: scripts/check-strings.py
+
+  # Static analysis of these workflows: injection, credentials left in the checkout, permissions,
+  # and (with the token) that every pinned action commit really belongs to that action.
+  workflows:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: zizmor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 -m venv "$RUNNER_TEMP/zizmor"
+          "$RUNNER_TEMP/zizmor/bin/pip" install --quiet --no-deps --require-hashes -r scripts/zizmor-requirements.txt
+          "$RUNNER_TEMP/zizmor/bin/zizmor" --format github .github/workflows
