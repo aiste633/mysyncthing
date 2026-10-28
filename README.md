@@ -94,6 +94,17 @@ git submodule update --init
 
 Screen tests run with the unit tests, on the JVM (Robolectric): the app's real screens with made-up folders and devices (`app/src/test/.../ui/Fixtures.kt`), checking the forms, the Discard prompt, that a shown password hides the screen from captures, and that TalkBack can name every control. `ScreenshotTest` compares each screen in light, dark, the largest font and Italian with the images in `app/src/test/screenshots/`; CI runs it with `:app:verifyRoborazziDebug` and uploads the diff images when one differs. After a deliberate change to a screen, record them again with `./gradlew :app:recordRoborazziDebug` and look at the new images before committing them.
 
+End-to-end tests run the debug app on an emulator against a real Syncthing peer built from the same patched core: pairing, accepting a shared folder, sync both ways, restoring a Trash can version, run conditions (Wi-Fi off), typed text kept when the screen is recreated, the app's process killed, All files access taken away (the peer must see no deletions), and a monkey run with a fixed seed. CI runs them on Android 15 and 16 (`e2e` job). The peer listens on loopback only, with discovery and relays off, and reaches the emulator through `adb reverse` and `adb forward`. Locally, with an emulator running (the script refuses a real phone, as it wipes the app's data):
+
+```sh
+./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
+(cd go/syncthing && go build -tags noupgrade -o ../build/e2e-peer ./cmd/syncthing)
+scripts/e2e/run.py --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
+  --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+```
+
+Results, logcat and the peer's log land in `build/e2e/`.
+
 `cd go/bridge && go test .` starts and stops the real core on the host. Run `go/patch.sh` and then `go generate ./lib/api/auto` in `go/syncthing` once first.
 
 `go/build.sh` applies `go/patches/*.patch` to the submodule (`go/patch.sh`, idempotent), so the submodule shows as modified after a build. Each patch is a fix we also report upstream; drop it once a Syncthing release has it. To change one, commit the change in the submodule and export it with `git format-patch -1 --no-signature --zero-commit -o ../patches/`, then check out the pinned commit again.
@@ -114,7 +125,8 @@ Every build of a commit gives a byte-identical unsigned release APK (arm64 only;
 
   ```sh
   ./gradlew --write-verification-metadata sha256 --refresh-dependencies --no-configuration-cache -I scripts/sbom/runtime-deps.init.gradle.kts \
-    :app:assembleRelease :app:assembleDebug testDebugUnitTest :app:verifyRoborazziDebug :app:lintDebug :app:sbomRuntimeDeps
+    :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest testDebugUnitTest :app:verifyRoborazziDebug \
+    :app:lintDebug :app:sbomRuntimeDeps
   scripts/sbom.sh
   ```
 

@@ -16,6 +16,8 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "0.1.0"
+        // End-to-end tests on an emulator against a real Syncthing peer (scripts/e2e/run.py).
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -93,6 +95,10 @@ dependencies {
     // createComposeRule's empty activity; debug builds only, never in a release.
     debugImplementation(libs.compose.ui.test.manifest)
     robolectricSdk(libs.robolectric.android.all)
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.junit)
 }
 
 // Robolectric's Android jar is a Gradle dependency, so gradle/verification-metadata.xml checks
