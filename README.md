@@ -17,6 +17,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Export the setup to a zip, optionally AES-256 encrypted, and import it, or a Syncthing-Fork backup, on another phone.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.
 - Notifies you of new devices and shared folders (with Review and Ignore) and of folders that stop syncing.
+- In English and Italian, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. More languages can be added without code changes: see [Translations](#translations).
 - Works with TalkBack: every button is named and every switch and checkbox reads as on or off.
 - Syncthing's own web GUI is built in for anything the app does not cover, signed in automatically and private to the app.
 - Reproducible builds: every build of a release gives a byte-identical APK, so anyone can check that a release APK was built from this source.

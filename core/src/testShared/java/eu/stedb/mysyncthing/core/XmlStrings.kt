@@ -9,7 +9,8 @@ import java.util.Locale
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * The English strings read straight from res/values, for unit tests on the JVM,
+ * The English strings read straight from res/values (or a translation's [folder],
+ * such as values-it, for checks of its text), for unit tests on the JVM,
  * where there are no Resources. Resource IDs are matched to names through the
  * generated R classes. Text is unescaped as aapt2 does for the cases our files
  * use; a value it would refuse (an unescaped apostrophe) fails here too.
@@ -23,14 +24,15 @@ class XmlStrings(
     private val classes: List<Class<*>>,
     override val is24Hour: Boolean = true,
     override val locale: Locale = Locale.UK,
+    private val folder: String = "values",
 ) : Strings {
 
     private val strings = mutableMapOf<String, String>()
     private val plurals = mutableMapOf<String, Map<String, String>>()
 
     init {
-        val files = dirs.flatMap { File(it, "values").listFiles { f -> f.extension == "xml" }.orEmpty().sorted() }
-        check(files.isNotEmpty()) { "no values XML in $dirs (working directory ${File("").absolutePath})" }
+        val files = dirs.flatMap { File(it, folder).listFiles { f -> f.extension == "xml" }.orEmpty().sorted() }
+        check(files.isNotEmpty()) { "no $folder XML in $dirs (working directory ${File("").absolutePath})" }
         for (file in files) {
             val root = DocumentBuilderFactory.newInstance().apply { isNamespaceAware = true }.newDocumentBuilder().parse(file).documentElement
             for (e in root.childElements()) {
@@ -65,7 +67,7 @@ class XmlStrings(
             .withLocale(locale).format(value)
 
     /** The same English strings with another clock setting, or dates and numbers as [locale] writes them. */
-    fun with(is24Hour: Boolean = this.is24Hour, locale: Locale = this.locale) = XmlStrings(dirs, classes, is24Hour, locale)
+    fun with(is24Hour: Boolean = this.is24Hour, locale: Locale = this.locale) = XmlStrings(dirs, classes, is24Hour, locale, folder)
 
     /** Every string and plural form, for checks over all of them. */
     val all: Map<String, String> get() = strings + plurals.flatMap { (n, f) -> f.map { (q, v) -> "$n/$q" to v } }

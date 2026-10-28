@@ -22,6 +22,17 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
 `values/strings.xml`, file mask `values-*/strings.xml`), and one for the fastlane folder
 (format "Fastlane metadata").
 
+## Languages
+
+| Language | Folder | App and core | Store text |
+|---|---|---|---|
+| English (source) | `values`, `en-US` | all | all |
+| Italian | `values-it`, `it` | all | all |
+
+`TranslationsTest` checks every translation against English: each name must exist in
+English, and each string must take the same placeholders (a plural's "one" may leave out
+the number).
+
 ## Choosing the language
 
 The app follows the phone's language. Android's per-app language page (Settings > Apps >
@@ -47,9 +58,10 @@ unless one was chosen in the web GUI itself.
 
 - Each string with placeholders has a comment saying what they hold. Keep `%1$s`, `%2$d`
   and their numbers; the order in the sentence may change.
-- Plurals (`<plurals>`) need the forms your language uses. Where English leaves out the
-  number in "one" ("Every day"), keep `%1$d` if "one" also covers other numbers in your
-  language (such as 21).
+- Plurals (`<plurals>`) need every form Android lists for your language; lint fails on a
+  missing one. Italian also has `many` (round millions); where its text is the same, repeat
+  `other`. Where English leaves out the number in "one" ("Every day"), keep `%1$d` if "one"
+  also covers other numbers in your language (such as 21).
 - Units are SI symbols and are not translated: kB, MB/s, %, d, h, min, s. They follow the
   number after a non-breaking space (` `).
 - Names stay as they are: Syncthing, Syncthing-Fork, Tor, Orbot, SOCKS5, HTTP, QUIC,

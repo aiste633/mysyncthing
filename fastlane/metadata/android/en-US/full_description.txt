@@ -9,5 +9,6 @@
 <li>SOCKS5 or HTTP proxy, such as Tor with Orbot</li>
 <li>Backup export, optionally AES-256 encrypted, and import, also from Syncthing-Fork</li>
 <li>Syncthing's own web interface is built in for advanced settings</li>
+<li>In English and Italian, in the phone's language or one chosen for the app alone; dates, times and numbers as the phone's region writes them</li>
 </ul>
 <p>The Syncthing core (v2) runs inside the app. Reaching folders anywhere on shared storage needs the "All files access" permission.</p>
