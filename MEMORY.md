@@ -188,3 +188,9 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - `docs/privacy.md`: GDPR-style privacy page, English only (user's call). Contact = the same private reporting link. Linked from the README and both fastlane descriptions (the Italian one says the page is in English).
 - Keep it true when behaviour changes: what is stored (incl. device-to-device transfer carrying the keys, `data_extraction_rules.xml`), Syncthing's public servers and their switches (STUN is off with Router port opening, `IsStunDisabled`), usage reporting (only the consent and the switch; its contents are left to upstream's docs, user's call), permissions (Wi-Fi state, multicast and wake lock are declared but unused), logcat filtering, Settings paths.
 - Fastlane changes = F-Droid metadata: the user merges this PR.
+
+## Docs: features and testing (2026-10-28)
+- README "Features" is grouped: Syncing, Made for Android 15 and 16, Light on battery and flash, Privacy, Hardened and tested, Open and verifiable. The F-Droid descriptions (`fastlane/metadata/android/en-US` and `it`) carry the same points in short; keep the two languages in step.
+- `docs/testing.md` documents every kind of test with its numbers (CI jobs, input validation, fuzz long runs, security reviews, emulator and phone checks, interruption, stress, memory soak, flash writes, reproducible builds) and what is not covered yet. Add a section when a new kind of test or hardening lands; keep the numbers as measured, with the date.
+- Privacy wording: cloud backup is off; Android's phone-to-phone transfer carries the device keys on purpose, with the advice to stop Syncthing on the old phone. Usage reporting: link to the Syncthing project's docs only.
+- No test device IDs, names, addresses or paths in docs: the test reports in the project files contain some; never copy them.

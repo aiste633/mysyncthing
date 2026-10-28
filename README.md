@@ -10,18 +10,53 @@ See your sync status at a glance, without opening the app. The widget is a singl
 
 ## Features
 
-- Folders and devices as clear cards with colour and icon status, in Material You colours and dark mode.
-- Accept shared folders with a suggested location, choose the folder type, sharing and file versioning.
+### Syncing
+
+- Folders and devices as clear cards with colour and icon status. Pair devices by QR code or device ID.
+- Accept shared folders with a suggested location, choose the folder type, sharing and file versioning; restore older versions of a file.
 - Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver; only at set times of the week (for example 22:00–07:00 on weekdays).
 - Connect through a SOCKS5 or HTTP proxy, such as Tor with Orbot, optionally with nothing going around it.
-- Export the setup to a zip, optionally AES-256 encrypted, and import it, or a Syncthing-Fork backup, on another phone.
+- Easy switch from Syncthing-Fork: import its backup, encrypted ones too, and take over its device ID, folders and devices. Export this app's setup to a zip, optionally AES-256 encrypted, and import it on another phone.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.
 - Notifies you of new devices and shared folders (with Review and Ignore) and of folders that stop syncing.
-- In English and Italian, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. More languages can be added without code changes: see [Translations](#translations).
+- Syncthing's own web GUI is built in for the few things the app does not cover, signed in automatically and private to the app.
+
+### Made for Android 15 and 16
+
+- Only Android 15 and 16, so nothing is held back by older versions. It runs as a foreground service of the kind Android allows to run all day, without the 6-hour daily limit of data-sync services.
+- Native Material 3 screens in your wallpaper's colours (Material You), with dark mode and the home-screen widget.
 - Works with TalkBack: every button is named and every switch and checkbox reads as on or off.
-- Syncthing's own web GUI is built in for anything the app does not cover, signed in automatically and private to the app.
-- Reproducible builds: every build of a release gives a byte-identical APK, so anyone can check that a release APK was built from this source.
-- No tracking: no analytics or crash-reporting libraries. Syncthing's anonymous usage reporting is asked once and is off unless you say yes. What the app keeps and what leaves the phone: [privacy](docs/privacy.md).
+- In English and Italian, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. The text is in standard Android string files, ready for a translation platform such as Weblate: see [Translations](#translations).
+
+### Light on battery and flash
+
+- When idle, the app writes about 0.02–0.14 MB an hour to flash; it keeps no log files. Writes come from syncing itself.
+- The run conditions and sync times let it sync only when it suits you: on Wi-Fi, while charging, at night.
+
+### Privacy
+
+- No tracking, advertising, analytics or crash-reporting libraries. There is no account and no server of ours: the app's developer receives nothing.
+- Syncthing's anonymous usage reporting is asked once and is off unless you say yes. What it sends is described by the Syncthing project: [Security principles](https://docs.syncthing.net/users/security.html) and [data.syncthing.net](https://data.syncthing.net).
+- Cloud backup is off, so the device keys never go to a cloud. Android's phone-to-phone transfer to a new phone does carry them, so the new phone keeps the old one's identity: afterwards stop Syncthing on the old phone (the app reminds you once).
+- Release builds keep Syncthing's routine log lines, which name devices and folders, out of Android's system log.
+
+Details: [privacy](docs/privacy.md).
+
+### Hardened and tested
+
+What each test covers, with its numbers: [testing and hardening](docs/testing.md).
+
+- Every input field checked against the Syncthing core's own rules, with property tests of 20,000 random inputs each; [input validation](docs/input-validation.md).
+- Go fuzzing of everything that reaches the core or reads a file from outside; it found and fixed a bug in Syncthing itself.
+- A security audit and a gap analysis against common practice: the built-in web view is locked to the core's own address, the web GUI login is random and locked, a shown password hides the screen from screenshots, StrictMode checks debug builds. [Security policy](SECURITY.md).
+- Stress tests (50,000 files, full storage, random UI events), a 10-hour memory soak with no leak, flash-write tracing, and interruption tests (rotation, Android reclaiming the app, permissions taken away).
+- CI checks every push: unit tests, lint, a leak check that keeps personal details out of the repository and its history, a guard on the app's permissions, an audit of the workflows, and a twin build that must be byte-identical. CodeQL analyses the app and the core. GitHub Actions are pinned by commit hash, and releases carry a signed build provenance attestation.
+
+### Open and verifiable
+
+- The official Syncthing core (v2), unchanged apart from a few small fixes, each documented in [`go/patches/`](go/patches/). AGPL-3.0, and the Syncthing core MPL-2.0.
+- Reproducible builds: every build of a release gives a byte-identical APK, so anyone, F-Droid included, can check that a release APK was built from this source.
+- A [software bill of materials](docs/sbom.md) lists everything the APK contains, with versions and licences; CI keeps it current.
 
 ## Screenshots
 
@@ -107,6 +142,7 @@ cd ../bridge && go mod tidy && go test .
 
 - [Privacy](docs/privacy.md): what the app keeps on the phone, what goes to Syncthing's public servers and how to turn each off, permissions, your rights under the GDPR.
 - [Security policy](SECURITY.md): report a vulnerability privately through GitHub, never in a public issue.
+- [Testing and hardening](docs/testing.md): what each test covers and what it found, with its numbers.
 
 ## Translations
 
