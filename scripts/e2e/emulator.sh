@@ -30,11 +30,13 @@ if [ ${#missing[@]} -gt 0 ]; then
   "$bin/sdkmanager" --install "${missing[@]}" >/dev/null
 fi
 echo no | "$bin/avdmanager" create avd --force -n "$avd" -k "$image" -d pixel_7 >/dev/null
-# The emulator links system libraries a minimal Linux may lack (GitHub's runner image has no libpulse).
-qemu="$ANDROID_HOME/emulator/qemu/linux-x86_64/qemu-system-x86_64"
-if ldd "$qemu" | grep -q 'not found'; then
-  echo "the emulator needs system libraries that are missing:" >&2; ldd "$qemu" | grep 'not found' >&2; exit 1
-fi
+# The emulator links system libraries a minimal Linux may lack (GitHub's runner image has no
+# libpulse). Its own libraries are bundled under emulator/ and found by its launcher, not by ldd.
+emu_dir="$ANDROID_HOME/emulator"
+missing_libs=$(ldd "$emu_dir/qemu/linux-x86_64/qemu-system-x86_64" | awk '/not found/ {print $1}' | while read -r lib; do
+  [ -n "$(find "$emu_dir" -name "$lib" -print -quit)" ] || echo "$lib"
+done)
+[ -z "$missing_libs" ] || { echo "the emulator needs system libraries that are missing: $missing_libs" >&2; exit 1; }
 "$ANDROID_HOME/emulator/emulator" -version | head -n 1
 
 log="${E2E_EMULATOR_LOG:-$(mktemp)}"
