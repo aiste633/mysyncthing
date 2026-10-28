@@ -43,13 +43,12 @@
             android:name=".ClearProblemsReceiver"
             android:exported="false" />
 
-        <!-- Both are sent to the app explicitly or exempt from the limits on implicit broadcasts. -->
+        <!-- Sent by the system for a new phone language, and to this app alone for its own language. -->
         <receiver
             android:name=".LocaleReceiver"
             android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.LOCALE_CHANGED" />
-                <action android:name="android.intent.action.APPLICATION_LOCALE_CHANGED" />
             </intent-filter>
         </receiver>
 

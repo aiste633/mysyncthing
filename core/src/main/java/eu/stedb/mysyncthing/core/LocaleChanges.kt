@@ -23,9 +23,11 @@ fun relocalize(context: Context) {
 }
 
 /**
- * The phone's language (LOCALE_CHANGED) or this app's own one, set on
- * Android's per-app language page (APPLICATION_LOCALE_CHANGED). The running
- * service also hears it as a configuration change; this covers a stopped one.
+ * LOCALE_CHANGED comes for the phone's language and, aimed at this app alone,
+ * for the app's own one set on Android's per-app language page; it starts the
+ * process if needed, so a stopped service is covered too. (APPLICATION_LOCALE_CHANGED
+ * goes only to holders of a permission apps can't get.) The status notification
+ * is redrawn by the service, if it runs.
  */
 class LocaleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {

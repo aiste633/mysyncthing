@@ -32,7 +32,13 @@ android {
     }
 
     // locales_config for Android's per-app language page, from the languages in res/ (base: resources.properties).
-    androidResources { generateLocaleConfig = true }
+    // Only shipped languages reach the APK and that page; the filter also drops libraries' other translations.
+    androidResources {
+        generateLocaleConfig = true
+        localeFilters += shippedLanguages()
+    }
+    // A translation may lack a few strings: those show in English (see shippedLanguages).
+    lint { disable += "MissingTranslation" }
 
     // F-Droid: no Google dependency-info blob in the APK.
     dependenciesInfo {
@@ -72,3 +78,30 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
 }
+
+/**
+ * English, and each translation that covers at least 90 % of the translatable
+ * strings and plurals of both modules (the owner's rule): a missing string shows
+ * in English. A language below that stays out of the APK and the language list,
+ * and is named in the build log with its share.
+ */
+fun shippedLanguages(): List<String> {
+    val dirs = listOf("src/main/res", "../core/src/main/res").map { file(it) }
+    fun names(values: File): Set<String> = values.resolve("strings.xml").takeIf { it.exists() }?.let { f ->
+        val root = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(f).documentElement
+        (0 until root.childNodes.length).map { root.childNodes.item(it) }.filterIsInstance<org.w3c.dom.Element>()
+            .filter { it.tagName in setOf("string", "plurals") && it.getAttribute("translatable") != "false" }
+            .map { it.getAttribute("name") }.toSet()
+    }.orEmpty()
+    val base = dirs.flatMap { names(it.resolve("values")) }.toSet()
+    // values-it, values-pt-rBR, values-b+sr+Latn; not values-night or values-v35.
+    val language = Regex("""values-([a-z]{2,3}(-r[A-Z]{2})?|b\+[a-z]{2,3}(\+[A-Za-z0-9]+)*)""")
+    val shares = dirs.flatMap { d -> d.listFiles().orEmpty().filter { language.matches(it.name) } }
+        .groupBy({ it.name.removePrefix("values-") }, { names(it) })
+        .mapValues { (_, sets) -> sets.flatten().toSet().intersect(base).size.toDouble() / base.size }
+    shares.filterValues { it < 0.9 }.toSortedMap().forEach { (lang, share) ->
+        logger.lifecycle("Translation $lang not shipped: ${Math.round(share * 100)} % of ${base.size} strings (needs 90 %)")
+    }
+    return listOf("en") + shares.filterValues { it >= 0.9 }.keys.sorted()
+}
+

@@ -27,9 +27,16 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
 The app follows the phone's language. Android's per-app language page (Settings > Apps >
 MySyncthing > Language, or the app's Settings > System > Language) can set another one for
 the app alone. That page lists the languages in the app: the build generates its list
-(`locales_config`) from the `values-*` folders, with English as the base
-(`app/src/main/res/resources.properties`). Debug builds also list the pseudolocales
-en-XA (long, accented text) and ar-XB (right to left) for checking layouts.
+(`locales_config`) from the shipped `values-*` folders, with English as the base
+(`app/src/main/res/resources.properties`). Debug builds also have the pseudolocales
+en-XA (long, accented text) and ar-XB (right to left) for checking layouts; Android lists
+them only with developer options on.
+
+A translation ships once it covers at least 90 % of the translatable strings and plurals
+of both modules; a string still missing shows in English. Below that it stays out of the
+APK and the language list, and the build log names it with its share
+(`shippedLanguages()` in `app/build.gradle.kts`). Lint's `MissingTranslation` is off for
+this reason; a string in a translation that English no longer has still fails the build.
 
 On a change of language the notification channels are renamed, and the status
 notification, the core's notices and the widget are drawn again in the new language.

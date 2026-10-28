@@ -4,6 +4,8 @@ plugins {
 }
 
 android {
+    // A translation may lack a few strings: those show in English (app/build.gradle.kts, shippedLanguages).
+    lint { disable += "MissingTranslation" }
     namespace = "eu.stedb.mysyncthing.core"
     compileSdk = 37
     ndkVersion = providers.gradleProperty("mysyncthing.ndkVersion").get()

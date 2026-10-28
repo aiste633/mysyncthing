@@ -7,10 +7,8 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.content.res.Configuration
 import android.os.Build
 import android.os.Environment
-import android.os.LocaleList
 import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.lifecycle.LifecycleService
@@ -43,7 +41,6 @@ class SyncthingService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         settings = Settings(this)
-        locales = resources.configuration.locales
         createChannel(this)
         RequestNotifications.createChannel(this)
         ProblemNotifications.createChannel(this)
@@ -71,16 +68,6 @@ class SyncthingService : LifecycleService() {
         startForeground(NOTIFICATION_ID, notification(getString(R.string.status_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
-    private var locales: LocaleList? = null
-
-    /** Also a language picked for this app alone, which sends no LOCALE_CHANGED. */
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        if (newConfig.locales == locales) return
-        locales = newConfig.locales
-        relocalize(this)
-        lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
-    }
 
     /** The core's run: started by [onStartCommand], over once the core failed (a later start tries again). */
     private var run: Job? = null
