@@ -38,7 +38,7 @@ ALLOWED = [
     # The core's own messages, matched to show our words instead (ProblemText, LiveStats).
     (r"core/ProblemText\.kt", r"insufficient space .*|no space left on device|folder marker missing|folder path missing"
                               r"|folder path not a directory|permission denied|peers who had this file went away"
-                              r"|no connected device has the required version|file modified but not rescanned"),
+                              r"|no connected device has the required version|file modified but not rescanned|Failed initial scan"),
     (r"ui/LiveStats\.kt", r"network is unreachable"),
     # A directory name on disk, made before the user picks one; not shown as text.
     (r"ui/Validation\.kt", r"Folder"),
