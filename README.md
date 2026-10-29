@@ -85,7 +85,7 @@ The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to
 
 ## Build
 
-Requirements: JDK 21, Go (the toolchain auto-downloads the version upstream needs), Android SDK 36, and the NDK version pinned in `gradle.properties` (`mysyncthing.ndkVersion`; `sdkmanager "ndk;<version>"`).
+Requirements: JDK 21, Go (the toolchain auto-downloads the version pinned in `go/bridge/go.mod`), Android SDK 36, and the NDK version pinned in `gradle.properties` (`mysyncthing.ndkVersion`; `sdkmanager "ndk;<version>"`).
 
 ```sh
 git submodule update --init
@@ -114,12 +114,13 @@ Results, logcat and the peer's log land in `build/e2e/`.
 - `docs/manifest-surface.txt` lists every permission the release app has and every part of it other apps can reach, from the merged release manifest with all libraries. The `android` CI job fails when it changes, so a library that adds a permission or an exported component is seen in review. After an intended change: `./gradlew :app:processReleaseManifest && scripts/manifest-surface.py`, and commit the result.
 - CodeQL (`.github/workflows/codeql.yml`) analyses the Kotlin app, the Go bridge with the patched core, the workflows and the scripts, from a real build, on every push to `main`, weekly and by hand. Findings are under Security › Code scanning. It needs the repository's CodeQL setting on "Advanced".
 - zizmor lints the workflows (`workflows` job in `build.yml`): script injection, credentials kept in the checkout, permissions, and that each pinned action commit belongs to its action. Its version and wheel checksum are in `scripts/zizmor-requirements.txt`. Checkouts never keep the job's token (`persist-credentials: false`).
+- govulncheck (`.github/workflows/govulncheck.yml`) looks up the Go vulnerability database for anything the bridge, the patched core, their modules or the Go standard library contain that the app's code can actually reach, for android/arm64 with cgo as the app is built. It runs on every push and pull request and weekly, since new vulnerabilities appear without changes here; a hit fails it. The fix is usually a newer Go (`toolchain` line in `go/bridge/go.mod`) or module; then run `scripts/sbom.sh`.
 
 ## Reproducible builds and releases
 
 Every build of a commit gives a byte-identical unsigned release APK (arm64 only; debug builds also carry x86_64). This is what lets F-Droid ship the APK signed with our key. What keeps it that way:
 
-- Toolchains are pinned in one place each: NDK in `gradle.properties`, Go in `go/syncthing/go.mod`, Gradle in the wrapper (with checksum), JDK 21 via `jvmToolchain`.
+- Toolchains are pinned in one place each: NDK in `gradle.properties`, Go in `go/bridge/go.mod` (`toolchain` line; the CI release build checks the APK was built with it), Gradle in the wrapper (with checksum), JDK 21 via `jvmToolchain`.
 - `go/build.sh` strips paths, build IDs and timestamps from the Go library, and builds through the fixed symlink `/tmp/mysyncthing-go`, because gomobile records module paths.
 - `gradle/verification-metadata.xml` holds SHA-256 checksums of every Gradle dependency. After changing a dependency or plugin version, refresh it:
 
