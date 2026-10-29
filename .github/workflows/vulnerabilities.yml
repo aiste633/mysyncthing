@@ -38,7 +38,9 @@ jobs:
       - name: Self-test, a vulnerable SBOM is reported
         run: |
           rc=0
-          scripts/vulns/osv.sh scripts/vulns/testdata/vulnerable-sbom.cdx.json > "$RUNNER_TEMP/self-test.md" || rc=$?
+          # Hides the notes on accepted entries this SBOM does not hold; errors still show.
+          scripts/vulns/osv.sh scripts/vulns/testdata/vulnerable-sbom.cdx.json > "$RUNNER_TEMP/self-test.md" \
+            2> >(grep -v '^accepted.toml:' >&2) || rc=$?
           cat "$RUNNER_TEMP/self-test.md"
           # Log4Shell is reported; the accepted angular advisories and Go modules are not.
           [ "$rc" = 1 ]
@@ -72,7 +74,7 @@ jobs:
           scripts/vulns/actions.sh scripts/vulns/testdata/vulnerable-workflow.yml > "$RUNNER_TEMP/self-test.md" || rc=$?
           cat "$RUNNER_TEMP/self-test.md"
           [ "$rc" = 1 ]
-          grep -q GHSA-cxww-7g56-2vh6 "$RUNNER_TEMP/self-test.md"
+          grep -q 'GHSA-cxww-7g56-2vh6.* in scripts/vulns/testdata/vulnerable-workflow.yml line 10$' "$RUNNER_TEMP/self-test.md"
       - name: Pinned GitHub Actions (zizmor)
         id: scan
         env:

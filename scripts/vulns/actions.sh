@@ -19,9 +19,10 @@ python3 -m venv "$work/venv"
 # --no-exit-codes: exit 0 with findings, so only a failure of zizmor itself stops here.
 "$work/venv/bin/zizmor" --quiet --format json --no-exit-codes "${@:-$root/.github/workflows}" > "$work/zizmor.json"
 
-jq -r '.[] | select(.ident == "known-vulnerable-actions" and (.ignored | not)) | .locations[0]
+jq -r --arg root "$root/" '.[] | select(.ident == "known-vulnerable-actions" and (.ignored | not))
+  | .locations[0]
   | "- [\(.symbolic.annotation)](https://github.com/advisories/\(.symbolic.annotation)):"
-    + " `\(.concrete.feature)` in \(.symbolic.key.Local.given_path // "?")"
+    + " `\(.concrete.feature)` in \(.symbolic.key.Local.verbatim_path // "?" | ltrimstr($root))"
     + " line \(.concrete.location.start_point.row + 1)"' "$work/zizmor.json" > "$work/found.md"
 
 [ -s "$work/found.md" ] || exit 0
