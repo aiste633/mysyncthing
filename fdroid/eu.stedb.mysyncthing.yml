@@ -3,8 +3,9 @@
 # prints it) and update the Builds entry to the release tag.
 # CI builds from this file too (.github/workflows/reproducible.yml), with Repo and commit
 # pointed at the commit under test, so keep the build steps here and in CI in one place.
-# Go 1.26.2 is fetched by GOTOOLCHAIN=auto (checksum-verified). Reviewers may ask for a
-# source-built Go instead (srclibs: go@go1.26.2, as Syncthing-Fork's recipe does).
+# go/build.sh fetches the Go named by the toolchain line of go/bridge/go.mod (GOTOOLCHAIN,
+# checksum-verified), now go1.26.10. Reviewers may ask for a source-built Go instead (srclibs: go@go1.26.10, as
+# Syncthing-Fork's recipe does).
 Categories:
   - Cloud Storage & File Sync
   - Connectivity

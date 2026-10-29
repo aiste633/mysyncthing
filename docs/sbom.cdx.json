@@ -2850,9 +2850,9 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:golang/stdlib@1.26.2",
+      "bom-ref": "pkg:golang/stdlib@1.26.10",
       "name": "stdlib",
-      "version": "1.26.2",
+      "version": "1.26.10",
       "description": "Go standard library and runtime",
       "licenses": [
         {
@@ -2861,7 +2861,7 @@
           }
         }
       ],
-      "purl": "pkg:golang/stdlib@1.26.2",
+      "purl": "pkg:golang/stdlib@1.26.10",
       "externalReferences": [
         {
           "type": "vcs",
@@ -3525,9 +3525,9 @@
     },
     {
       "type": "application",
-      "bom-ref": "pkg:golang/toolchain@1.26.2",
+      "bom-ref": "pkg:golang/toolchain@1.26.10",
       "name": "go",
-      "version": "1.26.2",
+      "version": "1.26.10",
       "scope": "excluded",
       "licenses": [
         {
@@ -3536,11 +3536,11 @@
           }
         }
       ],
-      "purl": "pkg:golang/toolchain@1.26.2",
+      "purl": "pkg:golang/toolchain@1.26.10",
       "properties": [
         {
           "name": "mysyncthing:pinned-in",
-          "value": "go/syncthing/go.mod"
+          "value": "go/bridge/go.mod"
         }
       ]
     },
@@ -3635,7 +3635,7 @@
         "pkg:golang/github.com/thejerf/suture/v4@v4.0.6",
         "pkg:golang/golang.org/x/mobile@v0.0.0-20261011034528-197770444867",
         "pkg:golang/golang.org/x/sys@v0.49.0",
-        "pkg:golang/stdlib@1.26.2",
+        "pkg:golang/stdlib@1.26.10",
         "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
         "pkg:maven/androidx.compose.material/material-icons-extended-android@1.7.8?type=aar",
         "pkg:maven/androidx.compose.material3/material3-android@1.4.0?type=aar",
@@ -3946,7 +3946,7 @@
       "ref": "pkg:golang/google.golang.org/protobuf@v1.36.12"
     },
     {
-      "ref": "pkg:golang/stdlib@1.26.2"
+      "ref": "pkg:golang/stdlib@1.26.10"
     },
     {
       "ref": "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
