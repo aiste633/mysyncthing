@@ -1,0 +1,6 @@
+# osv-scanner, which checks the SBOM against the OSV vulnerability database (scripts/vulns/osv.sh).
+# One static binary from the project's GitHub release, checked against this sha256.
+# To bump: take <version> and the linux_amd64 line of osv-scanner_SHA256SUMS from
+# https://github.com/google/osv-scanner/releases and replace both below.
+version=2.7.0
+sha256=160c6253e2922e9e0a6a9771c5c4c40a4b3c6090b34a3cdd5e80c96cc2e4218b

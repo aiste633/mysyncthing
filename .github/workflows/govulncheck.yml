@@ -2,15 +2,17 @@ name: govulncheck
 
 # Known Go vulnerabilities (vuln.go.dev) that the app's Go code can actually reach: the
 # bridge, the patched core and every module they link, plus the standard library of the
-# pinned toolchain. Weekly too, because new vulnerabilities appear without any change here.
+# pinned toolchain. New vulnerabilities appear without any change here: vulnerabilities.yml
+# runs this daily and opens an issue for what it finds.
 on:
   push:
   pull_request:
-  schedule:
-    - cron: "37 5 * * 1"
   workflow_dispatch:
-  # The vulnerability alert workflow runs this as one of its checks.
   workflow_call:
+    outputs:
+      found:
+        description: true or false; unset when the scan itself failed
+        value: ${{ jobs.govulncheck.outputs.found }}
 
 permissions:
   contents: read
@@ -19,6 +21,8 @@ jobs:
   govulncheck:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      found: ${{ steps.scan.outputs.found }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
@@ -40,6 +44,7 @@ jobs:
       # The app's platform (android/arm64 with cgo, so the core's SQLite is the one it ships).
       # Any NDK's compiler will do for reading cgo files: the runner image's newest one.
       - name: Scan the bridge and the core
+        id: scan
         working-directory: go/bridge
         env:
           GOOS: android
@@ -47,4 +52,12 @@ jobs:
           CGO_ENABLED: "1"
         run: |
           export CC="${ANDROID_NDK_LATEST_HOME:?the runner image has no NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang"
-          "$(go env GOPATH)/bin/govulncheck" -tags noupgrade ./...
+          export PATH="$(go env GOPATH)/bin:$PATH"
+          "$GITHUB_WORKSPACE/scripts/vulns/report.sh" go "$GITHUB_WORKSPACE/scripts/vulns/govulncheck.sh" -tags noupgrade ./...
+      - if: steps.scan.outputs.found == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vulns-go
+          path: ${{ runner.temp }}/vulns/go.md
+      - if: steps.scan.outputs.found == 'true'
+        run: exit 1
