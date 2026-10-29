@@ -115,6 +115,8 @@
     <string name="problem_peers_gone">The devices that had this file disconnected, or it changed while syncing. Syncthing tries again later.</string>
     <string name="problem_no_version">No connected device has this version of the file. Syncthing tries again when one connects.</string>
     <string name="problem_not_rescanned">The file changed and has not been scanned yet. Syncthing tries again later.</string>
+    <!-- A core notice. %1$s: folder name; %2$s: why, one or more sentences -->
+    <string name="notice_initial_scan_failed">%1$s could not be scanned at start. %2$s</string>
     <!-- Notification title. %1$d: number of the core's notices -->
     <plurals name="problems_title">
         <item quantity="one">Syncthing has a problem</item>

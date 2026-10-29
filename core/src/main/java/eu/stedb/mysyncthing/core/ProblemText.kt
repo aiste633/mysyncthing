@@ -35,3 +35,21 @@ fun problemText(raw: String): UiText {
         else -> raw(raw)
     }
 }
+
+/**
+ * A core notice ([SystemError]) for people. A folder whose first scan after
+ * the start failed (lib/model/folder.go: `Failed initial scan (error=...
+ * folder.label=... folder.id=...)`) is named, with its error in the app's
+ * words. Any other notice keeps the core's text, without the log's tail.
+ */
+fun noticeText(message: String): UiText {
+    val (head, values) = noticeParts(message) ?: return raw(message)
+    val v = values.toMap()
+    val error = v["error"]
+    val folder = v["folder.label"] ?: v["folder.id"]
+    return when {
+        head == "Failed initial scan" && error != null && folder != null ->
+            text(R.string.notice_initial_scan_failed, folder, problemText(readableNotice(error)))
+        else -> raw(readableNotice(message))
+    }
+}
