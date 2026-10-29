@@ -40,8 +40,10 @@ android {
         generateLocaleConfig = true
         localeFilters += shippedLanguages()
     }
-    // A translation may lack a few strings: those show in English (see shippedLanguages).
-    lint { disable += "MissingTranslation" }
+    lint {
+        lintConfig = rootProject.file("lint.xml")
+        warningsAsErrors = true
+    }
 
     // F-Droid: no Google dependency-info blob in the APK.
     dependenciesInfo {
@@ -59,14 +61,18 @@ android {
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 
-kotlin { jvmToolchain(21) }
+kotlin {
+    jvmToolchain(21)
+    // As lint: a compiler warning fails the build.
+    compilerOptions { allWarningsAsErrors = true }
+}
 
 // XmlStrings: unit tests read the English strings straight from res/values.
 androidComponents {
     onVariants { v -> v.hostTests.values.forEach { it.sources.kotlin?.addStaticSourceDirectory("../core/src/testShared/java") } }
 }
 
-val robolectricSdk: Configuration by configurations.creating
+val robolectricSdk: Configuration = configurations.create("robolectricSdk")
 
 dependencies {
     implementation(project(":core"))

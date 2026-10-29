@@ -4,8 +4,10 @@ plugins {
 }
 
 android {
-    // A translation may lack a few strings: those show in English (app/build.gradle.kts, shippedLanguages).
-    lint { disable += "MissingTranslation" }
+    lint {
+        lintConfig = rootProject.file("lint.xml")
+        warningsAsErrors = true
+    }
     namespace = "eu.stedb.mysyncthing.core"
     compileSdk = 37
     ndkVersion = providers.gradleProperty("mysyncthing.ndkVersion").get()
@@ -19,7 +21,11 @@ android {
     }
 }
 
-kotlin { jvmToolchain(21) }
+kotlin {
+    jvmToolchain(21)
+    // As lint: a compiler warning fails the build.
+    compilerOptions { allWarningsAsErrors = true }
+}
 
 // XmlStrings: unit tests read the English strings straight from res/values.
 androidComponents {

@@ -44,7 +44,7 @@ jobs:
       - name: Build, unit tests, screen tests, lint
         # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
         # verifyRoborazziDebug runs the unit tests with the screenshots compared to app/src/test/screenshots.
-        run: ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest testDebugUnitTest :app:verifyRoborazziDebug :app:lintDebug :app:processReleaseManifest
+        run: ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest testDebugUnitTest :app:verifyRoborazziDebug :app:lintDebug :core:lintDebug :app:processReleaseManifest
       # A desktop Syncthing from the same patched core, for the e2e job to sync with.
       - name: Test peer for the emulator tests
         working-directory: go/syncthing

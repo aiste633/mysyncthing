@@ -31,6 +31,8 @@ fun relocalize(context: Context) {
  */
 class LocaleReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
+        // Only the system's broadcast; an explicit intent with any other action is ignored.
+        if (intent.action != Intent.ACTION_LOCALE_CHANGED) return
         relocalize(context)
         SyncthingService.refreshNotification(context)
     }

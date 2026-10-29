@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lint settings for app and core. Every other warning fails the build (warningsAsErrors), so a
+     warning is fixed, or ignored right where it occurs with the reason next to it. -->
+<lint>
+    <!-- A translation may lack a few strings: those show in English (app/build.gradle.kts, shippedLanguages). -->
+    <issue id="MissingTranslation" severity="ignore" />
+    <!-- Phones only: release builds are arm64 (README, Reproducible builds); ChromeOS is no target. -->
+    <issue id="ChromeOsAbiSupport" severity="ignore" />
+    <!-- "A newer version is available": lint asks Google's servers on each run, so these change
+         with time, not with our code, and would turn main red on any upstream release. They stay
+         in the report; bumps are their own change. -->
+    <issue id="AndroidGradlePluginVersion" severity="informational" />
+    <issue id="GradleDependency" severity="informational" />
+    <issue id="NewerVersionAvailable" severity="informational" />
+    <issue id="OldTargetApi" severity="informational" />
+</lint>

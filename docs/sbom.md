@@ -202,7 +202,7 @@ Not in the APK; listed because they shape it. The build is reproducible with exa
 
 | Component | Version | Licence |
 |---|---|---|
-| android-gradle-plugin | 9.4.1 | Apache-2.0 |
+| android-gradle-plugin | 9.5.0 | Apache-2.0 |
 | android-ndk | 30.0.16248370 | Apache-2.0 |
 | go | 1.26.2 | BSD-3-Clause |
 | gomobile | v0.0.0-20261011034528-197770444867 | BSD-3-Clause |
