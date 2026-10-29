@@ -207,6 +207,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Peer: `syncthing` built from the patched submodule (`go/build/e2e-peer`), own HOME, GUI 127.0.0.1:8385 (`Peer.PORT`), listen 127.0.0.1:22001, no discovery/relays/NAT. `adb reverse` of port 8385 lets the test call the peer's REST API; `adb forward` from host port 22100 to the phone's 22000 lets the peer dial the phone. The phone never dials the peer.
 - run.py refuses a device that is not an emulator (it uninstalls the app and wipes `/sdcard/Syncthing/E2E`).
 - CI: the android job builds the androidTest APK and the peer and uploads them (`e2e-inputs`); the `e2e` job (matrix API 35, 36, AOSP `default;x86_64` image, Pixel 7) runs `scripts/e2e/emulator.sh` then run.py, and uploads `build/e2e/` (phase outputs, monkey, logcat, peer log, emulator log).
+- Wi-Fi first (2026-10-29): run.py sets `captive_portal_mode 0` and reconnects Wi-Fi; `E2eTest.onWifi` (@Before) waits until Wi-Fi is the default network. Main CI failed once when the emulator's Wi-Fi failed validation: mobile data was the default all run.
 - textDialogsKeepTypedText also counts frames (`dumpsys gfxinfo`) with an idle rename dialog open: under 30 in 5 s, as a re-measure loop (seen on Robolectric) would draw about 300.
 
 ## Wi-Fi multicast lock (2026-10-28)
@@ -226,3 +227,6 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Self-tests in CI: `testdata/vulnerable-sbom.cdx.json` (Log4Shell reported, accepted angular and Go not) and `testdata/vulnerable-workflow.yml` (download-artifact 4.1.2, GHSA-cxww-7g56-2vh6). Neither is linted or run as a workflow.
 - api.osv.dev and vuln.go.dev are blocked in the cloud sandbox; `osv.sh --offline` works there (bucket osv-vulnerabilities.storage.googleapis.com). zizmor's online audits need a GitHub token, so `actions.sh` only runs on GitHub.
 
+## Run-condition pause (2026-10-29)
+- `conditionPause` (Conditions.kt) plans what the devices need; `SyncthingService.applyConditions` carries it out. Level-triggered: re-run when the block reason or "any device unpaused" (snapshot, refreshed on ConfigSaved/DeviceResumed) changes, retried every 5 s until it holds (`collectLatest`). While blocked every device is paused, also one added or resumed meanwhile; the record holds only the user's own pauses, taken once; on resume only the others are resumed.
+- Bug it fixes: the pause was applied once per change of conditions, so a device added while on mobile data synced over it, and later starts saw the record and left it unpaused. Found by e2e on main after #42 (unvalidated emulator Wi-Fi left mobile data the default).

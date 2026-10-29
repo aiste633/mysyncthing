@@ -150,6 +150,11 @@ def prepare(apk: Path, test_apk: Path) -> None:
     sh(f"dumpsys deviceidle whitelist +{APP}")
     for s in ("window_animation_scale", "transition_animation_scale", "animator_duration_scale"):
         sh(f"settings put global {s} 0")
+    # Wi-Fi passes Android's internet check without reaching Google's server, which the emulator on a
+    # CI runner sometimes cannot: mobile data then stays the default network (E2eTest.onWifi).
+    # Read when a network connects, so Wi-Fi reconnects after it.
+    sh("settings put global captive_portal_mode 0")
+    sh("svc wifi disable")
     sh("svc wifi enable")
     adb("reverse", f"tcp:{GUI_PORT}", f"tcp:{GUI_PORT}")
     adb("forward", f"tcp:{FORWARD_PORT}", f"tcp:{PHONE_PORT}")
@@ -166,7 +171,9 @@ def phase(name: str, peer: Peer, out: Path) -> bool:
     )
     (out / f"phase-{name}.txt").write_text(r.stdout + r.stderr)
     if "OK (1 test)" not in r.stdout:
-        fail(f"phase {name} (see phase-{name}.txt)")
+        # The assertion's message in the job log too, as the artifact is not always at hand.
+        why = next((line.split("stack=", 1)[1] for line in r.stdout.splitlines() if "stack=" in line), "no test result")
+        fail(f"phase {name}: {why} (see phase-{name}.txt)")
         return False
     return True
 

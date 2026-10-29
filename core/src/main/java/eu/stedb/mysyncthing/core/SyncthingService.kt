@@ -18,6 +18,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
@@ -133,7 +134,13 @@ class SyncthingService : LifecycleService() {
                 }
                 // Shared: one clock and one alarm.
                 val blockedBy = combine(timed, device) { (c, now), d -> c.blockedBy(d, now) }.stateIn(this)
-                launch { blockedBy.collect { reason -> applyConditions(running.client, reason) } }
+                // Also when a device is added or resumed, so none syncs while the conditions block it.
+                val anyUnpaused = SyncStatus.snapshot.map { s -> s.devices.any { !it.paused } }.distinctUntilChanged()
+                launch {
+                    combine(blockedBy, anyUnpaused) { reason, _ -> reason }.collectLatest { reason ->
+                        while (!applyConditions(running.client, reason)) delay(5_000)
+                    }
+                }
                 launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
                 combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
                     summarize(core, snap, reason, d.online)
@@ -177,19 +184,15 @@ class SyncthingService : LifecycleService() {
         super.onDestroy()
     }
 
-    private suspend fun applyConditions(client: RestClient, reason: UiText?) {
-        runCatching {
-            val pausedByUs = settings.conditionPause()
-            if (reason != null && pausedByUs == null) {
-                val userPaused = client.devices().filter { it.paused }.map { it.deviceID }.toSet()
-                // Unrecorded, the pause would never be undone; the next change of conditions tries again.
-                if (!settings.setConditionPause(userPaused)) return@runCatching
-                client.setAllPaused(true)
-            } else if (reason == null && pausedByUs != null) {
-                client.devices().filter { it.deviceID !in pausedByUs }.forEach { client.setDevicePaused(it.deviceID, false) }
-                settings.setConditionPause(null)
-            }
-        }
+    /** Brings the devices in line with the run conditions ([conditionPause]); false if a step failed. */
+    private suspend fun applyConditions(client: RestClient, reason: UiText?): Boolean {
+        val plan = runCatching { conditionPause(reason, settings.conditionPause(), client.devices()) }.getOrElse { return false }
+        // Unrecorded, the pause would never be undone.
+        if (plan.record != null && !settings.setConditionPause(plan.record)) return false
+        return runCatching {
+            if (plan.pauseAll) client.setAllPaused(true)
+            plan.resume.forEach { client.setDevicePaused(it, false) }
+        }.isSuccess && (!plan.clearRecord || settings.setConditionPause(null))
     }
 
     /**
