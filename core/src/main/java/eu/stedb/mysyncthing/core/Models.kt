@@ -23,8 +23,8 @@ data class ServiceStatus(val error: String? = null)
 /** A notice for the user, as the web GUI shows them; kept by the core until cleared. */
 @Serializable
 data class SystemError(@SerialName("when") val time: String = "", val message: String = "") {
-    /** The message without the log's key=value tail, for people. */
-    val text: String get() = readableNotice(message)
+    /** The message for people, in the app's words where we know it. */
+    val text: UiText get() = noticeText(message)
 }
 
 /**
@@ -34,7 +34,16 @@ data class SystemError(@SerialName("when") val time: String = "", val message: S
  * as in an external error report, are made readable the same way.
  */
 fun readableNotice(message: String): String {
-    if (!message.endsWith(")")) return message
+    val (head, values) = noticeParts(message) ?: return message
+    return if (values.isEmpty()) head else "$head: ${values.joinToString(", ") { readableNotice(it.second) }}"
+}
+
+/**
+ * A notice split into its message and its key=value values, unquoted and in
+ * order, without the log.* keys; null when it has no such tail.
+ */
+internal fun noticeParts(message: String): Pair<String, List<Pair<String, String>>>? {
+    if (!message.endsWith(")")) return null
     // The first " (" whose rest is all key=value pairs; a quoted value may itself hold brackets.
     var open = message.indexOf(" (")
     while (open >= 0) {
@@ -42,18 +51,19 @@ fun readableNotice(message: String): String {
         val pairs = NOTICE_PAIR.findAll(tail).toList()
         if (pairs.isNotEmpty() && pairs.joinToString(" ") { it.value } == tail.trim()) {
             val values = pairs.filterNot { it.groupValues[1].startsWith("log.") }.map { m ->
-                // A wrapped report carries another slog line as its value.
-                readableNotice(m.groupValues[2].let { v -> if (v.startsWith("\"")) v.substring(1, v.length - 1).replace("\\\"", "\"") else v })
+                m.groupValues[1] to m.groupValues[2].let { v -> if (v.startsWith("\"")) v.substring(1, v.length - 1).replace(QUOTED_ESCAPE, "$1") else v }
             }
-            val head = message.substring(0, open)
-            return if (values.isEmpty()) head else "$head: ${values.joinToString(", ")}"
+            return message.substring(0, open) to values
         }
         open = message.indexOf(" (", open + 1)
     }
-    return message
+    return null
 }
 
 private val NOTICE_PAIR = Regex("""([\w.]+)=("(?:[^"\\]|\\.)*"|\S+)""")
+
+/** Go's strconv.Quote escapes a quote and a backslash; other escapes stay as written. */
+private val QUOTED_ESCAPE = Regex("""\\(["\\])""")
 
 @Serializable
 data class SystemErrors(val errors: List<SystemError>? = null)

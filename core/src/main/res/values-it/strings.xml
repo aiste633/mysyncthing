@@ -90,6 +90,7 @@
     <string name="problem_peers_gone">I dispositivi che avevano questo file si sono disconnessi, o il file è cambiato durante la sincronizzazione. Syncthing riprova più tardi.</string>
     <string name="problem_no_version">Nessun dispositivo connesso ha questa versione del file. Syncthing riprova quando se ne connette uno.</string>
     <string name="problem_not_rescanned">Il file è cambiato e non è ancora stato scansionato. Syncthing riprova più tardi.</string>
+    <string name="notice_initial_scan_failed">Non è stato possibile scansionare %1$s all\'avvio. %2$s</string>
     <plurals name="problems_title">
         <item quantity="one">Syncthing ha un problema</item>
         <item quantity="many">Syncthing ha %1$d problemi</item>

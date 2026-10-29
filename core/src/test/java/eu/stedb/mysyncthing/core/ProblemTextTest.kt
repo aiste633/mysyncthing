@@ -65,4 +65,39 @@ class ProblemTextTest {
             assertFalse(text, "/data" in text || pct in text || "database" in text)
         }
     }
+
+    /** The core's notice lines as its log handler writes them (checked against v2.1.7's slogutil). */
+    @Test
+    fun failedInitialScanInPlainWords() {
+        val marker = "error=\"folder marker missing (this indicates potential data loss, search docs/forum to get information about how to proceed)\""
+        val plain = "The folder's .stfolder marker is gone, so Syncthing stops rather than delete files on other devices. If the folder is complete, create an empty folder named .stfolder in it."
+        val cases = mapOf(
+            "Failed initial scan ($marker folder.label=Music folder.id=abcd-1234 folder.type=sendreceive log.pkg=model)" to
+                "Music could not be scanned at start. $plain",
+            "Failed initial scan ($marker folder.label=\"My \\\"Music\\\" (phone)\" folder.id=abcd-1234 folder.type=sendreceive log.pkg=model)" to
+                "My \"Music\" (phone) could not be scanned at start. $plain",
+            // Without a label the core names the folder by its ID.
+            "Failed initial scan ($marker folder.id=abcd-1234 folder.type=sendreceive log.pkg=model)" to
+                "abcd-1234 could not be scanned at start. $plain",
+            // An error we have no words for keeps the core's.
+            "Failed initial scan (error=\"hashing: unexpected EOF\" folder.label=Music folder.id=abcd-1234 folder.type=sendreceive log.pkg=model)" to
+                "Music could not be scanned at start. hashing: unexpected EOF",
+        )
+        cases.forEach { (raw, expected) -> assertEquals(raw, expected, noticeText(raw).en()) }
+    }
+
+    /** Every other notice reads as before: the core's text without the log's tail. */
+    @Test
+    fun otherNoticesUnchanged() {
+        val heads = listOf("Failed to start", "External error report", "Failed initial scan", "Plain message (with brackets)", "")
+        val pairs = listOf("error=\"port in use\"", "port=22000", "folder.id=x", "log.pkg=api", "error=\"a \\\"b\\\" (c)\"", "x=")
+        val r = kotlin.random.Random(11)
+        repeat(5_000) {
+            val head = heads.random(r)
+            val tail = List(r.nextInt(0, 4)) { pairs.random(r) }
+            val message = if (tail.isEmpty()) head else "$head (${tail.joinToString(" ")})"
+            val named = head == "Failed initial scan" && tail.any { it.startsWith("error=") } && tail.any { it.startsWith("folder.") }
+            if (!named) assertEquals(message, readableNotice(message), noticeText(message).en())
+        }
+    }
 }
