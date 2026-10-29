@@ -48,7 +48,8 @@ GitHub Action is pinned by its full commit hash, so a moved tag cannot change wh
 release's APK and SBOM carry a signed build provenance attestation, which anyone can check
 with `gh attestation verify` (see the [security policy](../SECURITY.md)).
 
-Kotlin unit tests cover, among others: the form checks, the run conditions and sync times, the
+Kotlin unit tests cover, among others: the form checks, the run conditions and sync times (also: a device added while they block
+syncing is paused too, and only the user's own pauses stay afterwards), the
 notification and widget texts, the REST client's paths, version restores, the settings
 migration and writes on a full disk, the Syncthing-Fork import preview, and the translations
 (every translated string must take the same placeholders as the English one). Go tests start
@@ -87,7 +88,7 @@ real phone.
 | Pairing | Fresh install: the checklist, the usage question, the peer added by typing its ID, the peer's folder offer accepted with Trash can versioning |
 | Sync both ways | 21 files from the peer arrive; a file written on the phone reaches the peer, which then sees the phone at 100 % |
 | Restore a version | The peer changes a file; the old one is restored from the phone's Trash can, and the peer gets it back too |
-| Run conditions | Wi-Fi off (mobile data, which is off for syncing by default): the peer loses the phone; Wi-Fi on: it comes back |
+| Run conditions | Wi-Fi off (mobile data, which is off for syncing by default): the peer loses the phone; Wi-Fi on: it comes back. Every step starts on Wi-Fi, with the emulator's internet check off so a runner without Google's check server still uses Wi-Fi |
 | Typed text | Text typed in a rename dialog and a list dialog survives the screen being recreated; afterwards only one copy of the screen stays in memory |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |

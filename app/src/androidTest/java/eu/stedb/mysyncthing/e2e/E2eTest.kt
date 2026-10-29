@@ -1,5 +1,7 @@
 package eu.stedb.mysyncthing.e2e
 
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -23,6 +25,7 @@ import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -46,6 +49,16 @@ class E2eTest {
     private val app = InstrumentationRegistry.getInstrumentation().targetContext
 
     private fun str(@StringRes id: Int) = app.getString(id)
+
+    /**
+     * Every phase starts on Wi-Fi. run.py turns off the emulator's internet check: when Wi-Fi
+     * failed it, mobile data stayed the default network and the run conditions paused syncing.
+     */
+    @Before
+    fun onWifi() = eventually("Wi-Fi is the default network", 60_000) {
+        val cm = app.getSystemService(ConnectivityManager::class.java)
+        cm.getNetworkCapabilities(cm.activeNetwork)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+    }
 
     /** Waits for an enabled, tappable node showing [label] (its text or, for an icon, its description) and taps it. */
     private fun tap(label: String, timeout: Long = 20_000) {
