@@ -43,6 +43,14 @@ protected: a change reaches it only through a pull request whose checks have pas
 CodeQL analyses the Kotlin app, the Go bridge and the whole Go core with our patches, from a
 real build, plus the workflows and scripts: on every push to `main` and weekly.
 
+Every day a scan checks for newly published vulnerabilities: govulncheck on the Go bridge and
+the core (it reports only vulnerabilities in code the app can reach), the OSV database for
+every other library in the [SBOM](sbom.md), and GitHub's advisories for the pinned actions.
+Anything found opens an issue, which closes itself once it is fixed. Advisories that cannot
+affect the app are listed with their reason in
+[`scripts/vulns/accepted.toml`](../scripts/vulns/accepted.toml): today the upstream web GUI's
+AngularJS 1.3.20 and moment 2.19.4, which only Syncthing can replace.
+
 The workflows use a read-only token and leave no credentials in the checkout, and every
 GitHub Action is pinned by its full commit hash, so a moved tag cannot change what CI runs. A
 release's APK and SBOM carry a signed build provenance attestation, which anyone can check

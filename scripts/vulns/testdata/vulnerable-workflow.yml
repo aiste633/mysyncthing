@@ -1,0 +1,10 @@
+# Self-test of scripts/vulns/actions.sh: never runs (not in .github/workflows).
+# download-artifact before 4.1.3 has a published advisory (GHSA-cxww-7g56-2vh6).
+name: vulnerable
+on: workflow_dispatch
+permissions: {}
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4.1.2
