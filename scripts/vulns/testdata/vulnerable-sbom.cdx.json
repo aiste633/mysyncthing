@@ -1,0 +1,32 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "version": 1,
+  "metadata": {
+    "component": { "type": "application", "name": "self-test of scripts/vulns/osv.sh" }
+  },
+  "components": [
+    {
+      "type": "library",
+      "bom-ref": "log4j-core",
+      "group": "org.apache.logging.log4j",
+      "name": "log4j-core",
+      "version": "2.14.1",
+      "purl": "pkg:maven/org.apache.logging.log4j/log4j-core@2.14.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "angular",
+      "name": "angular",
+      "version": "1.3.20",
+      "purl": "pkg:npm/angular@1.3.20"
+    },
+    {
+      "type": "library",
+      "bom-ref": "x-net",
+      "name": "golang.org/x/net",
+      "version": "v0.61.0",
+      "purl": "pkg:golang/golang.org/x/net@v0.61.0"
+    }
+  ]
+}

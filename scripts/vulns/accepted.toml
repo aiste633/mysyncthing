@@ -1,0 +1,45 @@
+# Published vulnerabilities we know about and accept, so the daily scan opens an issue only
+# for new ones (scripts/vulns/osv.sh). Each entry holds one shipped package at one version
+# (its purl, as in docs/sbom.cdx.json), the advisory ids it accepts (or one of their aliases)
+# and why. A new advisory, or the same package at another version, is reported again.
+# The scan names entries that no longer match anything: delete those.
+
+[[accepted]]
+package = "pkg:npm/angular@1.3.20"
+ids = [
+  "GHSA-28hp-fgcr-2r4h", # Cross-site scripting via JSONP
+  "GHSA-2qqx-w9hr-q5gx", # ReDoS in $resource
+  "GHSA-2vrf-hf26-jrp5", # ReDoS in angular.copy()
+  "GHSA-4w4v-5hc9-xrr2", # Super-linear runtime due to backtracking
+  "GHSA-5cp4-xmrw-59wf", # XSS via JQLite DOM manipulation
+  "GHSA-7x27-g8rg-x87w", # XSS in the deprecated package
+  "GHSA-89mq-4x47-5v83", # Prototype pollution
+  "GHSA-j58c-ww9w-pwp5", # SVG elements not sanitised
+  "GHSA-m9gf-397r-hwpg", # Image source restriction bypass
+  "GHSA-mhp6-pxh8-r675", # Cross-site scripting
+  "GHSA-mqm9-c95h-x2p6", # Image source restriction bypass
+  "GHSA-prc3-vjfx-vhm9", # XSS in the deprecated package
+  "GHSA-qwqh-hm9m-p5hr", # ReDoS via <input type="url">
+  "GHSA-r5fx-8r73-v86c", # XSS via xlink:href not sanitised
+]
+reason = """
+Part of upstream Syncthing's web GUI, which ships AngularJS 1.3 (end of life); only Syncthing \
+can replace it. The app opens that GUI only as a fallback, in a WebView that loads nothing but \
+the core's own loopback address, behind a login with random credentials only the app knows. \
+Exploiting these needs attacker-made templates or text in the GUI, as in any browser running \
+upstream Syncthing."""
+
+[[accepted]]
+package = "pkg:npm/angular-sanitize@1.3.20"
+ids = [
+  "GHSA-4p4w-6hg8-63wx", # Incomplete filtering of special elements
+]
+reason = "As angular 1.3.20: upstream Syncthing's web GUI, only loaded from the core's own address."
+
+[[accepted]]
+package = "pkg:npm/moment@2.19.4"
+ids = [
+  "GHSA-8hfj-j24r-96c4", # Path traversal in moment.locale(): Node.js only, not in a browser
+  "GHSA-wc69-rhjr-hc9g", # ReDoS parsing long RFC 2822 dates: the GUI parses only the core's dates and your own
+]
+reason = "Upstream Syncthing's web GUI; neither applies to how the GUI uses moment (see the ids)."

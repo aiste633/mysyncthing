@@ -1,0 +1,130 @@
+name: vulnerabilities
+
+# Opens an issue when a published vulnerability affects the app. Daily, it checks the Go code
+# with govulncheck (only what the app can reach), every other library in the SBOM against the
+# OSV database, and the pinned actions against GitHub's advisories. The issue (label
+# "vulnerability") is updated when the findings change and closed when they are gone. Advisories
+# that cannot affect the app are accepted, with a reason, in scripts/vulns/accepted.toml.
+# Pull requests that change the scans or the SBOM run them as a check; the issue step only
+# prints what it would do.
+on:
+  schedule:
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/vulnerabilities.yml
+      - .github/workflows/govulncheck.yml
+      - scripts/vulns/**
+      - scripts/zizmor-requirements.txt
+      - docs/sbom.cdx.json
+
+permissions:
+  contents: read
+
+jobs:
+  go:
+    uses: $/.github/workflows/govulncheck.yml
+
+  libraries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      found: ${{ steps.scan.outputs.found }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Self-test, a vulnerable SBOM is reported
+        run: |
+          rc=0
+          scripts/vulns/osv.sh scripts/vulns/testdata/vulnerable-sbom.cdx.json > "$RUNNER_TEMP/self-test.md" || rc=$?
+          cat "$RUNNER_TEMP/self-test.md"
+          # Log4Shell is reported; the accepted angular advisories and Go modules are not.
+          [ "$rc" = 1 ]
+          grep -q GHSA-jfh8-c2jp-5v3q "$RUNNER_TEMP/self-test.md"
+          ! grep -qi 'angular\|golang' "$RUNNER_TEMP/self-test.md"
+      - name: Libraries in the SBOM (OSV)
+        id: scan
+        run: scripts/vulns/report.sh libraries scripts/vulns/osv.sh
+      - if: steps.scan.outputs.found == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vulns-libraries
+          path: ${{ runner.temp }}/vulns/libraries.md
+      - if: steps.scan.outputs.found == 'true'
+        run: exit 1
+
+  actions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      found: ${{ steps.scan.outputs.found }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Self-test, a vulnerable action is reported
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          rc=0
+          scripts/vulns/actions.sh scripts/vulns/testdata/vulnerable-workflow.yml > "$RUNNER_TEMP/self-test.md" || rc=$?
+          cat "$RUNNER_TEMP/self-test.md"
+          [ "$rc" = 1 ]
+          grep -q GHSA-cxww-7g56-2vh6 "$RUNNER_TEMP/self-test.md"
+      - name: Pinned GitHub Actions (zizmor)
+        id: scan
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/vulns/report.sh actions scripts/vulns/actions.sh
+      - if: steps.scan.outputs.found == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: vulns-actions
+          path: ${{ runner.temp }}/vulns/actions.md
+      - if: steps.scan.outputs.found == 'true'
+        run: exit 1
+
+  # A scan that finished sets "found", with or without findings. One that broke sets nothing:
+  # then the vulnerability issue is left as it is and a "scan is broken" issue opens instead,
+  # since GitHub mails a failed scheduled run only to whoever last changed the schedule.
+  issue:
+    needs: [go, libraries, actions]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency: vulnerability-issue
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - if: contains(needs.*.outputs.found, 'true')
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: vulns-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/vulns
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          FOUND_GO: ${{ needs.go.outputs.found }}
+          FOUND_LIBRARIES: ${{ needs.libraries.outputs.found }}
+          FOUND_ACTIONS: ${{ needs.actions.outputs.found }}
+          ASSIGNEE: ${{ github.repository_owner }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # Only the daily run and manual runs on main change the issue.
+          DRY_RUN: ${{ (github.event_name == 'pull_request' || github.ref != 'refs/heads/main') && '1' || '' }}
+        run: |
+          BROKEN=""
+          for scan in go libraries actions; do
+            found="FOUND_${scan^^}"
+            [ -n "${!found}" ] || BROKEN+=" $scan"
+          done
+          export BROKEN
+          mkdir -p "$RUNNER_TEMP/vulns"
+          scripts/vulns/issue.sh "$RUNNER_TEMP/vulns"

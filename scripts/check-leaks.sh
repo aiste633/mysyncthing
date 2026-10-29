@@ -23,6 +23,7 @@ public_hosts=(
   android.com google.com gradle.org maven.org
   anthropic.com claude.ai claude.com
   gnu.org fsf.org apache.org mozilla.org
+  osv.dev
   example.com example.org example.net
 )
 # Loopback, any, and the documentation ranges of RFC 5737 / RFC 3849.
