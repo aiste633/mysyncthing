@@ -53,6 +53,28 @@ fun RunConditions.blockedBy(d: DeviceState, now: LocalDateTime = LocalDateTime.n
     else -> null
 }
 
+/**
+ * What the devices need under the run conditions, from the devices the user had paused already
+ * ([recorded], null while syncing is allowed) and the devices now. While syncing is blocked every
+ * device is paused, also one added or resumed meanwhile, and the user's own pauses are recorded
+ * once; when syncing is allowed again only the other devices are resumed.
+ */
+internal data class ConditionPause(
+    val record: Set<String>? = null,
+    val pauseAll: Boolean = false,
+    val resume: List<String> = emptyList(),
+    val clearRecord: Boolean = false,
+)
+
+internal fun conditionPause(reason: UiText?, recorded: Set<String>?, devices: List<Device>): ConditionPause = when {
+    reason != null -> ConditionPause(
+        record = if (recorded == null) devices.filter { it.paused }.mapTo(mutableSetOf()) { it.deviceID } else null,
+        pauseAll = devices.any { !it.paused },
+    )
+    recorded != null -> ConditionPause(resume = devices.filter { it.paused && it.deviceID !in recorded }.map { it.deviceID }, clearRecord = true)
+    else -> ConditionPause()
+}
+
 fun deviceState(context: Context): Flow<DeviceState> = combine(network(context), power(context)) { n, p ->
     n.copy(charging = p.charging, batterySaver = p.batterySaver)
 }.distinctUntilChanged()
