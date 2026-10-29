@@ -140,8 +140,21 @@ Every build of a commit gives a byte-identical unsigned release APK (arm64 only;
 Releasing:
 
 1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
-2. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk` and its SBOM, `mysyncthing-0.1.0-sbom.cdx.json`, and signed build provenance (SLSA) for both: which workflow run, commit and runner made them. Anyone can check a file with `gh attestation verify <file> --repo aiste633/mysyncthing`.
-3. On your machine: `KEYSTORE=~/keys/mysyncthing.jks scripts/sign-release.sh v0.1.0`, then publish the draft.
+2. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk` and its SBOM, `mysyncthing-0.1.0-sbom.cdx.json`, and signed build provenance (SLSA) for both: which workflow run, commit and runner made them. Anyone can check a file with `gh attestation verify <file> --repo aiste633/mysyncthing`, the unsigned APK included once it is rebuilt (see [Verify a release](#verify-a-release)).
+3. On your machine, with the key's encrypted storage open: `KEYSTORE=/path/to/mysyncthing-release.p12 scripts/sign-release.sh v0.1.0`. It signs the APK (signature only: no v1 files, alignment kept), checks with apksigcopier that the result is the build plus a signature, as F-Droid does, refuses a key other than the recipe's `AllowedAPKSigningKeys`, uploads `mysyncthing-0.1.0.apk` and removes the unsigned APK, so the release offers only the APK to install. Then publish the draft. The release notes come from the changelog.
+
+### Verify a release
+
+Build the tag and check that the release APK is that build plus our signature. Needs the [Build](#build) requirements, `gh` and `apksigcopier` (Debian: `apt install apksigcopier`; it calls `apksigner` from build-tools):
+
+```sh
+git clone --branch v0.1.0 --recurse-submodules https://github.com/aiste633/mysyncthing && cd mysyncthing
+./gradlew :app:assembleRelease
+unsigned=app/build/outputs/apk/release/app-release-unsigned.apk
+gh attestation verify "$unsigned" --repo aiste633/mysyncthing   # GitHub built these exact bytes from the tag
+gh release download v0.1.0 --pattern mysyncthing-0.1.0.apk
+apksigcopier compare mysyncthing-0.1.0.apk --unsigned "$unsigned" && echo "same build"
+```
 
 F-Droid: `fdroid/eu.stedb.mysyncthing.yml` is the draft recipe for fdroiddata. It has not been submitted, and when it will be is not decided yet.
 

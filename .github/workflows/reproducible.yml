@@ -3,7 +3,7 @@ name: reproducible
 # Builds the unsigned release APK twice under different conditions and requires identical
 # bytes. On pull requests, v* tags and manual runs, F-Droid's own build environment builds
 # it a third time from fdroid/eu.stedb.mysyncthing.yml. A tag then gets a draft release
-# with the APK for scripts/sign-release.sh, and the SBOM, checked against the APK's Go core.
+# with the unsigned APK for scripts/sign-release.sh, and the SBOM, checked against the APK's Go core.
 
 on:
   push:
@@ -180,6 +180,15 @@ jobs:
       id-token: write      # signs the provenance below (Sigstore)
       attestations: write
     steps:
+      # Only for the release notes: the version's changelog.
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          path: src
+          sparse-checkout: |
+            app/build.gradle.kts
+            fastlane/metadata/android/en-US/changelogs
+          sparse-checkout-cone-mode: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: apk-a
@@ -194,8 +203,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.release.outputs.version }}
+        # The notes are what people read once the release is out; scripts/sign-release.sh
+        # replaces the unsigned APK with the signed one before it is published.
         run: |
+          code="$(sed -n 's/^ *versionCode = \([0-9]*\)$/\1/p' src/app/build.gradle.kts)"
+          {
+            cat "src/fastlane/metadata/android/en-US/changelogs/$code.txt"
+            echo
+            echo "Install mysyncthing-$VERSION.apk. The build is reproducible: README, \"Verify a release\", shows how to check it against this tag."
+          } > notes.md
           gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --verify-tag \
-            --title "MySyncthing $VERSION" \
-            --notes "Unsigned build and its SBOM (CycloneDX) attached. Sign with scripts/sign-release.sh $GITHUB_REF_NAME, then publish." \
+            --title "MySyncthing $VERSION" --notes-file notes.md \
             ./*.apk ./*.cdx.json

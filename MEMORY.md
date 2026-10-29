@@ -28,6 +28,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - NDK `mysyncthing.ndkVersion` in `gradle.properties` (r30, 30.0.16248370). `go/build.sh` refuses any other NDK. Also update `ndk:` in `fdroid/eu.stedb.mysyncthing.yml`.
 - compileSdk 37 (Compose 1.12 and Navigation 2.10 require it); targetSdk stays 36. Kotlin 2.4 needs R8 9.1.29+, so keep AGP and Kotlin in step (developer.android.com/build/kotlin-support).
 - Release APK is arm64-v8a only (`abiFilters` in release); `vcsInfo` off. Signing happens on the user's PC only, never in CI.
+- `sign-release.sh` signs with `--v1-signing-enabled false --alignment-preserved`: apksigner's defaults add v1 JAR files and re-align, so the signed APK stops being the build plus a signature and F-Droid's apksigcopier check fails (v0.1.0 was first signed that way). The script runs that apksigcopier check itself, refuses a key other than the recipe's `AllowedAPKSigningKeys`, and removes the unsigned APK from the release. Release notes come from the fastlane changelog (`draft-release` job).
 - gomobile embeds absolute module paths in the .so build info; `go/build.sh` builds via the symlink `/tmp/mysyncthing-go` so they match everywhere. Do not remove.
 - Any dependency/plugin bump: regenerate `gradle/verification-metadata.xml` (command in README).
 - Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Keep `go/syncthing.version` in sync when bumping.
