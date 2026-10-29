@@ -100,7 +100,7 @@ example Tor with Orbot. The proxy's operator sees the connections the proxy carr
 | Notifications | The sync service's notification, and notices of new devices, shared folders and errors |
 | Internet, network state | Connecting to your devices, and the run conditions (Wi-Fi, mobile data, roaming) |
 | Foreground service, start at boot, ignore battery optimisation | Syncing in the background, as you set it up |
-| Wi-Fi state, Wi-Fi multicast, wake lock | Declared; not used by this version |
+| Wi-Fi multicast | Hearing local discovery from devices on the same Wi-Fi over IPv6. Held only while syncing on Wi-Fi with local discovery on |
 
 ## The web GUI and links
 

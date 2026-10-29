@@ -187,7 +187,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 ## Security policy and privacy page (2026-10-28)
 - `SECURITY.md`: reports only through GitHub private vulnerability reporting (no e-mail, user's call); upstream core bugs go to Syncthing's security policy. Mentions reproducible builds, provenance attestation and the SBOM.
 - `docs/privacy.md`: GDPR-style privacy page, English only (user's call). Contact = the same private reporting link. Linked from the README and both fastlane descriptions (the Italian one says the page is in English).
-- Keep it true when behaviour changes: what is stored (incl. device-to-device transfer carrying the keys, `data_extraction_rules.xml`), Syncthing's public servers and their switches (STUN is off with Router port opening, `IsStunDisabled`), usage reporting (only the consent and the switch; its contents are left to upstream's docs, user's call), permissions (Wi-Fi state, multicast and wake lock are declared but unused), logcat filtering, Settings paths.
+- Keep it true when behaviour changes: what is stored (incl. device-to-device transfer carrying the keys, `data_extraction_rules.xml`), Syncthing's public servers and their switches (STUN is off with Router port opening, `IsStunDisabled`), usage reporting (only the consent and the switch; its contents are left to upstream's docs, user's call), permissions (the multicast lock is held only on Wi-Fi with local discovery on), logcat filtering, Settings paths.
 - Fastlane changes = F-Droid metadata: the user merges this PR.
 
 ## Docs: features and testing (2026-10-28)
@@ -208,3 +208,8 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - run.py refuses a device that is not an emulator (it uninstalls the app and wipes `/sdcard/Syncthing/E2E`).
 - CI: the android job builds the androidTest APK and the peer and uploads them (`e2e-inputs`); the `e2e` job (matrix API 35, 36, AOSP `default;x86_64` image, Pixel 7) runs `scripts/e2e/emulator.sh` then run.py, and uploads `build/e2e/` (phase outputs, monkey, logcat, peer log, emulator log).
 - textDialogsKeepTypedText also counts frames (`dumpsys gfxinfo`) with an idle rename dialog open: under 30 in 5 s, as a re-measure loop (seen on Robolectric) would draw about 300.
+
+## Wi-Fi multicast lock (2026-10-28)
+- Local discovery is IPv4 broadcast plus IPv6 multicast (option `localAnnounceMCAddr`, `lib/discover/local.go`); Android's Wi-Fi stack drops multicast unless the app holds a multicast lock. User's call: keep `CHANGE_WIFI_MULTICAST_STATE` and use it, so IPv6-only networks work.
+- `MulticastLock.kt` (core): `wantsMulticast` = on Wi-Fi (incl. Ethernet) && snapshot loaded && `Snapshot.localDiscovery` (options.localAnnounceEnabled, refreshed on ConfigSaved) && not blocked by run conditions or the user's pause. `holdMulticastLock` runs in the service's work scope and releases on cancel. The core is unchanged.
+- Item 11 (user 2026-10-29): ACCESS_WIFI_STATE and WAKE_LOCK removed: no code used them (the multicast lock needs only CHANGE_WIFI_MULTICAST_STATE, Android's acquireMulticastLock checks just that; NetworkCapabilities need only ACCESS_NETWORK_STATE; no wake lock, alarms and the FGS need none; the Go core calls no Android API).

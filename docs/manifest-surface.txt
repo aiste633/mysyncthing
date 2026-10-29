@@ -8,7 +8,6 @@ application allowBackup=false dataExtractionRules=@xml/data_extraction_rules ful
 application meta-data android.webkit.WebView.EnableSafeBrowsing=false
 application meta-data android.webkit.WebView.MetricsOptOut=true
 permission android.permission.ACCESS_NETWORK_STATE
-permission android.permission.ACCESS_WIFI_STATE
 permission android.permission.CAMERA
 permission android.permission.CHANGE_WIFI_MULTICAST_STATE
 permission android.permission.FOREGROUND_SERVICE
@@ -18,7 +17,6 @@ permission android.permission.MANAGE_EXTERNAL_STORAGE
 permission android.permission.POST_NOTIFICATIONS
 permission android.permission.RECEIVE_BOOT_COMPLETED
 permission android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-permission android.permission.WAKE_LOCK
 permission eu.stedb.mysyncthing.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 permission-defined eu.stedb.mysyncthing.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION protectionLevel=signature
 provider androidx.startup.InitializationProvider exported=false authorities=eu.stedb.mysyncthing.androidx-startup
