@@ -8,7 +8,11 @@ set -euo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
 st="$here/syncthing"
 out="$here/build"
-export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"
+# The Go release named by the toolchain line of go/bridge/go.mod, fetched if missing (checksum-verified).
+# Set exactly, not "auto": gomobile builds in its own temporary module without that line, where
+# "auto" would fall back to the go line, upstream's minimum.
+toolchain="$(sed -n 's/^toolchain //p' "$here/bridge/go.mod")"
+export GOTOOLCHAIN="${toolchain:?go/bridge/go.mod has no toolchain line}"
 
 [ -f "$st/go.mod" ] || { echo "go/syncthing submodule missing: git submodule update --init" >&2; exit 1; }
 

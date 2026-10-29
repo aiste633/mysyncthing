@@ -1,0 +1,50 @@
+name: govulncheck
+
+# Known Go vulnerabilities (vuln.go.dev) that the app's Go code can actually reach: the
+# bridge, the patched core and every module they link, plus the standard library of the
+# pinned toolchain. Weekly too, because new vulnerabilities appear without any change here.
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "37 5 * * 1"
+  workflow_dispatch:
+  # The vulnerability alert workflow runs this as one of its checks.
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  govulncheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          submodules: true
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version-file: go/bridge/go.mod
+          cache: false
+      # As go/build.sh: the patched core with its generated web GUI assets.
+      - name: Patch the core
+        run: go/patch.sh
+      - name: Generate web GUI assets
+        working-directory: go/syncthing
+        run: go generate ./lib/api/auto
+      # Pinned by version; go install checks it against the Go checksum database.
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.9.0
+      # The app's platform (android/arm64 with cgo, so the core's SQLite is the one it ships).
+      # Any NDK's compiler will do for reading cgo files: the runner image's newest one.
+      - name: Scan the bridge and the core
+        working-directory: go/bridge
+        env:
+          GOOS: android
+          GOARCH: arm64
+          CGO_ENABLED: "1"
+        run: |
+          export CC="${ANDROID_NDK_LATEST_HOME:?the runner image has no NDK}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android35-clang"
+          "$(go env GOPATH)/bin/govulncheck" -tags noupgrade ./...

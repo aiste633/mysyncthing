@@ -531,14 +531,14 @@ func goSums(s string) map[string]string {
 	return m
 }
 
-// runtimeVersion is the Go release that builds the core: CI and go/build.sh take it from
-// go/syncthing/go.mod (toolchain line, else go line).
+// runtimeVersion is the Go release that builds the core: the module go/build.sh builds,
+// go/bridge, names it (toolchain line, else go line), and CI's setup-go reads the same file.
 func runtimeVersion(r *run) string {
-	mod := r.read("go", "syncthing", "go.mod")
+	mod := r.read("go", "bridge", "go.mod")
 	if m := regexp.MustCompile(`(?m)^toolchain (go\S+)$`).FindStringSubmatch(mod); m != nil {
 		return m[1]
 	}
-	return "go" + r.find(`(?m)^go (\S+)$`, "go/syncthing/go.mod")
+	return "go" + r.find(`(?m)^go (\S+)$`, "go/bridge/go.mod")
 }
 
 var licenseFile = regexp.MustCompile(`(?i)^(licen[cs]e|copying)([.-].*)?$`)
@@ -675,7 +675,7 @@ func (r *run) buildTools() {
 			Properties: []Property{{propPrefix + "pinned-in", where}}, section: secBuild})
 	}
 	goV := strings.TrimPrefix(runtimeVersion(r), "go")
-	tool("go", goV, "pkg:golang/toolchain@"+goV, "BSD-3-Clause", "go/syncthing/go.mod")
+	tool("go", goV, "pkg:golang/toolchain@"+goV, "BSD-3-Clause", "go/bridge/go.mod")
 	xm := r.find(`(?m)^\s*golang.org/x/mobile (\S+)`, "go/bridge/go.mod")
 	tool("gomobile", xm, "pkg:golang/golang.org/x/mobile/cmd/gomobile@"+xm, "BSD-3-Clause", "go/bridge/go.mod")
 	ndk := r.find(`(?m)^mysyncthing\.ndkVersion=(\S+)$`, "gradle.properties")

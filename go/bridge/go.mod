@@ -2,6 +2,8 @@ module eu.stedb/mysyncthing/stbridge
 
 go 1.26.2
 
+toolchain go1.26.10
+
 require (
 	github.com/syncthing/syncthing v0.0.0
 	github.com/thejerf/suture/v4 v4.0.6
