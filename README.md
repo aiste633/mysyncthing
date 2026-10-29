@@ -128,7 +128,7 @@ Every build of a commit gives a byte-identical unsigned release APK (arm64 only;
   ```sh
   ./gradlew --write-verification-metadata sha256 --refresh-dependencies --no-configuration-cache -I scripts/sbom/runtime-deps.init.gradle.kts \
     :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest testDebugUnitTest :app:verifyRoborazziDebug \
-    :app:lintDebug :app:sbomRuntimeDeps
+    :app:lintDebug :core:lintDebug :app:sbomRuntimeDeps
   scripts/sbom.sh
   ```
 

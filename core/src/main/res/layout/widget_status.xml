@@ -1,10 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- A bar the height of the search bar, centred in its cell however tall the launcher's rows are:
      app mark and hairline (so the widget reads as Syncthing; left out when narrow, see StatusWidget),
-     status icon, two lines of text, pause button. -->
+     status icon, two lines of text, pause button.
+     The frame is what centres the fixed-height bar in the cell, so it isn't a UselessParent. -->
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    tools:ignore="UselessParent">
 
 <LinearLayout
     android:id="@android:id/background"

@@ -61,7 +61,7 @@ class ProblemTextTest {
         repeat(5_000) {
             val pct = "%.2f".format(java.util.Locale.ROOT, r.nextDouble(0.0, 100.0))
             val raw = "insufficient space on disk for database (/data/user/${r.nextInt(0, 99)}/x/index-v2): current $pct % < required ${r.nextInt(1, 50)} %"
-            val text = problemText(raw).en()!!
+            val text = problemText(raw).en()
             assertFalse(text, "/data" in text || pct in text || "database" in text)
         }
     }
