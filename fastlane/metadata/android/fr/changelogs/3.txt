@@ -1,1 +1,3 @@
 Nouvelles langues : espagnol, allemand et français, pour l’appli, ses notifications et le widget, ainsi que pour la fiche de la boutique. Également une icône de l’appli pour la fiche F-Droid.
+
+Après une mise à jour de l’appli, Syncthing redémarre s’il était en cours d’exécution, même avec « Démarrer au démarrage du téléphone » désactivé. Cela vaut à partir de la prochaine mise à jour.
