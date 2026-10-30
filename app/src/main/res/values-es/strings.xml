@@ -366,6 +366,8 @@
     <string name="permission_notifications_hint">Solicitudes de dispositivos y carpetas nuevos, y problemas. Mientras Syncthing está en marcha, Android también exige una pequeña notificación de estado; para ocultarla, desactiva su categoría «%1$s».</string>
     <string name="permission_background">Ejecutar en segundo plano</string>
     <string name="permission_background_hint">Sigue sincronizando con la pantalla apagada. Algunos teléfonos lo llaman «Permitir actividad en segundo plano».</string>
+    <string name="permission_background_brands">Muchas marcas de teléfonos añaden a Android su propio ahorro de batería, que puede detener igualmente la sincronización. Busca también esta aplicación en los ajustes de batería del teléfono. Pasos para cada marca: %1$s</string>
+    <string name="link_opens_browser">(se abre en el navegador)</string>
     <string name="permission_required">Obligatorio</string>
     <string name="permission_optional">Opcional</string>
     <string name="permission_recommended">Recomendado</string>

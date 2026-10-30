@@ -350,6 +350,8 @@
     <string name="permission_notifications_hint">Anfragen von neuen Geräten und Ordnern sowie Probleme. Solange Syncthing läuft, verlangt Android außerdem eine kleine Statusbenachrichtigung; um sie auszublenden, schalten Sie ihre Kategorie „%1$s“ aus.</string>
     <string name="permission_background">Im Hintergrund ausführen</string>
     <string name="permission_background_hint">Synchronisiert auch bei ausgeschaltetem Bildschirm weiter. Manche Smartphones nennen das „Hintergrundaktivität zulassen“.</string>
+    <string name="permission_background_brands">Viele Smartphone-Hersteller ergänzen Android um eigene Energiesparfunktionen, die das Synchronisieren trotzdem stoppen können. Suchen Sie diese App auch in den Akku-Einstellungen Ihres Smartphones. Anleitungen für jeden Hersteller: %1$s</string>
+    <string name="link_opens_browser">(öffnet sich im Browser)</string>
     <string name="permission_required">Erforderlich</string>
     <string name="permission_optional">Optional</string>
     <string name="permission_recommended">Empfohlen</string>
