@@ -10,6 +10,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -81,6 +83,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -109,6 +112,8 @@ import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.SystemError
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.problemText
+import eu.stedb.mysyncthing.core.santaHat
+import java.time.LocalDate
 
 /**
  * System bars plus the camera cutout, without the keyboard. Material's bars only
@@ -155,6 +160,9 @@ fun BusyIndicator() {
     else Icon(Icons.Default.HourglassTop, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
 }
 
+/** Today's date, for [santaHat]; the screenshot tests fix it, so their images don't change in December. */
+val LocalToday = staticCompositionLocalOf<() -> LocalDate> { LocalDate::now }
+
 /**
  * A screen with a top bar on the app's tinted background. [onBack] adds a back
  * arrow; [status] adds the status chip after the title.
@@ -190,6 +198,8 @@ fun AppScreen(
                         // The app mark on the tabs, where Back would be on the screens below them.
                         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                             Icon(painterResource(CoreR.drawable.widget_ic_app), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                            // Drawn over the mark, so it takes no room (sizes: see widget_ic_hat).
+                            if (santaHat(LocalToday.current())) Image(painterResource(CoreR.drawable.widget_ic_hat), null, Modifier.size(24.dp * 66 / 62).offset(y = -(24.dp * 6 / 62)))
                         }
                     }
                 },

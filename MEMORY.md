@@ -246,3 +246,8 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Add folder reads the defaults fresh for a new form (`read` flag in `rememberSaveable`) and uses the kept value only for a recreated one. Sync times uses `storedRunConditions` (null until read). The usage question and its preview survive recreation too.
 - Cause found from CI on PR #48 (API 35 e2e, `textDialogsKeepTypedText`): the check right after `recreate()` ran before the HTTP reload. The test keeps checking at once (no wait), which is what proves the fix.
 
+## Santa hat easter egg (2026-10-30)
+- From 22 December to 6 January (phone date, `santaHat()` in core `SantaHat.kt`) the app mark on the widget and on the tabs' top bar wears a red Santa hat: `widget_ic_hat`, an untinted overlay drawn over the mark and a little above it, so no layout changes (widget: `clipChildren="false"` on the mark's frame and the bar).
+- The widget is drawn again on the day the hat comes or goes: one inexact, non-waking RTC alarm per process (`StatusWidget.scheduleHatChange`), since an idle phone may not render for days.
+- Screenshot tests fix the date through `LocalToday` (outside the season), so their images don't change in December. No screenshot of the hat on purpose (user: it's an easter egg); `SantaHatTest` checks the dates.
+
