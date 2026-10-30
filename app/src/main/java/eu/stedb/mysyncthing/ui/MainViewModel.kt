@@ -46,7 +46,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -142,8 +141,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * Speeds and listener/discovery health, polled every 2 s while a screen
      * collects it: the core has no event for them. The first sample has no speeds.
+     * One poll for all screens, kept for 5 s without one: moving between the
+     * device screens or rotating keeps the measured speeds. Null until the first
+     * sample, and again once the poll has stopped.
      */
-    fun liveStats(): Flow<LiveStats> = flow {
+    val liveStats: StateFlow<LiveStats?> = flow {
         var prev: Pair<Long, Connections>? = null
         while (true) {
             val c = client
@@ -161,7 +163,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             delay(2_000)
         }
-    }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), null)
 
     fun clearErrors() = act(R.string.op_clear) { SyncStatus.clearErrors(this) }
 
