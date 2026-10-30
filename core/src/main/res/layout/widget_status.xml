@@ -15,20 +15,39 @@
     android:layout_height="52dp"
     android:layout_gravity="center_vertical"
     android:background="@drawable/widget_bg"
+    android:clipChildren="false"
     android:clipToOutline="true"
     android:gravity="center_vertical"
     android:orientation="horizontal"
     android:paddingStart="14dp"
     android:paddingEnd="6dp">
 
-    <ImageView
+    <!-- The Santa hat (shown 22 Dec to 6 Jan) is drawn over the mark and a little above it, so it
+         takes no room; hence no clipping here and in the bar. Sizes: see widget_ic_hat. -->
+    <FrameLayout
         android:id="@+id/widget_app_mark"
         android:layout_width="16dp"
         android:layout_height="16dp"
         android:layout_marginEnd="10dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/widget_ic_app"
-        android:tint="@color/widget_text" />
+        android:clipChildren="false">
+
+        <ImageView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ic_app"
+            android:tint="@color/widget_text" />
+
+        <ImageView
+            android:id="@+id/widget_app_hat"
+            android:layout_width="17.03dp"
+            android:layout_height="17.03dp"
+            android:layout_gravity="center"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ic_hat"
+            android:translationY="-1.55dp"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <ImageView
         android:id="@+id/widget_app_rule"

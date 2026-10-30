@@ -28,10 +28,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -258,9 +259,12 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     val offer = entry.arguments?.getString("offer")?.ifEmpty { null }
                     val from = entry.arguments?.getString("from")?.ifEmpty { null }
                     CoreGate(core) {
-                        // Null until read; a failed read falls back to the app's own defaults.
-                        val defaults by produceState<Folder?>(null) { value = vm.defaultFolder() ?: Folder() }
-                        val base = defaults
+                        // Read fresh for a new form; a recreated form has it on its first frame (kept in the view
+                        // model). A failed read falls back to the app's own defaults.
+                        var read by rememberSaveable { mutableStateOf(false) }
+                        LaunchedEffect(Unit) { vm.defaultFolder.load(); read = true }
+                        val defaults by vm.defaultFolder.value.collectAsStateWithLifecycle()
+                        val base = if (read) defaults ?: Folder() else null
                         if (snapshot.loaded && base != null) {
                             // Saved, so a recreated screen keeps the same new folder ID and the form still counts as unchanged.
                             val initial = rememberSaveable(offer, from, saver = draftSaver) { draftFor(snapshot, offer, from, base) }

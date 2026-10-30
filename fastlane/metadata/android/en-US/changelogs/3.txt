@@ -1,3 +1,5 @@
 New languages: Spanish, German and French, for the app, its notifications and widget, and the store text. Also an app icon for the F-Droid listing.
 
 After an update of the app, Syncthing starts again if it was running, also with Start at boot off. This works from the next update on.
+
+Rotating the phone keeps open dialogs and the scroll position. Speeds show from the start. New warning: some phone brands have their own battery savers.

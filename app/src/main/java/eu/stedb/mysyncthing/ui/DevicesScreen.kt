@@ -57,7 +57,7 @@ fun DevicesScreen(
     onAdd: (id: String, name: String) -> Unit,
 ) {
     var showMyId by rememberSaveable { mutableStateOf(false) }
-    val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
+    val live by vm.liveStats.collectAsStateWithLifecycle()
     AppScreen(
         title = stringResource(R.string.tab_devices),
         status = summary,
@@ -112,8 +112,8 @@ private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, on
                     Text(stringResource(R.string.devices_this_device_id, shortId(s.myId)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
+            Text(speedText(live?.total ?: Speed.Zero).asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             live?.let { l ->
-                l.total?.let { Text(speedText(it).asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 val look = l.health.look()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)

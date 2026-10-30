@@ -255,9 +255,9 @@
     <string name="folders_offer_have">Ce l\'hai già in %1$s. Condividerla anche con %2$s?</string>
     <string name="folder_card_not_shared">non condivisa</string>
     <plurals name="folder_card_shared">
-        <item quantity="one">condivisa con %1$d</item>
-        <item quantity="many">condivisa con %1$d</item>
-        <item quantity="other">condivisa con %1$d</item>
+        <item quantity="one">condivisa con %1$d dispositivo</item>
+        <item quantity="many">condivisa con %1$d dispositivi</item>
+        <item quantity="other">condivisa con %1$d dispositivi</item>
     </plurals>
 
     <string name="devices_add">Aggiungi dispositivo</string>
@@ -366,6 +366,8 @@
     <string name="permission_notifications_hint">Richieste da nuovi dispositivi e cartelle, e problemi. Mentre Syncthing è in esecuzione, Android richiede anche una piccola notifica di stato; per nasconderla, disattiva la sua categoria “%1$s”.</string>
     <string name="permission_background">Esecuzione in background</string>
     <string name="permission_background_hint">Continua a sincronizzare a schermo spento. Alcuni telefoni la chiamano “Consenti attività in background”.</string>
+    <string name="permission_background_brands">Molte marche di telefoni aggiungono ad Android un proprio risparmio batteria, che può comunque fermare la sincronizzazione. Cerca questa app anche nelle impostazioni della batteria del telefono. Passaggi per ogni marca: %1$s</string>
+    <string name="link_opens_browser">(si apre nel browser)</string>
     <string name="permission_required">Obbligatoria</string>
     <string name="permission_optional">Facoltativa</string>
     <string name="permission_recommended">Consigliata</string>

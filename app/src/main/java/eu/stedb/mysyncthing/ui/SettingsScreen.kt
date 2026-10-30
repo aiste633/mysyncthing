@@ -48,8 +48,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -60,7 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
-import eu.stedb.mysyncthing.core.Options
 import eu.stedb.mysyncthing.core.PowerSource
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
@@ -97,33 +94,25 @@ fun SettingsScreen(
     val requestNotifications = rememberNotificationRequest(permissions)
     var rename by rememberSaveable { mutableStateOf(false) }
     val running = core is CoreState.Running
-    val scope = rememberCoroutineScope()
-    var opts by remember { mutableStateOf<Options?>(null) }
-    var restartNeeded by remember { mutableStateOf(false) }
+    // Kept in the view model, so a recreated screen has them, and the dialog open on them, on its first frame.
+    val opts by vm.options.value.collectAsStateWithLifecycle()
+    val restartNeeded = vm.restartRequired.value.collectAsStateWithLifecycle().value == true
+    val usage by vm.usage.value.collectAsStateWithLifecycle()
     var dialog by rememberSaveable { mutableStateOf<NetDialog?>(null) }
     LaunchedEffect(running) {
-        opts = if (running) vm.options() else null
-        restartNeeded = running && vm.restartRequired()
-    }
-    // Shows the change at once; on failure rereads what the core has.
-    val change = { new: Options, label: Int, fields: JsonObjectBuilder.() -> Unit ->
-        opts = new
-        scope.launch {
-            if (vm.patchOptions(label, fields)) restartNeeded = vm.restartRequired() else opts = vm.options()
-        }
-        Unit
+        if (!running) return@LaunchedEffect
+        launch { vm.options.load() }
+        launch { vm.restartRequired.load() }
+        vm.usage.load()
     }
 
     AppScreen(title = stringResource(R.string.tab_settings), status = summary) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
-            if (restartNeeded && running) {
+            if (restartNeeded) {
                 ListCard {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(stringResource(R.string.settings_restart_needed), style = MaterialTheme.typography.bodyMedium)
-                        FilledTonalButton(shape = ButtonShape, onClick = {
-                            vm.restartCore()
-                            restartNeeded = false
-                        }) { Text(stringResource(R.string.action_restart)) }
+                        FilledTonalButton(shape = ButtonShape, onClick = vm::restartCore) { Text(stringResource(R.string.action_restart)) }
                     }
                 }
             }
@@ -187,25 +176,25 @@ fun SettingsScreen(
                     Toggle(
                         stringResource(R.string.settings_limit_lan), if (o.limitBandwidthInLan) stringResource(R.string.settings_limit_lan_on) else stringResource(R.string.settings_limit_lan_off),
                         Icons.Default.Lan, o.limitBandwidthInLan,
-                    ) { v -> change(o.copy(limitBandwidthInLan = v), R.string.op_limit) { put("limitBandwidthInLan", v) } }
+                    ) { v -> vm.changeOptions(o.copy(limitBandwidthInLan = v), R.string.op_limit) { put("limitBandwidthInLan", v) } }
                 }
                 SettingRow(stringResource(R.string.proxy), proxy?.let(::proxyText)?.asString(), Icons.Default.VpnLock, onClick = onOpenProxy)
             }
             opts?.let { o ->
                 SettingsGroup(stringResource(R.string.settings_group_discovery)) {
                     Toggle(stringResource(R.string.settings_local_discovery), stringResource(R.string.settings_local_discovery_hint), Icons.Default.Router, o.localAnnounceEnabled) { v ->
-                        change(o.copy(localAnnounceEnabled = v), R.string.op_local_discovery) { put("localAnnounceEnabled", v) }
+                        vm.changeOptions(o.copy(localAnnounceEnabled = v), R.string.op_local_discovery) { put("localAnnounceEnabled", v) }
                     }
                     Toggle(
                         stringResource(R.string.settings_global_discovery), stringResource(R.string.settings_global_discovery_hint),
                         Icons.Default.Public, o.globalAnnounceEnabled,
-                    ) { v -> change(o.copy(globalAnnounceEnabled = v), R.string.op_internet_discovery) { put("globalAnnounceEnabled", v) } }
+                    ) { v -> vm.changeOptions(o.copy(globalAnnounceEnabled = v), R.string.op_internet_discovery) { put("globalAnnounceEnabled", v) } }
                     Toggle(
                         stringResource(R.string.settings_relays), stringResource(R.string.settings_relays_hint),
                         Icons.Default.SyncAlt, o.relaysEnabled,
-                    ) { v -> change(o.copy(relaysEnabled = v), R.string.op_relays) { put("relaysEnabled", v) } }
+                    ) { v -> vm.changeOptions(o.copy(relaysEnabled = v), R.string.op_relays) { put("relaysEnabled", v) } }
                     Toggle(stringResource(R.string.settings_nat), stringResource(R.string.settings_nat_hint), Icons.Default.SettingsEthernet, o.natEnabled) { v ->
-                        change(o.copy(natEnabled = v), R.string.op_port_opening) { put("natEnabled", v) }
+                        vm.changeOptions(o.copy(natEnabled = v), R.string.op_port_opening) { put("natEnabled", v) }
                     }
                 }
             }
@@ -225,10 +214,7 @@ fun SettingsScreen(
                     }
                 }
                 if (running) {
-                    SettingRow(stringResource(R.string.settings_restart), stringResource(R.string.settings_restart_hint), Icons.Default.Refresh) {
-                        vm.restartCore()
-                        restartNeeded = false
-                    }
+                    SettingRow(stringResource(R.string.settings_restart), stringResource(R.string.settings_restart_hint), Icons.Default.Refresh, onClick = vm::restartCore)
                 }
                 SettingRow(
                     stringResource(R.string.settings_export), stringResource(R.string.settings_export_hint),
@@ -245,16 +231,11 @@ fun SettingsScreen(
             }
 
             SettingsGroup(stringResource(R.string.settings_group_advanced)) {
-                var usage by remember { mutableStateOf<UsageConsent?>(null) }
-                LaunchedEffect(running) { usage = vm.usageConsent() }
                 usage?.let { u ->
                     SwitchRow(
                         stringResource(R.string.settings_usage), stringResource(R.string.settings_usage_hint),
-                        u.enabled, Icons.Default.QueryStats,
-                    ) { v ->
-                        vm.setUsageReporting(v)
-                        usage = u.copy(enabled = v)
-                    }
+                        u.enabled, Icons.Default.QueryStats, vm::setUsageReporting,
+                    )
                 }
                 opts?.let { o ->
                     SettingRow(stringResource(R.string.listen_addresses), listText(o.listenAddresses, stringResource(R.string.settings_listen_default)), Icons.Default.SettingsInputAntenna) {
@@ -277,23 +258,23 @@ fun SettingsScreen(
     val close = { dialog = null }
     if (o != null) when (dialog) {
         NetDialog.Recv -> SpeedLimitDialog(stringResource(R.string.download_limit), o.maxRecvKbps, onDismiss = close) { kib ->
-            close(); change(o.copy(maxRecvKbps = kib), R.string.op_download_limit) { put("maxRecvKbps", kib) }
+            close(); vm.changeOptions(o.copy(maxRecvKbps = kib), R.string.op_download_limit) { put("maxRecvKbps", kib) }
         }
         NetDialog.Send -> SpeedLimitDialog(stringResource(R.string.upload_limit), o.maxSendKbps, onDismiss = close) { kib ->
-            close(); change(o.copy(maxSendKbps = kib), R.string.op_upload_limit) { put("maxSendKbps", kib) }
+            close(); vm.changeOptions(o.copy(maxSendKbps = kib), R.string.op_upload_limit) { put("maxSendKbps", kib) }
         }
         NetDialog.Listen -> ListEditDialog(
             stringResource(R.string.listen_addresses), o.listenAddresses, token = "default", tokenTitle = stringResource(R.string.hint_default),
             tokenHint = stringResource(R.string.listen_default_hint),
             addHint = stringResource(R.string.listen_add_hint),
             valid = ::isListenAddress, onDismiss = close,
-        ) { list -> close(); change(o.copy(listenAddresses = list), R.string.op_listen_addresses) { putStrings("listenAddresses", list) } }
+        ) { list -> close(); vm.changeOptions(o.copy(listenAddresses = list), R.string.op_listen_addresses) { putStrings("listenAddresses", list) } }
         NetDialog.Servers -> ListEditDialog(
             stringResource(R.string.discovery_servers), o.globalAnnounceServers, token = "default", tokenTitle = stringResource(R.string.settings_servers_default),
             tokenHint = stringResource(R.string.servers_default_hint),
             addHint = stringResource(R.string.servers_add_hint),
             valid = ::isDiscoveryServer, onDismiss = close,
-        ) { list -> close(); change(o.copy(globalAnnounceServers = list), R.string.op_discovery_servers) { putStrings("globalAnnounceServers", list) } }
+        ) { list -> close(); vm.changeOptions(o.copy(globalAnnounceServers = list), R.string.op_discovery_servers) { putStrings("globalAnnounceServers", list) } }
         null -> {}
     }
 

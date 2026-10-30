@@ -10,16 +10,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
-import eu.stedb.mysyncthing.core.Device
-import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.Versioning
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObjectBuilder
@@ -36,20 +33,14 @@ private enum class DefaultsDialog { Type, Rescan, Order, DiskFree, Addresses, Re
  */
 @Composable
 fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: () -> Unit) {
-    var f by remember { mutableStateOf<Folder?>(null) }
-    var ignores by remember { mutableStateOf<List<String>?>(null) }
+    // Kept in the view model, so a recreated screen has them, and the dialog open on them, on its first frame.
+    val f by vm.defaultFolder.value.collectAsStateWithLifecycle()
+    val ignores by vm.defaultIgnores.value.collectAsStateWithLifecycle()
     LaunchedEffect(Unit) {
-        f = vm.defaultFolder()
-        ignores = vm.defaultIgnores()
+        launch { vm.defaultFolder.load() }
+        vm.defaultIgnores.load()
     }
     var dialog by rememberSaveable { mutableStateOf<DefaultsDialog?>(null) }
-    val scope = rememberCoroutineScope()
-    // Shows the change at once; on failure rereads what the core has.
-    val change = { new: Folder, label: Int, fields: JsonObjectBuilder.() -> Unit ->
-        f = new
-        scope.launch { if (!vm.patchDefaults(device = false, label, fields)) f = vm.defaultFolder() }
-        Unit
-    }
 
     AppScreen(title = stringResource(R.string.defaults_folders), onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
@@ -64,11 +55,11 @@ fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: ()
                 SettingRow(stringResource(R.string.defaults_location), stringResource(R.string.defaults_location_value, displayPath(d.path).asString()))
             }
             SettingsGroup(stringResource(R.string.file_versioning)) {
-                VersioningEditor(d.versioning) { v -> change(d.copy(versioning = v), R.string.op_versioning) { putVersioning(v) } }
+                VersioningEditor(d.versioning) { v -> vm.changeDefaultFolder(d.copy(versioning = v), R.string.op_versioning) { putVersioning(v) } }
             }
             SettingsGroup(stringResource(R.string.settings_group_advanced)) {
                 SwitchRow(stringResource(R.string.folder_watch), stringResource(R.string.folder_watch_hint), d.fsWatcherEnabled) { v ->
-                    change(d.copy(fsWatcherEnabled = v), R.string.op_watch) { put("fsWatcherEnabled", v) }
+                    vm.changeDefaultFolder(d.copy(fsWatcherEnabled = v), R.string.op_watch) { put("fsWatcherEnabled", v) }
                 }
                 SettingRow(stringResource(R.string.full_rescan), rescanText(d.rescanIntervalS).asString()) { dialog = DefaultsDialog.Rescan }
                 SettingRow(stringResource(R.string.download_order), orderLabel(d.order).asString()) { dialog = DefaultsDialog.Order }
@@ -85,17 +76,17 @@ fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: ()
     val close = { dialog = null }
     when (dialog) {
         DefaultsDialog.Type -> ChoiceDialog(stringResource(R.string.folder_type), FOLDER_TYPES, d.type, ::folderTypeHint, onDismiss = close) { t ->
-            close(); change(d.copy(type = t), R.string.op_type) { put("type", t) }
+            close(); vm.changeDefaultFolder(d.copy(type = t), R.string.op_type) { put("type", t) }
         }
         DefaultsDialog.Rescan -> ChoiceDialog(stringResource(R.string.full_rescan), rescanChoices(d.rescanIntervalS), d.rescanIntervalS, ::rescanHint, onDismiss = close) { n ->
-            close(); change(d.copy(rescanIntervalS = n), R.string.op_full_rescan) { put("rescanIntervalS", n) }
+            close(); vm.changeDefaultFolder(d.copy(rescanIntervalS = n), R.string.op_full_rescan) { put("rescanIntervalS", n) }
         }
         DefaultsDialog.Order -> ChoiceDialog(stringResource(R.string.download_order), PULL_ORDERS, d.order, onDismiss = close) { o ->
-            close(); change(d.copy(order = o), R.string.op_download_order) { put("order", o) }
+            close(); vm.changeDefaultFolder(d.copy(order = o), R.string.op_download_order) { put("order", o) }
         }
         DefaultsDialog.DiskFree -> DiskFreeDialog(d.minDiskFree, INTERNAL_STORAGE, onDismiss = close) { size ->
             close()
-            change(d.copy(minDiskFree = size), R.string.op_keep_free) { putJsonObject("minDiskFree") { put("value", size.value); put("unit", size.unit) } }
+            vm.changeDefaultFolder(d.copy(minDiskFree = size), R.string.op_keep_free) { putJsonObject("minDiskFree") { put("value", size.value); put("unit", size.unit) } }
         }
         else -> {}
     }
@@ -104,15 +95,9 @@ fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: ()
 /** What every new device starts with: the device screen's settings without status, ID and Remove. */
 @Composable
 fun DefaultDeviceScreen(vm: MainViewModel, onBack: () -> Unit) {
-    var dev by remember { mutableStateOf<Device?>(null) }
-    LaunchedEffect(Unit) { dev = vm.defaultDevice() }
+    val dev by vm.defaultDevice.value.collectAsStateWithLifecycle()
+    LaunchedEffect(Unit) { vm.defaultDevice.load() }
     var dialog by rememberSaveable { mutableStateOf<DefaultsDialog?>(null) }
-    val scope = rememberCoroutineScope()
-    val change = { new: Device, label: Int, fields: JsonObjectBuilder.() -> Unit ->
-        dev = new
-        scope.launch { if (!vm.patchDefaults(device = true, label, fields)) dev = vm.defaultDevice() }
-        Unit
-    }
 
     AppScreen(title = stringResource(R.string.defaults_devices), onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
@@ -124,10 +109,10 @@ fun DefaultDeviceScreen(vm: MainViewModel, onBack: () -> Unit) {
             Intro(stringResource(R.string.defaults_devices_intro))
             SettingsGroup(stringResource(R.string.group_trust)) {
                 SwitchRow(stringResource(R.string.device_introducer), stringResource(R.string.device_introducer_hint), d.introducer) { v ->
-                    change(d.copy(introducer = v), R.string.op_introducer) { put("introducer", v) }
+                    vm.changeDefaultDevice(d.copy(introducer = v), R.string.op_introducer) { put("introducer", v) }
                 }
                 SwitchRow(stringResource(R.string.device_auto_accept), stringResource(R.string.device_auto_accept_hint), d.autoAcceptFolders) { v ->
-                    change(d.copy(autoAcceptFolders = v), R.string.op_accept_folders) { put("autoAcceptFolders", v) }
+                    vm.changeDefaultDevice(d.copy(autoAcceptFolders = v), R.string.op_accept_folders) { put("autoAcceptFolders", v) }
                 }
             }
             SettingsGroup(stringResource(R.string.settings_group_advanced)) {
@@ -145,20 +130,20 @@ fun DefaultDeviceScreen(vm: MainViewModel, onBack: () -> Unit) {
     when (dialog) {
         DefaultsDialog.Addresses -> AddressesDialog(d.addresses, onDismiss = close) { list ->
             close()
-            change(d.copy(addresses = list), R.string.op_addresses) { putJsonArray("addresses") { list.forEach { add(JsonPrimitive(it)) } } }
+            vm.changeDefaultDevice(d.copy(addresses = list), R.string.op_addresses) { putJsonArray("addresses") { list.forEach { add(JsonPrimitive(it)) } } }
         }
         DefaultsDialog.Recv -> SpeedLimitDialog(stringResource(R.string.download_limit), d.maxRecvKbps, onDismiss = close) { kib ->
-            close(); change(d.copy(maxRecvKbps = kib), R.string.op_download_limit) { put("maxRecvKbps", kib) }
+            close(); vm.changeDefaultDevice(d.copy(maxRecvKbps = kib), R.string.op_download_limit) { put("maxRecvKbps", kib) }
         }
         DefaultsDialog.Send -> SpeedLimitDialog(stringResource(R.string.upload_limit), d.maxSendKbps, onDismiss = close) { kib ->
-            close(); change(d.copy(maxSendKbps = kib), R.string.op_upload_limit) { put("maxSendKbps", kib) }
+            close(); vm.changeDefaultDevice(d.copy(maxSendKbps = kib), R.string.op_upload_limit) { put("maxSendKbps", kib) }
         }
         DefaultsDialog.Compression -> ChoiceDialog(stringResource(R.string.compression), COMPRESSIONS, d.compression, ::compressionHint, onDismiss = close) { c ->
-            close(); change(d.copy(compression = c), R.string.op_compression) { put("compression", c) }
+            close(); vm.changeDefaultDevice(d.copy(compression = c), R.string.op_compression) { put("compression", c) }
         }
         DefaultsDialog.Connections -> ChoiceDialog(
             stringResource(R.string.connections), connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0), onDismiss = close,
-        ) { n -> close(); change(d.copy(numConnections = n), R.string.op_connections) { put("numConnections", n) } }
+        ) { n -> close(); vm.changeDefaultDevice(d.copy(numConnections = n), R.string.op_connections) { put("numConnections", n) } }
         else -> {}
     }
 }

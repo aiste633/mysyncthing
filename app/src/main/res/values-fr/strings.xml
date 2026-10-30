@@ -368,6 +368,8 @@
     <string name="permission_notifications_hint">Invitations de nouveaux appareils et partages, et problèmes. Tant que Syncthing tourne, Android exige aussi une petite notification d’état ; pour la masquer, désactivez sa catégorie « %1$s ».</string>
     <string name="permission_background">Exécution en arrière-plan</string>
     <string name="permission_background_hint">Continue à synchroniser écran éteint. Certains téléphones appellent cela « Autoriser l’activité en arrière-plan ».</string>
+    <string name="permission_background_brands">De nombreuses marques de téléphones ajoutent à Android leurs propres économiseurs de batterie, qui peuvent quand même arrêter la synchronisation. Cherchez aussi cette application dans les réglages de batterie de votre téléphone. Étapes pour chaque marque : %1$s</string>
+    <string name="link_opens_browser">(s’ouvre dans le navigateur)</string>
     <string name="permission_required">Obligatoire</string>
     <string name="permission_optional">Facultatif</string>
     <string name="permission_recommended">Recommandé</string>

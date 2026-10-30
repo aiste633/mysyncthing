@@ -22,12 +22,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.MAX_SYNC_WINDOWS
 import eu.stedb.mysyncthing.core.NO_WINDOW
@@ -58,7 +61,7 @@ import java.time.DayOfWeek
 @Composable
 fun ScheduleScreen(vm: MainViewModel, onBack: () -> Unit) {
     // Read from storage first, so the form starts from what is saved.
-    val stored by produceState<RunConditions?>(null) { value = vm.loadRunConditions() }
+    val stored by vm.storedRunConditions.collectAsStateWithLifecycle()
     stored?.let { ScheduleForm(it, vm::saveRunConditions, onBack) }
 }
 
@@ -165,7 +168,8 @@ private fun TimeDialog(title: String, minutes: Int, onDismiss: () -> Unit, onPic
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { TimePicker(state) },
+        // The dial is taller than a phone in landscape: there, typing the time (as Material does).
+        text = { if (TimePickerDefaults.layoutType() == TimePickerLayoutType.Horizontal) TimeInput(state) else TimePicker(state) },
         confirmButton = { TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text(stringResource(R.string.action_ok)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )

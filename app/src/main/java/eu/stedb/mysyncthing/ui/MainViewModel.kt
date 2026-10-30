@@ -46,7 +46,6 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
@@ -55,6 +54,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
@@ -92,6 +92,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val messages = _message.receiveAsFlow()
 
     private val client: RestClient? get() = (core.value as? CoreState.Running)?.client
+
+    /** A read a screen shows and edits, kept across a recreated screen (see [CoreValue]). */
+    private fun <T : Any> coreValue(read: suspend RestClient.() -> T) = CoreValue(viewModelScope, core, read)
 
     /** [label] names what failed: "Rename failed: <reason>". */
     private fun act(@StringRes label: Int, done: UiText? = null, block: suspend RestClient.() -> Unit) {
@@ -138,8 +141,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * Speeds and listener/discovery health, polled every 2 s while a screen
      * collects it: the core has no event for them. The first sample has no speeds.
+     * One poll for all screens, kept for 5 s without one: moving between the
+     * device screens or rotating keeps the measured speeds. Null until the first
+     * sample, and again once the poll has stopped.
      */
-    fun liveStats(): Flow<LiveStats> = flow {
+    val liveStats: StateFlow<LiveStats?> = flow {
         var prev: Pair<Long, Connections>? = null
         while (true) {
             val c = client
@@ -157,20 +163,31 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             }
             delay(2_000)
         }
-    }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000, replayExpirationMillis = 0), null)
 
     fun clearErrors() = act(R.string.op_clear) { SyncStatus.clearErrors(this) }
 
-    suspend fun usageConsent(): UsageConsent? = runCatching {
-        val c = client ?: return null
-        val max = c.status().urVersionMax
-        val o = c.options()
-        UsageConsent(needsPrompt = o.urAccepted > -1 && o.urSeen < max && o.urAccepted < max, enabled = o.urAccepted > 0)
-    }.getOrNull()
+    val usage = coreValue { usageConsent() }
+
+    private suspend fun RestClient.usageConsent(): UsageConsent {
+        val max = status().urVersionMax
+        val o = options()
+        return UsageConsent(needsPrompt = o.urAccepted > -1 && o.urSeen < max && o.urAccepted < max, enabled = o.urAccepted > 0)
+    }
 
     suspend fun usageReport(): String? = runCatching { client?.usageReport() }.getOrNull()
-    fun answerUsagePrompt(accept: Boolean) = act(R.string.op_usage_reporting) { answerUsagePrompt(accept) }
-    fun setUsageReporting(on: Boolean) = act(R.string.op_usage_reporting) { setUsageReporting(on) }
+
+    /** Hides the question at once; then shows what the core has. */
+    fun answerUsagePrompt(accept: Boolean) {
+        usage.value.value?.let { usage.show(it.copy(needsPrompt = false)) }
+        act(R.string.op_usage_reporting) { try { answerUsagePrompt(accept) } finally { usage.load() } }
+    }
+
+    /** Shows the switch's new state at once; then what the core has. */
+    fun setUsageReporting(on: Boolean) {
+        usage.value.value?.let { usage.show(it.copy(enabled = on)) }
+        act(R.string.op_usage_reporting) { try { setUsageReporting(on) } finally { usage.load() } }
+    }
 
     /** Adds the device and shares [folders] with it in the same step. */
     fun addDevice(id: String, name: String, folders: List<Folder> = emptyList()) = act(R.string.op_add_device) {
@@ -233,35 +250,59 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         errors.isEmpty()
     }
 
-    suspend fun defaultFolder(): Folder? = runCatching { client?.defaultFolder() }.getOrNull()
-    suspend fun defaultDevice(): Device? = runCatching { client?.defaultDevice() }.getOrNull()
-    suspend fun defaultIgnores(): List<String>? = runCatching { client?.defaultIgnores() }.getOrNull()
+    val defaultFolder = coreValue { defaultFolder() }
+    val defaultDevice = coreValue { defaultDevice() }
+    val defaultIgnores = coreValue { defaultIgnores() }
 
-    /** Changes the defaults for new folders or devices; false when it failed. */
-    suspend fun patchDefaults(device: Boolean, @StringRes label: Int, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
-        val c = client ?: return@write false
-        val body = buildJsonObject(fields)
-        runCatching { if (device) c.patchDefaultDevice(body) else c.patchDefaultFolder(body) }
-            .onFailure { _message.send(failed(label, it)) }.isSuccess
-    }
+    /** Changes the defaults for new folders; see [change]. */
+    fun changeDefaultFolder(new: Folder, @StringRes label: Int, fields: JsonObjectBuilder.() -> Unit) =
+        change(defaultFolder, new, label, fields) { patchDefaultFolder(it) }
+
+    /** Changes the defaults for new devices; see [change]. */
+    fun changeDefaultDevice(new: Device, @StringRes label: Int, fields: JsonObjectBuilder.() -> Unit) =
+        change(defaultDevice, new, label, fields) { patchDefaultDevice(it) }
 
     suspend fun saveDefaultIgnores(lines: List<String>): Boolean = write {
         val c = client ?: return@write false
         runCatching { checked("", lines); c.setDefaultIgnores(lines) }
+            .onSuccess { defaultIgnores.show(lines) }
             .onFailure { _message.send(failed(R.string.op_ignore_patterns, it)) }.isSuccess
     }
 
-    suspend fun options(): Options? = runCatching { client?.options() }.getOrNull()
-    suspend fun restartRequired(): Boolean = runCatching { client?.restartRequired() }.getOrNull() == true
+    val options = coreValue { options() }
+    val restartRequired = coreValue { restartRequired() }
 
-    /** Changes Syncthing's global options; false when it failed (the reason goes to the snackbar). */
-    suspend fun patchOptions(@StringRes label: Int, fields: JsonObjectBuilder.() -> Unit): Boolean = write {
-        val c = client ?: return@write false
-        runCatching { c.patchOptions(buildJsonObject(fields)) }
-            .onFailure { _message.send(failed(label, it)) }.isSuccess
+    /** Changes Syncthing's global options; see [change]. Then rereads whether they need a restart. */
+    fun changeOptions(new: Options, @StringRes label: Int, fields: JsonObjectBuilder.() -> Unit) =
+        change(options, new, label, fields, then = { restartRequired.load() }) { patchOptions(it) }
+
+    /**
+     * Shows [new] at once and writes [fields] with [patch]; on failure the reason goes to
+     * the snackbar and [value] shows what the core has again. Leaving or recreating the
+     * screen does not stop it.
+     */
+    private fun <T : Any> change(
+        value: CoreValue<T>,
+        new: T,
+        @StringRes label: Int,
+        fields: JsonObjectBuilder.() -> Unit,
+        then: suspend () -> Unit = {},
+        patch: suspend RestClient.(JsonObject) -> Unit,
+    ) {
+        val c = client ?: return
+        val body = buildJsonObject(fields)
+        value.show(new)
+        viewModelScope.launch {
+            runCatching { c.patch(body) }
+                .onSuccess { then() }
+                .onFailure { _message.send(failed(label, it)); value.load() }
+        }
     }
 
-    fun restartCore() = act(R.string.op_restart, done = text(R.string.done_restarting)) { restart() }
+    fun restartCore() {
+        restartRequired.show(false)
+        act(R.string.op_restart, done = text(R.string.done_restarting)) { restart() }
+    }
 
     suspend fun discovery(): Map<String, Discovered> = runCatching { client?.discovery() }.getOrNull().orEmpty()
     suspend fun ignoredRequests(): IgnoredRequests? = runCatching { client?.ignoredRequests() }.getOrNull()
@@ -347,8 +388,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         save { settings.update(transform) }
     }
 
-    /** The stored run conditions (not [runConditions]'s placeholder before they are read). */
-    suspend fun loadRunConditions(): RunConditions = settings.runConditions.first()
+    /**
+     * The stored run conditions: null until read, not [runConditions]'s placeholder. Kept
+     * here, so a recreated form has them on its first frame.
+     */
+    val storedRunConditions: StateFlow<RunConditions?> =
+        settings.runConditions.stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     /** Like [setRunConditions], for a form that closes only once it is stored. */
     suspend fun saveRunConditions(transform: (RunConditions) -> RunConditions): Boolean =

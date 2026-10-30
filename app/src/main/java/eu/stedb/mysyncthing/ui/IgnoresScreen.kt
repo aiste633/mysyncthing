@@ -62,8 +62,8 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
     LaunchedEffect(id, f != null) {
         if (loaded || (id != null && f == null)) return@LaunchedEffect
         // A new folder has no patterns yet; with "patterns first" it starts from the defaults.
-        val lines = if (id == null) vm.defaultIgnores()
-        else vm.ignores(id)?.let { own -> if (own.isEmpty() && firstSync) vm.defaultIgnores() ?: own else own }
+        val lines = if (id == null) vm.defaultIgnores.load()
+        else vm.ignores(id)?.let { own -> if (own.isEmpty() && firstSync) vm.defaultIgnores.load() ?: own else own }
         lines?.let { original = it.joinToString("\n"); text = TextFieldValue(original); loaded = true }
     }
     val ask = firstSync || (loaded && text.text != original)

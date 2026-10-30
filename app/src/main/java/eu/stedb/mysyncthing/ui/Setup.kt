@@ -11,6 +11,7 @@ import android.provider.Settings
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,13 +21,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.SignalCellularAlt
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
@@ -48,8 +53,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
@@ -171,7 +184,55 @@ fun PermissionRows(state: PermissionState, requestNotifications: () -> Unit, che
         stringResource(R.string.permission_background_hint),
         state.batteryExempt, stringResource(R.string.permission_allow), state::requestBatteryExemption,
     )
+    BrandBatteryWarning()
 }
+
+private const val DONT_KILL = "https://dontkillmyapp.com"
+
+/**
+ * Android's exemption is not all of it: many brands add their own battery savers
+ * that still stop the app, granted or not. Opens the per-brand steps in the browser.
+ */
+@Composable
+private fun BrandBatteryWarning() {
+    val uri = LocalUriHandler.current
+    val error = MaterialTheme.colorScheme.error
+    val site = DONT_KILL.removePrefix("https://")
+    val text = stringResource(R.string.permission_background_brands, site)
+    Row(
+        // Below the row's text: past the 16 dp edge, the 24 dp icon and the 16 dp gap of a ListItem.
+        Modifier.fillMaxWidth().clickable { uri.openUri(DONT_KILL) }.padding(start = 56.dp, end = 16.dp, bottom = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(Icons.Default.Warning, null, Modifier.size(18.dp).padding(top = 1.dp), tint = error)
+        // The open-link icon right after the address, at text size: off to the side it read as
+        // part of Granted / Allow.
+        val at = text.lastIndexOf(site)
+        // What TalkBack reads for the icon; Compose refuses an empty one.
+        val opens = stringResource(R.string.link_opens_browser)
+        Text(
+            buildAnnotatedString {
+                if (at < 0) {
+                    append(text)
+                } else {
+                    append(text, 0, at)
+                    withStyle(SpanStyle(textDecoration = TextDecoration.Underline)) { append(site) }
+                    append('\u00A0')
+                    appendInlineContent(LINK_ICON, opens)
+                    append(text, at + site.length, text.length)
+                }
+            },
+            inlineContent = mapOf(
+                LINK_ICON to InlineTextContent(Placeholder(1.em, 1.em, PlaceholderVerticalAlign.TextCenter)) {
+                    Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.fillMaxSize(), tint = error)
+                },
+            ),
+            style = MaterialTheme.typography.bodyMedium, color = error, modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+private const val LINK_ICON = "link"
 
 @Composable
 private fun PermissionRow(

@@ -11,7 +11,12 @@ import eu.stedb.mysyncthing.core.raw
 import eu.stedb.mysyncthing.core.text
 
 /** Bytes per second each way. */
-data class Speed(val down: Long, val up: Long)
+data class Speed(val down: Long, val up: Long) {
+    companion object {
+        /** Shown until two polls have measured a speed, so the line is there from the start. */
+        val Zero = Speed(0, 0)
+    }
+}
 
 /** One poll of the core: speeds since the previous poll, and this phone's connectivity. */
 data class LiveStats(

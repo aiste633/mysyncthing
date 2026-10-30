@@ -13,7 +13,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -27,18 +26,18 @@ import eu.stedb.mysyncthing.core.SyncthingCore
 /** This phone's traffic and whether other devices can find and reach it (web GUI: "This Device"). */
 @Composable
 fun ThisPhoneScreen(s: Snapshot, vm: MainViewModel, onBack: () -> Unit) {
-    val live by remember(vm) { vm.liveStats() }.collectAsStateWithLifecycle(null)
+    val live by vm.liveStats.collectAsStateWithLifecycle()
     AppScreen(title = s.myName.ifEmpty { stringResource(R.string.this_phone) }, onBack = onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             ListCard {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(stringResource(R.string.devices_this_device_id, shortId(s.myId)), style = MaterialTheme.typography.titleMedium)
+                    val muted = MaterialTheme.colorScheme.onSurfaceVariant
+                    Text(speedText(live?.total ?: Speed.Zero).asString(), style = MaterialTheme.typography.bodyMedium, color = muted)
                     val l = live
                     if (l == null) {
-                        Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.loading), style = MaterialTheme.typography.bodyMedium, color = muted)
                     } else {
-                        val muted = MaterialTheme.colorScheme.onSurfaceVariant
-                        l.total?.let { Text(speedText(it).asString(), style = MaterialTheme.typography.bodyMedium, color = muted) }
                         Text(
                             stringResource(R.string.this_phone_traffic, bytes(l.connections.total.inBytesTotal), bytes(l.connections.total.outBytesTotal)),
                             style = MaterialTheme.typography.bodySmall, color = muted,
