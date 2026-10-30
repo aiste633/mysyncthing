@@ -88,7 +88,8 @@ class StatusWidget : AppWidgetProvider() {
             val markVisibility = if (mark) View.VISIBLE else View.GONE
             v.setViewVisibility(R.id.widget_app_mark, markVisibility)
             v.setViewVisibility(R.id.widget_app_rule, markVisibility)
-            if (hat) v.setViewVisibility(R.id.widget_app_hat, View.VISIBLE)
+            // Both ways: the launcher applies an update onto the views it already has.
+            v.setViewVisibility(R.id.widget_app_hat, if (hat) View.VISIBLE else View.GONE)
             val (icon, light, dark) = when (s.state) {
                 SyncState.UpToDate -> Triple(R.drawable.widget_ic_ok, 0xFF1E7B34.toInt(), 0xFF81C995.toInt())
                 SyncState.Syncing -> Triple(R.drawable.widget_ic_syncing, AMBER_LIGHT, AMBER_DARK)
