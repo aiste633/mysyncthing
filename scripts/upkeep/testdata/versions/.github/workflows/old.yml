@@ -1,0 +1,11 @@
+# Fixture for scripts/updates/check.py: an action pinned to an old release.
+name: old
+on: workflow_dispatch
+permissions: {}
+jobs:
+  old:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 # v4.0.0
+        with:
+          persist-credentials: false

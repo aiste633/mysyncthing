@@ -1,0 +1,121 @@
+name: upkeep
+
+# Finds upkeep work that no other check reports, and keeps it in one issue (label "upkeep"),
+# updated when it changes and closed when nothing is left:
+# - newer releases of everything the app pins: Syncthing, Go, Gradle, the NDK, the libraries in
+#   gradle/libs.versions.toml, the pinned actions and the scan tools (scripts/upkeep/versions.py);
+# - F-Droid out of step: fdroiddata's recipe differs from ours, or F-Droid has not published our
+#   latest release within 10 days (scripts/upkeep/fdroid.sh).
+# Monthly, a few days after Syncthing's usual release, and on every tag, so a recipe out of step
+# shows before F-Droid builds that tag. Security fixes do not wait for this: the daily
+# vulnerability scan reports them.
+# Weekly, the "quiet" job warns in its own issue before GitHub turns off the scheduled workflows,
+# which it does after 60 days without activity (scripts/upkeep/quiet.sh).
+# Pull requests that change the checks run them, and the issue steps only print what they would do.
+on:
+  schedule:
+    - cron: "23 5 10 * *"
+    - cron: "47 5 * * 1"
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/upkeep.yml
+      - scripts/upkeep/**
+
+permissions:
+  contents: read
+
+jobs:
+  upkeep:
+    if: github.event.schedule != '47 5 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    concurrency: upkeep-issue
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Self-test, old pins of every kind are reported
+        run: |
+          rc=0
+          scripts/upkeep/versions.py scripts/upkeep/testdata/versions > "$RUNNER_TEMP/self-test.md" || rc=$?
+          cat "$RUNNER_TEMP/self-test.md"
+          [ "$rc" = 1 ]
+          grep '^| ' "$RUNNER_TEMP/self-test.md" | tail -n +2 | cut -d'|' -f2 | sed 's/^ //; s/ $//' \
+            | diff scripts/upkeep/testdata/versions.expected -
+      - name: Self-test, F-Droid out of step is reported
+        run: |
+          # fdroiddata's recipe with another NDK and older versions; F-Droid without our latest
+          # release (testdata/bin/gh dates it 2026-01-01).
+          python3 -m http.server -b 127.0.0.1 -d scripts/upkeep/testdata/fdroid 8765 > /dev/null 2>&1 &
+          trap 'kill $!' EXIT
+          sleep 1
+          rc=0
+          PATH="$PWD/scripts/upkeep/testdata/bin:$PATH" \
+            FDROIDDATA_RECIPE=http://127.0.0.1:8765/eu.stedb.mysyncthing.yml \
+            FDROID_API=http://127.0.0.1:8765/api.json \
+            scripts/upkeep/fdroid.sh > "$RUNNER_TEMP/self-test.md" || rc=$?
+          cat "$RUNNER_TEMP/self-test.md"
+          [ "$rc" = 1 ]
+          grep -q '^### F-Droid recipe out of step' "$RUNNER_TEMP/self-test.md"
+          grep -q '^+    "ndk": ' "$RUNNER_TEMP/self-test.md"
+          [ "$(grep -c '^[-+] ' "$RUNNER_TEMP/self-test.md")" = 2 ]   # versions are left out
+          grep -q '^### F-Droid has not published v0.1.0' "$RUNNER_TEMP/self-test.md"
+      # A check that finished prints its findings (exit 0 or 1). One that broke is named in
+      # BROKEN: then the upkeep issue is left as it is and a "check is broken" issue opens,
+      # since GitHub mails a failed scheduled run only to whoever last changed the schedule.
+      - name: Checks
+        id: checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          broken=""
+          for check in versions.py fdroid.sh; do
+            rc=0
+            "scripts/upkeep/$check" >> "$RUNNER_TEMP/upkeep.md" || rc=$?
+            [ "$rc" -le 1 ] || broken+=" ${check%.*}"
+          done
+          tee -a "$GITHUB_STEP_SUMMARY" < "$RUNNER_TEMP/upkeep.md"
+          echo "broken=$broken" >> "$GITHUB_OUTPUT"
+      - name: Open, update or close the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          BROKEN: ${{ steps.checks.outputs.broken }}
+          ASSIGNEE: ${{ github.repository_owner }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          # Only the monthly run, tags and manual runs on main change the issue.
+          DRY_RUN: >-
+            ${{ (github.event_name == 'pull_request'
+                 || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v'))) && '1' || '' }}
+        run: scripts/upkeep/issue.sh "$RUNNER_TEMP/upkeep.md"
+
+  quiet:
+    if: github.event_name != 'schedule' || github.event.schedule == '47 5 * * 1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency: upkeep-quiet-issue
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+      - name: Warn before the scheduled workflows stop
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          ASSIGNEE: ${{ github.repository_owner }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          DRY_RUN: >-
+            ${{ (github.event_name == 'pull_request'
+                 || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v'))) && '1' || '' }}
+        run: scripts/upkeep/quiet.sh

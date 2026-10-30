@@ -52,7 +52,7 @@ What each test covers, with its numbers: [testing and hardening](docs/testing.md
 - Go fuzzing of everything that reaches the core or reads a file from outside; it found and fixed a bug in Syncthing itself.
 - A security audit and a gap analysis against common practice: the built-in web view is locked to the core's own address, the web GUI login is random and locked, a shown password hides the screen from screenshots, StrictMode checks debug builds. [Security policy](SECURITY.md).
 - Stress tests (50,000 files, full storage, random UI events), a 10-hour memory soak with no leak, flash-write tracing, and interruption tests (rotation, Android reclaiming the app, permissions taken away).
-- CI checks every push: unit tests, lint, a leak check that keeps personal details out of the repository and its history, a guard on the app's permissions, an audit of the workflows, and a twin build that must be byte-identical. CodeQL analyses the app and the core. A daily scan opens an issue when a vulnerability is published that affects the app: in its Go code, its libraries (the SBOM) or the pinned actions. GitHub Actions are pinned by commit hash, and releases carry a signed build provenance attestation.
+- CI checks every push: unit tests, lint, a leak check that keeps personal details out of the repository and its history, a guard on the app's permissions, an audit of the workflows, and a twin build that must be byte-identical. CodeQL analyses the app and the core. A daily scan opens an issue when a vulnerability is published that affects the app: in its Go code, its libraries (the SBOM) or the pinned actions. A monthly check lists newer releases of everything the build pins and watches that F-Droid keeps up with each release. GitHub Actions are pinned by commit hash, and releases carry a signed build provenance attestation.
 
 ### Open and verifiable
 
@@ -118,6 +118,7 @@ Results, logcat and the peer's log land in `build/e2e/`.
 - `docs/manifest-surface.txt` lists every permission the release app has and every part of it other apps can reach, from the merged release manifest with all libraries. The `android` CI job fails when it changes, so a library that adds a permission or an exported component is seen in review. After an intended change: `./gradlew :app:processReleaseManifest && scripts/manifest-surface.py`, and commit the result.
 - CodeQL (`.github/workflows/codeql.yml`) analyses the Kotlin app, the Go bridge with the patched core, the workflows and the scripts, from a real build, on every push to `main`, weekly and by hand. Findings are under Security › Code scanning. It needs the repository's CodeQL setting on "Advanced".
 - Published vulnerabilities (`.github/workflows/vulnerabilities.yml`, daily at 04:41 UTC and by hand): govulncheck on the Go code (only what the app can reach), osv-scanner on every other library in `docs/sbom.cdx.json` (`scripts/vulns/osv.sh`), and zizmor's known-vulnerable-actions audit on the pinned actions (`scripts/vulns/actions.sh`). Findings open one issue (label `vulnerability`), assigned to the repository owner; it is updated when they change and closes itself when nothing is left. A scan that breaks leaves that issue alone and opens a second one (label `vulnerability-scan`), which closes itself once every scan works again: GitHub mails a failed scheduled run only to whoever last changed the schedule. An advisory that cannot affect the app, or that only upstream Syncthing can fix, goes into `scripts/vulns/accepted.toml` with its reason; a new advisory or another version of that package is reported again. Pull requests that change the scans or the SBOM run them as a check. osv-scanner's version and checksum are in `scripts/vulns/osv-scanner.txt`. Locally: `scripts/vulns/osv.sh --offline` (downloads the OSV database, about 250 MB).
+- Upkeep (`.github/workflows/upkeep.yml`): see [Keeping up to date](#keeping-up-to-date).
 - zizmor lints the workflows (`workflows` job in `build.yml`): script injection, credentials kept in the checkout, permissions, and that each pinned action commit belongs to its action. Its version and wheel checksum are in `scripts/zizmor-requirements.txt`. Checkouts never keep the job's token (`persist-credentials: false`).
 - govulncheck (`.github/workflows/govulncheck.yml`) looks up the Go vulnerability database for anything the bridge, the patched core, their modules or the Go standard library contain that the app's code can actually reach, for android/arm64 with cgo as the app is built. It runs on every push and pull request, and daily as part of the vulnerability scan above, since new vulnerabilities appear without changes here; a hit fails it. The fix is usually a newer Go (`toolchain` line in `go/bridge/go.mod`) or module; then run `scripts/sbom.sh`.
 
@@ -145,8 +146,9 @@ Releasing:
 
 1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
 2. Run `scripts/e2e/upgrade.py` (see [Build](#build)) on an Android 15 and an Android 16 emulator, from the last release's tag to this commit, and again from the oldest release still in use; all builds made on the same machine. It is not in CI, so this is where a change that breaks updates is caught, our own or upstream's (a core update migrates the old config and database).
-3. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk` and its SBOM, `mysyncthing-0.1.0-sbom.cdx.json`, and signed build provenance (SLSA) for both: which workflow run, commit and runner made them. Anyone can check a file with `gh attestation verify <file> --repo aiste633/mysyncthing`, the unsigned APK included once it is rebuilt (see [Verify a release](#verify-a-release)).
-4. On your machine, with the key's encrypted storage open: `KEYSTORE=/path/to/mysyncthing-release.p12 scripts/sign-release.sh v0.1.0`. It signs the APK (signature only: no v1 files, alignment kept), checks with apksigcopier that the result is the build plus a signature, as F-Droid does, refuses a key other than the recipe's `AllowedAPKSigningKeys`, uploads `mysyncthing-0.1.0.apk` and removes the unsigned APK, so the release offers only the APK to install. Then publish the draft. The release notes come from the changelog.
+3. If the F-Droid recipe's build steps changed (NDK, JDK, Go bootstrap, a new step), fdroiddata must have them first: F-Droid builds a new tag from its own copy, with only the version changed. The upkeep check runs on the tag and reports a recipe out of step.
+4. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk` and its SBOM, `mysyncthing-0.1.0-sbom.cdx.json`, and signed build provenance (SLSA) for both: which workflow run, commit and runner made them. Anyone can check a file with `gh attestation verify <file> --repo aiste633/mysyncthing`, the unsigned APK included once it is rebuilt (see [Verify a release](#verify-a-release)).
+5. On your machine, with the key's encrypted storage open: `KEYSTORE=/path/to/mysyncthing-release.p12 scripts/sign-release.sh v0.1.0`. It signs the APK (signature only: no v1 files, alignment kept), checks with apksigcopier that the result is the build plus a signature, as F-Droid does, refuses a key other than the recipe's `AllowedAPKSigningKeys`, uploads `mysyncthing-0.1.0.apk` and removes the unsigned APK, so the release offers only the APK to install. Then publish the draft. The release notes come from the changelog.
 
 ### Verify a release
 
@@ -171,6 +173,23 @@ echo vX.Y.Z > ../syncthing.version
 ../patch.sh   # a patch that no longer applies: drop it if the release has the fix, else rebase it
 cd ../bridge && go mod tidy && go test .
 ```
+
+## Keeping up to date
+
+Security fixes come first: the daily vulnerability scan opens an issue within a day (see [Security checks](#security-checks)). Everything else follows this cadence:
+
+- Syncthing: a new release within two weeks, with Go's latest patch release of our line. Each bump rebases or drops the patches in `go/patches/`.
+- Go: move to a newer line (1.N+1) before ours stops getting fixes, which is when Go 1.N+2 ships (February and August).
+- Gradle, AGP, Kotlin, libraries, NDK, actions and the scan tools: in batches, at least once a quarter.
+
+`.github/workflows/upkeep.yml` keeps the list. On the 10th of each month, and on every tag, it opens one issue (label `upkeep`) with:
+
+- every pin with a newer stable release (`scripts/upkeep/versions.py`): Syncthing, Go, the Go modules the bridge picks itself, Gradle, the NDK, each version in `gradle/libs.versions.toml`, the pinned actions, zizmor and osv-scanner. Not compileSdk/targetSdk, which are raised by hand with Android's behaviour changes, nor the Go modules that come with Syncthing.
+- F-Droid out of step (`scripts/upkeep/fdroid.sh`), once the app is there: fdroiddata's recipe differs from ours apart from versions (F-Droid would build a different APK, which cannot carry our signature, so that version would never be published), or F-Droid has not published our latest release within 10 days.
+
+The issue is updated when its list changes and closes itself when nothing is left; a check that breaks opens a second issue (label `upkeep-check`). Each Monday it also checks that main has had a commit in the last 45 days (`scripts/upkeep/quiet.sh`): GitHub turns off scheduled workflows after 60 days without activity, the vulnerability scan included, and nothing would report it. Otherwise it opens an issue (label `upkeep-quiet`) until the next commit. Locally: `scripts/upkeep/versions.py`, and `scripts/upkeep/fdroid.sh` (needs `gh`, `jq` and mikefarah's `yq`).
+
+A bump is an ordinary pull request: regenerate `gradle/verification-metadata.xml` for anything Gradle resolves, run `scripts/sbom.sh`, and for a new major version of an action check that its `action.yml` says `using: node24` or later.
 
 ## Privacy and security
 
