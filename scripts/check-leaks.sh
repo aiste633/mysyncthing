@@ -22,7 +22,7 @@ public_hosts=(
   syncthing.net
   android.com google.com gradle.org maven.org
   anthropic.com claude.ai claude.com
-  gnu.org fsf.org apache.org mozilla.org
+  gnu.org fsf.org apache.org mozilla.org debian.org
   osv.dev
   example.com example.org example.net
 )
