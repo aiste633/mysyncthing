@@ -84,12 +84,14 @@
 
     <string name="rescan_never">Jamais</string>
     <string name="rescan_daily">Une fois par jour</string>
-    <plurals name="rescan_every_days">
+    <!-- "one" leaves out the number: in French it also covers 0, which this count never is (at least 1) -->
+    <plurals name="rescan_every_days" tools:ignore="ImpliedQuantity">
         <item quantity="one">Tous les jours</item>
         <item quantity="many">Tous les %1$d jours</item>
         <item quantity="other">Tous les %1$d jours</item>
     </plurals>
-    <plurals name="rescan_every_hours">
+    <!-- "one" leaves out the number: in French it also covers 0, which this count never is (at least 1) -->
+    <plurals name="rescan_every_hours" tools:ignore="ImpliedQuantity">
         <item quantity="one">Toutes les heures</item>
         <item quantity="many">Toutes les %1$d heures</item>
         <item quantity="other">Toutes les %1$d heures</item>
@@ -557,7 +559,8 @@
 
     <string name="all_folders">Tous les partages</string>
     <string name="recent_none">Aucun changement depuis le démarrage de Syncthing.</string>
-    <plurals name="recent_note">
+    <!-- "one" leaves out the number: in French it also covers 0, which this count never is (at least 1) -->
+    <plurals name="recent_note" tools:ignore="ImpliedQuantity">
         <item quantity="one">Syncthing garde son dernier changement en mémoire jusqu’à son redémarrage.</item>
         <item quantity="many">Syncthing garde ses %1$s de derniers changements en mémoire jusqu’à son redémarrage.</item>
         <item quantity="other">Syncthing garde ses %1$s derniers changements en mémoire jusqu’à son redémarrage.</item>

@@ -750,7 +750,7 @@
     <string name="action_show_more">Mehr anzeigen</string>
     <string name="files_to_delete">Zu löschen</string>
 
-    <string name="this_phone_traffic">Empfangen %1$s · gesendet %2$s seit dem Start</string>
+    <string name="this_phone_traffic">Empfangen %1$s · gesendet %2$s seit Programmstart</string>
     <string name="this_phone_uptime">Läuft seit %1$s · Syncthing %2$s</string>
     <string name="this_phone_listening">Wartet auf Verbindungen</string>
     <string name="this_phone_no_listeners">Keine Empfangsadressen</string>
