@@ -255,9 +255,9 @@
     <string name="folders_offer_have">Ce l\'hai già in %1$s. Condividerla anche con %2$s?</string>
     <string name="folder_card_not_shared">non condivisa</string>
     <plurals name="folder_card_shared">
-        <item quantity="one">condivisa con %1$d</item>
-        <item quantity="many">condivisa con %1$d</item>
-        <item quantity="other">condivisa con %1$d</item>
+        <item quantity="one">condivisa con %1$d dispositivo</item>
+        <item quantity="many">condivisa con %1$d dispositivi</item>
+        <item quantity="other">condivisa con %1$d dispositivi</item>
     </plurals>
 
     <string name="devices_add">Aggiungi dispositivo</string>

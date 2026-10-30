@@ -305,10 +305,10 @@
     <string name="folders_offer_have">You already have it in %1$s. Share it with %2$s too?</string>
     <!-- On a folder card, after its size -->
     <string name="folder_card_not_shared">not shared</string>
-    <!-- On a folder card, after its size. %1$d: number of other devices -->
+    <!-- On a folder card, after its size: "shared with 2 devices". %1$d: number of other devices -->
     <plurals name="folder_card_shared">
-        <item quantity="one">shared with %1$d</item>
-        <item quantity="other">shared with %1$d</item>
+        <item quantity="one">shared with %1$d device</item>
+        <item quantity="other">shared with %1$d devices</item>
     </plurals>
 
     <!-- Devices tab -->
