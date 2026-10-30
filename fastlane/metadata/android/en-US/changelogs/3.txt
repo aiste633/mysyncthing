@@ -1,0 +1,1 @@
+New languages: Spanish, German and French, for the app, its notifications and widget, and the store text. Also an app icon for the F-Droid listing.
