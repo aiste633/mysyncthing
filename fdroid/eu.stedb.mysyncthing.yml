@@ -1,11 +1,11 @@
 # Draft of metadata/eu.stedb.mysyncthing.yml for https://gitlab.com/fdroid/fdroiddata.
-# Not submitted yet. Before submitting: fill in AllowedAPKSigningKeys (scripts/sign-release.sh
-# prints it) and update the Builds entry to the release tag.
+# Not submitted yet. For a new release, update the Builds entry to the release tag.
 # CI builds from this file too (.github/workflows/reproducible.yml), with Repo and commit
 # pointed at the commit under test, so keep the build steps here and in CI in one place.
-# go/build.sh fetches the Go named by the toolchain line of go/bridge/go.mod (GOTOOLCHAIN,
-# checksum-verified), now go1.26.10. Reviewers may ask for a source-built Go instead (srclibs: go@go1.26.10, as
-# Syncthing-Fork's recipe does).
+# Go is built from source: srclibs go, checked out at the release named by the toolchain
+# line of go/bridge/go.mod, replaces the prebuilt one go/build.sh would fetch. Debian's
+# golang-go (forky: Go 1.26 needs 1.24.6 or newer to build) only bootstraps it. Go builds
+# itself reproducibly, so the APK is byte-identical either way.
 Categories:
   - Cloud Storage & File Sync
   - Connectivity
@@ -21,26 +21,38 @@ Repo: https://github.com/aiste633/mysyncthing.git
 Binaries: https://github.com/aiste633/mysyncthing/releases/download/v%v/mysyncthing-%v.apk
 
 Builds:
-  - versionName: 0.1.0
-    versionCode: 1
-    commit: v0.1.0
+  - versionName: 0.1.1
+    versionCode: 2
+    commit: v0.1.1
     subdir: app
     submodules: true
     sudo:
       - apt-get update
-      - apt-get install -y openjdk-21-jdk-headless golang-go
+      - apt-get install -y openjdk-21-jdk-headless
       - update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+      - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
+      - apt-get update
+      - apt-get install -y -t forky golang-go
     gradle:
       - yes
+    srclibs:
+      - go@go1.26.10
+    prebuild:
+      - git -C $$go$$ checkout -f "$(sed -n 's/^toolchain //p' ../go/bridge/go.mod)"
+      - sed -i -e 's|^export GOTOOLCHAIN=.*|export PATH="$$go$$/bin:$PATH" GOTOOLCHAIN=local|'
+        ../go/build.sh
     scandelete:
       - go/syncthing/lib/model/testdata
       - go/bridge/testdata/fork
+    build:
+      - pushd $$go$$/src
+      - ./make.bash
+      - popd
     ndk: 30.0.16248370
 
-# Fill in before submitting: the SHA-256 that scripts/sign-release.sh prints.
-# AllowedAPKSigningKeys: <64 hex digits>
+AllowedAPKSigningKeys: 71c8e04b73a0242d201948e8df9fe44d50c360d141f70701b9bd60b39b0fd668
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags ^v[0-9.]+$
-CurrentVersion: 0.1.0
-CurrentVersionCode: 1
+CurrentVersion: 0.1.1
+CurrentVersionCode: 2

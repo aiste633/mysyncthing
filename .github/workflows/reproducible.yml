@@ -154,12 +154,21 @@ jobs:
               -e "s|^    commit: .*|    commit: $GITHUB_SHA|" \
               "$src/fdroid/$APPID.yml" > "$home_vagrant/metadata/$APPID.yml"
           cat "$home_vagrant/metadata/$APPID.yml"
+          # The recipe's srclibs, as fdroiddata defines them.
+          mkdir -p "$home_vagrant/srclibs"
+          printf '%s\n' 'RepoType: git' 'Repo: https://github.com/golang/go.git' '' \
+            "Prepare: sed -i -e '/GOTOOLCHAIN/s/auto/local/' go.env" > "$home_vagrant/srclibs/go.yml"
           touch "$home_vagrant/config.yml"
           chown -R vagrant "$home_vagrant" "$src"
           cd "$home_vagrant"
-          sudo --preserve-env --user vagrant env PATH="$fdroidserver:$PATH" \
-            PYTHONPATH="$fdroidserver:$fdroidserver/examples" PYTHONUNBUFFERED=true \
-            HOME="$home_vagrant" fdroid build --verbose --test --on-server --no-tarball "$APPID:$vercode"
+          fdroid() {
+            sudo --preserve-env --user vagrant env PATH="$fdroidserver:$PATH" \
+              PYTHONPATH="$fdroidserver:$fdroidserver/examples" PYTHONUNBUFFERED=true \
+              HOME="$home_vagrant" fdroid "$@"
+          }
+          # As fdroiddata's CI: srclibs are fetched first, a build on the server does not.
+          fdroid fetchsrclibs --verbose "$APPID:$vercode"
+          fdroid build --verbose --test --on-server --no-tarball "$APPID:$vercode"
           sha256sum "$home_vagrant/tmp/${APPID}_$vercode.apk" "$GITHUB_WORKSPACE"/expected/*.apk
           cmp "$home_vagrant/tmp/${APPID}_$vercode.apk" "$GITHUB_WORKSPACE"/expected/*.apk
           mkdir -p "$GITHUB_WORKSPACE/fdroid-out"
