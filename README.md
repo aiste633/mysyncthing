@@ -2,6 +2,8 @@
 
 A Syncthing client for Android 15 and 16 (API 35/36), written in Kotlin and Jetpack Compose. It is a new app, not a fork of syncthing-android. It will be published on F-Droid once F-Droid accepts it; until then, signed releases are on the [releases page](https://github.com/aiste633/mysyncthing/releases).
 
+MySyncthing is vibecoded: an AI coding assistant (Claude) wrote nearly all of its code, directed and tested by one person. It is tested hard (see [Testing](docs/testing.md)), but it comes with no guarantees: if something breaks or goes wrong, including lost or damaged files, that is on you, as the AGPL-3.0 (sections 15 and 16) says. Keep backups of anything that matters.
+
 ## Home-screen widget
 
 See your sync status at a glance, without opening the app. The widget is a single row like a search bar, and you can stretch it sideways. It shows whether everything is up to date, syncing (with progress), paused or needs your attention, and which devices are connected. Its button pauses and resumes syncing, and a tap opens the app. Colours and icons follow your wallpaper and dark mode.
