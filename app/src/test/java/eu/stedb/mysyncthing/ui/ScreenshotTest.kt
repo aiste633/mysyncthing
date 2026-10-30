@@ -13,9 +13,9 @@ import org.robolectric.ParameterizedRobolectricTestRunner.Parameters
 import org.robolectric.RuntimeEnvironment
 
 /**
- * Every screen of [screens] in light and dark, at the largest font size and in Italian,
- * compared with the reference images in src/test/screenshots. A change that cuts text,
- * overlaps rows or breaks a colour shows up as a failed comparison with a diff image
+ * Every screen of [screens] in light and dark, at the largest font size, in Italian and in
+ * German (the longest text), compared with the reference images in src/test/screenshots. A
+ * change that cuts text, overlaps rows or breaks a colour shows up as a failed comparison with a diff image
  * (build/outputs/roborazzi). After a deliberate change: ./gradlew recordRoborazziDebug
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -25,6 +25,7 @@ class ScreenshotTest(private val screen: ScreenCase, private val variant: Varian
         Dark("+night"),
         LargestFont("+notnight", fontScale = 2f),
         Italian("+it-notnight"),
+        German("+de-notnight"),
     }
 
     @get:Rule

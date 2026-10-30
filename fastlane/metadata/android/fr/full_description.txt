@@ -1,0 +1,18 @@
+<p>MySyncthing fait tourner <a href="https://syncthing.net">Syncthing</a> sur Android 15 et 16. Syncthing garde des dossiers, appelés partages, synchronisés entre vos appareils, directement et de façon chiffrée, sans service cloud entre les deux.</p>
+<p><b>Widget d’écran d’accueil :</b> une seule ligne fine indique si tout est à jour, en cours de synchronisation (avec la progression), en pause ou demande votre attention, et quels appareils sont connectés. Son bouton suspend et reprend la synchronisation.</p>
+<ul>
+<li>Associez des appareils par code QR ou ID d’appareil, et acceptez les partages qui vous sont proposés, avec un emplacement, un type de partage et une préservation des fichiers suggérés</li>
+<li>Écrans natifs Material 3 pour la configuration des partages et des appareils, avec les couleurs Material You et le thème sombre</li>
+<li>Notifications pour les nouveaux appareils et partages, avec Examiner et Refuser</li>
+<li>Tourne toute la journée comme service de premier plan, sans la limite de 6 heures des services de synchronisation de données, et démarre avec le téléphone</li>
+<li>Conditions d’exécution : Wi-Fi limité, données mobiles et itinérance, chacun activé ou non ; seulement en charge ou seulement sur batterie ; pause en économiseur de batterie ; seulement à des horaires définis de la semaine</li>
+<li>Proxy SOCKS5 ou HTTP, comme Tor avec Orbot</li>
+<li>Passage facile depuis Syncthing-Fork : importez sa sauvegarde, même chiffrée ; exportez votre propre configuration, chiffrée en AES-256 si vous le souhaitez</li>
+<li>L’interface graphique web de Syncthing est intégrée pour les réglages avancés</li>
+<li>En français, anglais, italien, espagnol et allemand, dans la langue du téléphone ou dans une langue choisie pour l’appli seule ; dates, heures et nombres écrits comme dans la région du téléphone</li>
+</ul>
+<p><b>Respect de la vie privée :</b> pas de pistage, de publicité ni de statistiques, et aucun compte. Le rapport anonyme de statistiques d’utilisation de Syncthing reste désactivé tant que vous ne l’acceptez pas. La sauvegarde dans le cloud est désactivée, donc les clés de l’appareil ne partent jamais dans un cloud ; un transfert de téléphone à téléphone vers un nouveau téléphone les emporte, alors arrêtez ensuite Syncthing sur l’ancien téléphone. <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">Ce que l’appli conserve et ce qui quitte le téléphone</a> (en anglais).</p>
+<p><b>Léger pour la batterie et la mémoire flash :</b> au repos, l’appli écrit environ 0,02–0,14 Mo par heure en mémoire flash, et ne garde aucun fichier journal.</p>
+<p><b>Renforcé et testé :</b> chaque saisie est vérifiée selon les règles du cœur lui-même, avec des tests par propriétés, du fuzzing du code Go, un audit de sécurité, des tests de charge avec 50 000 fichiers et une mémoire pleine, un test de mémoire de 10 heures et des tests d’interruption. Des builds reproductibles et une nomenclature logicielle complète (SBOM) permettent à chacun de vérifier ce que contient l’APK.</p>
+<p><b>Vibecoded :</b> un assistant de programmation IA (Claude) a écrit presque tout le code, dirigé et testé par une seule personne. Aucune garantie si quelque chose casse ou tourne mal, comme le dit la licence : gardez des sauvegardes de tout ce qui compte.</p>
+<p>Le cœur officiel de Syncthing (v2) tourne dans l’appli, avec quelques petites corrections documentées. Atteindre des dossiers n’importe où dans la mémoire partagée nécessite l’autorisation « Accès à tous les fichiers ».</p>

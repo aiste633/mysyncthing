@@ -1,0 +1,816 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Français. Terms follow upstream Syncthing's French web GUI word for word (a folder is a "partage"); the usage-reporting question uses its wording. Addresses the user as vous. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="action_save">Enregistrer</string>
+    <string name="action_cancel">Annuler</string>
+    <string name="action_ok">OK</string>
+    <string name="action_close">Fermer</string>
+    <string name="action_back">Retour</string>
+    <string name="action_add">Ajouter</string>
+    <string name="action_remove_item">Enlever %1$s</string>
+    <string name="action_discard">Abandonner</string>
+    <string name="action_start">Démarrer</string>
+    <string name="action_try_again">Réessayer</string>
+    <string name="action_share">Partager</string>
+    <string name="action_done">Terminé</string>
+    <string name="action_more">Plus</string>
+
+    <string name="core_failed">Échec de Syncthing</string>
+    <string name="core_stopped_unexpectedly">Syncthing s’est arrêté</string>
+    <string name="core_stopped">Syncthing est arrêté</string>
+    <string name="core_starting">Démarrage de Syncthing</string>
+
+    <string name="discard_title">Abandonner les modifications ?</string>
+    <string name="discard_text">Ce que vous avez saisi ici sera perdu.</string>
+
+    <string name="limit_label">Limite</string>
+    <string name="limit_none">Aucune limite</string>
+    <string name="limit_hint">Laissez vide ou 0 pour aucune limite.</string>
+    <string name="list_add_or_tick">Ajoutez-en une, ou cochez « %1$s »</string>
+
+    <plurals name="count_items">
+        <item quantity="one">%1$s élément</item>
+        <item quantity="many">%1$s d’éléments</item>
+        <item quantity="other">%1$s éléments</item>
+    </plurals>
+    <plurals name="count_files">
+        <item quantity="one">%1$s fichier</item>
+        <item quantity="many">%1$s de fichiers</item>
+        <item quantity="other">%1$s fichiers</item>
+    </plurals>
+    <plurals name="count_folders">
+        <item quantity="one">%1$s partage</item>
+        <item quantity="many">%1$s de partages</item>
+        <item quantity="other">%1$s partages</item>
+    </plurals>
+    <plurals name="count_devices">
+        <item quantity="one">%1$s appareil</item>
+        <item quantity="many">%1$s d’appareils</item>
+        <item quantity="other">%1$s appareils</item>
+    </plurals>
+    <plurals name="count_rules">
+        <item quantity="one">%1$s exclusion</item>
+        <item quantity="many">%1$s d’exclusions</item>
+        <item quantity="other">%1$s exclusions</item>
+    </plurals>
+    <plurals name="count_versions">
+        <item quantity="one">%1$s version</item>
+        <item quantity="many">%1$s de versions</item>
+        <item quantity="other">%1$s versions</item>
+    </plurals>
+    <plurals name="count_days">
+        <item quantity="one">%1$s jour</item>
+        <item quantity="many">%1$s de jours</item>
+        <item quantity="other">%1$s jours</item>
+    </plurals>
+    <plurals name="revert_text">
+        <item quantity="one">%1$s élément modifié sur ce téléphone est remplacé par la version de vos autres appareils, ou supprimé s’il n’y existe pas. Cette action est irréversible.</item>
+        <item quantity="many">%1$s d’éléments modifiés sur ce téléphone sont remplacés par la version de vos autres appareils, ou supprimés s’ils n’y existent pas. Cette action est irréversible.</item>
+        <item quantity="other">%1$s éléments modifiés sur ce téléphone sont remplacés par la version de vos autres appareils, ou supprimés s’ils n’y existent pas. Cette action est irréversible.</item>
+    </plurals>
+    <string name="label_and_hint">%1$s. %2$s</string>
+    <string name="hint_default">Par défaut</string>
+
+    <string name="when_yesterday">hier, %1$s</string>
+    <string name="day_today">Aujourd’hui</string>
+    <string name="day_yesterday">Hier</string>
+
+    <string name="order_random">Aléatoire</string>
+    <string name="order_alphabetic">Alphabétique</string>
+    <string name="order_smallest_first">Les plus petits en premier</string>
+    <string name="order_largest_first">Les plus gros en premier</string>
+    <string name="order_oldest_first">Les plus anciens en premier</string>
+    <string name="order_newest_first">Les plus récents en premier</string>
+
+    <string name="rescan_never">Jamais</string>
+    <string name="rescan_daily">Une fois par jour</string>
+    <!-- "one" leaves out the number: in French it also covers 0, which this count never is (at least 1) -->
+    <plurals name="rescan_every_days" tools:ignore="ImpliedQuantity">
+        <item quantity="one">Tous les jours</item>
+        <item quantity="many">Tous les %1$d jours</item>
+        <item quantity="other">Tous les %1$d jours</item>
+    </plurals>
+    <!-- "one" leaves out the number: in French it also covers 0, which this count never is (at least 1) -->
+    <plurals name="rescan_every_hours" tools:ignore="ImpliedQuantity">
+        <item quantity="one">Toutes les heures</item>
+        <item quantity="many">Toutes les %1$d heures</item>
+        <item quantity="other">Toutes les %1$d heures</item>
+    </plurals>
+    <string name="rescan_every_minutes">Toutes les %1$d min</string>
+    <string name="rescan_every_seconds">Toutes les %1$d s</string>
+    <string name="rescan_never_hint">Seuls les changements vus par l’écoute sont synchronisés</string>
+
+    <string name="compression_metadata">Métadonnées uniquement</string>
+    <string name="compression_always">Toutes les données</string>
+    <string name="compression_never">Désactivée</string>
+    <string name="compression_always_hint">Économise des données sur les textes et documents, mais consomme de la batterie. Les photos et vidéos n’y gagnent presque rien.</string>
+    <string name="connections_auto">Automatique</string>
+    <plurals name="connections">
+        <item quantity="one">%1$d connexion</item>
+        <item quantity="many">%1$d de connexions</item>
+        <item quantity="other">%1$d connexions</item>
+    </plurals>
+
+    <string name="internal_storage">Mémoire de stockage interne</string>
+
+    <string name="folder_type_send_receive">Envoi &amp; réception</string>
+    <string name="folder_type_send_only">Envoi seulement</string>
+    <string name="folder_type_receive_only">Réception seulement</string>
+    <string name="folder_type_send_receive_hint">Les changements vont dans les deux sens.</string>
+    <string name="folder_type_send_only_hint">Ce téléphone est la source ; les changements faits ailleurs ne sont pas appliqués ici.</string>
+    <string name="folder_type_receive_only_hint">Les changements faits sur ce téléphone ne sont jamais envoyés aux autres appareils.</string>
+
+    <string name="versioning_off">Sans</string>
+    <string name="versioning_trashcan">Corbeille</string>
+    <string name="versioning_simple">Suivi simplifié</string>
+    <string name="versioning_staggered">Versions échelonnées</string>
+    <string name="versioning_off_hint">Les fichiers remplacés ou supprimés sont perdus.</string>
+    <string name="versioning_trashcan_hint">Conserve la dernière version des fichiers modifiés ou supprimés sur d’autres appareils.</string>
+    <string name="versioning_simple_hint">Conserve un nombre donné d’anciennes versions de chaque fichier.</string>
+    <string name="versioning_staggered_hint">Conserve plus de versions récentes et moins d’anciennes, jusqu’à une ancienneté maximum.</string>
+    <string name="versioning_keep_days">Conserver pendant (jours, 0 = toujours)</string>
+    <string name="versioning_keep_versions">Nombre de versions à conserver</string>
+    <string name="versioning_forever">Toujours</string>
+    <string name="versioning_summary">%1$s · %2$s</string>
+    <string name="versioning_summary_forever">%1$s · conserver toujours</string>
+
+    <string name="op_failed">%1$s a échoué : %2$s</string>
+    <string name="op_clear">Effacer</string>
+    <string name="op_usage_reporting">Statistiques d’utilisation</string>
+    <string name="op_add_device">Ajouter l’appareil</string>
+    <string name="op_untrusted">Retirer la confiance</string>
+    <string name="op_introducer">Appareil introducteur</string>
+    <string name="op_accept_folders">Accepter les partages</string>
+    <string name="op_group">Groupe</string>
+    <string name="op_addresses">Adresses</string>
+    <string name="op_download_limit">Limite du débit de réception</string>
+    <string name="op_upload_limit">Limite du débit d’envoi</string>
+    <string name="op_compression">Compression</string>
+    <string name="op_connections">Connexions</string>
+    <string name="op_restart">Redémarrer</string>
+    <string name="op_remove_device">Supprimer l’appareil</string>
+    <string name="op_rename">Renommer</string>
+    <string name="op_pause">Pause</string>
+    <string name="op_ignore">Refuser</string>
+    <string name="op_unignore">Reprendre</string>
+    <string name="op_add_folder">Ajouter un partage</string>
+    <string name="op_remove_folder">Supprimer le partage</string>
+    <string name="op_rescan">Réanalyser</string>
+    <string name="op_revert">Annuler les modifications locales</string>
+    <string name="op_override">Écraser les changements</string>
+    <string name="op_full_rescan">Réanalyse complète</string>
+    <string name="op_download_order">Ordre de récupération des fichiers</string>
+    <string name="op_keep_free">Espace libre minimum</string>
+    <string name="op_change_type">Changer le type</string>
+    <string name="op_watch">Écouter les changements</string>
+    <string name="op_versioning">Préservation des fichiers</string>
+    <string name="op_sharing">Liaisons</string>
+    <string name="op_ignore_patterns">Exclusions</string>
+    <string name="op_type">Type</string>
+    <string name="op_limit">Limite</string>
+    <string name="op_local_discovery">Découverte locale</string>
+    <string name="op_internet_discovery">Découverte globale</string>
+    <string name="op_relays">Relayage</string>
+    <string name="op_port_opening">Translation d’adresses (NAT)</string>
+    <string name="op_listen_addresses">Adresses d’écoute</string>
+    <string name="op_discovery_servers">Serveurs de découverte globale</string>
+
+    <string name="done_restarting">Redémarrage de Syncthing</string>
+    <string name="done_added">%1$s ajouté</string>
+    <string name="done_rescanning">Réanalyse en cours</string>
+    <string name="done_rescanning_all">Réanalyse de tous les partages</string>
+    <string name="done_reverting">Annulation des modifications locales</string>
+    <string name="done_overriding">Écrasement des changements</string>
+    <string name="folder_added_paused">ajouté en pause, modèles d’exclusion par défaut non appliqués (%1$s)</string>
+    <string name="proxy_not_saved">Proxy non enregistré : %1$s</string>
+    <string name="not_saved">Non enregistré : la mémoire du téléphone est peut-être pleine</string>
+
+    <string name="restore_done">Restauré</string>
+    <plurals name="restore_done_files">
+        <item quantity="one">%1$s fichier restauré</item>
+        <item quantity="many">%1$s de fichiers restaurés</item>
+        <item quantity="other">%1$s fichiers restaurés</item>
+    </plurals>
+    <string name="restore_failed">Échec de la restauration : %1$s</string>
+    <string name="restore_failed_file">Échec de la restauration de %1$s : %2$s</string>
+    <plurals name="and_more">
+        <item quantity="one">%1$s (et %2$d autre)</item>
+        <item quantity="many">%1$s (et %2$d d’autres)</item>
+        <item quantity="other">%1$s (et %2$d autres)</item>
+    </plurals>
+    <string name="restore_undated">Restauré, mais la date de %1$s n’a pas pu être mise à jour, donc la restauration risque de ne pas se synchroniser</string>
+    <plurals name="restore_undated_more">
+        <item quantity="one">Restauré, mais la date de %1$s (et %2$d autre) n’a pas pu être mise à jour, donc la restauration risque de ne pas se synchroniser</item>
+        <item quantity="many">Restauré, mais la date de %1$s (et %2$d d’autres) n’a pas pu être mise à jour, donc la restauration risque de ne pas se synchroniser</item>
+        <item quantity="other">Restauré, mais la date de %1$s (et %2$d autres) n’a pas pu être mise à jour, donc la restauration risque de ne pas se synchroniser</item>
+    </plurals>
+
+    <string name="tab_folders">Partages</string>
+    <string name="tab_devices">Appareils</string>
+    <string name="tab_settings">Configuration</string>
+
+    <string name="moved_title">Transféré depuis un autre téléphone</string>
+    <string name="moved_text">Ce téléphone a gardé l’ID de l’appareil, les partages et les appareils de votre ancien téléphone, et réanalyse les partages. Arrêtez ou désinstallez Syncthing sur l’ancien téléphone : deux téléphones avec le même ID d’appareil perturbent mutuellement leurs connexions.</string>
+
+    <string name="item_unknown">Inconnu</string>
+    <string name="item_error">Erreur</string>
+    <plurals name="item_errors">
+        <item quantity="one">%1$d erreur</item>
+        <item quantity="many">%1$d d’erreurs</item>
+        <item quantity="other">%1$d erreurs</item>
+    </plurals>
+    <string name="item_local_changes">Modifications locales</string>
+    <string name="item_out_of_sync">Désynchronisé</string>
+    <string name="item_scanning">Analyse</string>
+    <string name="item_not_shared">Non partagé</string>
+    <string name="item_disconnected">Déconnecté</string>
+
+    <string name="connection_lan">LAN</string>
+    <string name="connection_internet">Internet</string>
+    <string name="connection_relay">Relais</string>
+    <string name="connection_with_address">%1$s · %2$s</string>
+    <string name="speed_down_up">↓ %1$s · ↑ %2$s</string>
+
+    <string name="health">Écoute %1$d sur %2$d · Découverte %3$d sur %4$d</string>
+    <string name="health_discovery_off">Écoute %1$d sur %2$d · Découverte désactivée</string>
+    <string name="unused_no_ipv6">Inutilisé : ce réseau n’a pas d’IPv6</string>
+    <string name="unused_no_route">Inutilisé : aucune route sur ce réseau</string>
+
+    <string name="encryption_set">Chiffré · mot de passe défini</string>
+    <string name="encryption_needed">Confiance retirée : un mot de passe est nécessaire pour partager</string>
+    <string name="encryption_missing">Sans mot de passe : Syncthing arrête de le partager</string>
+    <string name="encryption_title">Partager chiffré</string>
+    <string name="encryption_text">%1$s reçoit « %2$s » chiffré et ne peut pas le lire.</string>
+    <string name="encryption_keep_safe">Conservez-le précieusement : les fichiers ne peuvent être déchiffrés qu’avec lui. Les autres appareils qui ont ce partage avec %1$s doivent utiliser le même mot de passe.</string>
+    <string name="password">Mot de passe</string>
+    <string name="password_show">Afficher le mot de passe</string>
+    <string name="password_hide">Masquer le mot de passe</string>
+    <string name="action_stop_sharing">Arrêter le partage</string>
+
+    <string name="folders_rescan_all">Tout réanalyser</string>
+    <string name="recent_changes">Changements récents</string>
+    <string name="folders_add">Ajouter un partage</string>
+    <string name="folders_empty">Aucun partage pour l’instant</string>
+    <string name="folders_empty_hint">Touchez Ajouter un partage pour synchroniser un dossier de ce téléphone. Les partages que d’autres appareils vous proposent apparaissent aussi ici.</string>
+    <string name="folders_offer">%1$s partage « %2$s »</string>
+    <string name="folders_offer_choose">Choisissez où le conserver sur ce téléphone</string>
+    <string name="folders_offer_have">Vous l’avez déjà dans %1$s. Le partager aussi avec %2$s ?</string>
+    <string name="folder_card_not_shared">non partagé</string>
+    <plurals name="folder_card_shared">
+        <item quantity="one">%1$d participant</item>
+        <item quantity="many">%1$d de participants</item>
+        <item quantity="other">%1$d participants</item>
+    </plurals>
+
+    <string name="devices_add">Ajouter un appareil</string>
+    <string name="devices_request_detail">ID de l’appareil %1$s · %2$s</string>
+    <string name="devices_empty">Aucun autre appareil pour l’instant</string>
+    <string name="devices_empty_hint">Touchez Ajouter un appareil et scannez le code QR de l’autre appareil, ou montrez-lui l’ID de ce téléphone.</string>
+    <string name="this_phone">Ce téléphone</string>
+    <string name="this_device">Cet appareil</string>
+    <string name="devices_this_device_id">Cet appareil · ID %1$s</string>
+    <string name="devices_show_id">Afficher mon ID</string>
+    <string name="devices_share_id">Partager l’ID</string>
+    <string name="devices_share_id_title">Partager l’ID de l’appareil</string>
+    <string name="devices_qr_description">Code QR de l’ID de l’appareil</string>
+
+    <string name="settings_restart_needed">Redémarrez Syncthing pour appliquer la configuration modifiée.</string>
+    <string name="action_restart">Redémarrer</string>
+    <string name="settings_device_name">Nom de l’appareil</string>
+    <string name="settings_device_name_hint">Les autres appareils voient ce nom</string>
+    <string name="settings_not_set">Non défini</string>
+    <string name="name">Nom</string>
+    <string name="settings_group_syncing">Synchronisation</string>
+    <string name="settings_pause">Suspendre la synchronisation</string>
+    <string name="settings_pause_hint">Jusqu’à ce que vous la repreniez ici ou sur le widget</string>
+    <string name="settings_ignored">Invitations refusées</string>
+    <string name="settings_ignored_hint">Appareils et partages sur lesquels vous avez touché Refuser, pour revenir en arrière</string>
+    <string name="settings_group_sync_on">Synchroniser sur</string>
+    <string name="settings_unmetered">Wi-Fi non limité et Ethernet</string>
+    <string name="settings_always">Toujours</string>
+    <string name="settings_metered">Wi-Fi limité et points d’accès</string>
+    <string name="settings_metered_hint">Wi-Fi qu’Android ou vous avez marqué comme limité, point d’accès d’un autre téléphone, partage de connexion</string>
+    <string name="settings_mobile_data">Données mobiles</string>
+    <string name="settings_mobile_data_hint">Peut coûter de l’argent avec un forfait limité</string>
+    <string name="settings_roaming">Données mobiles en itinérance</string>
+    <string name="settings_roaming_hint">À l’étranger ou sur un autre réseau, où les données peuvent coûter plus cher</string>
+    <string name="settings_group_time">Horaires</string>
+    <string name="sync_times">Horaires de synchronisation</string>
+    <string name="settings_group_power">Alimentation</string>
+    <string name="settings_power">Synchroniser</string>
+    <string name="power_any">En charge ou sur batterie</string>
+    <string name="power_charging">Seulement en charge</string>
+    <string name="power_battery">Seulement sur batterie</string>
+    <string name="power_charging_hint">Se met en pause une fois débranché</string>
+    <string name="power_battery_hint">Se met en pause tant qu’il est branché</string>
+    <string name="settings_battery_saver">Pause en économiseur de batterie</string>
+    <string name="settings_battery_saver_hint">La synchronisation attend tant que l’économiseur de batterie est activé</string>
+    <string name="settings_group_defaults">Nouveaux partages et appareils</string>
+    <string name="defaults_folders">Configuration par défaut des nouveaux partages</string>
+    <string name="defaults_folders_hint">Type, préservation des fichiers, exclusions et plus</string>
+    <string name="defaults_devices">Configuration par défaut des nouveaux appareils</string>
+    <string name="defaults_devices_hint">Acceptation automatique, adresses, limites et plus</string>
+    <string name="settings_group_network">Réseau</string>
+    <string name="download_limit">Limite du débit de réception</string>
+    <string name="upload_limit">Limite du débit d’envoi</string>
+    <string name="settings_limit_lan">Limiter la bande passante locale (LAN)</string>
+    <string name="settings_limit_lan_on">Les limites s’appliquent partout</string>
+    <string name="settings_limit_lan_off">Désactivé : les transferts sur le réseau local vont à pleine vitesse</string>
+    <string name="proxy">Proxy</string>
+    <string name="settings_group_discovery">Découverte des appareils</string>
+    <string name="settings_local_discovery">Découverte locale</string>
+    <string name="settings_local_discovery_hint">Trouve les appareils sur le même Wi-Fi</string>
+    <string name="settings_global_discovery">Découverte globale</string>
+    <string name="settings_global_discovery_hint">Cherche les appareils via les serveurs de découverte de Syncthing. Ils apprennent l’adresse IP de ce téléphone.</string>
+    <string name="settings_relays">Relayage possible</string>
+    <string name="settings_relays_hint">Se connecte via un relais quand une connexion directe échoue. Toujours chiffré de bout en bout.</string>
+    <string name="settings_nat">Translation d’adresses (NAT)</string>
+    <string name="settings_nat_hint">Demande au routeur d’ouvrir un port (UPnP, NAT-PMP)</string>
+    <string name="settings_group_system">Système</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_phone">Celle du téléphone</string>
+    <string name="settings_boot">Démarrer au démarrage du téléphone</string>
+    <string name="settings_boot_hint">La synchronisation commence quand le téléphone démarre</string>
+    <string name="settings_start">Démarrer Syncthing</string>
+    <string name="settings_stop">Arrêter Syncthing</string>
+    <string name="settings_stop_hint">Jusqu’à ce que vous le redémarriez ou que le téléphone redémarre</string>
+    <string name="settings_restart">Redémarrer Syncthing</string>
+    <string name="settings_restart_hint">Applique les réglages qui nécessitent un redémarrage</string>
+    <string name="settings_export">Exporter une sauvegarde</string>
+    <string name="settings_export_hint">Partages, appareils, identité de ce téléphone et réglages de synchronisation, dans un fichier zip</string>
+    <string name="settings_import">Importer une sauvegarde</string>
+    <string name="settings_import_hint">Depuis un export de cette appli ou une sauvegarde de Syncthing-Fork</string>
+    <string name="settings_group_permissions">Autorisations</string>
+    <string name="settings_group_advanced">Avancé</string>
+    <string name="settings_usage">Rapport anonyme de statistiques d’utilisation</string>
+    <string name="settings_usage_hint">Aide les développeurs de Syncthing ; statistiques sur data.syncthing.net</string>
+    <string name="listen_addresses">Adresses d’écoute</string>
+    <string name="settings_listen_default">Par défaut, port 22000</string>
+    <string name="discovery_servers">Serveurs de découverte globale</string>
+    <string name="settings_servers_default">Serveurs publics de Syncthing</string>
+    <string name="settings_web_gui">Interface graphique web</string>
+    <string name="settings_web_gui_hint">Toute la configuration de Syncthing, pour ce que cette appli n’affiche pas</string>
+    <string name="about">À propos</string>
+    <string name="settings_about_hint">Versions, licences et code source</string>
+    <string name="listen_default_hint">TCP et QUIC sur le port 22000, plus les relais</string>
+    <string name="listen_add_hint">Pour un autre port, ajoutez tcp://0.0.0.0:22001 et quic://0.0.0.0:22001 et décochez Par défaut.</string>
+    <string name="servers_default_hint">Utilisés par la découverte globale</string>
+    <string name="servers_add_hint">Votre propre serveur, par exemple https://discovery.example.com/ (https seulement)</string>
+
+    <string name="setup_title">Configuration</string>
+    <string name="setup_intro">MySyncthing a besoin d’une autorisation pour synchroniser. Les autres la rendent plus fiable.</string>
+    <string name="setup_mobile_data">Synchroniser sur les données mobiles</string>
+    <string name="setup_mobile_data_on">Activé : utilise aussi les données mobiles, mais pas en itinérance</string>
+    <string name="setup_mobile_data_off">Désactivé : seulement en Wi-Fi ou Ethernet. Vous pouvez le changer dans Configuration.</string>
+    <string name="permission_files">Accès à tous les fichiers</string>
+    <string name="permission_files_hint">Syncthing lit et écrit directement vos dossiers.</string>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_notifications_hint">Invitations de nouveaux appareils et partages, et problèmes. Tant que Syncthing tourne, Android exige aussi une petite notification d’état ; pour la masquer, désactivez sa catégorie « %1$s ».</string>
+    <string name="permission_background">Exécution en arrière-plan</string>
+    <string name="permission_background_hint">Continue à synchroniser écran éteint. Certains téléphones appellent cela « Autoriser l’activité en arrière-plan ».</string>
+    <string name="permission_required">Obligatoire</string>
+    <string name="permission_optional">Facultatif</string>
+    <string name="permission_recommended">Recommandé</string>
+    <string name="permission_grant">Accorder</string>
+    <string name="permission_allow">Autoriser</string>
+    <string name="permission_granted">Accordé</string>
+
+    <string name="loading">Chargement</string>
+    <string name="group_general">Général</string>
+    <string name="group_trust">Confiance</string>
+
+    <string name="defaults_folders_intro">Les partages que vous ajoutez, et ceux que vous acceptez d’autres appareils, commencent avec cette configuration.</string>
+    <string name="defaults_devices_intro">Les appareils que vous ajoutez, et les invitations d’appareils que vous acceptez, commencent avec cette configuration.</string>
+    <string name="defaults_location">Emplacement</string>
+    <string name="defaults_location_value">%1$s/&lt;nom du partage&gt;</string>
+
+    <string name="folder_type">Type de partage</string>
+    <string name="type">Type</string>
+    <string name="file_versioning">Préservation des fichiers</string>
+    <string name="folder_watch">Écouter les changements</string>
+    <string name="folder_watch_hint">Synchronise les modifications en quelques secondes au lieu d’attendre la prochaine analyse</string>
+    <string name="full_rescan">Réanalyse complète</string>
+    <string name="download_order">Ordre de récupération des fichiers</string>
+    <string name="keep_free">Espace libre minimum sur ce téléphone</string>
+    <string name="ignore_patterns">Exclusions</string>
+    <string name="ignores_none">Aucune</string>
+
+    <string name="device_introducer">Appareil introducteur</string>
+    <string name="device_introducer_hint">Ajoute aussi les appareils avec lesquels il a des partages</string>
+    <string name="device_auto_accept">Accepter automatiquement ses invitations</string>
+    <string name="device_auto_accept_hint">Enregistrés dans Syncthing/&lt;nom du partage&gt; sans demander</string>
+    <string name="device_addresses">Adresses</string>
+    <string name="compression">Compression</string>
+    <string name="connections">Connexions</string>
+
+    <string name="folder_already_added">Déjà ajouté</string>
+    <string name="folder_add_offer">Ajouter « %1$s »</string>
+    <string name="folder_offered_by">Proposé par %1$s</string>
+    <string name="folder">Partage</string>
+    <string name="folder_path">Chemin racine du partage</string>
+    <string name="folder_path_required">Obligatoire. Chemin complet, ou choisissez un dossier</string>
+    <string name="folder_path_suggested">Suggéré. Il est créé s’il n’existe pas.</string>
+    <string name="folder_path_hint">Chemin complet, ou choisissez un dossier</string>
+    <string name="folder_choose">Choisir un dossier</string>
+    <string name="folder_id">ID du partage</string>
+    <string name="folder_id_hint">Doit être le même sur tous les appareils membres de ce partage</string>
+    <string name="share_with">Partager avec</string>
+    <string name="share_no_devices">Aucun appareil pour l’instant</string>
+    <string name="share_no_devices_hint">Ajoutez-en un dans l’onglet Appareils</string>
+    <string name="share_offered">A proposé ce partage</string>
+    <string name="folder_ignores_first">Définir d’abord les exclusions</string>
+    <string name="folder_ignores_first_hint">Le partage reste en pause jusqu’à ce que vous les enregistriez</string>
+    <string name="versioning_method">Méthode</string>
+    <string name="versioning_unit_days">Jours</string>
+    <string name="versioning_unit_versions">Versions</string>
+
+    <string name="error_required">Obligatoire</string>
+    <string name="error_ascii_digits" tools:ignore="TypographyDashes">Utilisez les chiffres 0-9</string>
+    <string name="error_whole_number">Un nombre entier, %1$d ou plus</string>
+    <string name="error_not_negative">0 ou plus</string>
+    <string name="error_number">Saisissez un nombre</string>
+    <string name="error_up_to">Jusqu’à %1$s</string>
+    <string name="error_path_absolute">Un chemin complet, commençant par /</string>
+    <string name="error_control_characters">Pas de saut de ligne ni de caractère de contrôle</string>
+    <string name="error_path_parts">Pas de partie vide, . ou ..</string>
+    <string name="error_path_storage">Dans la mémoire du téléphone ou sur une carte SD (/storage/…)</string>
+    <string name="error_path_overlap">Un autre partage est déjà ici, ou à l’intérieur</string>
+    <string name="error_id_slash">Pas de /</string>
+    <string name="error_id_dots">Ni . ni ..</string>
+    <string name="error_id_control">Pas de caractère de contrôle</string>
+    <string name="error_id_taken">Un autre partage a déjà cet ID</string>
+    <string name="error_device_id_length">Un ID d’appareil a 56 caractères</string>
+    <string name="error_device_id">Ce n’est pas un ID d’appareil. Comparez chaque caractère avec l’autre appareil.</string>
+    <string name="error_host_brackets">Sans crochets, par exemple ::1</string>
+    <string name="error_host">Une adresse IP ou un nom d’hôte</string>
+    <string name="error_port">Un port de 1 à 65535</string>
+    <string name="error_too_long_255">Trop long : 255 octets au maximum</string>
+    <string name="error_too_long">Trop long</string>
+    <string name="error_user_needed">Nécessaire avec un mot de passe</string>
+    <string name="error_proxy_type">Type de proxy inconnu</string>
+    <plurals name="error_password_short">
+        <item quantity="one">Au moins %1$d caractère</item>
+        <item quantity="many">Au moins %1$d de caractères</item>
+        <item quantity="other">Au moins %1$d caractères</item>
+    </plurals>
+    <string name="error_password_repeat">Les mots de passe ne correspondent pas</string>
+
+    <string name="folder_size">%1$s sur ce téléphone, sur %2$s</string>
+    <plurals name="folder_local_changes">
+        <item quantity="one">%1$s élément, %2$s, modifié sur ce téléphone. Ce partage est en réception seulement, donc les autres appareils ne reçoivent pas ces changements.</item>
+        <item quantity="many">%1$s d’éléments, %2$s, modifiés sur ce téléphone. Ce partage est en réception seulement, donc les autres appareils ne reçoivent pas ces changements.</item>
+        <item quantity="other">%1$s éléments, %2$s, modifiés sur ce téléphone. Ce partage est en réception seulement, donc les autres appareils ne reçoivent pas ces changements.</item>
+    </plurals>
+    <plurals name="folder_remote_changes">
+        <item quantity="one">%1$s élément modifié sur d’autres appareils. Ce partage est en envoi seulement, donc ces changements ne sont pas appliqués ici.</item>
+        <item quantity="many">%1$s d’éléments modifiés sur d’autres appareils. Ce partage est en envoi seulement, donc ces changements ne sont pas appliqués ici.</item>
+        <item quantity="other">%1$s éléments modifiés sur d’autres appareils. Ce partage est en envoi seulement, donc ces changements ne sont pas appliqués ici.</item>
+    </plurals>
+    <string name="folder_show_changes">Afficher les changements</string>
+    <string name="folder_revert_button">Annuler les modifications…</string>
+    <string name="folder_override_button">Écraser…</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Reprise</string>
+    <string name="action_rescan">Réanalyser</string>
+    <string name="action_revert">Rétablir</string>
+    <string name="action_override">Écraser</string>
+    <string name="action_remove">Supprimer</string>
+    <string name="folder_to_download">Reste à recevoir</string>
+    <string name="items_and_size">%1$s · %2$s</string>
+    <string name="folder_see_files">Voir quels fichiers</string>
+    <string name="failed_items">Éléments en échec</string>
+    <string name="folder_see_all">Voir les %1$s</string>
+    <string name="name_none">(aucun)</string>
+    <string name="group">Groupe</string>
+    <string name="group_none">Aucun</string>
+    <string name="details">Détails</string>
+    <string name="folder_last_scan">Dernière analyse</string>
+    <string name="not_yet">Pas encore</string>
+    <string name="folder_deleted_file">%1$s supprimé</string>
+    <string name="folder_last_change">Dernier changement</string>
+    <string name="on_this_phone">Sur ce téléphone</string>
+    <string name="on_all_devices">Sur tous les appareils</string>
+    <string name="folder_contents">%1$s · %2$s · %3$s</string>
+    <string name="shared_with">Participant(s)</string>
+    <string name="shared_with_not">Non membre de ce partage</string>
+    <string name="restore_versions">Restaurer des versions antérieures</string>
+    <string name="restore_versions_hint">Récupérez des fichiers modifiés ou supprimés par d’autres appareils</string>
+    <string name="folder_rescan_hint">Rattrape ce que l’écoute manque.</string>
+    <string name="folder_keep_free_hint">La synchronisation se met en pause en dessous.</string>
+    <string name="folder_remove">Supprimer le partage</string>
+    <string name="folder_remove_hint">Arrête de le synchroniser. Les fichiers sur ce téléphone restent.</string>
+    <string name="folder_name">Nom du partage</string>
+    <string name="folder_group">Groupe de partages</string>
+    <string name="folder_group_hint">Les partages d’un groupe sont listés ensemble. Seulement sur ce téléphone.</string>
+    <string name="folder_revert_title">Annuler les modifications locales ?</string>
+    <string name="folder_override_title">Écraser les changements ?</string>
+    <plurals name="folder_override_text">
+        <item quantity="one">Vos autres appareils reçoivent la version de ce téléphone de %1$s élément. Les changements qui y ont été faits ailleurs sont perdus. Cette action est irréversible.</item>
+        <item quantity="many">Vos autres appareils reçoivent la version de ce téléphone de %1$s d’éléments. Les changements qui y ont été faits ailleurs sont perdus. Cette action est irréversible.</item>
+        <item quantity="other">Vos autres appareils reçoivent la version de ce téléphone de %1$s éléments. Les changements qui y ont été faits ailleurs sont perdus. Cette action est irréversible.</item>
+    </plurals>
+    <string name="folder_remove_title">Supprimer %1$s ?</string>
+    <string name="folder_remove_text">Syncthing arrête de synchroniser ce partage. Les fichiers sur ce téléphone ne sont pas supprimés.</string>
+    <string name="amount">Quantité</string>
+    <string name="keep_free_text">La synchronisation vers ce partage se met en pause quand il reste moins d’espace libre.</string>
+    <string name="keep_free_text_now">La synchronisation vers ce partage se met en pause quand il reste moins d’espace libre. Libre actuellement : %1$s sur %2$s.</string>
+
+    <string name="device_traffic">Reçu %1$s · envoyé %2$s</string>
+    <string name="device_last_seen">Dernière apparition %1$s</string>
+    <string name="device_never_connected">Jamais connecté</string>
+    <string name="syncthing_version">Syncthing %1$s</string>
+    <plurals name="device_still_needs">
+        <item quantity="one">A encore besoin de %1$s élément, %2$s depuis ce téléphone</item>
+        <item quantity="many">A encore besoin de %1$s d’éléments, %2$s depuis ce téléphone</item>
+        <item quantity="other">A encore besoin de %1$s éléments, %2$s depuis ce téléphone</item>
+    </plurals>
+    <string name="device_untrusted">Confiance retirée</string>
+    <string name="device_untrusted_hint">Reçoit seulement des données chiffrées. Chaque partage a besoin d’un mot de passe.</string>
+    <string name="device_id">ID de l’appareil</string>
+    <string name="device_to_send">Reste à envoyer</string>
+    <string name="device_shared_folders">Partages</string>
+    <string name="device_no_folders_hint">Ajoutez-en un dans l’onglet Partages</string>
+    <string name="device_remove">Supprimer l’appareil</string>
+    <string name="device_remove_hint">Il ne peut plus se synchroniser avec ce téléphone.</string>
+    <string name="device_group">Groupe d’appareils</string>
+    <string name="device_group_hint">Les appareils d’un groupe sont listés ensemble. Seulement sur ce téléphone.</string>
+    <string name="connections_auto_hint">Syncthing décide, actuellement 3. Davantage peut aider sur des liaisons rapides et lointaines.</string>
+    <string name="device_untrusted_title">Retirer la confiance ?</string>
+    <string name="device_untrusted_text">%1$s ne recevra que des partages chiffrés, et ne pourra être ni appareil introducteur ni accepter automatiquement des partages.</string>
+    <string name="device_untrusted_text_plain">%1$s ne recevra que des partages chiffrés, et ne pourra être ni appareil introducteur ni accepter automatiquement des partages. Ces partages sont sans mot de passe et ne seront plus partagés : %2$s.</string>
+    <string name="device_untrusted_confirm">Retirer la confiance</string>
+    <string name="device_remove_text">Les partages arrêtent de se synchroniser avec cet appareil. Aucun fichier n’est supprimé.</string>
+    <string name="addresses_automatic">Trouvées automatiquement</string>
+    <string name="address_automatic">automatique</string>
+    <string name="addresses_find">Trouver automatiquement</string>
+    <string name="addresses_find_hint">Par la découverte locale et globale</string>
+    <string name="addresses_add_hint">Par exemple tcp://192.0.2.10:22000 ou une adresse VPN</string>
+
+    <string name="device_add_named">Ajouter « %1$s »</string>
+    <string name="device_wants_to_connect">Veut se connecter depuis %1$s</string>
+    <string name="device">Appareil</string>
+    <string name="device_id_check">Vérifiez qu’il correspond à l’autre appareil</string>
+    <string name="device_id_hint">Scannez son code QR, collez-le ou choisissez un appareil à proximité</string>
+    <string name="scan_qr_code">Scanner le code QR</string>
+    <string name="name_optional">Nom (facultatif)</string>
+    <string name="device_nearby">À proximité sur ce réseau</string>
+    <string name="device_nearby_tap">Touchez pour l’utiliser</string>
+    <string name="device_share_folders">Partager</string>
+
+    <string name="all_folders">Tous les partages</string>
+    <string name="recent_none">Aucun changement depuis le démarrage de Syncthing.</string>
+    <!-- "one" leaves out the number: in French it also covers 0, which this count never is (at least 1) -->
+    <plurals name="recent_note" tools:ignore="ImpliedQuantity">
+        <item quantity="one">Syncthing garde son dernier changement en mémoire jusqu’à son redémarrage.</item>
+        <item quantity="many">Syncthing garde ses %1$s de derniers changements en mémoire jusqu’à son redémarrage.</item>
+        <item quantity="other">Syncthing garde ses %1$s derniers changements en mémoire jusqu’à son redémarrage.</item>
+    </plurals>
+    <string name="change_deleted_here">supprimé sur ce téléphone</string>
+    <string name="change_changed_here">modifié sur ce téléphone</string>
+    <string name="change_deleted_by">supprimé par %1$s</string>
+    <string name="change_changed_by">modifié par %1$s</string>
+
+    <string name="range_week">7 derniers jours</string>
+    <string name="range_month">30 derniers jours</string>
+    <string name="range_all">Tout</string>
+    <string name="restore_all">Tout restaurer</string>
+    <string name="search">Rechercher</string>
+    <string name="versions_none">Aucune ancienne version conservée dans ce partage.</string>
+    <string name="versions_no_match">Aucune version ne correspond.</string>
+    <string name="versions_latest">la plus récente %1$s</string>
+    <string name="action_restore">Restaurer</string>
+    <string name="restore_all_title">Restaurer %1$s ?</string>
+    <string name="restore_all_newest_week">Chacun revient à sa version la plus récente des 7 derniers jours.</string>
+    <string name="restore_all_newest_month">Chacun revient à sa version la plus récente des 30 derniers jours.</string>
+    <string name="restore_all_newest">Chacun revient à sa version la plus récente.</string>
+    <string name="restore_all_text">%1$s Les fichiers actuels sont conservés comme versions. %2$s</string>
+    <string name="restore_one_text">Le fichier actuel est conservé comme version. %1$s</string>
+    <string name="restore_note_local_many">Les fichiers restaurés sont datés de maintenant et restent une modification locale : ce partage est en réception seulement.</string>
+    <string name="restore_note_local_one">Le fichier restauré est daté de maintenant et reste une modification locale : ce partage est en réception seulement.</string>
+    <string name="restore_note_many">Les fichiers restaurés sont datés de maintenant et se synchronisent avec tous les appareils membres de ce partage.</string>
+    <string name="restore_note_one">Le fichier restauré est daté de maintenant et se synchronise avec tous les appareils membres de ce partage.</string>
+
+    <string name="ignored_none">Rien de refusé. Quand vous touchez Refuser sur une invitation, elle est listée ici.</string>
+    <string name="ignored_id">ID %1$s</string>
+    <string name="ignored_when">refusé %1$s</string>
+    <string name="ignored_when_start">Refusé %1$s</string>
+    <string name="ignored_folder">« %1$s » de %2$s</string>
+    <string name="action_unignore">Reprendre</string>
+    <string name="ignored_comes_back">L’invitation revient à la prochaine connexion de cet appareil.</string>
+
+    <string name="ignores_default_title">Modèles d’exclusion par défaut</string>
+    <string name="ignores_save_and_sync">Enregistrer et synchroniser</string>
+    <string name="ignores_default_intro">Les nouveaux partages commencent avec ces exclusions, y compris ceux acceptés automatiquement.</string>
+    <string name="ignores_first_sync">%1$s. Le partage reste en pause jusqu’à l’enregistrement, donc rien n’est synchronisé avant que les exclusions s’appliquent.</string>
+    <string name="ignores_chip_keep">garder</string>
+    <string name="ignores_chip_any_case">casse libre</string>
+    <string name="ignores_chip_deletable">supprimable</string>
+    <string name="ignores_chip_comment">commentaire</string>
+    <string name="ignores_chip_any_path">tout chemin</string>
+    <string name="ignores_placeholder">Une exclusion par ligne</string>
+    <string name="ignores_leave_title">Quitter sans enregistrer ?</string>
+    <string name="ignores_leave_text">Le partage reste en pause. Reprenez-le sur son écran quand vous êtes prêt.</string>
+    <string name="action_leave">Quitter</string>
+    <string name="ignores_discard_text">Vos modifications des exclusions sont perdues.</string>
+    <string name="ignores_help_title">Fonctionnement des exclusions</string>
+    <string name="ignores_help_intro">Une exclusion par ligne, relative à ce partage. Les fichiers exclus restent sur ce téléphone mais ne sont pas synchronisés.</string>
+    <string name="ignores_help_name">Exclut tout fichier ou dossier nommé name, à n’importe quelle profondeur.</string>
+    <string name="ignores_help_top">Seulement name à la racine de ce partage.</string>
+    <string name="ignores_help_star">* correspond à tout sauf / ; ? correspond à un caractère.</string>
+    <string name="ignores_help_double_star">** correspond à tout, y compris /.</string>
+    <string name="ignores_help_keep">Le synchronise quand même. La première ligne qui correspond l’emporte, donc placez-la au-dessus de la règle plus large.</string>
+    <string name="ignores_help_case">Ignore la différence entre majuscules et minuscules.</string>
+    <string name="ignores_help_deletable">Syncthing peut le supprimer quand c’est la seule chose qui empêche un dossier supprimé de disparaître.</string>
+    <string name="ignores_help_comment">Un commentaire.</string>
+    <string name="ignores_help_not_shared">Les exclusions sont stockées dans le fichier .stignore du partage et ne sont pas partagées : définissez-les sur chaque appareil.</string>
+
+    <string name="schedule_only_at_set_times">Seulement aux horaires définis</string>
+    <string name="schedule_on_hint">La synchronisation se met en pause en dehors des horaires ci-dessous</string>
+    <string name="schedule_off_hint">Désactivé : synchronise à toute heure</string>
+    <string name="schedule_window_title">Plage horaire %1$d</string>
+    <string name="schedule_from">De %1$s</string>
+    <string name="schedule_to">à %1$s</string>
+    <string name="schedule_delete_window">Supprimer la plage horaire %1$d</string>
+    <string name="schedule_add_window">Ajouter une plage horaire</string>
+    <string name="schedule_no_window_fix">Ajoutez une plage horaire, ou désactivez « Seulement aux horaires définis ».</string>
+    <string name="schedule_note">Les horaires suivent l’horloge et le fuseau horaire du téléphone. Quand le téléphone est inactif, Android peut démarrer ou suspendre la synchronisation avec quelques minutes de retard. Une plage qui finit avant de commencer se prolonge jusqu’au lendemain.</string>
+    <string name="schedule_from_title">De</string>
+    <string name="schedule_to_title">À</string>
+    <string name="schedule_window">%1$s %2$s–%3$s</string>
+    <string name="schedule_window_next_day">%1$s %2$s–%3$s (lendemain)</string>
+    <string name="every_day">Tous les jours</string>
+    <string name="any_time">À toute heure</string>
+    <plurals name="schedule_and_more">
+        <item quantity="one">%1$s, et %2$d autre</item>
+        <item quantity="many">%1$s, et %2$d d’autres</item>
+        <item quantity="other">%1$s, et %2$d autres</item>
+    </plurals>
+
+    <string name="proxy_connect_through">Se connecter via</string>
+    <string name="proxy_none">Aucun proxy</string>
+    <string name="proxy_socks5">Proxy SOCKS5</string>
+    <string name="proxy_http">Proxy HTTP</string>
+    <string name="proxy_http_hint">Utilise CONNECT, comme pour HTTPS</string>
+    <string name="proxy_use_tor">Utiliser Tor (Orbot)</string>
+    <string name="proxy_host">Hôte</string>
+    <string name="proxy_host_hint">Adresse IP ou nom, par exemple 127.0.0.1</string>
+    <string name="proxy_port">Port</string>
+    <string name="proxy_user">Nom d’utilisateur (facultatif)</string>
+    <string name="password_optional">Mot de passe (facultatif)</string>
+    <string name="proxy_only">Seulement via le proxy</string>
+    <string name="proxy_only_hint">Si le proxy est injoignable, Syncthing attend au lieu de se connecter directement. QUIC et la translation d’adresses (NAT) sont désactivés, car ils contourneraient le proxy.</string>
+    <string name="proxy_http_password_note">Un proxy HTTP reçoit le nom d’utilisateur et le mot de passe en clair</string>
+    <string name="proxy_note_lan">Les appareils du réseau local sont joints directement, sans le proxy.</string>
+    <string name="proxy_note_tor">Pour Tor, Orbot ou une autre appli Tor doit tourner sur ce téléphone.</string>
+    <string name="proxy_note_restart">L’enregistrement redémarre Syncthing.</string>
+    <string name="proxy_summary_none">Aucun : connexions directes</string>
+    <string name="proxy_summary_only">%1$s, rien d’autre</string>
+    <string name="proxy_summary_fallback">%1$s, en direct en cas d’échec</string>
+
+    <string name="import_title">Importer une sauvegarde</string>
+    <string name="import_reading">Lecture de la sauvegarde</string>
+    <string name="import_importing">Importation</string>
+    <string name="import_done">Importée</string>
+    <string name="import_done_problem">Importation terminée avec un problème</string>
+    <string name="import_done_text">Syncthing a redémarré avec la configuration importée et réanalyse chaque partage. Les fichiers identiques sont reconnus et ne sont pas transférés.</string>
+    <string name="import_done_identity">Ce téléphone a maintenant l’ID d’appareil de la sauvegarde : arrêtez ou désinstallez Syncthing là d’où vient la sauvegarde, sinon les deux perturberont mutuellement leurs connexions.</string>
+    <string name="import_failed">Impossible d’importer ce fichier</string>
+    <string name="import_choose_another">Choisir un autre fichier</string>
+    <string name="import_intro_title">Récupérez votre configuration</string>
+    <string name="import_intro">Choisissez une sauvegarde exportée par cette appli (Configuration &gt; Exporter une sauvegarde) ou par Syncthing-Fork (Settings &gt; Import and Export). Ce téléphone reçoit alors ses partages, appareils et réglages. Les fichiers des partages ne font pas partie de la sauvegarde.</string>
+    <string name="import_found">Sauvegarde trouvée</string>
+    <string name="import_choose">Choisir un fichier de sauvegarde</string>
+    <string name="import_password_title">Protégée par mot de passe</string>
+    <string name="import_password_text">Saisissez le mot de passe utilisé pour exporter la sauvegarde.</string>
+    <string name="import_password_label">Mot de passe de la sauvegarde</string>
+    <string name="action_continue">Continuer</string>
+    <string name="import_take_over">Reprendre « %1$s » (%2$s)</string>
+    <string name="import_take_over_own_hint">Les autres appareils continuent à se synchroniser avec ce téléphone comme avant. Le téléphone d’origine de la sauvegarde ne doit plus fonctionner avec cet ID.</string>
+    <string name="import_take_over_fork_hint">Les autres appareils continuent à se synchroniser avec ce téléphone comme avant. Syncthing-Fork ne doit plus fonctionner avec cet ID.</string>
+    <string name="import_keep_id">Garder l’ID propre à ce téléphone</string>
+    <string name="import_keep_id_hint">Les autres appareils doivent accepter ce téléphone comme nouvel appareil. L’ancienne installation peut continuer à tourner.</string>
+    <string name="import_sync_settings">Réglages de synchronisation</string>
+    <string name="import_not_imported">Non importé</string>
+    <string name="import_key_warning">La sauvegarde contient la clé privée de l’appareil. Toute appli capable de lire le fichier peut se faire passer pour cet appareil.</string>
+    <string name="import_delete_backup">Supprimer le fichier de sauvegarde après l’importation</string>
+    <string name="action_import">Importer</string>
+    <string name="import_replace_title">Remplacer la configuration de ce téléphone ?</string>
+    <string name="import_replace_text">Les partages, appareils et réglages de Syncthing sur ce téléphone sont remplacés par ceux de la sauvegarde. Les fichiers du téléphone ne sont pas touchés.</string>
+    <string name="action_replace">Remplacer</string>
+    <string name="error_password_wrong">Mot de passe incorrect</string>
+    <string name="error_password_backup_empty">Saisissez le mot de passe de la sauvegarde</string>
+    <plurals name="error_too_long_chars">
+        <item quantity="one">%1$d caractère au maximum</item>
+        <item quantity="many">%1$d de caractères au maximum</item>
+        <item quantity="other">%1$d caractères au maximum</item>
+    </plurals>
+    <string name="import_folder_found">%1$s : trouvé, sera réanalysé</string>
+    <string name="import_folder_found_new">%1$s : trouvé, deviendra un partage Syncthing et sera analysé</string>
+    <string name="import_folder_create_empty">%1$s : absent de ce téléphone, sera créé vide</string>
+    <string name="import_folder_create">%1$s : absent de ce téléphone, sera créé et rempli depuis les autres appareils</string>
+    <string name="import_on">Sur %1$s</string>
+    <string name="import_unmetered">Wi-Fi non limité</string>
+    <string name="import_metered">Wi-Fi limité</string>
+    <string name="import_mobile">données mobiles</string>
+    <string name="import_mobile_roaming">données mobiles, aussi en itinérance</string>
+    <string name="import_battery_saver_on">Pause en économiseur de batterie : activée</string>
+    <string name="import_battery_saver_off">Pause en économiseur de batterie : désactivée</string>
+    <string name="import_boot_on">Démarrer au démarrage du téléphone : activé</string>
+    <string name="import_boot_off">Démarrer au démarrage du téléphone : désactivé</string>
+    <string name="import_sync_times">Horaires de synchronisation : %1$s</string>
+    <string name="import_any_time">à toute heure</string>
+    <string name="import_proxy">Proxy : %1$s</string>
+    <string name="import_proxy_none">aucun</string>
+    <string name="not_imported_networks">Pas de synchronisation en Wi-Fi : ici le Wi-Fi non limité est toujours utilisé et le Wi-Fi limité est désactivé</string>
+    <string name="not_imported_force_start">Démarrage forcé (synchroniser quelles que soient les conditions)</string>
+    <string name="not_imported_force_stop">Synchronisation suspendue à la main (ici seule compte la pause de ce téléphone)</string>
+    <string name="not_imported_flight_mode">Synchroniser en mode avion</string>
+    <string name="not_imported_master_sync">Suivre l’interrupteur de synchronisation automatique d’Android</string>
+    <string name="not_imported_wifi_allowlist">Synchroniser seulement sur les réseaux Wi-Fi choisis</string>
+    <string name="not_imported_schedule">Synchroniser quelques minutes toutes les quelques heures (ici : Horaires de synchronisation, selon l’horloge)</string>
+    <string name="not_imported_broadcasts">Contrôle par d’autres applis</string>
+    <string name="not_imported_socks_proxy">Proxy SOCKS : adresse non valide, ou Tor était activé</string>
+    <string name="not_imported_http_proxy">Proxy HTTP : adresse non valide, ou un autre proxy était activé</string>
+    <string name="not_imported_environment">Variables d’environnement pour Syncthing</string>
+    <string name="not_imported_folder_conditions">Conditions de synchronisation propres au partage %1$s</string>
+    <string name="not_imported_folder_script">Script après la synchronisation du partage %1$s</string>
+    <string name="not_imported_device_conditions">Conditions de synchronisation propres à l’appareil %1$s</string>
+
+    <string name="export_title">Exporter une sauvegarde</string>
+    <string name="export_working">Exportation</string>
+    <string name="export_done">Exportée</string>
+    <string name="export_done_encrypted">Importez-la sur ce téléphone ou un autre dans Configuration &gt; Importer une sauvegarde. Gardez le mot de passe : sans lui, la sauvegarde ne peut pas être ouverte.</string>
+    <string name="export_done_plain">Importez-la sur ce téléphone ou un autre dans Configuration &gt; Importer une sauvegarde. Gardez le fichier privé : il contient la clé privée de ce téléphone.</string>
+    <string name="export_failed">Échec de l’exportation</string>
+    <string name="export_intro_title">Sauvegarder la configuration de ce téléphone</string>
+    <string name="export_intro">La sauvegarde contient les partages, les appareils, l’ID d’appareil de ce téléphone avec sa clé privée, et les réglages de synchronisation, proxy compris. Pas les fichiers des partages, ni l’identifiant de l’interface graphique web.</string>
+    <string name="export_password_group">Mot de passe (recommandé)</string>
+    <plurals name="export_password_hint">
+        <item quantity="one">Au moins %1$d caractère. Chiffre la sauvegarde avec AES-256.</item>
+        <item quantity="many">Au moins %1$d de caractères. Chiffre la sauvegarde avec AES-256.</item>
+        <item quantity="other">Au moins %1$d caractères. Chiffre la sauvegarde avec AES-256.</item>
+    </plurals>
+    <string name="password_again">Confirmer le mot de passe</string>
+    <string name="export_no_password_warning">Sans mot de passe, toute appli ou personne capable de lire le fichier peut se faire passer pour ce téléphone.</string>
+    <string name="export_choose">Choisir où enregistrer</string>
+
+    <string name="files_changed_elsewhere">Modifié sur d’autres appareils</string>
+    <string name="items_and_size_left">%1$s · %2$s restants</string>
+    <string name="items_and_size_or_more">%1$s · %2$s ou plus</string>
+    <string name="files_no_remote_changes">Aucun changement venant d’autres appareils.</string>
+    <string name="files_nothing_left">Plus rien à recevoir.</string>
+    <string name="files_downloading_now">Réception en cours</string>
+    <string name="files_progress">%1$s sur %2$s</string>
+    <string name="files_waiting">En attente</string>
+    <string name="remote_need_title">%1$s a encore besoin de</string>
+    <string name="remote_need_none">%1$s a tout ce que contient ce partage.</string>
+    <string name="files_changed_here">Modifié sur ce téléphone</string>
+    <string name="files_no_local_changes">Aucune modification locale.</string>
+    <string name="files_deleted">Supprimé</string>
+    <string name="files_copy_all">Tout copier</string>
+    <plurals name="files_could_not_sync">
+        <item quantity="one">%1$s élément n’a pas pu être synchronisé</item>
+        <item quantity="many">%1$s d’éléments n’ont pas pu être synchronisés</item>
+        <item quantity="other">%1$s éléments n’ont pas pu être synchronisés</item>
+    </plurals>
+    <string name="files_search_hint">Nom ou erreur</string>
+    <string name="files_nothing_failed">Aucun échec.</string>
+    <string name="files_no_match">Aucun résultat.</string>
+    <string name="action_show_more">Afficher plus</string>
+    <string name="files_to_delete">À supprimer</string>
+
+    <string name="this_phone_traffic">Reçu %1$s · envoyé %2$s depuis le démarrage</string>
+    <string name="this_phone_uptime">En fonctionnement depuis %1$s · Syncthing %2$s</string>
+    <string name="this_phone_listening">Écoute des connexions</string>
+    <string name="this_phone_no_listeners">Aucune adresse d’écoute</string>
+    <string name="this_phone_no_listeners_hint">Les autres appareils ne peuvent se connecter que via des relais, ou si vous vous connectez à eux</string>
+    <string name="this_phone_discovery">Découverte</string>
+    <string name="this_phone_discovery_off">Désactivée</string>
+    <string name="this_phone_discovery_off_hint">Les autres appareils ne trouvent ce téléphone que par les adresses qu’ils ont de lui</string>
+    <string name="this_phone_working">Fonctionne</string>
+
+    <string name="usage_title">Autoriser l’envoi de statistiques d’utilisation anonymisées ?</string>
+    <string name="usage_text">Le rapport d’utilisation chiffré est envoyé quotidiennement. Il sert à répertorier les plates-formes utilisées, la taille des partages et les versions de l’application. Si le jeu de données rapportées devait être changé, il vous serait demandé de valider de nouveau son envoi via ce message.</string>
+    <string name="usage_stats">Les statistiques agrégées sont disponibles publiquement sur %1$s. Vous pouvez revenir sur votre décision à tout moment dans Configuration.</string>
+    <string name="usage_preview">Aperçu du rapport de statistiques d’utilisation</string>
+    <string name="usage_preview_failed">Impossible de charger le rapport.</string>
+    <string name="usage_report">Rapport de statistiques d’utilisation</string>
+    <string name="action_yes">Oui</string>
+    <string name="action_no">Non</string>
+
+    <string name="about_version">Version</string>
+    <string name="about_licence">Licence</string>
+    <string name="about_source">Code source</string>
+    <string name="about_docs">Documentation</string>
+    <string name="about_other">Autres</string>
+    <string name="about_licences">Licences open source</string>
+    <string name="about_licences_hint">Bibliothèques utilisées par l’appli</string>
+    <string name="about_full_text">Texte intégral</string>
+    <string name="lib_androidx">AndroidX et Jetpack Compose</string>
+    <string name="lib_zxing">ZXing et ZXing Android Embedded</string>
+    <string name="lib_syncthing">Syncthing et les bibliothèques Go qu’il utilise</string>
+    <string name="lib_syncthing_licence">MPL-2.0, avec des parties MIT, BSD et Apache-2.0</string>
+
+    <string name="exact_time_just_now">%1$s · à l’instant</string>
+    <string name="exact_time_ago">%1$s · il y a %2$s</string>
+</resources>

@@ -28,7 +28,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Only Android 15 and 16, so nothing is held back by older versions. It runs as a foreground service of the kind Android allows to run all day, without the 6-hour daily limit of data-sync services.
 - Native Material 3 screens in your wallpaper's colours (Material You), with dark mode and the home-screen widget.
 - Works with TalkBack: every button is named and every switch and checkbox reads as on or off.
-- In English and Italian, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. The text is in standard Android string files, ready for a translation platform such as Weblate: see [Translations](#translations).
+- In English, Italian, Spanish, German and French, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. The text is in standard Android string files, ready for a translation platform such as Weblate: see [Translations](#translations).
 
 ### Light on battery and flash
 
@@ -94,7 +94,7 @@ git submodule update --init
 ./gradlew :app:assembleDebug   # runs go/build.sh first; :core alone cannot be bundled as an AAR
 ```
 
-Screen tests run with the unit tests, on the JVM (Robolectric): the app's real screens with made-up folders and devices (`app/src/test/.../ui/Fixtures.kt`), checking the forms, the Discard prompt, that a shown password hides the screen from captures, and that TalkBack can name every control. `ScreenshotTest` compares each screen in light, dark, the largest font and Italian with the images in `app/src/test/screenshots/`; CI runs it with `:app:verifyRoborazziDebug` and uploads the diff images when one differs. After a deliberate change to a screen, record them again with `./gradlew :app:recordRoborazziDebug` and look at the new images before committing them.
+Screen tests run with the unit tests, on the JVM (Robolectric): the app's real screens with made-up folders and devices (`app/src/test/.../ui/Fixtures.kt`), checking the forms, the Discard prompt, that a shown password hides the screen from captures, and that TalkBack can name every control. `ScreenshotTest` compares each screen in light, dark, the largest font, Italian and German (the longest text) with the images in `app/src/test/screenshots/`; CI runs it with `:app:verifyRoborazziDebug` and uploads the diff images when one differs. After a deliberate change to a screen, record them again with `./gradlew :app:recordRoborazziDebug` and look at the new images before committing them.
 
 End-to-end tests run the debug app on an emulator against a real Syncthing peer built from the same patched core: pairing, accepting a shared folder, sync both ways, restoring a Trash can version, run conditions (Wi-Fi off), typed text kept when the screen is recreated, the app's process killed, All files access taken away (the peer must see no deletions), and a monkey run with a fixed seed. CI runs them on Android 15 and 16 (`e2e` job). The peer listens on loopback only, with discovery and relays off, and reaches the emulator through `adb reverse` and `adb forward`. Locally, with an emulator running (the script refuses a real phone, as it wipes the app's data):
 
@@ -180,7 +180,7 @@ cd ../bridge && go mod tidy && go test .
 
 ## Translations
 
-All text for people is in string resources; English is the source language and Italian the first translation. Files, conventions for translators, and how code handles text: [`docs/translations.md`](docs/translations.md).
+All text for people is in string resources; English is the source language; Italian, Spanish, German and French are translated. Files, conventions for translators, and how code handles text: [`docs/translations.md`](docs/translations.md).
 
 ## Licence
 

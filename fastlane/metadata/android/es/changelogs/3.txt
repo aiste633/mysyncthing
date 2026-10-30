@@ -1,0 +1,3 @@
+Nuevos idiomas: español, alemán y francés, para la app, sus notificaciones y el widget, y para el texto de la tienda. Además, un icono de la app para la ficha de F-Droid.
+
+Tras una actualización de la app, Syncthing vuelve a iniciarse si estaba en marcha, también con Iniciar al encender desactivado. Funciona a partir de la próxima actualización.
