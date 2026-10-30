@@ -22,8 +22,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import eu.stedb.mysyncthing.MainActivity
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
@@ -205,6 +210,57 @@ class E2eTest {
         }
     }
 
+    /**
+     * scripts/e2e/upgrade.py installed this build over the last release, which ran its own
+     * [pairAndSync]: the setup, the identity, the peer and the folder are still there, the
+     * database too (no "moved from another phone"), and files sync both ways.
+     */
+    @Test
+    fun afterUpgrade() {
+        val settings = Settings(app)
+        runBlocking {
+            assertTrue("setup checklist done before the update", settings.setupDone.first())
+            assertFalse("an update is no move to another phone", settings.movedFromOtherPhone.first())
+        }
+        assertEquals("device ID", args.getString("phoneId"), phoneId())
+        eventually("peer and folder in the core's config", 30_000) {
+            val s = SyncStatus.snapshot.value
+            s.devices.any { it.deviceID == peer.id && it.name == PEER_NAME } && s.folders.any { it.id == FOLDER }
+        }
+        assertEquals("versioning", "trashcan", SyncStatus.snapshot.value.folders.first { it.id == FOLDER }.versioning.type)
+
+        val dir = folderDir()
+        eventually("$FROM_PEER_AFTER on the phone", 120_000) { File(dir, FROM_PEER_AFTER).isFile }
+        File(dir, FROM_PHONE_AFTER).writeText("written on the phone after the update\n")
+        eventually("$FROM_PHONE_AFTER on the peer", 120_000) { peer.localFile(FOLDER, FROM_PHONE_AFTER) != null }
+    }
+
+    /** Stop in Settings; upgrade.py then updates the app, which must leave it stopped. */
+    @Test
+    fun stopSync() {
+        phoneId()
+        tap(str(R.string.tab_settings))
+        tap(str(R.string.settings_stop))
+        eventually("core stopped", 30_000) { SyncthingCore.state.value is CoreState.Stopped }
+    }
+
+    /** Start again in Settings after [stopSync]. */
+    @Test
+    fun startSync() {
+        tap(str(R.string.tab_settings))
+        tap(str(R.string.settings_start))
+        phoneId()
+    }
+
+    /** Turns "Start at boot" off, with the core running. */
+    @Test
+    fun startOnBootOff() {
+        phoneId()
+        tap(str(R.string.tab_settings))
+        tap(str(R.string.settings_boot))
+        eventually("Start at boot off", 10_000) { runBlocking { !Settings(app).runConditions.first().startOnBoot } }
+    }
+
     /** Activity objects alive in the app's process, as `dumpsys meminfo` counts them. */
     private fun activities(): Int? =
         Regex("Activities:\\s+(\\d+)").find(shell("dumpsys meminfo ${app.packageName}"))?.groupValues?.get(1)?.toInt()
@@ -216,6 +272,8 @@ class E2eTest {
         const val SEEDS = 20
         const val VERSIONED = "versioned.txt"
         const val FROM_PHONE = "from-phone.txt"
+        const val FROM_PEER_AFTER = "from-peer-after-update.txt" // upgrade.py's
+        const val FROM_PHONE_AFTER = "from-phone-after-update.txt"
         // Different lengths, so the peer's file size tells which one it has.
         const val V1 = "version 1\n"
         const val V2 = "second version\n"
