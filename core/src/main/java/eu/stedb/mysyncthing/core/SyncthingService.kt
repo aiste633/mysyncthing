@@ -89,7 +89,10 @@ class SyncthingService : LifecycleService() {
             ACTION_REFRESH -> lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
             // A start (the user, the app opening, boot, a sticky restart) runs the core unless it already runs.
             else -> {
-                lifecycleScope.launch { settings.setStoppedByUser(false) }
+                lifecycleScope.launch {
+                    settings.setStoppedByUser(false)
+                    settings.setStartedThisBoot()
+                }
                 if (run?.isActive != true) run = lifecycleScope.launch { runCore() }
             }
         }

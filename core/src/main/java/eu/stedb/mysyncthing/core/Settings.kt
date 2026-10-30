@@ -158,7 +158,7 @@ class Settings internal constructor(
      * next boot. A broadcast can't tell: Android 15+ also sends BOOT_COMPLETED
      * when the app leaves the stopped state (a force-stop, an install).
      */
-    val stoppedByUser: Flow<Boolean> = store.data.map { stopHolds(it[STOPPED_AT_BOOT], bootCount()) }
+    val stoppedByUser: Flow<Boolean> = store.data.map { sameBoot(it[STOPPED_AT_BOOT], bootCount()) }
 
     /** Writes only a change: it is asked on every start. */
     suspend fun setStoppedByUser(stopped: Boolean): Boolean = when {
@@ -166,6 +166,16 @@ class Settings internal constructor(
         stopped -> write { it[STOPPED_AT_BOOT] = bootCount() }
         else -> write { it.remove(STOPPED_AT_BOOT) }
     }
+
+    /**
+     * Syncthing was started in this boot. An update of the app kills it without
+     * a stop, so the update starts it again, with Start at boot off too, unless
+     * the user stopped it since ([stoppedByUser]).
+     */
+    val startedThisBoot: Flow<Boolean> = store.data.map { sameBoot(it[STARTED_AT_BOOT], bootCount()) }
+
+    /** Writes only once a boot: it is asked on every start. */
+    suspend fun setStartedThisBoot(): Boolean = startedThisBoot.first() || write { it[STARTED_AT_BOOT] = bootCount() }
 
     /** True after a phone migration brought the identity along, until the user has seen the note. */
     val movedFromOtherPhone: Flow<Boolean> = store.data.map { it[MOVED] ?: false }
@@ -233,6 +243,7 @@ class Settings internal constructor(
         val MOVED = booleanPreferencesKey("moved_from_other_phone")
         val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
         val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
+        val STARTED_AT_BOOT = intPreferencesKey("started_at_boot")
         val PROXY = stringPreferencesKey("proxy")
         val TIME_SCHEDULE = booleanPreferencesKey("time_schedule")
         val WINDOWS = stringPreferencesKey("sync_windows")
@@ -249,8 +260,8 @@ class Settings internal constructor(
     }
 }
 
-/** A Stop made in boot [stoppedAt] holds in boot [now]; with the boot unknown (-1), until the user starts again. */
-internal fun stopHolds(stoppedAt: Int?, now: Int): Boolean = stoppedAt != null && stoppedAt == now
+/** Something recorded in boot [at] (a Stop, a start) holds in boot [now]; with the boot unknown (-1), until it is recorded again. */
+internal fun sameBoot(at: Int?, now: Int): Boolean = at != null && at == now
 
 /**
  * Stored run conditions. Values from before the separate network and power
