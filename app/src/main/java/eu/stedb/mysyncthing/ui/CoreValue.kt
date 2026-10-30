@@ -4,6 +4,7 @@ import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.RestClient
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,9 +19,12 @@ import kotlinx.coroutines.launch
  *
  * It belongs to the core run that read it: null once that core is no longer running,
  * and a read that a stop or a new start overtook is dropped.
+ *
+ * The read itself runs in the view model's scope: a screen that goes away stops waiting
+ * at once, and its read still lands here for the recreated screen.
  */
 class CoreValue<T : Any>(
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
     private val core: StateFlow<CoreState>,
     private val read: suspend RestClient.() -> T,
 ) {
@@ -36,13 +40,14 @@ class CoreValue<T : Any>(
     private val client get() = (core.value as? CoreState.Running)?.client
 
     /** Reads it again and returns it; on failure it becomes null, as it is when the core is not running. */
-    suspend fun load(): T? {
+    suspend fun load(): T? = scope.async { fetch() }.await()
+
+    private suspend fun fetch(): T? {
         val c = client ?: return null.also { held.value = null }
         val v = try {
             c.read()
         } catch (e: CancellationException) {
-            // The screen that asked is gone (left or recreated): keep what is shown.
-            throw e
+            throw e // the view model is gone
         } catch (_: Exception) {
             null
         }

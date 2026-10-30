@@ -83,16 +83,19 @@ class CoreValueTest {
     }
 
     @Test
-    fun aCancelledReadKeepsWhatIsShown() = runBlocking {
+    fun aScreenThatGoesAwayDoesNotStopTheRead() = runBlocking {
         running()
         val gate = CompletableDeferred<Unit>()
         var n = 0
         val v = CoreValue(scope, core) { n++.also { if (it == 1) gate.await() } }
         v.load()
-        // A recreated screen cancels the read its old composition started.
+        // A recreated screen stops waiting for the read its old composition started, at once.
         val read = async(Dispatchers.Unconfined) { v.load() }
         read.cancelAndJoin()
         assertTrue(read.isCancelled)
         assertEquals("still shown for the recreated screen's first frame", 0, v.value.value)
+
+        gate.complete(Unit)
+        assertEquals("the read went on in the view model and is shown", 1, v.value.value)
     }
 }
