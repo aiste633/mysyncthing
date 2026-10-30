@@ -90,6 +90,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
@@ -180,7 +181,10 @@ fun AppScreen(
         containerColor = AppColors.background,
         // Content and FAB keep clear of the bars, the cutout and the keyboard.
         contentWindowInsets = WindowInsets.safeDrawing,
-        topBar = {
+        topBar = { BoxWithConstraints {
+            // The app mark and the spare action slot on the tabs only where the text keeps its room
+            // (as on the widget): at the largest font sizes they would cut the status chip.
+            val roomy = status != null && maxWidth.value / LocalDensity.current.fontScale >= 300
             TopAppBar(
                 title = {
                     if (status == null) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -194,7 +198,7 @@ fun AppScreen(
                 navigationIcon = {
                     if (onBack != null) {
                         IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
-                    } else if (status != null) {
+                    } else if (roomy) {
                         // The app mark on the tabs, where Back would be on the screens below them.
                         Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                             Icon(painterResource(CoreR.drawable.widget_ic_app), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
@@ -206,12 +210,12 @@ fun AppScreen(
                 actions = {
                     // On the tabs, room for one action even when there is none (only Folders has
                     // a menu), so the status chip keeps its place when switching tabs.
-                    if (status != null) Row(Modifier.widthIn(min = 48.dp), horizontalArrangement = Arrangement.End) { actions() } else actions()
+                    if (roomy) Row(Modifier.widthIn(min = 48.dp), horizontalArrangement = Arrangement.End) { actions() } else actions()
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.background),
                 windowInsets = SafeBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
             )
-        },
+        } },
         // Scaffold lifts the FAB above the bottom insets only; in landscape the side
         // navigation bar would cover it.
         floatingActionButton = { Box(Modifier.windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.End))) { fab() } },
