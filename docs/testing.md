@@ -16,6 +16,7 @@ uses anyone's real folders, devices or backups.
 | Every push | Build, Go and Kotlin unit tests, screen tests, emulator end-to-end tests on Android 15 and 16, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
 | Screen tests | 14 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names | 70 reference images, on every push |
 | End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, process death, All files access taken away, monkey | Android 15 and 16, on every push |
+| App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15 and 16, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 8 Go fuzz targets on what reaches the core | 1 core bug found and fixed; long runs clean |
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
@@ -105,6 +106,36 @@ real phone.
 
 The run also fails on any app crash in the log, and counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
+
+### App updates
+
+People update by installing the new APK over the old one, by hand or through F-Droid. Android
+keeps the app's data and kills the running app. `scripts/e2e/upgrade.py` installs the debug
+build of the last release, lets that release's own end-to-end test pair it with the peer and
+sync, and adds more kinds of settings through the core's REST API: a second device, an
+untrusted one, a receive-only folder with staggered versioning, a folder shared encrypted,
+ignore patterns and changed options. Then it installs the new build over it while a 48 MB
+download is running. Both builds are signed with the same key.
+
+When the new build has a newer Syncthing core, the core migrates the old config and database
+here, so a breaking change upstream fails the test too. It runs on the PC emulators before
+each release, from the last release and from the oldest one still in use (a step of releasing
+in the [README](../README.md#reproducible-builds-and-releases)), not in CI.
+
+| Step | What must hold |
+|---|---|
+| Sync comes back | Without the app being opened: the process restarts, the service runs and the peer reconnects |
+| Nothing lost | The keys (so the device ID) are byte-identical. Every value of the core's config is unchanged, except the format version and the per-start GUI port; a newer core may only add values, which are logged. The ignore patterns read back the same. The database files are the same files, so there is no full rescan and no "moved from another phone" note. Every app setting is unchanged. All files access, notifications and the battery exemption are still granted |
+| The interrupted download | Finishes after the update, identical to the peer's file, with no conflict copies |
+| In the new build | The setup checklist is done, the peer and the folder are there, and new files sync both ways |
+| A user's Stop | Holds through an update |
+| Start at boot off | An update still starts sync again when it was running before |
+| Going back | Android refuses the old build as a downgrade |
+
+On the PC emulators (2026-10-30), from 0.1.0: every step passed on Android 15 and 16, with the
+update landing in the middle of the download. By hand with release builds (0.1.0 to 0.1.2, signed
+with a test key), sync was back about 2 s after the update without the app being opened, and the
+device ID, folder, device, run conditions and sync-time window were all kept.
 
 ## Input validation and property tests
 

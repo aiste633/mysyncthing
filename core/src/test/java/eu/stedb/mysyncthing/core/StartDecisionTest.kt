@@ -24,11 +24,38 @@ class StartDecisionTest {
 
     @Test
     fun aStopHoldsForTheBootItWasMadeIn() {
-        assertTrue(stopHolds(stoppedAt = 7, now = 7))
-        assertFalse(stopHolds(stoppedAt = 7, now = 8))
-        assertFalse(stopHolds(stoppedAt = null, now = 7))
-        assertTrue(stopHolds(stoppedAt = -1, now = -1)) // boot unknown: until the user starts again
-        assertFalse(stopHolds(stoppedAt = -1, now = 3))
+        assertTrue(sameBoot(at = 7, now = 7))
+        assertFalse(sameBoot(at = 7, now = 8))
+        assertFalse(sameBoot(at = null, now = 7))
+        assertTrue(sameBoot(at = -1, now = -1)) // boot unknown: until the user starts again
+        assertFalse(sameBoot(at = -1, now = 3))
+    }
+
+    /** An update kills a running Syncthing; it comes back as it was, never against the user's Stop. */
+    @Test
+    fun anUpdateRestartsWhatRan() {
+        for (startOnBoot in listOf(true, false)) for (started in listOf(true, false)) {
+            assertFalse(startsSyncthing(update = true, startOnBoot, stoppedByUser = true, started))
+            assertFalse(startsSyncthing(update = false, startOnBoot, stoppedByUser = true, started))
+            assertEquals(startOnBoot, startsSyncthing(update = false, startOnBoot, stoppedByUser = false, started))
+            assertEquals(startOnBoot || started, startsSyncthing(update = true, startOnBoot, stoppedByUser = false, started))
+        }
+    }
+
+    /** Recorded once a boot (flash wear), and over with the boot like a Stop. */
+    @Test
+    fun startedThisBootWritesOncePerBoot() = runBlocking {
+        var boot = 4
+        val store = CountingStore()
+        val settings = Settings(store) { boot }
+        assertFalse(settings.startedThisBoot.first())
+        repeat(3) { assertTrue(settings.setStartedThisBoot()) }
+        assertEquals(1, store.writes)
+        assertTrue(settings.startedThisBoot.first())
+        boot++
+        assertFalse(settings.startedThisBoot.first())
+        assertTrue(settings.setStartedThisBoot())
+        assertEquals(2, store.writes)
     }
 
     /**

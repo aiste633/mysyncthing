@@ -160,12 +160,13 @@ def prepare(apk: Path, test_apk: Path) -> None:
     adb("forward", f"tcp:{FORWARD_PORT}", f"tcp:{PHONE_PORT}")
 
 
-def phase(name: str, peer: Peer, out: Path) -> bool:
+def phase(name: str, peer: Peer, out: Path, **extra: str) -> bool:
     log(f"phase {name}")
     r = subprocess.run(
         [ADB, "shell", "am", "instrument", "-w", "-r",
          "-e", "class", f"{APP}.e2e.E2eTest#{name}",
          "-e", "peerId", peer.id, "-e", "peerKey", peer.key, "-e", "phoneAddress", f"tcp://127.0.0.1:{FORWARD_PORT}",
+         *[a for k, v in extra.items() for a in ("-e", k, v)],
          RUNNER],
         capture_output=True, text=True, timeout=900,
     )
