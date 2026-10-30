@@ -22,7 +22,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerDefaults
+import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -165,7 +168,8 @@ private fun TimeDialog(title: String, minutes: Int, onDismiss: () -> Unit, onPic
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { TimePicker(state) },
+        // The dial is taller than a phone in landscape: there, typing the time (as Material does).
+        text = { if (TimePickerDefaults.layoutType() == TimePickerLayoutType.Horizontal) TimeInput(state) else TimePicker(state) },
         confirmButton = { TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text(stringResource(R.string.action_ok)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
