@@ -98,7 +98,7 @@ real phone.
 | Sync both ways | 21 files from the peer arrive; a file written on the phone reaches the peer, which then sees the phone at 100 % |
 | Restore a version | The peer changes a file; the old one is restored from the phone's Trash can, and the peer gets it back too |
 | Run conditions | Wi-Fi off (mobile data, which is off for syncing by default): the peer loses the phone; Wi-Fi on: it comes back. Every step starts on Wi-Fi, with the emulator's internet check off so a runner without Google's check server still uses Wi-Fi |
-| Typed text | Text typed in a rename dialog and a list dialog survives the screen being recreated; afterwards only one copy of the screen stays in memory |
+| Typed text | Text typed in a rename dialog and in list dialogs (Settings, device defaults) survives the screen being recreated. Checked at once, with no wait: dialogs on values read from Syncthing are there on the recreated screen's first frame, and Settings keeps its scroll position. Afterwards only one copy of the screen stays in memory |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |

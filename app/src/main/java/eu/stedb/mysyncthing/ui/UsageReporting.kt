@@ -14,8 +14,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
 import kotlinx.coroutines.launch
@@ -48,14 +49,15 @@ data class UsageConsent(val needsPrompt: Boolean, val enabled: Boolean)
  */
 @Composable
 fun UsageReportingPrompt(core: CoreState, vm: MainViewModel) {
-    var show by remember { mutableStateOf(false) }
-    var preview by remember { mutableStateOf<String?>(null) }
+    // Kept in the view model, so a recreated activity asks again on its first frame.
+    val consent by vm.usage.value.collectAsStateWithLifecycle()
+    var preview by rememberSaveable { mutableStateOf<String?>(null) }
     val failed = stringResource(R.string.usage_preview_failed)
     val scope = rememberCoroutineScope()
     LaunchedEffect(core is CoreState.Running) {
-        if (core is CoreState.Running) show = vm.usageConsent()?.needsPrompt == true
+        if (core is CoreState.Running) vm.usage.load()
     }
-    if (!show) return
+    if (consent?.needsPrompt != true) return
     AlertDialog(
         onDismissRequest = {},
         // An answer is required, as in the web GUI; it is asked only once.
@@ -79,8 +81,8 @@ fun UsageReportingPrompt(core: CoreState, vm: MainViewModel) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { vm.answerUsagePrompt(true); show = false }) { Text(stringResource(R.string.action_yes)) } },
-        dismissButton = { TextButton(onClick = { vm.answerUsagePrompt(false); show = false }) { Text(stringResource(R.string.action_no)) } },
+        confirmButton = { TextButton(onClick = { vm.answerUsagePrompt(true) }) { Text(stringResource(R.string.action_yes)) } },
+        dismissButton = { TextButton(onClick = { vm.answerUsagePrompt(false) }) { Text(stringResource(R.string.action_no)) } },
     )
     preview?.let { report ->
         AlertDialog(

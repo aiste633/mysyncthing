@@ -6,6 +6,7 @@ import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
@@ -175,6 +177,12 @@ class E2eTest {
      * frames. On Robolectric such a dialog re-measured itself every frame. Here
      * waitForIdle would time out on a loop in Compose, and the frame count
      * catches one in the window's own layout (about 60 frames a second).
+     *
+     * Checked at once after each recreation, with no wait: a dialog on values read
+     * from the core (Settings, the defaults) is there on the recreated screen's
+     * first frame, and so is the scroll position. Their reads are network calls
+     * Compose does not wait for; once read in the screen only, the dialog came
+     * back late and a slow emulator failed here (API 35 on CI).
      */
     @Test
     fun textDialogsKeepTypedText() {
@@ -198,8 +206,20 @@ class E2eTest {
         tap(str(R.string.listen_addresses))
         val entry = "tcp" + "://0.0.0.0:22111"
         rule.onNode(hasSetTextAction()).performTextInput(entry)
+        rule.onNode(hasSetTextAction()).assert(hasText(entry))
         rule.activityRule.scenario.recreate()
         rule.onNode(hasSetTextAction()).assert(hasText(entry))
+        tap(str(R.string.action_cancel))
+        rule.onNodeWithText(str(R.string.listen_addresses)).assertIsDisplayed()
+
+        // The same in a defaults screen.
+        tap(str(R.string.defaults_devices))
+        tap(str(R.string.device_addresses))
+        val address = "tcp" + "://192.0.2.10:22000"
+        rule.onNode(hasSetTextAction()).performTextInput(address)
+        rule.onNode(hasSetTextAction()).assert(hasText(address))
+        rule.activityRule.scenario.recreate()
+        rule.onNode(hasSetTextAction()).assert(hasText(address))
         tap(str(R.string.action_cancel))
 
         // The recreated activities must go: StrictMode on Android 15 counted 3 right after the
