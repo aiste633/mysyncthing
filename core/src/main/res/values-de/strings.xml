@@ -39,8 +39,8 @@
     <string name="status_folder_review_public">Ein Ordner muss geprüft werden</string>
     <string name="status_no_devices">Keine Geräte hinzugefügt</string>
     <string name="status_no_folders">Keine Ordner hinzugefügt</string>
-    <string name="status_syncing">Wird synchronisiert</string>
-    <string name="status_syncing_percent">Synchronisiert %1$d %%</string>
+    <string name="status_syncing">Sync läuft</string>
+    <string name="status_syncing_percent">Sync %1$d %%</string>
     <string name="status_up_to_date">Aktuell</string>
     <string name="status_line_device">%1$s · %2$s</string>
     <plurals name="status_line_devices">
