@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Français. Terms follow upstream Syncthing's French web GUI word for word (a folder is a "partage"). -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="action_clear">Effacer</string>
     <string name="action_review">Examiner</string>
     <string name="action_ignore">Refuser</string>
@@ -91,7 +91,8 @@
     <string name="problem_no_version">Aucun appareil connecté n’a cette version du fichier. Syncthing réessaiera quand un appareil se connectera.</string>
     <string name="problem_not_rescanned">Le fichier a changé et n’a pas encore été analysé. Syncthing réessaiera plus tard.</string>
     <string name="notice_initial_scan_failed">%1$s n’a pas pu être analysé au démarrage. %2$s</string>
-    <plurals name="problems_title">
+    <!-- "one" leaves out the number: in French it also covers 0, which this count never is (the notification shows only with a notice) -->
+    <plurals name="problems_title" tools:ignore="ImpliedQuantity">
         <item quantity="one">Syncthing a un problème</item>
         <item quantity="many">Syncthing a %1$d de problèmes</item>
         <item quantity="other">Syncthing a %1$d problèmes</item>
