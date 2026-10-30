@@ -19,8 +19,8 @@ class TranslationsTest {
     private fun args(text: String) = PLACEHOLDER.findAll(text).map { it.value }.toSet()
 
     @Test
-    fun italianIsThere() {
-        assertTrue(folders.toString(), "values-it" in folders)
+    fun languagesAreThere() {
+        for (language in listOf("it", "es", "de", "fr")) assertTrue(folders.toString(), "values-$language" in folders)
     }
 
     /** A plural form the language has and English lacks ("many") takes English "other"'s arguments; "one" may leave out the count. */

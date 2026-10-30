@@ -1,0 +1,3 @@
+Nuove lingue: spagnolo, tedesco e francese, per l'app, le sue notifiche e il widget, e per la descrizione nello store. Inoltre un'icona dell'app per la scheda su F-Droid.
+
+Dopo un aggiornamento dell'app, Syncthing riparte se era in esecuzione, anche con Avvia all'accensione disattivato. Funziona dal prossimo aggiornamento in poi.

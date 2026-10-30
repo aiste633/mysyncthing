@@ -1,0 +1,3 @@
+Neue Sprachen: Spanisch, Deutsch und Französisch, für die App, ihre Benachrichtigungen und das Widget sowie für den Store-Text. Außerdem ein App-Symbol für den Eintrag bei F-Droid.
+
+Nach einem Update der App startet Syncthing wieder, wenn es lief, auch mit „Beim Hochfahren starten“ aus. Das gilt ab dem nächsten Update.

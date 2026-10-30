@@ -9,7 +9,7 @@
 <li>Proxy SOCKS5 o HTTP, per esempio Tor con Orbot</li>
 <li>Passaggio facile da Syncthing-Fork: importa il suo backup, anche crittografato; esporta la tua configurazione, facoltativamente crittografata con AES-256</li>
 <li>L'interfaccia web di Syncthing è integrata per le impostazioni avanzate</li>
-<li>In inglese e in italiano, nella lingua del telefono o in una scelta solo per l'app; date, orari e numeri come li scrive la regione del telefono</li>
+<li>In italiano, inglese, spagnolo, tedesco e francese, nella lingua del telefono o in una scelta solo per l'app; date, orari e numeri come li scrive la regione del telefono</li>
 </ul>
 <p><b>Privacy:</b> niente tracciamento, pubblicità o statistiche, e nessun account. Le statistiche anonime di utilizzo di Syncthing restano disattivate se non le accetti. Il backup nel cloud è disattivato, quindi le chiavi del dispositivo non finiscono mai in un cloud; il trasferimento da telefono a telefono verso un nuovo telefono le porta con sé, quindi poi ferma Syncthing sul vecchio telefono. <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">Cosa conserva l'app e cosa esce dal telefono</a> (in inglese).</p>
 <p><b>Leggera per batteria e memoria flash:</b> a riposo l'app scrive circa 0,02–0,14 MB all'ora sulla memoria flash e non tiene file di log.</p>

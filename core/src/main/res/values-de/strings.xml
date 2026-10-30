@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Deutsch. Terms follow upstream Syncthing's German web GUI; addresses the user as Sie. -->
+<resources>
+    <string name="action_clear">Leeren</string>
+    <string name="action_review">Prüfen</string>
+    <string name="action_ignore">Ignorieren</string>
+    <string name="action_stop">Stoppen</string>
+
+    <string name="status_stopped">Gestoppt</string>
+    <string name="status_stopped_error">Mit einem Fehler gestoppt</string>
+    <string name="status_stopped_no_access">Gestoppt: kein Zugriff auf Dateien</string>
+    <string name="status_failed_to_start">Start fehlgeschlagen</string>
+    <string name="status_starting">Wird gestartet</string>
+    <string name="status_paused_because">Pausiert: %1$s</string>
+    <string name="status_paused">Pausiert</string>
+    <string name="status_no_network">Kein Netzwerk</string>
+    <string name="status_not_connected">Nicht verbunden</string>
+    <plurals name="status_problems">
+        <item quantity="one">%1$d Problem</item>
+        <item quantity="other">%1$d Probleme</item>
+    </plurals>
+    <plurals name="status_items_failed">
+        <item quantity="one">%1$d Element nicht synchronisiert</item>
+        <item quantity="other">%1$d Elemente nicht synchronisiert</item>
+    </plurals>
+    <string name="status_folder_error">Ordnerfehler</string>
+    <plurals name="status_requests">
+        <item quantity="one">%1$d Anfrage wartet</item>
+        <item quantity="other">%1$d Anfragen warten</item>
+    </plurals>
+    <string name="status_new_device">Neues Gerät möchte sich verbinden</string>
+    <string name="status_new_folder">Neuer Ordner mit Ihnen geteilt</string>
+    <plurals name="status_folders_review">
+        <item quantity="one">%1$d Ordner muss geprüft werden</item>
+        <item quantity="other">%1$d Ordner müssen geprüft werden</item>
+    </plurals>
+    <string name="status_local_changes">Lokale Änderungen in %1$s</string>
+    <string name="status_out_of_sync">%1$s ist nicht synchronisiert</string>
+    <string name="status_folder_review_public">Ein Ordner muss geprüft werden</string>
+    <string name="status_no_devices">Keine Geräte hinzugefügt</string>
+    <string name="status_no_folders">Keine Ordner hinzugefügt</string>
+    <string name="status_syncing">Wird synchronisiert</string>
+    <string name="status_syncing_percent">Synchronisiert %1$d %%</string>
+    <string name="status_up_to_date">Aktuell</string>
+    <string name="status_line_device">%1$s · %2$s</string>
+    <plurals name="status_line_devices">
+        <item quantity="one">%1$s · %2$d Gerät</item>
+        <item quantity="other">%1$s · %2$d Geräte</item>
+    </plurals>
+    <string name="two_sentences">%1$s %2$s</string>
+
+    <string name="pause_reason_user">Von Ihnen pausiert</string>
+    <string name="pause_reason_no_network">Kein Netzwerk</string>
+    <string name="pause_reason_mobile_data">Mobile Daten</string>
+    <string name="pause_reason_roaming">Roaming</string>
+    <string name="pause_reason_metered_wifi">WLAN ist getaktet</string>
+    <string name="pause_reason_metered_network">Netzwerk ist getaktet</string>
+    <string name="pause_reason_not_charging">Wird nicht geladen</string>
+    <string name="pause_reason_charging">Wird geladen</string>
+    <string name="pause_reason_battery_saver">Energiesparmodus an</string>
+
+    <string name="schedule_outside">Außerhalb der Synchronisierungszeiten</string>
+    <string name="schedule_outside_next">Außerhalb der Zeiten · nächste %1$s</string>
+    <string name="schedule_outside_next_day">Außerhalb der Zeiten · nächste %1$s %2$s</string>
+    <string name="schedule_error_no_window">Fügen Sie ein Zeitfenster hinzu</string>
+    <string name="schedule_error_times">Zeiten von 00:00 bis 23:59</string>
+    <string name="schedule_error_same_times">Beginn und Ende müssen sich unterscheiden</string>
+    <string name="schedule_error_no_day">Wählen Sie mindestens einen Tag</string>
+    <string name="schedule_error_days">Tage sind 1 (Montag) bis 7</string>
+    <plurals name="schedule_error_too_many">
+        <item quantity="one">Höchstens %1$d Zeitfenster</item>
+        <item quantity="other">Höchstens %1$d Zeitfenster</item>
+    </plurals>
+
+    <string name="problem_storage_almost_full">Der Speicher des Smartphones ist fast voll. Geben Sie Speicher frei: Die Synchronisierung läuft von selbst weiter.</string>
+    <string name="problem_storage_almost_full_keeps">Der Speicher des Smartphones ist fast voll (Syncthing hält %1$s frei). Geben Sie Speicher frei: Die Synchronisierung läuft von selbst weiter.</string>
+    <string name="problem_folder_space">Zu wenig freier Speicher dort, wo dieser Ordner liegt. Geben Sie Speicher frei oder senken Sie „Frei halten“ in den Einstellungen des Ordners.</string>
+    <string name="problem_folder_space_keeps">Zu wenig freier Speicher dort, wo dieser Ordner liegt (Syncthing hält %1$s frei). Geben Sie Speicher frei oder senken Sie „Frei halten“ in den Einstellungen des Ordners.</string>
+    <string name="problem_storage_full">Der Speicher des Smartphones ist voll. Geben Sie Speicher frei und versuchen Sie es erneut.</string>
+    <string name="problem_folder_missing">Der Ordner ist nicht mehr auf dem Smartphone. Legen Sie ihn wieder an seinen Platz oder entfernen Sie ihn aus Syncthing.</string>
+    <string name="problem_folder_marker_missing">Die Markierung .stfolder des Ordners fehlt, daher stoppt Syncthing, statt Dateien auf anderen Geräten zu löschen. Wenn der Ordner vollständig ist, legen Sie darin einen leeren Ordner namens .stfolder an.</string>
+    <string name="problem_folder_not_folder">Der Pfad des Ordners führt zu einer Datei, nicht zu einem Ordner.</string>
+    <string name="problem_permission_denied">Syncthing darf diese Datei oder diesen Ordner nicht lesen oder ändern.</string>
+    <string name="problem_peers_gone">Die Geräte, die diese Datei hatten, wurden getrennt, oder sie hat sich während der Synchronisierung geändert. Syncthing versucht es später erneut.</string>
+    <string name="problem_no_version">Kein verbundenes Gerät hat diese Version der Datei. Syncthing versucht es erneut, wenn sich eines verbindet.</string>
+    <string name="problem_not_rescanned">Die Datei hat sich geändert und wurde noch nicht gescannt. Syncthing versucht es später erneut.</string>
+    <string name="notice_initial_scan_failed">%1$s konnte beim Start nicht gescannt werden. %2$s</string>
+    <plurals name="problems_title">
+        <item quantity="one">Syncthing hat ein Problem</item>
+        <item quantity="other">Syncthing hat %1$d Probleme</item>
+    </plurals>
+    <string name="problem_no_file_access">MySyncthing hat keinen Zugriff auf Ihre Dateien. Erlauben Sie den Zugriff auf alle Dateien, um wieder zu synchronisieren.</string>
+    <string name="problem_no_file_access_title">Synchronisierung gestoppt</string>
+    <string name="problem_folder_stopped">%1$s wird nicht mehr synchronisiert</string>
+    <string name="problem_folder_stopped_public">Ein Ordner wird nicht mehr synchronisiert</string>
+
+    <string name="channel_service">Synchronisierungsdienst</string>
+    <string name="channel_problems">Probleme</string>
+    <string name="channel_problems_description">Fehler, die Syncthing am Synchronisieren hindern</string>
+    <string name="channel_requests">Anfragen</string>
+    <string name="channel_requests_description">Neue Geräte und geteilte Ordner, die auf Ihre Zustimmung warten</string>
+
+    <string name="request_device_title">%1$s möchte sich verbinden</string>
+    <string name="request_device_text">Gerätekennung %1$s</string>
+    <string name="request_folder_title">„%1$s“ mit Ihnen geteilt</string>
+    <string name="request_folder_text">Von %1$s. Tippen Sie auf Prüfen, um den Speicherort zu wählen.</string>
+    <string name="request_folder_text_have">Von %1$s. Sie haben diesen Ordner bereits; tippen Sie auf Prüfen, um ihn zu teilen.</string>
+    <string name="request_folder_public">Ein Ordner wurde mit Ihnen geteilt</string>
+    <string name="request_device_public">Ein Gerät möchte sich verbinden</string>
+
+    <string name="widget_description">Synchronisierungsstatus, verbundene Geräte und eine Pausetaste</string>
+    <string name="widget_pause">Synchronisierung pausieren</string>
+    <string name="widget_resume">Synchronisierung fortsetzen</string>
+    <string name="widget_start">Syncthing starten</string>
+    <string name="widget_not_running">Läuft nicht</string>
+    <string name="widget_no_device">Kein Gerät verbunden</string>
+    <plurals name="widget_devices_connected">
+        <item quantity="one">%1$d Gerät verbunden</item>
+        <item quantity="other">%1$d Geräte verbunden</item>
+    </plurals>
+
+    <string name="import_cannot_open">Die Sicherung kann nicht geöffnet werden</string>
+    <string name="import_settings_not_saved">Die Synchronisierungseinstellungen konnten nicht alle gespeichert werden, wahrscheinlich weil der Speicher voll ist. Prüfen Sie sie in den Einstellungen.</string>
+    <string name="import_backup_not_deleted">Die Sicherungsdatei konnte nicht gelöscht werden. Löschen Sie sie selbst: Sie enthält den privaten Schlüssel des Geräts.</string>
+    <string name="export_cannot_write">Die Datei kann nicht geschrieben werden</string>
+</resources>
