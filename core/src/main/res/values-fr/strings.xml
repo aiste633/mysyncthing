@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Français. Terms follow upstream Syncthing's French web GUI word for word (a folder is a "partage"). -->
+<resources>
+    <string name="action_clear">Effacer</string>
+    <string name="action_review">Examiner</string>
+    <string name="action_ignore">Refuser</string>
+    <string name="action_stop">Arrêter</string>
+
+    <string name="status_stopped">Arrêté</string>
+    <string name="status_stopped_error">Arrêté sur une erreur</string>
+    <string name="status_stopped_no_access">Arrêté : pas d’accès aux fichiers</string>
+    <string name="status_failed_to_start">Échec du démarrage</string>
+    <string name="status_starting">Démarrage</string>
+    <string name="status_paused_because">En pause : %1$s</string>
+    <string name="status_paused">En pause</string>
+    <string name="status_no_network">Aucun réseau</string>
+    <string name="status_not_connected">Non connecté</string>
+    <plurals name="status_problems">
+        <item quantity="one">%1$d problème</item>
+        <item quantity="many">%1$d de problèmes</item>
+        <item quantity="other">%1$d problèmes</item>
+    </plurals>
+    <plurals name="status_items_failed">
+        <item quantity="one">%1$d élément en échec</item>
+        <item quantity="many">%1$d d’éléments en échec</item>
+        <item quantity="other">%1$d éléments en échec</item>
+    </plurals>
+    <string name="status_folder_error">Erreur de partage</string>
+    <plurals name="status_requests">
+        <item quantity="one">%1$d invitation en attente</item>
+        <item quantity="many">%1$d d’invitations en attente</item>
+        <item quantity="other">%1$d invitations en attente</item>
+    </plurals>
+    <string name="status_new_device">Un nouvel appareil veut se connecter</string>
+    <string name="status_new_folder">Nouveau partage proposé</string>
+    <plurals name="status_folders_review">
+        <item quantity="one">%1$d partage à examiner</item>
+        <item quantity="many">%1$d de partages à examiner</item>
+        <item quantity="other">%1$d partages à examiner</item>
+    </plurals>
+    <string name="status_local_changes">Modifications locales dans %1$s</string>
+    <string name="status_out_of_sync">%1$s est désynchronisé</string>
+    <string name="status_folder_review_public">Un partage est à examiner</string>
+    <string name="status_no_devices">Aucun appareil ajouté</string>
+    <string name="status_no_folders">Aucun partage ajouté</string>
+    <string name="status_syncing">Synchronisation en cours</string>
+    <string name="status_syncing_percent">Synchronisation %1$d\u00A0%%</string>
+    <string name="status_up_to_date">À jour</string>
+    <string name="status_line_device">%1$s · %2$s</string>
+    <plurals name="status_line_devices">
+        <item quantity="one">%1$s · %2$d appareil</item>
+        <item quantity="many">%1$s · %2$d d’appareils</item>
+        <item quantity="other">%1$s · %2$d appareils</item>
+    </plurals>
+    <string name="two_sentences">%1$s %2$s</string>
+
+    <string name="pause_reason_user">Suspendu par vous</string>
+    <string name="pause_reason_no_network">Aucun réseau</string>
+    <string name="pause_reason_mobile_data">Sur données mobiles</string>
+    <string name="pause_reason_roaming">En itinérance</string>
+    <string name="pause_reason_metered_wifi">Le Wi-Fi est limité</string>
+    <string name="pause_reason_metered_network">Le réseau est limité</string>
+    <string name="pause_reason_not_charging">Pas en charge</string>
+    <string name="pause_reason_charging">En charge</string>
+    <string name="pause_reason_battery_saver">Économiseur de batterie activé</string>
+
+    <string name="schedule_outside">Hors des horaires de synchronisation</string>
+    <string name="schedule_outside_next">Hors des horaires · prochain à %1$s</string>
+    <string name="schedule_outside_next_day">Hors des horaires · prochain %1$s %2$s</string>
+    <string name="schedule_error_no_window">Ajoutez une plage horaire</string>
+    <string name="schedule_error_times">Heures de 00:00 à 23:59</string>
+    <string name="schedule_error_same_times">Le début et la fin doivent différer</string>
+    <string name="schedule_error_no_day">Choisissez au moins un jour</string>
+    <string name="schedule_error_days">Les jours vont de 1 (lundi) à 7</string>
+    <plurals name="schedule_error_too_many">
+        <item quantity="one">%1$d plage horaire au maximum</item>
+        <item quantity="many">%1$d de plages horaires au maximum</item>
+        <item quantity="other">%1$d plages horaires au maximum</item>
+    </plurals>
+
+    <string name="problem_storage_almost_full">La mémoire du téléphone est presque pleine. Libérez de l’espace : la synchronisation reprend d’elle-même.</string>
+    <string name="problem_storage_almost_full_keeps">La mémoire du téléphone est presque pleine (Syncthing garde %1$s de libre). Libérez de l’espace : la synchronisation reprend d’elle-même.</string>
+    <string name="problem_folder_space">Trop peu d’espace libre là où se trouve ce partage. Libérez de l’espace, ou réduisez « Espace libre minimum » dans les réglages du partage.</string>
+    <string name="problem_folder_space_keeps">Trop peu d’espace libre là où se trouve ce partage (Syncthing garde %1$s de libre). Libérez de l’espace, ou réduisez « Espace libre minimum » dans les réglages du partage.</string>
+    <string name="problem_storage_full">La mémoire du téléphone est pleine. Libérez de l’espace, puis réessayez.</string>
+    <string name="problem_folder_missing">Le partage n’est plus sur le téléphone. Remettez-le à son emplacement, ou supprimez-le de Syncthing.</string>
+    <string name="problem_folder_marker_missing">Le marqueur .stfolder du partage a disparu, donc Syncthing s’arrête plutôt que de supprimer des fichiers sur les autres appareils. Si le partage est complet, créez-y un dossier vide nommé .stfolder.</string>
+    <string name="problem_folder_not_folder">Le chemin du partage mène à un fichier, pas à un dossier.</string>
+    <string name="problem_permission_denied">Syncthing n’a pas le droit de lire ou de modifier ce fichier ou ce dossier.</string>
+    <string name="problem_peers_gone">Les appareils qui avaient ce fichier se sont déconnectés, ou il a changé pendant la synchronisation. Syncthing réessaiera plus tard.</string>
+    <string name="problem_no_version">Aucun appareil connecté n’a cette version du fichier. Syncthing réessaiera quand un appareil se connectera.</string>
+    <string name="problem_not_rescanned">Le fichier a changé et n’a pas encore été analysé. Syncthing réessaiera plus tard.</string>
+    <string name="notice_initial_scan_failed">%1$s n’a pas pu être analysé au démarrage. %2$s</string>
+    <plurals name="problems_title">
+        <item quantity="one">Syncthing a un problème</item>
+        <item quantity="many">Syncthing a %1$d de problèmes</item>
+        <item quantity="other">Syncthing a %1$d problèmes</item>
+    </plurals>
+    <string name="problem_no_file_access">MySyncthing n’a pas accès à vos fichiers. Autorisez l’accès à tous les fichiers pour synchroniser à nouveau.</string>
+    <string name="problem_no_file_access_title">Synchronisation arrêtée</string>
+    <string name="problem_folder_stopped">%1$s a arrêté de se synchroniser</string>
+    <string name="problem_folder_stopped_public">Un partage a arrêté de se synchroniser</string>
+
+    <string name="channel_service">Service de synchronisation</string>
+    <string name="channel_problems">Problèmes</string>
+    <string name="channel_problems_description">Erreurs qui empêchent Syncthing de synchroniser</string>
+    <string name="channel_requests">Invitations</string>
+    <string name="channel_requests_description">Nouveaux appareils et partages en attente de votre accord</string>
+
+    <string name="request_device_title">%1$s veut se connecter</string>
+    <string name="request_device_text">ID de l’appareil %1$s</string>
+    <string name="request_folder_title">« %1$s » vous est proposé</string>
+    <string name="request_folder_text">De %1$s. Touchez Examiner pour choisir où le conserver.</string>
+    <string name="request_folder_text_have">De %1$s. Vous avez déjà ce partage ; touchez Examiner pour le partager.</string>
+    <string name="request_folder_public">Un partage vous a été proposé</string>
+    <string name="request_device_public">Un appareil veut se connecter</string>
+
+    <string name="widget_description">État de la synchronisation, appareils connectés et un bouton pause</string>
+    <string name="widget_pause">Suspendre la synchronisation</string>
+    <string name="widget_resume">Reprendre la synchronisation</string>
+    <string name="widget_start">Démarrer Syncthing</string>
+    <string name="widget_not_running">Arrêté</string>
+    <string name="widget_no_device">Aucune connexion</string>
+    <plurals name="widget_devices_connected">
+        <item quantity="one">%1$d appareil connecté</item>
+        <item quantity="many">%1$d d’appareils connectés</item>
+        <item quantity="other">%1$d appareils connectés</item>
+    </plurals>
+
+    <string name="import_cannot_open">Impossible d’ouvrir la sauvegarde</string>
+    <string name="import_settings_not_saved">Les réglages de synchronisation n’ont pas tous pu être enregistrés, probablement parce que la mémoire est pleine. Vérifiez-les dans Configuration.</string>
+    <string name="import_backup_not_deleted">Le fichier de sauvegarde n’a pas pu être supprimé. Supprimez-le vous-même : il contient la clé privée de l’appareil.</string>
+    <string name="export_cannot_write">Impossible d’écrire le fichier</string>
+</resources>

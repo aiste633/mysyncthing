@@ -14,7 +14,7 @@ uses anyone's real folders, devices or backups.
 | Area | How | Result |
 |---|---|---|
 | Every push | Build, Go and Kotlin unit tests, screen tests, emulator end-to-end tests on Android 15 and 16, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
-| Screen tests | 14 screens in light, dark, the largest font and Italian, compared with reference images; forms; TalkBack names | 56 reference images, on every push |
+| Screen tests | 14 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names | 70 reference images, on every push |
 | End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, process death, All files access taken away, monkey | Android 15 and 16, on every push |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 8 Go fuzz targets on what reaches the core | 1 core bug found and fixed; long runs clean |
@@ -72,7 +72,7 @@ devices: three folders (up to date, syncing, stopped by an error), three devices
 through a relay, offline) and a folder offer. No real device ID, name or address is used.
 
 - Screenshots: 14 screens, from the first-run checklist to the export form, each in light,
-  dark, the largest font (200 %) and Italian: 56 images in `app/src/test/screenshots/`. CI
+  dark, the largest font (200 %), Italian and German (the longest text): 70 images in `app/src/test/screenshots/`. CI
   compares every screen with its image and attaches the difference when one changes.
 - TalkBack: on every screen, every control that can be tapped or switched must have a name.
 - Forms: the device ID check character, a device already added, the suggested path for an
@@ -187,8 +187,8 @@ open-source Android apps, which gave a list of 19 items. Done so far:
 Every feature is checked by hand before it is merged, on Android 15 and Android 16 emulators
 with a local test peer; the larger ones also on two real phones (Android 16 and Android 15). Screens are
 checked in light and dark mode, at the largest font size, and with TalkBack: every button is
-named, and every switch and checkbox reads as on or off. The Italian translation was walked
-screen by screen the same way.
+named, and every switch and checkbox reads as on or off. The Italian, Spanish, German and French
+translations were walked screen by screen the same way.
 
 Emulator results include: start at boot, an app update that keeps the device ID and folders,
 the app swiped away, deep Doze without a battery exemption, the app killed in the middle of a

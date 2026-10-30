@@ -1,0 +1,787 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Deutsch. Terms follow upstream Syncthing's German web GUI; the usage-reporting question uses its wording. Addresses the user as Sie, as the web GUI does. -->
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="action_save">Speichern</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_ok">OK</string>
+    <string name="action_close">Schließen</string>
+    <string name="action_back">Zurück</string>
+    <string name="action_add">Hinzufügen</string>
+    <string name="action_remove_item">%1$s entfernen</string>
+    <string name="action_discard">Verwerfen</string>
+    <string name="action_start">Starten</string>
+    <string name="action_try_again">Erneut versuchen</string>
+    <string name="action_share">Teilen</string>
+    <string name="action_done">Fertig</string>
+    <string name="action_more">Mehr</string>
+
+    <string name="core_failed">Syncthing-Fehler</string>
+    <string name="core_stopped_unexpectedly">Syncthing wurde beendet</string>
+    <string name="core_stopped">Syncthing ist gestoppt</string>
+    <string name="core_starting">Syncthing wird gestartet</string>
+
+    <string name="discard_title">Änderungen verwerfen?</string>
+    <string name="discard_text">Ihre Eingaben hier gehen verloren.</string>
+
+    <string name="limit_label">Limit</string>
+    <string name="limit_none">Kein Limit</string>
+    <string name="limit_hint">Leer lassen oder 0 für kein Limit.</string>
+    <string name="list_add_or_tick">Fügen Sie einen Eintrag hinzu oder wählen Sie „%1$s“</string>
+
+    <plurals name="count_items">
+        <item quantity="one">%1$s Element</item>
+        <item quantity="other">%1$s Elemente</item>
+    </plurals>
+    <plurals name="count_files">
+        <item quantity="one">%1$s Datei</item>
+        <item quantity="other">%1$s Dateien</item>
+    </plurals>
+    <plurals name="count_folders">
+        <item quantity="one">%1$s Ordner</item>
+        <item quantity="other">%1$s Ordner</item>
+    </plurals>
+    <plurals name="count_devices">
+        <item quantity="one">%1$s Gerät</item>
+        <item quantity="other">%1$s Geräte</item>
+    </plurals>
+    <plurals name="count_rules">
+        <item quantity="one">%1$s Regel</item>
+        <item quantity="other">%1$s Regeln</item>
+    </plurals>
+    <plurals name="count_versions">
+        <item quantity="one">%1$s Version</item>
+        <item quantity="other">%1$s Versionen</item>
+    </plurals>
+    <plurals name="count_days">
+        <item quantity="one">%1$s Tag</item>
+        <item quantity="other">%1$s Tage</item>
+    </plurals>
+    <plurals name="revert_text">
+        <item quantity="one">%1$s auf diesem Smartphone geändertes Element wird durch die Version Ihrer anderen Geräte ersetzt oder gelöscht, wenn es dort nicht existiert. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">%1$s auf diesem Smartphone geänderte Elemente werden durch die Version Ihrer anderen Geräte ersetzt oder gelöscht, wenn sie dort nicht existieren. Das kann nicht rückgängig gemacht werden.</item>
+    </plurals>
+    <string name="label_and_hint">%1$s. %2$s</string>
+    <string name="hint_default">Vorgabe</string>
+
+    <string name="when_yesterday">gestern, %1$s</string>
+    <string name="day_today">Heute</string>
+    <string name="day_yesterday">Gestern</string>
+
+    <string name="order_random">Zufall</string>
+    <string name="order_alphabetic">Alphabetisch</string>
+    <string name="order_smallest_first">Kleinste zuerst</string>
+    <string name="order_largest_first">Größte zuerst</string>
+    <string name="order_oldest_first">Älteste zuerst</string>
+    <string name="order_newest_first">Neueste zuerst</string>
+
+    <string name="rescan_never">Nie</string>
+    <string name="rescan_daily">Einmal am Tag</string>
+    <plurals name="rescan_every_days">
+        <item quantity="one">Jeden Tag</item>
+        <item quantity="other">Alle %1$d Tage</item>
+    </plurals>
+    <plurals name="rescan_every_hours">
+        <item quantity="one">Jede Stunde</item>
+        <item quantity="other">Alle %1$d Stunden</item>
+    </plurals>
+    <string name="rescan_every_minutes">Alle %1$d min</string>
+    <string name="rescan_every_seconds">Alle %1$d s</string>
+    <string name="rescan_never_hint">Nur Änderungen, die die Überwachung erkennt, werden synchronisiert</string>
+
+    <string name="compression_metadata">Nur Metadaten</string>
+    <string name="compression_always">Alle Daten</string>
+    <string name="compression_never">Aus</string>
+    <string name="compression_always_hint">Spart Daten bei Texten und Dokumenten, kostet Akku. Fotos und Videos gewinnen fast nichts.</string>
+    <string name="connections_auto">Automatisch</string>
+    <plurals name="connections">
+        <item quantity="one">%1$d Verbindung</item>
+        <item quantity="other">%1$d Verbindungen</item>
+    </plurals>
+
+    <string name="internal_storage">Interner Speicher</string>
+
+    <string name="folder_type_send_receive">Senden &amp; Empfangen</string>
+    <string name="folder_type_send_only">Nur senden</string>
+    <string name="folder_type_receive_only">Nur empfangen</string>
+    <string name="folder_type_send_receive_hint">Änderungen gehen in beide Richtungen.</string>
+    <string name="folder_type_send_only_hint">Dieses Smartphone ist die Quelle; anderswo gemachte Änderungen werden hier nicht übernommen.</string>
+    <string name="folder_type_receive_only_hint">Auf diesem Smartphone gemachte Änderungen werden nie an andere Geräte gesendet.</string>
+
+    <string name="versioning_off">Aus</string>
+    <string name="versioning_trashcan">Papierkorb</string>
+    <string name="versioning_simple">Einfach</string>
+    <string name="versioning_staggered">Stufenweise</string>
+    <string name="versioning_off_hint">Ersetzte oder gelöschte Dateien sind weg.</string>
+    <string name="versioning_trashcan_hint">Behält die letzte Version von Dateien, die auf anderen Geräten geändert oder gelöscht wurden.</string>
+    <string name="versioning_simple_hint">Behält eine Anzahl alter Versionen jeder Datei.</string>
+    <string name="versioning_staggered_hint">Behält mehr neuere Versionen und weniger ältere, bis zu einem Höchstalter.</string>
+    <string name="versioning_keep_days">Aufbewahren für (Tage, 0 = für immer)</string>
+    <string name="versioning_keep_versions">Versionen erhalten</string>
+    <string name="versioning_forever">Für immer</string>
+    <string name="versioning_summary">%1$s · %2$s</string>
+    <string name="versioning_summary_forever">%1$s · für immer aufbewahren</string>
+
+    <string name="op_failed">%1$s fehlgeschlagen: %2$s</string>
+    <string name="op_clear">Leeren</string>
+    <string name="op_usage_reporting">Nutzungsbericht</string>
+    <string name="op_add_device">Gerät hinzufügen</string>
+    <string name="op_untrusted">Nicht vertraut</string>
+    <string name="op_introducer">Verteilergerät</string>
+    <string name="op_accept_folders">Ordner annehmen</string>
+    <string name="op_group">Gruppe</string>
+    <string name="op_addresses">Adressen</string>
+    <string name="op_download_limit">Download-Limit</string>
+    <string name="op_upload_limit">Upload-Limit</string>
+    <string name="op_compression">Komprimierung</string>
+    <string name="op_connections">Verbindungen</string>
+    <string name="op_restart">Neustart</string>
+    <string name="op_remove_device">Gerät entfernen</string>
+    <string name="op_rename">Umbenennen</string>
+    <string name="op_pause">Pausieren</string>
+    <string name="op_ignore">Ignorieren</string>
+    <string name="op_unignore">Beachten</string>
+    <string name="op_add_folder">Ordner hinzufügen</string>
+    <string name="op_remove_folder">Ordner entfernen</string>
+    <string name="op_rescan">Neu scannen</string>
+    <string name="op_revert">Zurücksetzen</string>
+    <string name="op_override">Überschreiben</string>
+    <string name="op_full_rescan">Vollständiger Scan</string>
+    <string name="op_download_order">Übertragungsreihenfolge</string>
+    <string name="op_keep_free">Frei halten</string>
+    <string name="op_change_type">Typ ändern</string>
+    <string name="op_watch">Änderungen überwachen</string>
+    <string name="op_versioning">Dateiversionierung</string>
+    <string name="op_sharing">Teilen</string>
+    <string name="op_ignore_patterns">Ignoriermuster</string>
+    <string name="op_type">Typ</string>
+    <string name="op_limit">Limit</string>
+    <string name="op_local_discovery">Lokale Gerätesuche</string>
+    <string name="op_internet_discovery">Globale Gerätesuche</string>
+    <string name="op_relays">Weiterleitung</string>
+    <string name="op_port_opening">Portfreigabe</string>
+    <string name="op_listen_addresses">Empfangsadressen</string>
+    <string name="op_discovery_servers">Gerätesuchserver</string>
+
+    <string name="done_restarting">Syncthing wird neu gestartet</string>
+    <string name="done_added">%1$s hinzugefügt</string>
+    <string name="done_rescanning">Wird neu gescannt</string>
+    <string name="done_rescanning_all">Alle Ordner werden neu gescannt</string>
+    <string name="done_reverting">Lokale Änderungen werden zurückgesetzt</string>
+    <string name="done_overriding">Änderungen werden überschrieben</string>
+    <string name="folder_added_paused">pausiert hinzugefügt, Vorgabe-Ignoriermuster nicht gesetzt (%1$s)</string>
+    <string name="proxy_not_saved">Proxy nicht gespeichert: %1$s</string>
+    <string name="not_saved">Nicht gespeichert: Der Speicher des Smartphones ist eventuell voll</string>
+
+    <string name="restore_done">Wiederhergestellt</string>
+    <plurals name="restore_done_files">
+        <item quantity="one">%1$s Datei wiederhergestellt</item>
+        <item quantity="other">%1$s Dateien wiederhergestellt</item>
+    </plurals>
+    <string name="restore_failed">Wiederherstellen fehlgeschlagen: %1$s</string>
+    <string name="restore_failed_file">Wiederherstellen von %1$s fehlgeschlagen: %2$s</string>
+    <plurals name="and_more">
+        <item quantity="one">%1$s (und %2$d weiteres)</item>
+        <item quantity="other">%1$s (und %2$d weitere)</item>
+    </plurals>
+    <string name="restore_undated">Wiederhergestellt, aber das Datum von %1$s konnte nicht aktualisiert werden, daher wird die Wiederherstellung eventuell nicht synchronisiert</string>
+    <plurals name="restore_undated_more">
+        <item quantity="one">Wiederhergestellt, aber das Datum von %1$s (und %2$d weiterer Datei) konnte nicht aktualisiert werden, daher wird die Wiederherstellung eventuell nicht synchronisiert</item>
+        <item quantity="other">Wiederhergestellt, aber das Datum von %1$s (und %2$d weiteren Dateien) konnte nicht aktualisiert werden, daher wird die Wiederherstellung eventuell nicht synchronisiert</item>
+    </plurals>
+
+    <string name="tab_folders">Ordner</string>
+    <string name="tab_devices">Geräte</string>
+    <string name="tab_settings">Einstellungen</string>
+
+    <string name="moved_title">Von einem anderen Smartphone übertragen</string>
+    <string name="moved_text">Dieses Smartphone hat die Gerätekennung, Ordner und Geräte Ihres alten Smartphones übernommen und prüft die Ordner erneut. Beenden oder deinstallieren Sie Syncthing auf dem alten Smartphone: Zwei Smartphones mit derselben Gerätekennung stören gegenseitig ihre Verbindungen.</string>
+
+    <string name="item_unknown">Unbekannt</string>
+    <string name="item_error">Fehler</string>
+    <plurals name="item_errors">
+        <item quantity="one">%1$d Fehler</item>
+        <item quantity="other">%1$d Fehler</item>
+    </plurals>
+    <string name="item_local_changes">Lokale Änderungen</string>
+    <string name="item_out_of_sync">Nicht synchronisiert</string>
+    <string name="item_scanning">Scannen</string>
+    <string name="item_not_shared">Ungeteilt</string>
+    <string name="item_disconnected">Getrennt</string>
+
+    <string name="connection_lan">LAN</string>
+    <string name="connection_internet">Internet</string>
+    <string name="connection_relay">Weiterleitung</string>
+    <string name="connection_with_address">%1$s · %2$s</string>
+    <string name="speed_down_up">↓ %1$s · ↑ %2$s</string>
+
+    <string name="health">Empfang %1$d von %2$d · Gerätesuche %3$d von %4$d</string>
+    <string name="health_discovery_off">Empfang %1$d von %2$d · Gerätesuche aus</string>
+    <string name="unused_no_ipv6">Nicht genutzt: Dieses Netzwerk hat kein IPv6</string>
+    <string name="unused_no_route">Nicht genutzt: Keine Route in diesem Netzwerk</string>
+
+    <string name="encryption_set">Verschlüsselt · Passwort gesetzt</string>
+    <string name="encryption_needed">Nicht vertraut: Zum Teilen ist ein Passwort nötig</string>
+    <string name="encryption_missing">Kein Passwort: Syncthing hört auf, ihn zu teilen</string>
+    <string name="encryption_title">Verschlüsselt teilen</string>
+    <string name="encryption_text">%1$s erhält „%2$s“ verschlüsselt und kann ihn nicht lesen.</string>
+    <string name="encryption_keep_safe">Bewahren Sie es sicher auf: Nur damit lassen sich die Dateien entschlüsseln. Andere Geräte, die diesen Ordner mit %1$s teilen, müssen dasselbe Passwort verwenden.</string>
+    <string name="password">Passwort</string>
+    <string name="password_show">Passwort anzeigen</string>
+    <string name="password_hide">Passwort verbergen</string>
+    <string name="action_stop_sharing">Nicht mehr teilen</string>
+
+    <string name="folders_rescan_all">Alle Ordner neu scannen</string>
+    <string name="recent_changes">Letzte Änderungen</string>
+    <string name="folders_add">Ordner hinzufügen</string>
+    <string name="folders_empty">Noch keine Ordner</string>
+    <string name="folders_empty_hint">Tippen Sie auf Ordner hinzufügen, um einen Ordner auf diesem Smartphone zu synchronisieren. Ordner, die andere Geräte mit Ihnen teilen, erscheinen ebenfalls hier.</string>
+    <string name="folders_offer">%1$s teilt „%2$s“</string>
+    <string name="folders_offer_choose">Wählen Sie, wo er auf diesem Smartphone liegen soll</string>
+    <string name="folders_offer_have">Sie haben ihn bereits in %1$s. Auch mit %2$s teilen?</string>
+    <string name="folder_card_not_shared">ungeteilt</string>
+    <plurals name="folder_card_shared">
+        <item quantity="one">geteilt mit %1$d</item>
+        <item quantity="other">geteilt mit %1$d</item>
+    </plurals>
+
+    <string name="devices_add">Gerät hinzufügen</string>
+    <string name="devices_request_detail">Gerätekennung %1$s · %2$s</string>
+    <string name="devices_empty">Noch keine anderen Geräte</string>
+    <string name="devices_empty_hint">Tippen Sie auf Gerät hinzufügen und scannen Sie den QR-Code des anderen Geräts, oder zeigen Sie ihm die Kennung dieses Smartphones.</string>
+    <string name="this_phone">Dieses Smartphone</string>
+    <string name="this_device">Dieses Gerät</string>
+    <string name="devices_this_device_id">Dieses Gerät · Kennung %1$s</string>
+    <string name="devices_show_id">Eigene Kennung</string>
+    <string name="devices_share_id">Kennung teilen</string>
+    <string name="devices_share_id_title">Gerätekennung teilen</string>
+    <string name="devices_qr_description">QR-Code der Gerätekennung</string>
+
+    <string name="settings_restart_needed">Starten Sie Syncthing neu, um die geänderten Einstellungen zu übernehmen.</string>
+    <string name="action_restart">Neustart</string>
+    <string name="settings_device_name">Gerätename</string>
+    <string name="settings_device_name_hint">Andere Geräte sehen diesen Namen</string>
+    <string name="settings_not_set">Nicht gesetzt</string>
+    <string name="name">Name</string>
+    <string name="settings_group_syncing">Synchronisierung</string>
+    <string name="settings_pause">Synchronisierung pausieren</string>
+    <string name="settings_pause_hint">Bis Sie sie hier oder im Widget fortsetzen</string>
+    <string name="settings_ignored">Ignorierte Anfragen</string>
+    <string name="settings_ignored_hint">Geräte und Ordner, bei denen Sie auf Ignorieren getippt haben, zum Rückgängigmachen</string>
+    <string name="settings_group_sync_on">Synchronisieren über</string>
+    <string name="settings_unmetered">Unbegrenztes WLAN und Ethernet</string>
+    <string name="settings_always">Immer</string>
+    <string name="settings_metered">Getaktetes WLAN und Hotspots</string>
+    <string name="settings_metered_hint">WLAN, das Android oder Sie als getaktet markiert haben, Hotspot eines anderen Smartphones, Tethering</string>
+    <string name="settings_mobile_data">Mobile Daten</string>
+    <string name="settings_mobile_data_hint">Kann bei einem begrenzten Tarif Geld kosten</string>
+    <string name="settings_roaming">Mobile Daten beim Roaming</string>
+    <string name="settings_roaming_hint">Im Ausland oder in einem anderen Netz, wo Daten extra kosten können</string>
+    <string name="settings_group_time">Zeit</string>
+    <string name="sync_times">Synchronisierungszeiten</string>
+    <string name="settings_group_power">Stromversorgung</string>
+    <string name="settings_power">Synchronisieren</string>
+    <string name="power_any">Beim Laden oder im Akkubetrieb</string>
+    <string name="power_charging">Nur beim Laden</string>
+    <string name="power_battery">Nur im Akkubetrieb</string>
+    <string name="power_charging_hint">Pausiert, wenn das Ladekabel getrennt wird</string>
+    <string name="power_battery_hint">Pausiert, solange das Ladekabel angeschlossen ist</string>
+    <string name="settings_battery_saver">Im Energiesparmodus pausieren</string>
+    <string name="settings_battery_saver_hint">Die Synchronisierung wartet, solange der Energiesparmodus an ist</string>
+    <string name="settings_group_defaults">Neue Ordner und Geräte</string>
+    <string name="defaults_folders">Vorgaben für neue Ordner</string>
+    <string name="defaults_folders_hint">Typ, Versionierung, Ignoriermuster und mehr</string>
+    <string name="defaults_devices">Vorgaben für neue Geräte</string>
+    <string name="defaults_devices_hint">Automatisch annehmen, Adressen, Limits und mehr</string>
+    <string name="settings_group_network">Netzwerk</string>
+    <string name="download_limit">Download-Limit</string>
+    <string name="upload_limit">Upload-Limit</string>
+    <string name="settings_limit_lan">Auch im lokalen Netzwerk begrenzen</string>
+    <string name="settings_limit_lan_on">Limits gelten überall</string>
+    <string name="settings_limit_lan_off">Aus: Übertragungen im lokalen Netzwerk laufen mit voller Geschwindigkeit</string>
+    <string name="proxy">Proxy</string>
+    <string name="settings_group_discovery">Geräte finden</string>
+    <string name="settings_local_discovery">Lokale Gerätesuche</string>
+    <string name="settings_local_discovery_hint">Findet Geräte im selben WLAN</string>
+    <string name="settings_global_discovery">Globale Gerätesuche</string>
+    <string name="settings_global_discovery_hint">Sucht Geräte über die Gerätesuchserver von Syncthing. Diese erfahren die IP-Adresse dieses Smartphones.</string>
+    <string name="settings_relays">Weiterleitung</string>
+    <string name="settings_relays_hint">Verbindet über ein Weiterleitungsrelais, wenn eine direkte Verbindung scheitert. Weiterhin Ende-zu-Ende-verschlüsselt.</string>
+    <string name="settings_nat">Portfreigabe am Router</string>
+    <string name="settings_nat_hint">Bittet den Router, einen Port zu öffnen (UPnP, NAT-PMP)</string>
+    <string name="settings_group_system">System</string>
+    <string name="settings_language">Sprache</string>
+    <string name="settings_language_phone">Wie auf dem Smartphone</string>
+    <string name="settings_boot">Beim Hochfahren starten</string>
+    <string name="settings_boot_hint">Die Synchronisierung startet, wenn das Smartphone startet</string>
+    <string name="settings_start">Syncthing starten</string>
+    <string name="settings_stop">Syncthing stoppen</string>
+    <string name="settings_stop_hint">Bis Sie es wieder starten oder das Smartphone neu startet</string>
+    <string name="settings_restart">Syncthing neu starten</string>
+    <string name="settings_restart_hint">Übernimmt Einstellungen, die einen Neustart brauchen</string>
+    <string name="settings_export">Sicherung exportieren</string>
+    <string name="settings_export_hint">Ordner, Geräte, die Identität dieses Smartphones und die Synchronisierungseinstellungen, als ZIP-Datei</string>
+    <string name="settings_import">Sicherung importieren</string>
+    <string name="settings_import_hint">Aus einem Export dieser App oder einer Sicherung von Syncthing-Fork</string>
+    <string name="settings_group_permissions">Berechtigungen</string>
+    <string name="settings_group_advanced">Erweitert</string>
+    <string name="settings_usage">Anonymer Nutzungsbericht</string>
+    <string name="settings_usage_hint">Hilft den Entwicklern von Syncthing; Statistiken auf data.syncthing.net</string>
+    <string name="listen_addresses">Empfangsadressen</string>
+    <string name="settings_listen_default">Vorgabe, Port 22000</string>
+    <string name="discovery_servers">Gerätesuchserver</string>
+    <string name="settings_servers_default">Öffentliche Server von Syncthing</string>
+    <string name="settings_web_gui">Web-GUI</string>
+    <string name="settings_web_gui_hint">Alle Einstellungen von Syncthing, für das, was diese App nicht zeigt</string>
+    <string name="about">Über</string>
+    <string name="settings_about_hint">Versionen, Lizenzen und Quellcode</string>
+    <string name="listen_default_hint">TCP und QUIC auf Port 22000, dazu Weiterleitung</string>
+    <string name="listen_add_hint">Für einen anderen Port fügen Sie tcp://0.0.0.0:22001 und quic://0.0.0.0:22001 hinzu und wählen Vorgabe ab.</string>
+    <string name="servers_default_hint">Von der globalen Gerätesuche genutzt</string>
+    <string name="servers_add_hint">Ihr eigener Server, zum Beispiel https://discovery.example.com/ (nur https)</string>
+
+    <string name="setup_title">Einrichten</string>
+    <string name="setup_intro">MySyncthing braucht eine Berechtigung zum Synchronisieren. Die anderen machen sie zuverlässiger.</string>
+    <string name="setup_mobile_data">Über mobile Daten synchronisieren</string>
+    <string name="setup_mobile_data_on">An: nutzt auch mobile Daten, nicht beim Roaming</string>
+    <string name="setup_mobile_data_off">Aus: nur über WLAN oder Ethernet. Sie können das in den Einstellungen ändern.</string>
+    <string name="permission_files">Zugriff auf alle Dateien</string>
+    <string name="permission_files_hint">Syncthing liest und schreibt Ihre Ordner direkt.</string>
+    <string name="permission_notifications">Benachrichtigungen</string>
+    <string name="permission_notifications_hint">Anfragen von neuen Geräten und Ordnern sowie Probleme. Solange Syncthing läuft, verlangt Android außerdem eine kleine Statusbenachrichtigung; um sie auszublenden, schalten Sie ihre Kategorie „%1$s“ aus.</string>
+    <string name="permission_background">Im Hintergrund ausführen</string>
+    <string name="permission_background_hint">Synchronisiert auch bei ausgeschaltetem Bildschirm weiter. Manche Smartphones nennen das „Hintergrundaktivität zulassen“.</string>
+    <string name="permission_required">Erforderlich</string>
+    <string name="permission_optional">Optional</string>
+    <string name="permission_recommended">Empfohlen</string>
+    <string name="permission_grant">Erteilen</string>
+    <string name="permission_allow">Zulassen</string>
+    <string name="permission_granted">Erteilt</string>
+
+    <string name="loading">Wird geladen</string>
+    <string name="group_general">Allgemein</string>
+    <string name="group_trust">Vertrauen</string>
+
+    <string name="defaults_folders_intro">Ordner, die Sie hinzufügen, und Ordner, die Sie von anderen Geräten annehmen, starten mit diesen Einstellungen.</string>
+    <string name="defaults_devices_intro">Geräte, die Sie hinzufügen, und Geräteanfragen, die Sie annehmen, starten mit diesen Einstellungen.</string>
+    <string name="defaults_location">Speicherort</string>
+    <string name="defaults_location_value">%1$s/&lt;Ordnername&gt;</string>
+
+    <string name="folder_type">Ordnertyp</string>
+    <string name="type">Typ</string>
+    <string name="file_versioning">Dateiversionierung</string>
+    <string name="folder_watch">Änderungen überwachen</string>
+    <string name="folder_watch_hint">Synchronisiert Änderungen innerhalb von Sekunden statt beim nächsten Scan</string>
+    <string name="full_rescan">Vollständiger Scan</string>
+    <string name="download_order">Übertragungsreihenfolge</string>
+    <string name="keep_free">Auf diesem Smartphone frei halten</string>
+    <string name="ignore_patterns">Ignoriermuster</string>
+    <string name="ignores_none">Keine</string>
+
+    <string name="device_introducer">Verteilergerät</string>
+    <string name="device_introducer_hint">Fügt auch die Geräte hinzu, mit denen es Ordner teilt</string>
+    <string name="device_auto_accept">Seine Ordner automatisch annehmen</string>
+    <string name="device_auto_accept_hint">Ohne Nachfrage unter Syncthing/&lt;Ordnername&gt; gespeichert</string>
+    <string name="device_addresses">Adressen</string>
+    <string name="compression">Komprimierung</string>
+    <string name="connections">Verbindungen</string>
+
+    <string name="folder_already_added">Bereits hinzugefügt</string>
+    <string name="folder_add_offer">„%1$s“ hinzufügen</string>
+    <string name="folder_offered_by">Angeboten von %1$s</string>
+    <string name="folder">Ordner</string>
+    <string name="folder_path">Ordner auf diesem Smartphone</string>
+    <string name="folder_path_required">Erforderlich. Vollständiger Pfad, oder wählen Sie einen</string>
+    <string name="folder_path_suggested">Vorgeschlagen. Er wird angelegt, falls er fehlt.</string>
+    <string name="folder_path_hint">Vollständiger Pfad, oder wählen Sie einen</string>
+    <string name="folder_choose">Ordner wählen</string>
+    <string name="folder_id">Ordnerkennung</string>
+    <string name="folder_id_hint">Muss auf jedem Gerät, das diesen Ordner teilt, gleich sein</string>
+    <string name="share_with">Teilen mit</string>
+    <string name="share_no_devices">Noch keine Geräte hinzugefügt</string>
+    <string name="share_no_devices_hint">Fügen Sie eines im Tab Geräte hinzu</string>
+    <string name="share_offered">Hat diesen Ordner angeboten</string>
+    <string name="folder_ignores_first">Zuerst Ignoriermuster festlegen</string>
+    <string name="folder_ignores_first_hint">Der Ordner bleibt pausiert, bis Sie sie speichern</string>
+    <string name="versioning_method">Methode</string>
+    <string name="versioning_unit_days">Tage</string>
+    <string name="versioning_unit_versions">Versionen</string>
+
+    <string name="error_required">Erforderlich</string>
+    <string name="error_ascii_digits" tools:ignore="TypographyDashes">Verwenden Sie die Ziffern 0-9</string>
+    <string name="error_whole_number">Eine ganze Zahl, %1$d oder mehr</string>
+    <string name="error_not_negative">0 oder mehr</string>
+    <string name="error_number">Geben Sie eine Zahl ein</string>
+    <string name="error_up_to">Bis zu %1$s</string>
+    <string name="error_path_absolute">Ein vollständiger Pfad, der mit / beginnt</string>
+    <string name="error_control_characters">Keine Zeilenumbrüche oder Steuerzeichen</string>
+    <string name="error_path_parts">Keine leeren Teile, . oder ..</string>
+    <string name="error_path_storage">Im Speicher des Smartphones oder auf einer SD-Karte (/storage/…)</string>
+    <string name="error_path_overlap">Hier oder darin liegt bereits ein anderer Ordner</string>
+    <string name="error_id_slash">Kein /</string>
+    <string name="error_id_dots">Nicht . oder ..</string>
+    <string name="error_id_control">Keine Steuerzeichen</string>
+    <string name="error_id_taken">Ein anderer Ordner hat bereits diese Kennung</string>
+    <string name="error_device_id_length">Eine Gerätekennung hat 56 Zeichen</string>
+    <string name="error_device_id">Keine Gerätekennung. Vergleichen Sie jedes Zeichen mit dem anderen Gerät.</string>
+    <string name="error_host_brackets">Ohne Klammern, zum Beispiel ::1</string>
+    <string name="error_host">Eine IP-Adresse oder ein Hostname</string>
+    <string name="error_port">Ein Port von 1 bis 65535</string>
+    <string name="error_too_long_255">Zu lang: höchstens 255 Byte</string>
+    <string name="error_too_long">Zu lang</string>
+    <string name="error_user_needed">Mit einem Passwort erforderlich</string>
+    <string name="error_proxy_type">Unbekannter Proxy-Typ</string>
+    <plurals name="error_password_short">
+        <item quantity="one">Mindestens %1$d Zeichen</item>
+        <item quantity="other">Mindestens %1$d Zeichen</item>
+    </plurals>
+    <string name="error_password_repeat">Passwörter stimmen nicht überein</string>
+
+    <string name="folder_size">%1$s auf diesem Smartphone von %2$s</string>
+    <plurals name="folder_local_changes">
+        <item quantity="one">%1$s Element, %2$s, auf diesem Smartphone geändert. Dieser Ordner ist „Nur empfangen“, daher erhalten andere Geräte diese Änderungen nicht.</item>
+        <item quantity="other">%1$s Elemente, %2$s, auf diesem Smartphone geändert. Dieser Ordner ist „Nur empfangen“, daher erhalten andere Geräte diese Änderungen nicht.</item>
+    </plurals>
+    <plurals name="folder_remote_changes">
+        <item quantity="one">%1$s Element auf anderen Geräten geändert. Dieser Ordner ist „Nur senden“, daher werden diese Änderungen hier nicht übernommen.</item>
+        <item quantity="other">%1$s Elemente auf anderen Geräten geändert. Dieser Ordner ist „Nur senden“, daher werden diese Änderungen hier nicht übernommen.</item>
+    </plurals>
+    <string name="folder_show_changes">Änderungen anzeigen</string>
+    <string name="folder_revert_button">Zurücksetzen…</string>
+    <string name="folder_override_button">Überschreiben…</string>
+    <string name="action_pause">Pausieren</string>
+    <string name="action_resume">Fortsetzen</string>
+    <string name="action_rescan">Neu scannen</string>
+    <string name="action_revert">Zurücksetzen</string>
+    <string name="action_override">Überschreiben</string>
+    <string name="action_remove">Entfernen</string>
+    <string name="folder_to_download">Noch herunterzuladen</string>
+    <string name="items_and_size">%1$s · %2$s</string>
+    <string name="folder_see_files">Welche Dateien</string>
+    <string name="failed_items">Fehlgeschlagene Elemente</string>
+    <string name="folder_see_all">Alle %1$s ansehen</string>
+    <string name="name_none">(keiner)</string>
+    <string name="group">Gruppe</string>
+    <string name="group_none">Keine</string>
+    <string name="details">Details</string>
+    <string name="folder_last_scan">Letzter Scan</string>
+    <string name="not_yet">Noch nicht</string>
+    <string name="folder_deleted_file">%1$s gelöscht</string>
+    <string name="folder_last_change">Letzte Änderung</string>
+    <string name="on_this_phone">Auf diesem Smartphone</string>
+    <string name="on_all_devices">Auf allen Geräten</string>
+    <string name="folder_contents">%1$s · %2$s · %3$s</string>
+    <string name="shared_with">Geteilt mit</string>
+    <string name="shared_with_not">Nicht geteilt</string>
+    <string name="restore_versions">Versionen wiederherstellen</string>
+    <string name="restore_versions_hint">Von anderen Geräten geänderte oder gelöschte Dateien zurückholen</string>
+    <string name="folder_rescan_hint">Erfasst, was die Überwachung verpasst.</string>
+    <string name="folder_keep_free_hint">Darunter pausiert die Synchronisierung.</string>
+    <string name="folder_remove">Ordner entfernen</string>
+    <string name="folder_remove_hint">Beendet die Synchronisierung. Die Dateien auf diesem Smartphone bleiben.</string>
+    <string name="folder_name">Ordnerbezeichnung</string>
+    <string name="folder_group">Ordnergruppe</string>
+    <string name="folder_group_hint">Ordner einer Gruppe werden zusammen aufgeführt. Nur auf diesem Smartphone.</string>
+    <string name="folder_revert_title">Lokale Änderungen zurücksetzen?</string>
+    <string name="folder_override_title">Änderungen überschreiben?</string>
+    <plurals name="folder_override_text">
+        <item quantity="one">Ihre anderen Geräte erhalten die Version dieses Smartphones von %1$s Element. Die anderswo daran gemachten Änderungen gehen verloren. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">Ihre anderen Geräte erhalten die Version dieses Smartphones von %1$s Elementen. Die anderswo daran gemachten Änderungen gehen verloren. Das kann nicht rückgängig gemacht werden.</item>
+    </plurals>
+    <string name="folder_remove_title">%1$s entfernen?</string>
+    <string name="folder_remove_text">Syncthing synchronisiert diesen Ordner nicht mehr. Dateien auf diesem Smartphone werden nicht gelöscht.</string>
+    <string name="amount">Menge</string>
+    <string name="keep_free_text">Die Synchronisierung in diesen Ordner pausiert, wenn weniger frei ist.</string>
+    <string name="keep_free_text_now">Die Synchronisierung in diesen Ordner pausiert, wenn weniger frei ist. Jetzt frei: %1$s von %2$s.</string>
+
+    <string name="device_traffic">Empfangen %1$s · gesendet %2$s</string>
+    <string name="device_last_seen">Zuletzt online %1$s</string>
+    <string name="device_never_connected">Nie verbunden</string>
+    <string name="syncthing_version">Syncthing %1$s</string>
+    <plurals name="device_still_needs">
+        <item quantity="one">Braucht noch %1$s Element, %2$s von diesem Smartphone</item>
+        <item quantity="other">Braucht noch %1$s Elemente, %2$s von diesem Smartphone</item>
+    </plurals>
+    <string name="device_untrusted">Nicht vertraut</string>
+    <string name="device_untrusted_hint">Erhält nur verschlüsselte Daten. Jeder geteilte Ordner braucht ein Passwort.</string>
+    <string name="device_id">Gerätekennung</string>
+    <string name="device_to_send">Noch zu senden</string>
+    <string name="device_shared_folders">Geteilte Ordner</string>
+    <string name="device_no_folders_hint">Fügen Sie einen im Tab Ordner hinzu</string>
+    <string name="device_remove">Gerät entfernen</string>
+    <string name="device_remove_hint">Es kann nicht mehr mit diesem Smartphone synchronisieren.</string>
+    <string name="device_group">Gerätegruppe</string>
+    <string name="device_group_hint">Geräte einer Gruppe werden zusammen aufgeführt. Nur auf diesem Smartphone.</string>
+    <string name="connections_auto_hint">Syncthing entscheidet, derzeit 3. Mehr kann bei schnellen, entfernten Verbindungen helfen.</string>
+    <string name="device_untrusted_title">Als nicht vertraut markieren?</string>
+    <string name="device_untrusted_text">%1$s erhält nur noch verschlüsselte Ordner und kann weder Verteilergerät sein noch Ordner automatisch annehmen.</string>
+    <string name="device_untrusted_text_plain">%1$s erhält nur noch verschlüsselte Ordner und kann weder Verteilergerät sein noch Ordner automatisch annehmen. Diese Ordner sind ohne Passwort geteilt und werden nicht mehr geteilt: %2$s.</string>
+    <string name="device_untrusted_confirm">Nicht vertrauen</string>
+    <string name="device_remove_text">Ordner werden nicht mehr mit diesem Gerät synchronisiert. Es werden keine Dateien gelöscht.</string>
+    <string name="addresses_automatic">Automatisch gefunden</string>
+    <string name="address_automatic">automatisch</string>
+    <string name="addresses_find">Automatisch finden</string>
+    <string name="addresses_find_hint">Über lokale und globale Gerätesuche</string>
+    <string name="addresses_add_hint">Zum Beispiel tcp://192.0.2.10:22000 oder eine VPN-Adresse</string>
+
+    <string name="device_add_named">„%1$s“ hinzufügen</string>
+    <string name="device_wants_to_connect">Möchte sich von %1$s aus verbinden</string>
+    <string name="device">Gerät</string>
+    <string name="device_id_check">Prüfen Sie, ob sie mit dem anderen Gerät übereinstimmt</string>
+    <string name="device_id_hint">QR-Code scannen, einfügen oder ein Gerät in der Nähe wählen</string>
+    <string name="scan_qr_code">QR-Code scannen</string>
+    <string name="name_optional">Name (optional)</string>
+    <string name="device_nearby">In der Nähe in diesem Netzwerk</string>
+    <string name="device_nearby_tap">Zum Verwenden tippen</string>
+    <string name="device_share_folders">Ordner teilen</string>
+
+    <string name="all_folders">Alle Ordner</string>
+    <string name="recent_none">Keine Änderungen, seit Syncthing gestartet ist.</string>
+    <plurals name="recent_note">
+        <item quantity="one">Syncthing behält seine letzte Änderung bis zum Neustart im Speicher.</item>
+        <item quantity="other">Syncthing behält seine letzten %1$s Änderungen bis zum Neustart im Speicher.</item>
+    </plurals>
+    <string name="change_deleted_here">auf diesem Smartphone gelöscht</string>
+    <string name="change_changed_here">auf diesem Smartphone geändert</string>
+    <string name="change_deleted_by">gelöscht von %1$s</string>
+    <string name="change_changed_by">geändert von %1$s</string>
+
+    <string name="range_week">Letzte 7 Tage</string>
+    <string name="range_month">Letzte 30 Tage</string>
+    <string name="range_all">Alle</string>
+    <string name="restore_all">Alle wiederherstellen</string>
+    <string name="search">Suchen</string>
+    <string name="versions_none">In diesem Ordner werden keine alten Versionen aufbewahrt.</string>
+    <string name="versions_no_match">Keine passenden Versionen.</string>
+    <string name="versions_latest">neueste %1$s</string>
+    <string name="action_restore">Wiederherstellen</string>
+    <string name="restore_all_title">%1$s wiederherstellen?</string>
+    <string name="restore_all_newest_week">Jede kehrt zu ihrer neuesten Version der letzten 7 Tage zurück.</string>
+    <string name="restore_all_newest_month">Jede kehrt zu ihrer neuesten Version der letzten 30 Tage zurück.</string>
+    <string name="restore_all_newest">Jede kehrt zu ihrer neuesten Version zurück.</string>
+    <string name="restore_all_text">%1$s Die aktuellen Dateien werden als Versionen aufbewahrt. %2$s</string>
+    <string name="restore_one_text">Die aktuelle Datei wird als Version aufbewahrt. %1$s</string>
+    <string name="restore_note_local_many">Wiederhergestellte Dateien tragen das aktuelle Datum und bleiben eine lokale Änderung: Dieser Ordner ist „Nur empfangen“.</string>
+    <string name="restore_note_local_one">Die wiederhergestellte Datei trägt das aktuelle Datum und bleibt eine lokale Änderung: Dieser Ordner ist „Nur empfangen“.</string>
+    <string name="restore_note_many">Wiederhergestellte Dateien tragen das aktuelle Datum und werden mit jedem Gerät synchronisiert, das diesen Ordner teilt.</string>
+    <string name="restore_note_one">Die wiederhergestellte Datei trägt das aktuelle Datum und wird mit jedem Gerät synchronisiert, das diesen Ordner teilt.</string>
+
+    <string name="ignored_none">Nichts ignoriert. Wenn Sie bei einer Anfrage auf Ignorieren tippen, erscheint sie hier.</string>
+    <string name="ignored_id">Kennung %1$s</string>
+    <string name="ignored_when">ignoriert %1$s</string>
+    <string name="ignored_when_start">Ignoriert %1$s</string>
+    <string name="ignored_folder">„%1$s“ von %2$s</string>
+    <string name="action_unignore">Beachten</string>
+    <string name="ignored_comes_back">Die Anfrage kommt wieder, wenn sich dieses Gerät das nächste Mal verbindet.</string>
+
+    <string name="ignores_default_title">Vorgabe-Ignoriermuster</string>
+    <string name="ignores_save_and_sync">Speichern und synchronisieren</string>
+    <string name="ignores_default_intro">Neue Ordner starten mit diesen Mustern, auch automatisch angenommene Ordner.</string>
+    <string name="ignores_first_sync">%1$s. Der Ordner bleibt pausiert, bis Sie speichern, damit nichts synchronisiert wird, bevor die Muster gelten.</string>
+    <string name="ignores_chip_keep">behalten</string>
+    <string name="ignores_chip_any_case">Groß/klein egal</string>
+    <string name="ignores_chip_deletable">löschbar</string>
+    <string name="ignores_chip_comment">Kommentar</string>
+    <string name="ignores_chip_any_path">jeder Pfad</string>
+    <string name="ignores_placeholder">Ein Muster pro Zeile</string>
+    <string name="ignores_leave_title">Ohne Speichern verlassen?</string>
+    <string name="ignores_leave_text">Der Ordner bleibt pausiert. Setzen Sie ihn auf seiner Seite fort, wenn Sie bereit sind.</string>
+    <string name="action_leave">Verlassen</string>
+    <string name="ignores_discard_text">Ihre Änderungen an den Mustern gehen verloren.</string>
+    <string name="ignores_help_title">So funktionieren Muster</string>
+    <string name="ignores_help_intro">Ein Muster pro Zeile, relativ zu diesem Ordner. Ignorierte Dateien bleiben auf diesem Smartphone, werden aber nicht synchronisiert.</string>
+    <string name="ignores_help_name">Ignoriert jede Datei und jeden Ordner namens name, in jeder Tiefe.</string>
+    <string name="ignores_help_top">Nur name auf der obersten Ebene dieses Ordners.</string>
+    <string name="ignores_help_star">* passt auf alles außer /; ? passt auf ein Zeichen.</string>
+    <string name="ignores_help_double_star">** passt auf alles, auch /.</string>
+    <string name="ignores_help_keep">Synchronisiert es doch. Die erste passende Zeile gewinnt, also setzen Sie sie über die allgemeinere Regel.</string>
+    <string name="ignores_help_case">Ignoriert Groß- und Kleinschreibung.</string>
+    <string name="ignores_help_deletable">Syncthing darf es löschen, wenn nur noch das einen gelöschten Ordner am Verschwinden hindert.</string>
+    <string name="ignores_help_comment">Ein Kommentar.</string>
+    <string name="ignores_help_not_shared">Muster liegen in der Datei .stignore des Ordners und werden nicht geteilt: Legen Sie sie auf jedem Gerät fest.</string>
+
+    <string name="schedule_only_at_set_times">Nur zu festen Zeiten</string>
+    <string name="schedule_on_hint">Außerhalb der Zeiten unten pausiert die Synchronisierung</string>
+    <string name="schedule_off_hint">Aus: synchronisiert jederzeit</string>
+    <string name="schedule_window_title">Zeitfenster %1$d</string>
+    <string name="schedule_from">Von %1$s</string>
+    <string name="schedule_to">bis %1$s</string>
+    <string name="schedule_delete_window">Zeitfenster %1$d löschen</string>
+    <string name="schedule_add_window">Zeitfenster hinzufügen</string>
+    <string name="schedule_no_window_fix">Fügen Sie ein Zeitfenster hinzu oder schalten Sie „Nur zu festen Zeiten“ aus.</string>
+    <string name="schedule_note">Die Zeiten folgen der Uhr und Zeitzone des Smartphones. Wenn das Smartphone ruht, kann Android die Synchronisierung einige Minuten zu spät starten oder pausieren. Ein Fenster, das vor seinem Beginn endet, reicht in den nächsten Tag.</string>
+    <string name="schedule_from_title">Von</string>
+    <string name="schedule_to_title">Bis</string>
+    <string name="schedule_window">%1$s %2$s–%3$s</string>
+    <string name="schedule_window_next_day">%1$s %2$s–%3$s (nächster Tag)</string>
+    <string name="every_day">Jeden Tag</string>
+    <string name="any_time">Jederzeit</string>
+    <plurals name="schedule_and_more">
+        <item quantity="one">%1$s und %2$d weiteres</item>
+        <item quantity="other">%1$s und %2$d weitere</item>
+    </plurals>
+
+    <string name="proxy_connect_through">Verbinden über</string>
+    <string name="proxy_none">Kein Proxy</string>
+    <string name="proxy_socks5">SOCKS5-Proxy</string>
+    <string name="proxy_http">HTTP-Proxy</string>
+    <string name="proxy_http_hint">Nutzt CONNECT, wie bei HTTPS</string>
+    <string name="proxy_use_tor">Tor nutzen (Orbot)</string>
+    <string name="proxy_host">Host</string>
+    <string name="proxy_host_hint">IP-Adresse oder Name, zum Beispiel 127.0.0.1</string>
+    <string name="proxy_port">Port</string>
+    <string name="proxy_user">Benutzername (optional)</string>
+    <string name="password_optional">Passwort (optional)</string>
+    <string name="proxy_only">Nur über den Proxy</string>
+    <string name="proxy_only_hint">Ist der Proxy nicht erreichbar, wartet Syncthing, statt sich direkt zu verbinden. QUIC und die Portfreigabe am Router sind aus, da sie den Proxy umgehen würden.</string>
+    <string name="proxy_http_password_note">Ein HTTP-Proxy erhält Benutzername und Passwort unverschlüsselt</string>
+    <string name="proxy_note_lan">Geräte im lokalen Netzwerk werden direkt erreicht, ohne den Proxy.</string>
+    <string name="proxy_note_tor">Für Tor muss Orbot oder eine andere Tor-App auf diesem Smartphone laufen.</string>
+    <string name="proxy_note_restart">Speichern startet Syncthing neu.</string>
+    <string name="proxy_summary_none">Keiner: direkte Verbindungen</string>
+    <string name="proxy_summary_only">%1$s, sonst nichts</string>
+    <string name="proxy_summary_fallback">%1$s, direkt bei Fehlschlag</string>
+
+    <string name="import_title">Sicherung importieren</string>
+    <string name="import_reading">Sicherung wird gelesen</string>
+    <string name="import_importing">Wird importiert</string>
+    <string name="import_done">Importiert</string>
+    <string name="import_done_problem">Import mit einem Problem abgeschlossen</string>
+    <string name="import_done_text">Syncthing wurde mit der importierten Einrichtung neu gestartet und prüft jeden Ordner erneut. Identische Dateien werden erkannt und nicht übertragen.</string>
+    <string name="import_done_identity">Dieses Smartphone hat jetzt die Gerätekennung der Sicherung: Beenden oder deinstallieren Sie Syncthing dort, woher die Sicherung stammt, sonst stören sich beide gegenseitig bei den Verbindungen.</string>
+    <string name="import_failed">Diese Datei kann nicht importiert werden</string>
+    <string name="import_choose_another">Andere Datei wählen</string>
+    <string name="import_intro_title">Einrichtung übernehmen</string>
+    <string name="import_intro">Wählen Sie eine Sicherung, die diese App (Einstellungen &gt; Sicherung exportieren) oder Syncthing-Fork (Settings &gt; Import and Export) exportiert hat. Dieses Smartphone erhält dann deren Ordner, Geräte und Einstellungen. Die Dateien in den Ordnern gehören nicht zur Sicherung.</string>
+    <string name="import_found">Sicherung gefunden</string>
+    <string name="import_choose">Sicherungsdatei wählen</string>
+    <string name="import_password_title">Passwortgeschützt</string>
+    <string name="import_password_text">Geben Sie das Passwort ein, mit dem die Sicherung exportiert wurde.</string>
+    <string name="import_password_label">Passwort der Sicherung</string>
+    <string name="action_continue">Weiter</string>
+    <string name="import_take_over">„%1$s“ übernehmen (%2$s)</string>
+    <string name="import_take_over_own_hint">Andere Geräte synchronisieren weiter wie bisher mit diesem Smartphone. Das Smartphone, von dem die Sicherung stammt, darf nicht mehr unter dieser Kennung laufen.</string>
+    <string name="import_take_over_fork_hint">Andere Geräte synchronisieren weiter wie bisher mit diesem Smartphone. Syncthing-Fork darf nicht mehr unter dieser Kennung laufen.</string>
+    <string name="import_keep_id">Eigene Kennung dieses Smartphones behalten</string>
+    <string name="import_keep_id_hint">Andere Geräte müssen dieses Smartphone als neues Gerät annehmen. Die alte Installation kann weiterlaufen.</string>
+    <string name="import_sync_settings">Synchronisierungseinstellungen</string>
+    <string name="import_not_imported">Nicht importiert</string>
+    <string name="import_key_warning">Die Sicherung enthält den privaten Schlüssel des Geräts. Jede App, die die Datei lesen kann, kann sich als dieses Gerät ausgeben.</string>
+    <string name="import_delete_backup">Sicherungsdatei nach dem Import löschen</string>
+    <string name="action_import">Importieren</string>
+    <string name="import_replace_title">Einrichtung dieses Smartphones ersetzen?</string>
+    <string name="import_replace_text">Die Ordner, Geräte und Einstellungen von Syncthing auf diesem Smartphone werden durch die der Sicherung ersetzt. Dateien auf dem Smartphone bleiben unberührt.</string>
+    <string name="action_replace">Ersetzen</string>
+    <string name="error_password_wrong">Falsches Passwort</string>
+    <string name="error_password_backup_empty">Geben Sie das Passwort der Sicherung ein</string>
+    <plurals name="error_too_long_chars">
+        <item quantity="one">Höchstens %1$d Zeichen</item>
+        <item quantity="other">Höchstens %1$d Zeichen</item>
+    </plurals>
+    <string name="import_folder_found">%1$s: gefunden, wird erneut geprüft</string>
+    <string name="import_folder_found_new">%1$s: gefunden, wird ein Syncthing-Ordner und geprüft</string>
+    <string name="import_folder_create_empty">%1$s: nicht auf diesem Smartphone, wird leer angelegt</string>
+    <string name="import_folder_create">%1$s: nicht auf diesem Smartphone, wird angelegt und von anderen Geräten befüllt</string>
+    <string name="import_on">Über %1$s</string>
+    <string name="import_unmetered">unbegrenztes WLAN</string>
+    <string name="import_metered">getaktetes WLAN</string>
+    <string name="import_mobile">mobile Daten</string>
+    <string name="import_mobile_roaming">mobile Daten, auch beim Roaming</string>
+    <string name="import_battery_saver_on">Im Energiesparmodus pausieren: an</string>
+    <string name="import_battery_saver_off">Im Energiesparmodus pausieren: aus</string>
+    <string name="import_boot_on">Beim Hochfahren starten: an</string>
+    <string name="import_boot_off">Beim Hochfahren starten: aus</string>
+    <string name="import_sync_times">Synchronisierungszeiten: %1$s</string>
+    <string name="import_any_time">jederzeit</string>
+    <string name="import_proxy">Proxy: %1$s</string>
+    <string name="import_proxy_none">keiner</string>
+    <string name="not_imported_networks">Nicht über WLAN synchronisieren: Hier wird unbegrenztes WLAN immer genutzt, getaktetes WLAN ist aus</string>
+    <string name="not_imported_force_start">Start erzwingen (unabhängig von Bedingungen synchronisieren)</string>
+    <string name="not_imported_force_stop">Synchronisierung von Hand pausiert (hier zählt nur die eigene Pause dieses Smartphones)</string>
+    <string name="not_imported_flight_mode">Im Flugmodus synchronisieren</string>
+    <string name="not_imported_master_sync">Dem Schalter für automatische Synchronisierung von Android folgen</string>
+    <string name="not_imported_wifi_allowlist">Nur in ausgewählten WLANs synchronisieren</string>
+    <string name="not_imported_schedule">Alle paar Stunden einige Minuten synchronisieren (hier: Synchronisierungszeiten, nach der Uhr)</string>
+    <string name="not_imported_broadcasts">Steuerung durch andere Apps</string>
+    <string name="not_imported_socks_proxy">SOCKS-Proxy: keine gültige Adresse, oder Tor war an</string>
+    <string name="not_imported_http_proxy">HTTP-Proxy: keine gültige Adresse, oder ein anderer Proxy war an</string>
+    <string name="not_imported_environment">Umgebungsvariablen für Syncthing</string>
+    <string name="not_imported_folder_conditions">Eigene Synchronisierungsbedingungen von Ordner %1$s</string>
+    <string name="not_imported_folder_script">Skript nach dem Synchronisieren von Ordner %1$s</string>
+    <string name="not_imported_device_conditions">Eigene Synchronisierungsbedingungen von Gerät %1$s</string>
+
+    <string name="export_title">Sicherung exportieren</string>
+    <string name="export_working">Wird exportiert</string>
+    <string name="export_done">Exportiert</string>
+    <string name="export_done_encrypted">Importieren Sie sie auf diesem oder einem anderen Smartphone unter Einstellungen &gt; Sicherung importieren. Bewahren Sie das Passwort auf: Ohne es lässt sich die Sicherung nicht öffnen.</string>
+    <string name="export_done_plain">Importieren Sie sie auf diesem oder einem anderen Smartphone unter Einstellungen &gt; Sicherung importieren. Halten Sie die Datei privat: Sie enthält den privaten Schlüssel dieses Smartphones.</string>
+    <string name="export_failed">Export fehlgeschlagen</string>
+    <string name="export_intro_title">Einrichtung dieses Smartphones sichern</string>
+    <string name="export_intro">Die Sicherung enthält die Ordner, die Geräte, die Gerätekennung dieses Smartphones mit ihrem privaten Schlüssel und die Synchronisierungseinstellungen einschließlich Proxy. Nicht die Dateien in den Ordnern und nicht die Anmeldung der Web-GUI.</string>
+    <string name="export_password_group">Passwort (empfohlen)</string>
+    <plurals name="export_password_hint">
+        <item quantity="one">Mindestens %1$d Zeichen. Verschlüsselt die Sicherung mit AES-256.</item>
+        <item quantity="other">Mindestens %1$d Zeichen. Verschlüsselt die Sicherung mit AES-256.</item>
+    </plurals>
+    <string name="password_again">Passwort wiederholen</string>
+    <string name="export_no_password_warning">Ohne Passwort kann sich jede App oder Person, die die Datei lesen kann, als dieses Smartphone ausgeben.</string>
+    <string name="export_choose">Speicherort wählen</string>
+
+    <string name="files_changed_elsewhere">Auf anderen Geräten geändert</string>
+    <string name="items_and_size_left">%1$s · noch %2$s</string>
+    <string name="items_and_size_or_more">%1$s · %2$s oder mehr</string>
+    <string name="files_no_remote_changes">Keine Änderungen von anderen Geräten.</string>
+    <string name="files_nothing_left">Nichts mehr herunterzuladen.</string>
+    <string name="files_downloading_now">Wird gerade heruntergeladen</string>
+    <string name="files_progress">%1$s von %2$s</string>
+    <string name="files_waiting">Wartet</string>
+    <string name="remote_need_title">%1$s braucht noch</string>
+    <string name="remote_need_none">%1$s hat alles aus diesem Ordner.</string>
+    <string name="files_changed_here">Auf diesem Smartphone geändert</string>
+    <string name="files_no_local_changes">Keine lokalen Änderungen.</string>
+    <string name="files_deleted">Gelöscht</string>
+    <string name="files_copy_all">Alle kopieren</string>
+    <plurals name="files_could_not_sync">
+        <item quantity="one">%1$s Element konnte nicht synchronisiert werden</item>
+        <item quantity="other">%1$s Elemente konnten nicht synchronisiert werden</item>
+    </plurals>
+    <string name="files_search_hint">Name oder Fehler</string>
+    <string name="files_nothing_failed">Nichts fehlgeschlagen.</string>
+    <string name="files_no_match">Keine Treffer.</string>
+    <string name="action_show_more">Mehr anzeigen</string>
+    <string name="files_to_delete">Zu löschen</string>
+
+    <string name="this_phone_traffic">Empfangen %1$s · gesendet %2$s seit dem Start</string>
+    <string name="this_phone_uptime">Läuft seit %1$s · Syncthing %2$s</string>
+    <string name="this_phone_listening">Wartet auf Verbindungen</string>
+    <string name="this_phone_no_listeners">Keine Empfangsadressen</string>
+    <string name="this_phone_no_listeners_hint">Andere Geräte können sich nur über Weiterleitung verbinden, oder wenn Sie sich mit ihnen verbinden</string>
+    <string name="this_phone_discovery">Gerätesuche</string>
+    <string name="this_phone_discovery_off">Aus</string>
+    <string name="this_phone_discovery_off_hint">Andere Geräte finden dieses Smartphone nur über die Adressen, die sie dafür haben</string>
+    <string name="this_phone_working">Funktioniert</string>
+
+    <string name="usage_title">Übertragung von anonymen Nutzungsberichten erlauben?</string>
+    <string name="usage_text">Der verschlüsselte Nutzungsbericht wird täglich gesendet. Er wird verwendet, um Statistiken über verwendete Betriebssysteme, Ordnergrößen und Programmversionen zu erstellen. Sollte der Bericht in Zukunft weitere Daten erfassen, wird dieses Fenster erneut angezeigt.</string>
+    <string name="usage_stats">Die gesammelten Statistiken sind öffentlich unter %1$s verfügbar. Sie können Ihre Entscheidung jederzeit in den Einstellungen ändern.</string>
+    <string name="usage_preview">Vorschau des Nutzungsberichts</string>
+    <string name="usage_preview_failed">Der Bericht konnte nicht geladen werden.</string>
+    <string name="usage_report">Nutzungsbericht</string>
+    <string name="action_yes">Ja</string>
+    <string name="action_no">Nein</string>
+
+    <string name="about_version">Version</string>
+    <string name="about_licence">Lizenz</string>
+    <string name="about_source">Quellcode</string>
+    <string name="about_docs">Dokumentation</string>
+    <string name="about_other">Sonstiges</string>
+    <string name="about_licences">Open-Source-Lizenzen</string>
+    <string name="about_licences_hint">Von der App genutzte Bibliotheken</string>
+    <string name="about_full_text">Volltext</string>
+    <string name="lib_androidx">AndroidX und Jetpack Compose</string>
+    <string name="lib_zxing">ZXing und ZXing Android Embedded</string>
+    <string name="lib_syncthing">Syncthing und die von ihm genutzten Go-Bibliotheken</string>
+    <string name="lib_syncthing_licence">MPL-2.0, mit Teilen unter MIT, BSD und Apache-2.0</string>
+
+    <string name="exact_time_just_now">%1$s · gerade eben</string>
+    <string name="exact_time_ago">%1$s · vor %2$s</string>
+</resources>

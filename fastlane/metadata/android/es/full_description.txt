@@ -1,0 +1,18 @@
+<p>MySyncthing ejecuta <a href="https://syncthing.net">Syncthing</a> en Android 15 y 16. Syncthing mantiene las carpetas sincronizadas entre tus dispositivos, de forma directa y cifrada, sin un servicio en la nube de por medio.</p>
+<p><b>Widget de pantalla de inicio:</b> una sola fila fina muestra si todo está actualizado, sincronizando (con el progreso), en pausa o si necesita tu atención, y qué dispositivos están conectados. Su botón pausa y reanuda la sincronización.</p>
+<ul>
+<li>Empareja dispositivos por código QR o ID de dispositivo, y acepta las carpetas compartidas contigo, con una ubicación, un tipo de carpeta y un versionado de archivos sugeridos</li>
+<li>Pantallas nativas de Material 3 para los ajustes de carpetas y dispositivos, con colores de Material You y modo oscuro</li>
+<li>Notificaciones de dispositivos nuevos y carpetas compartidas, con Revisar e Ignorar</li>
+<li>Funciona como servicio en primer plano todo el día, sin el límite de 6 horas de los servicios de sincronización de datos, y se inicia al encender</li>
+<li>Condiciones de ejecución: Wi-Fi de uso medido, datos móviles e itinerancia, cada uno activado o desactivado; solo mientras carga o solo con batería; pausa con el ahorro de batería; solo en horarios fijados de la semana</li>
+<li>Proxy SOCKS5 o HTTP, como Tor con Orbot</li>
+<li>Cambio fácil desde Syncthing-Fork: importa su copia de seguridad, también las cifradas; exporta tu propia configuración, opcionalmente cifrada con AES-256</li>
+<li>La interfaz web propia de Syncthing está integrada para los ajustes avanzados</li>
+<li>En español, inglés, italiano, alemán y francés, en el idioma del teléfono o en uno elegido solo para la app; fechas, horas y números como los escribe la región del teléfono</li>
+</ul>
+<p><b>Privada:</b> sin rastreo, publicidad ni analíticas, y sin cuenta. El informe de uso anónimo de Syncthing está desactivado salvo que lo aceptes. La copia de seguridad en la nube está desactivada, así que las claves del dispositivo nunca van a una nube; una transferencia de teléfono a teléfono a un teléfono nuevo sí las lleva, así que después detén Syncthing en el teléfono anterior. <a href="https://github.com/aiste633/mysyncthing/blob/main/docs/privacy.md">Qué guarda la app y qué sale del teléfono</a> (en inglés).</p>
+<p><b>Ligera con la batería y la memoria flash:</b> en reposo, la app escribe unos 0,02–0,14 MB por hora en la memoria flash y no guarda archivos de registro.</p>
+<p><b>Robusta y probada:</b> cada dato introducido se comprueba con las mismas reglas del núcleo, con pruebas basadas en propiedades, fuzzing del código Go, una auditoría de seguridad, pruebas de carga con 50.000 archivos y almacenamiento lleno, una prueba de memoria de 10 horas y pruebas de interrupción. Las compilaciones reproducibles y una lista completa de componentes de software (SBOM) permiten a cualquiera comprobar qué contiene el APK.</p>
+<p><b>Vibecoded:</b> un asistente de programación con IA (Claude) escribió casi todo el código, dirigido y probado por una sola persona. Sin garantías si algo se rompe o sale mal, como dice la licencia: guarda copias de seguridad de todo lo que importe.</p>
+<p>El núcleo oficial de Syncthing (v2) funciona dentro de la app, con unas pocas correcciones pequeñas y documentadas. Para llegar a carpetas en cualquier lugar del almacenamiento compartido hace falta el permiso «Acceso a todos los archivos».</p>

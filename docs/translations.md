@@ -1,8 +1,8 @@
 # Translations
 
 The app's text lives in Android string resources, ready for translation. English is the
-source language (declared as en-GB; the text is not rewritten in British spelling). Italian
-is the first translation. The files are standard Android XML, so a translation platform
+source language (declared as en-GB; the text is not rewritten in British spelling). Italian,
+Spanish, German and French are translated. The files are standard Android XML, so a translation platform
 such as Weblate can work on them directly; none is set up yet.
 
 ## Files
@@ -28,6 +28,9 @@ As Weblate components: one per `strings.xml` (format "Android String Resource", 
 |---|---|---|---|
 | English (source) | `values`, `en-US` | all | all |
 | Italian | `values-it`, `it` | all | all |
+| Spanish | `values-es`, `es` | all | all |
+| German | `values-de`, `de` | all | all |
+| French | `values-fr`, `fr` | all | all |
 
 `TranslationsTest` checks every translation against English: each name must exist in
 English, and each string must take the same placeholders (a plural's "one" may leave out
@@ -59,8 +62,9 @@ unless one was chosen in the web GUI itself.
 - Each string with placeholders has a comment saying what they hold. Keep `%1$s`, `%2$d`
   and their numbers; the order in the sentence may change.
 - Plurals (`<plurals>`) need every form Android lists for your language; lint fails on a
-  missing one. Italian also has `many` (round millions); where its text is the same, repeat
-  `other`. Where English leaves out the number in "one" ("Every day"), keep `%1$d` if "one"
+  missing one. Italian, Spanish and French also have `many` (round millions); where its text
+  is the same, repeat `other`; French writes "1 000 000 de fichiers", so its `many` adds
+  "de". Where English leaves out the number in "one" ("Every day"), keep `%1$d` if "one"
   also covers other numbers in your language (such as 21).
 - Units are SI symbols and are not translated: kB, MB/s, %, d, h, min, s. They follow the
   number after a non-breaking space (` `).
@@ -69,6 +73,12 @@ unless one was chosen in the web GUI itself.
 - Follow the terms of upstream Syncthing's translation for the same language (folder types,
   versioning, ignore patterns, introducer, and so on), so the app and the web GUI agree.
   The usage-reporting question uses upstream's wording; take upstream's translation of it.
+  Upstream's address form too: German uses "Sie", Spanish "tú", French "vous", Italian "tu".
+  French follows upstream's terms word for word, so a folder is a "partage" and Ignore is
+  "Refuser"; "dossier" is kept for a plain directory on the phone.
+- French typography: a non-breaking space (U+00A0) before `:` `;` `?` `!` and inside
+  `« »`, and `’` as the apostrophe, which needs no escaping. German quotes are `„…“`,
+  Spanish ones `«…»`.
 - Dates, times and numbers are not in the strings: the app writes them as the phone's
   language does (`3 ott 2025, 18:42`, `1,5 MB`), with the hour per the phone's 12/24 h
   setting. Only words around them ("yesterday, %1$s") are translated.

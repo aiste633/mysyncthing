@@ -1,0 +1,1 @@
+Kontinuierliche Peer-to-Peer-Dateisynchronisierung mit Syncthing
