@@ -3,7 +3,7 @@
 Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 ## Decisions (confirmed 2026-10-24)
-- App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0. Distribution: the app will be published on F-Droid (no Play constraints, no proprietary deps, reproducible builds). When is not decided yet: no date, don't describe it as imminent or as already available.
+- App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0. Distribution: the app will be published on F-Droid (no Play constraints, no proprietary deps, reproducible builds). v0.1.0 is on GitHub releases (2026-10-29); the recipe is ready (2026-10-30) and the user submits it to fdroiddata. Don't describe the app as on F-Droid until F-Droid has accepted it.
 - minSdk 35, target/compileSdk 36. No wider reach wanted.
 - Kotlin + Jetpack Compose. Modules `:app`, `:core`, plus `go/`.
 - Core: in-process via `gomobile bind` of `go/bridge` (Go package `stbridge`, Java package `eu.stedb.mysyncthing.stbridge`). Not the exec'd-binary approach.
@@ -22,12 +22,13 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 ## Next
 1. Test on a device: start at boot, run conditions, QR pairing, folder accept.
 2. Notifications for pending devices/folders; folder detail screen (ignores, versioning); per-folder sharing edit.
-3. First release: create the release key (`scripts/sign-release.sh` header), tag, sign, fill `AllowedAPKSigningKeys` in `fdroid/eu.stedb.mysyncthing.yml`, then submit to fdroiddata (user does this once the app is usable).
+3. First release: done 2026-10-29 (v0.1.0). `AllowedAPKSigningKeys` filled in 2026-10-30; the user submits the recipe to fdroiddata (GitLab merge request "New App: eu.stedb.mysyncthing").
 
 ## Pins
 - NDK `mysyncthing.ndkVersion` in `gradle.properties` (r30, 30.0.16248370). `go/build.sh` refuses any other NDK. Also update `ndk:` in `fdroid/eu.stedb.mysyncthing.yml`.
 - compileSdk 37 (Compose 1.12 and Navigation 2.10 require it); targetSdk stays 36. Kotlin 2.4 needs R8 9.1.29+, so keep AGP and Kotlin in step (developer.android.com/build/kotlin-support).
 - Release APK is arm64-v8a only (`abiFilters` in release); `vcsInfo` off. Signing happens on the user's PC only, never in CI.
+- F-Droid recipe builds Go from source: `srclibs: go`, checked out in prebuild at the `toolchain` line of `go/bridge/go.mod`, built in `build` with `make.bash`, bootstrapped by forky's golang-go (Go 1.26 needs >= 1.24.6 to build). Prebuild seds `go/build.sh` to `GOTOOLCHAIN=local` with that Go first on PATH, so no prebuilt toolchain is downloaded. CI's `fdroid` job writes fdroiddata's `srclibs/go.yml` and must still match the release APK byte for byte. `fastlane/.../en-US/images/icon.png` (512 px) is rendered from the adaptive icon (viewport 12..96 of 108): F-Droid cannot render vector-only launcher icons.
 - `sign-release.sh` signs with `--v1-signing-enabled false --alignment-preserved`: apksigner's defaults add v1 JAR files and re-align, so the signed APK stops being the build plus a signature and F-Droid's apksigcopier check fails (v0.1.0 was first signed that way). The script runs that apksigcopier check itself, refuses a key other than the recipe's `AllowedAPKSigningKeys`, and removes the unsigned APK from the release. Release notes come from the fastlane changelog (`draft-release` job).
 - gomobile embeds absolute module paths in the .so build info; `go/build.sh` builds via the symlink `/tmp/mysyncthing-go` so they match everywhere. Do not remove.
 - Any dependency/plugin bump: regenerate `gradle/verification-metadata.xml` (command in README).

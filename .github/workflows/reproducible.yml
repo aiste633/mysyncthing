@@ -154,6 +154,10 @@ jobs:
               -e "s|^    commit: .*|    commit: $GITHUB_SHA|" \
               "$src/fdroid/$APPID.yml" > "$home_vagrant/metadata/$APPID.yml"
           cat "$home_vagrant/metadata/$APPID.yml"
+          # The recipe's srclibs, as fdroiddata defines them.
+          mkdir -p "$home_vagrant/srclibs"
+          printf '%s\n' 'RepoType: git' 'Repo: https://github.com/golang/go.git' '' \
+            "Prepare: sed -i -e '/GOTOOLCHAIN/s/auto/local/' go.env" > "$home_vagrant/srclibs/go.yml"
           touch "$home_vagrant/config.yml"
           chown -R vagrant "$home_vagrant" "$src"
           cd "$home_vagrant"
