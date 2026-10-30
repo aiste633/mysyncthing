@@ -52,6 +52,12 @@ affect the app are listed with their reason in
 [`scripts/vulns/accepted.toml`](../scripts/vulns/accepted.toml): today the upstream web GUI's
 AngularJS 1.3.20 and moment 2.19.4, which only Syncthing can replace.
 
+Every month, and on every tag, an upkeep check lists newer releases of everything the build
+pins (Syncthing, Go, Gradle, the NDK, the libraries, the actions, the scan tools) and checks
+that F-Droid keeps up: its recipe must match ours, and it must publish each release within 10
+days. Weekly it warns before GitHub turns off these scheduled checks after 60 quiet days. See
+[Keeping up to date](../README.md#keeping-up-to-date).
+
 The workflows use a read-only token and leave no credentials in the checkout, and every
 GitHub Action is pinned by its full commit hash, so a moved tag cannot change what CI runs. A
 release's APK and SBOM carry a signed build provenance attestation, which anyone can check

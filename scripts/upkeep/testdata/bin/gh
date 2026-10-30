@@ -1,0 +1,3 @@
+#!/bin/sh
+# Stands in for gh in the self-test of scripts/upkeep/fdroid.sh: the latest release, published long ago.
+printf '%s\t%s\n' v0.1.0 2026-01-01T00:00:00Z

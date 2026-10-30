@@ -1,0 +1,15 @@
+[versions]
+agp = "9.0.0"
+coreKtx = "1.10.0"
+okhttp = "5.0.0"
+robolectric = "4.14"
+robolectricAndroidAll = "16-robolectric-13921718-i7"
+
+[libraries]
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
+robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
+robolectric-android-all = { module = "org.robolectric:android-all-instrumented", version.ref = "robolectricAndroidAll" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }

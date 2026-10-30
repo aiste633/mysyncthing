@@ -1,0 +1,50 @@
+Categories:
+  - Cloud Storage & File Sync
+  - Connectivity
+License: AGPL-3.0-only
+SourceCode: https://github.com/aiste633/mysyncthing
+IssueTracker: https://github.com/aiste633/mysyncthing/issues
+Changelog: https://github.com/aiste633/mysyncthing/releases
+
+AutoName: MySyncthing
+
+RepoType: git
+Repo: https://github.com/aiste633/mysyncthing.git
+Binaries: https://github.com/aiste633/mysyncthing/releases/download/v%v/mysyncthing-%v.apk
+
+Builds:
+  - versionName: 0.1.1
+    versionCode: 2
+    commit: v0.1.1
+    subdir: app
+    submodules: true
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-21-jdk-headless
+      - update-alternatives --set java /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+      - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
+      - apt-get update
+      - apt-get install -y -t forky golang-go
+    gradle:
+      - yes
+    srclibs:
+      - go@go1.26.10
+    prebuild:
+      - git -C $$go$$ checkout -f "$(sed -n 's/^toolchain //p' ../go/bridge/go.mod)"
+      - sed -i -e 's|^export GOTOOLCHAIN=.*|export PATH="$$go$$/bin:$PATH" GOTOOLCHAIN=local|'
+        ../go/build.sh
+    scandelete:
+      - go/syncthing/lib/model/testdata
+      - go/bridge/testdata/fork
+    build:
+      - pushd $$go$$/src
+      - ./make.bash
+      - popd
+    ndk: 29.0.14206865
+
+AllowedAPKSigningKeys: 71c8e04b73a0242d201948e8df9fe44d50c360d141f70701b9bd60b39b0fd668
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags ^v[0-9.]+$
+CurrentVersion: 0.0.9
+CurrentVersionCode: 2
