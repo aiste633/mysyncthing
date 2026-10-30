@@ -25,7 +25,8 @@ If you are not sure where it belongs, report it here and it will be passed on.
 
 ## Supported versions
 
-Only the latest release gets fixes. There is no release yet.
+Only the latest release is supported. Security fixes go into a new release, never into older ones,
+so please update before reporting.
 
 ## Checking a release
 
