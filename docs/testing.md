@@ -184,8 +184,8 @@ was written (without network access, since a fuzzed configuration can switch on 
 | `FuzzCheckIgnores` | Ignore patterns | What the check accepts loads without error | 45 min, 1,344,638 inputs |
 | `FuzzProxyFrom` | Proxy settings | Refused, or the proxy URL reads back the same | 3 min |
 | `FuzzReadOwnSettings` | This app's backup settings | Refused, or they read back the same | 3 min |
-| `FuzzReadForkBackup` | Backup zips (Syncthing-Fork's and this app's) | Refused, or read and passing the import policy, never a crash | 10 min |
-| `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads, the import policy leaves nothing that runs a command, cleans out or reaches files outside shared storage, or reports elsewhere; a second run changes nothing | 15 min |
+| `FuzzReadForkBackup` | Backup zips (Syncthing-Fork's and this app's) | Refused, or read and passing the import policy, never a crash | 10 min, 499,258 inputs |
+| `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads, the import policy leaves nothing that runs a command, cleans out or reaches files outside shared storage, or reports elsewhere; a second run changes nothing | 15 min, 2,534,263 inputs (found a slice difference, fixed) |
 | `FuzzReadJavaPrefs` | Syncthing-Fork's saved preferences (Java serialization, read by a strict allowlist parser, never deserialized) | Refused or read, never a crash | 3 min |
 
 `FuzzRESTConfig` found a bug in Syncthing itself: six GUI setting changes in a row made the
