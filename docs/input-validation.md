@@ -9,22 +9,26 @@ Go fuzz targets and tests in `go/bridge`.
 
 ## Form fields
 
+Every value shows as the core holds it, defaults included ("0 days (forever)", "0 kB/s (no limit)"),
+and its dialog starts with that value, as if typed. The three address lists have a "?" that shows the
+forms they take; `everySyntaxExampleIsAccepted` keeps each example passing the list's check.
+
 | Field (screen) | Expected | App check | Core check |
 |---|---|---|---|
 | Device ID (Add device) | 56 base32 characters in 8 groups, 4 Luhn check characters; dashes, spaces, case, `=` and 0/1/8 for O/I/B tolerated | `deviceId()`: the core's parser ported, check characters included; the pre-2014 52-character form refused (4 dropped characters would make one); saved in canonical form; "Already added" | `lib/protocol/deviceid.go`: refuses a wrong check character |
 | Device name (Add device, Device, This phone) | Text; required when renaming | Required, trimmed | None |
 | Group (Device, Folder) | Text, local to this phone | Trimmed | None |
-| Addresses (Device, Defaults for new devices) | `dynamic`, or `tcp`/`quic` URL to a host with an optional port 1-65535 (22000 when left out), or a relay URL | `isDeviceAddress()`; a bare host:port is taken as TCP | None at save; a bad address fails at dial time |
+| Addresses (Device, Defaults for new devices) | `dynamic`, or `tcp`/`quic` URL to a host with an optional port 1-65535 (22000 when left out), or a relay URL | `isDeviceAddress()`; a bare host:port is taken as TCP; "?" lists the forms | None at save; a bad address fails at dial time |
 | Download/upload limit (Device, Network, Defaults) | 0 (none) to 2 TB/s, in kB/s or MB/s; stored as KiB/s (a Go int, 64-bit on phones; `Long` in the app, so any value the web GUI sets still loads) | `amountError()` with `decimal()`: plain decimal in 0-9 digits, either separator; no sign, exponent, NaN or Infinity; other scripts' digits refused with "Use the digits 0-9" | None (negative means none) |
 | Compression, Connections, Download order, Folder type, Full rescan | One of the listed choices | Choice dialog | Unknown values silently become the default; rescan clamped to 0 to 1 year |
-| Listen addresses (Settings) | `default`, or canonical `tcp`/`quic` URL with an optional port (22000 when left out, 0 = any), relay URL, `dynamic+https` URL | `isListenAddress()` | `lib/connections/service.go` skips a non-canonical URL (only logged); `lib/connections/util.go` `fixupPort` adds 22000 |
-| Discovery servers (Settings) | `default`, or `https` URL with a host, optional port, `?id=` (a device ID) or `?insecure` | `isDiscoveryServer()` | `lib/discover/global.go`: https, or http only with insecure and noannounce |
+| Listen addresses (Settings) | `default`, or canonical `tcp`/`quic` URL with an optional port (22000 when left out, 0 = any), relay URL, `dynamic+https` URL | `isListenAddress()`; "?" lists the forms | `lib/connections/service.go` skips a non-canonical URL (only logged); `lib/connections/util.go` `fixupPort` adds 22000 |
+| Discovery servers (Settings) | `default`, or `https` URL with a host, optional port, `?id=` (a device ID), `?insecure`, `?noannounce` or `?nolookup` | `isDiscoveryServer()`; "?" lists the forms | `lib/discover/global.go`: https, or http only with insecure and noannounce |
 | Folder name (Add folder, Folder) | Text; required when renaming | Required, trimmed | None |
 | Folder ID (Add folder) | Non-empty, unique, usable in a REST path: no `/`, not `.` or `..`, no control characters | `folderIdError()`; an offer keeps the other device's ID and is only checked for duplicates | Non-empty, unique (`lib/config/config.go`) |
 | Folder path (Add folder) | Absolute, in shared storage or on an SD card (`/storage/...`, `/sdcard` accepted and spelled out), no `.`/`..`/empty parts, no control characters or bidi controls (which make a path read as another), not the same as, inside or around another folder | `folderPathError()`, saved through `folderPath()` | Non-empty only; it creates whatever path it is given |
 | Suggested path for an offered folder | One directory in the default location, named after the offer | `safeName()`: the core's `SanitizePath` ported, plus never `.` or `..`, at most 255 bytes; falls back to the ID, then "Folder" | Auto-accept uses `SanitizePath` and skips existing paths |
-| Versioning: days to keep (Trash can, Staggered) | Whole number, 0 = forever | `wholeNumberError()`: 0-9 digits only, others refused with "Use the digits 0-9" (Staggered stored in seconds) | `strconv.Atoi`; an unreadable value silently becomes the default |
-| Versioning: versions to keep (Simple) | Whole number, 1 or more | `wholeNumberError(min = 1)`, as upstream's web GUI | `strconv.Atoi`; 0 keeps no versions |
+| Versioning: days to keep (Trash can, Staggered) | Whole number, 0 = forever | `wholeNumberError()`: 0-9 digits only, others refused with "Use the digits 0-9" (Staggered stored in seconds). A missing or unreadable stored value shows the core's default (Trash can 0, Staggered 365 days) | `strconv.Atoi`/`ParseInt`; an unreadable value silently becomes the default |
+| Versioning: versions to keep (Simple) | Whole number, 1 or more | `wholeNumberError(min = 1)`, as upstream's web GUI; a missing or unreadable stored value shows 5, the core's default | `strconv.Atoi`; 0 keeps no versions |
 | Keep free on this phone (Folder, Defaults) | Decimal 0-100 for %, 0 or more for MB/GB | `amountError()`, as for speed limits | None |
 | Encryption password (Share encrypted) | Non-empty; kept exactly as typed, spaces included, so it matches the other devices | Required | None |
 | Proxy host (Proxy) | IP address (IPv4 or IPv6, no zone) or DNS name: RFC 1123 labels, at most 253 characters, last label not all digits | `proxyHostError()`, mirroring the bridge | `proxyFrom` in `go/bridge/proxy.go` refuses the same; the core's dialer would fail at every dial |

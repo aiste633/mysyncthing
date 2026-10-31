@@ -266,13 +266,13 @@ fun SettingsScreen(
         NetDialog.Listen -> ListEditDialog(
             stringResource(R.string.listen_addresses), o.listenAddresses, token = "default", tokenTitle = stringResource(R.string.hint_default),
             tokenHint = stringResource(R.string.listen_default_hint),
-            addHint = stringResource(R.string.listen_add_hint),
+            addHint = stringResource(R.string.listen_add_hint), syntax = LISTEN_SYNTAX,
             valid = ::isListenAddress, onDismiss = close,
         ) { list -> close(); vm.changeOptions(o.copy(listenAddresses = list), R.string.op_listen_addresses) { putStrings("listenAddresses", list) } }
         NetDialog.Servers -> ListEditDialog(
             stringResource(R.string.discovery_servers), o.globalAnnounceServers, token = "default", tokenTitle = stringResource(R.string.settings_servers_default),
             tokenHint = stringResource(R.string.servers_default_hint),
-            addHint = stringResource(R.string.servers_add_hint),
+            addHint = stringResource(R.string.servers_add_hint), syntax = SERVER_SYNTAX,
             valid = ::isDiscoveryServer, onDismiss = close,
         ) { list -> close(); vm.changeOptions(o.copy(globalAnnounceServers = list), R.string.op_discovery_servers) { putStrings("globalAnnounceServers", list) } }
         null -> {}

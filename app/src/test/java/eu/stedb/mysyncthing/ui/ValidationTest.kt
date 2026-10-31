@@ -72,6 +72,32 @@ class ValidationTest {
     }
 
     @Test
+    fun anyStoredVersioningValueShowsAsANumber() = forAll(oneOf(typedNumber, anyText)) { raw ->
+        // Whatever the config holds (an import, the web GUI's advanced editor): the screen
+        // shows a whole number, the dialog starts with it, and saving it back is accepted.
+        for (type in listOf("trashcan", "simple", "staggered")) {
+            val shown = versioningShown(type, raw)
+            assertTrue("$type $raw -> $shown", shown.isNotEmpty() && shown.all { it in '0'..'9' })
+            assertNotNull(versioningAmount(versioningParam(type)!!, shown).en())
+        }
+    }
+
+    // --- The "?" beside address lists
+
+    @Test
+    fun everySyntaxExampleIsAccepted() {
+        val lists = listOf(
+            Triple(LISTEN_SYNTAX, ::isListenAddress, { a: String -> a.trim() }),
+            Triple(SERVER_SYNTAX, ::isDiscoveryServer, { a: String -> a.trim() }),
+            Triple(ADDRESS_SYNTAX, ::isDeviceAddress, ::normalizeAddress),
+        )
+        for ((syntax, valid, normalize) in lists) {
+            assertTrue(syntax.examples.isNotEmpty())
+            for (e in syntax.examples) assertTrue(e.example, valid(normalize(e.example)))
+        }
+    }
+
+    @Test
     fun versionsToKeepIsAtLeastOne() {
         // The simple versioner removes every version beyond "keep", so 0 kept none.
         assertEquals("A whole number, 1 or more", wholeNumberError("0", versioningParam("simple")!!.min).en())
