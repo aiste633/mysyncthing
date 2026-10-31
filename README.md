@@ -55,9 +55,10 @@ What each test covers, with its numbers: [testing and hardening](docs/testing.md
 - Stress tests (50,000 files, full storage, random UI events), a 10-hour memory soak with no leak, flash-write tracing, and interruption tests (rotation, Android reclaiming the app, permissions taken away).
 - CI checks every push: unit tests, lint, a leak check that keeps personal details out of the repository and its history, a guard on the app's permissions, an audit of the workflows, and a twin build that must be byte-identical. CodeQL analyses the app and the core. A daily scan opens an issue when a vulnerability is published that affects the app: in its Go code, its libraries (the SBOM) or the pinned actions. A monthly check lists newer releases of everything the build pins and watches that F-Droid keeps up with each release. GitHub Actions are pinned by commit hash, and releases carry a signed build provenance attestation.
 
-### Open and verifiable
+### Free and verifiable
 
-- The official Syncthing core (v2), unchanged apart from a few small fixes, each documented in [`go/patches/`](go/patches/). AGPL-3.0, and the Syncthing core MPL-2.0.
+- Free software: MySyncthing is AGPL-3.0-or-later, the Syncthing core MPL-2.0, and every other part of the APK has a free software licence too. The SBOM check in CI refuses any other licence (see [Licence](#licence)).
+- The official Syncthing core (v2), unchanged apart from a few small fixes, each documented in [`go/patches/`](go/patches/).
 - Reproducible builds: every build of a release gives a byte-identical APK, so anyone, F-Droid included, can check that a release APK was built from this source.
 - A [software bill of materials](docs/sbom.md) lists everything the APK contains, with versions and licences; CI keeps it current.
 
@@ -204,8 +205,8 @@ All text for people is in string resources; English is the source language; Ital
 
 ## Licence
 
-AGPL-3.0 (see `LICENSE`). The bundled Syncthing core is MPL-2.0.
+AGPL-3.0-or-later: the GNU Affero General Public License version 3 (see `LICENSE`), or at your option any later version. The bundled Syncthing core is MPL-2.0.
 
 Everything the release APK contains, with versions and licences, is in the software bill of materials: [`docs/sbom.md`](docs/sbom.md), and [`docs/sbom.cdx.json`](docs/sbom.cdx.json) in CycloneDX 1.6 with checksums and the dependency graph. It covers the Android and Kotlin libraries, the Go modules linked into the core, C code they bundle, the third-party files in Syncthing's web GUI, and the pinned build tools.
 
-`scripts/sbom.sh` generates both files from the build itself: Gradle's resolved release classpath (licences from the POMs, checksums from `gradle/verification-metadata.xml`), `go list` with the core's build settings (licences read from each module's licence files), and `scripts/sbom/webgui.json` for the web GUI, whose files are pinned by checksum. It fails on anything it cannot place: a licence it has not seen before, C code in a new Go package, a web GUI file in no entry or changed. CI keeps it current: the `sbom` job in `build.yml` regenerates it and fails when the committed files differ, and the release build checks the Go modules against the build info in the APK's `libgojni.so`. After a dependency, Syncthing or toolchain change, run `scripts/sbom.sh` and commit the result.
+`scripts/sbom.sh` generates both files from the build itself: Gradle's resolved release classpath (licences from the POMs, checksums from `gradle/verification-metadata.xml`), `go list` with the core's build settings (licences read from each module's licence files), and `scripts/sbom/webgui.json` for the web GUI, whose files are pinned by checksum. It fails on anything it cannot place: a licence it has not seen before (it accepts only free software licences, so that the app stays free software), C code in a new Go package, a web GUI file in no entry or changed. CI keeps it current: the `sbom` job in `build.yml` regenerates it and fails when the committed files differ, and the release build checks the Go modules against the build info in the APK's `libgojni.so`. After a dependency, Syncthing or toolchain change, run `scripts/sbom.sh` and commit the result.

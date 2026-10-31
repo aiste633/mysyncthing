@@ -21,7 +21,7 @@
       "licenses": [
         {
           "license": {
-            "id": "AGPL-3.0-only"
+            "id": "AGPL-3.0-or-later"
           }
         }
       ],

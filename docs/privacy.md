@@ -1,6 +1,6 @@
 # Privacy
 
-Last updated: 28 October 2026. Changes to this page are in the repository's history.
+Last updated: 31 October 2026. Changes to this page are in the repository's history.
 
 MySyncthing runs Syncthing on your phone. Syncthing copies folders directly between devices you
 pair yourself. There is no MySyncthing account and no MySyncthing server: the app's developer
@@ -13,7 +13,8 @@ receives no data from the app, and has no access to your files, settings or devi
 - To find and reach your devices over the internet, Syncthing uses public servers run by the
   Syncthing project. They see this phone's IP address and Syncthing device ID, never your files.
   Each one can be turned off.
-- Anonymous usage reporting to the Syncthing project is off unless you agree to it.
+- Anonymous usage reporting to the Syncthing project, and the failure reports that come with it,
+  is off unless you agree to it.
 - Nothing goes to Google: no cloud backup, and the built-in web view sends no metrics or Safe
   Browsing checks.
 - Android's phone-to-phone transfer to a new phone carries the device keys, so the new phone
@@ -87,6 +88,13 @@ reporting turns it off at any time; *Preview usage report* shows the exact repor
 reports contain and how they are used is described by the Syncthing project itself:
 [Security principles](https://docs.syncthing.net/users/security.html) and
 [data.syncthing.net](https://data.syncthing.net).
+
+Agreeing also turns on Syncthing's failure reports. When the core hits an internal error that
+should never happen, it sends `crash.syncthing.net` a short description of the error, how often
+it happened and the Syncthing version; for some errors also a few internal counters, or a list
+of what the core was running at that moment. They hold no file contents. Turning usage reporting
+off stops them too. Syncthing's reports of a crashed core are not sent: they need Syncthing's
+own launcher, which the app does not use.
 
 Syncthing's update check is off: updates come through the app store only.
 
