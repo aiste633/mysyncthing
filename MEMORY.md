@@ -3,7 +3,7 @@
 Resume notes for any session. Dates are ISO 8601, times 24 h.
 
 ## Decisions (confirmed 2026-10-24)
-- App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0. Distribution: the app will be published on F-Droid (no Play constraints, no proprietary deps, reproducible builds). v0.1.0 is on GitHub releases (2026-10-29); the recipe is ready (2026-10-30) and the user submits it to fdroiddata. Don't describe the app as on F-Droid until F-Droid has accepted it.
+- App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0. Distribution: the app will be published on F-Droid (no Play constraints, no proprietary deps, reproducible builds). Releases on GitHub: v0.1.0 (2026-10-29), v0.1.2 (2026-10-30; 0.1.1 never tagged, versionCode 2 unused), v0.1.3 prepared 2026-10-31 (versionCode 4: backup import hardening); the recipe is ready (2026-10-30) and the user submits it to fdroiddata. Don't describe the app as on F-Droid until F-Droid has accepted it.
 - minSdk 35, target/compileSdk 36. No wider reach wanted.
 - Kotlin + Jetpack Compose. Modules `:app`, `:core`, plus `go/`.
 - Core: in-process via `gomobile bind` of `go/bridge` (Go package `stbridge`, Java package `eu.stedb.mysyncthing.stbridge`). Not the exec'd-binary approach.

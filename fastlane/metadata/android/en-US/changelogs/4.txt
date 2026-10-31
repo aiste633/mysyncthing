@@ -1,0 +1,1 @@
+Importing a backup is safer. Settings in it that could run a command, delete files outside a folder or send data to other servers are reset, and the preview lists them under Not imported. It also marks devices that can add other devices or accept folders automatically. Usage reporting is asked again, and a backup that changed after its preview is refused.
