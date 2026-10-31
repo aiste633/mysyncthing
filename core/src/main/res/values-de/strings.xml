@@ -120,6 +120,8 @@
     </plurals>
 
     <string name="import_cannot_open">Die Sicherung kann nicht geöffnet werden</string>
+    <string name="import_backup_changed">Die Sicherung hat sich nach dem Lesen geändert. Wählen Sie sie erneut aus.</string>
+    <string name="import_cannot_read_again">Die Sicherung kann nicht mehr gelesen werden: sie wurde verschoben oder gelöscht. Wählen Sie sie erneut aus.</string>
     <string name="import_settings_not_saved">Die Synchronisierungseinstellungen konnten nicht alle gespeichert werden, wahrscheinlich weil der Speicher voll ist. Prüfen Sie sie in den Einstellungen.</string>
     <string name="import_backup_not_deleted">Die Sicherungsdatei konnte nicht gelöscht werden. Löschen Sie sie selbst: Sie enthält den privaten Schlüssel des Geräts.</string>
     <string name="export_cannot_write">Die Datei kann nicht geschrieben werden</string>

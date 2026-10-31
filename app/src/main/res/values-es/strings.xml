@@ -690,6 +690,8 @@
     <string name="import_keep_id_hint">Los otros dispositivos deben aceptar este teléfono como dispositivo nuevo. La instalación anterior puede seguir funcionando.</string>
     <string name="import_sync_settings">Ajustes de sincronización</string>
     <string name="import_not_imported">No importado</string>
+    <string name="import_device_introducer">Presentador: puede añadir dispositivos a este teléfono</string>
+    <string name="import_device_auto_accept">Acepta sus carpetas automáticamente</string>
     <string name="import_key_warning">La copia de seguridad contiene la clave privada del dispositivo. Cualquier app que pueda leer el archivo puede hacerse pasar por este dispositivo.</string>
     <string name="import_delete_backup">Eliminar el archivo de copia de seguridad tras importarlo</string>
     <string name="action_import">Importar</string>
@@ -734,6 +736,25 @@
     <string name="not_imported_folder_conditions">Condiciones de sincronización propias de la carpeta %1$s</string>
     <string name="not_imported_folder_script">Script tras sincronizar la carpeta %1$s</string>
     <string name="not_imported_device_conditions">Condiciones de sincronización propias del dispositivo %1$s</string>
+    <string name="not_imported_folder_id">Carpeta %1$s: su ID tiene caracteres de control</string>
+    <string name="not_imported_folder_filesystem">Carpeta %1$s: no está en un sistema de archivos normal</string>
+    <string name="not_imported_folder_path">Carpeta %1$s: no está en el almacenamiento del teléfono ni en una tarjeta SD</string>
+    <string name="not_imported_folder_overlap">Carpeta %1$s: igual que otra carpeta, dentro de ella o alrededor de ella</string>
+    <string name="not_imported_folder_versioning">Control de versiones externo de la carpeta %1$s (ejecuta un comando); el control de versiones queda desactivado</string>
+    <string name="not_imported_folder_versions_path">Lugar propio para versiones antiguas de la carpeta %1$s; van a .stversions dentro de la carpeta</string>
+    <string name="not_imported_folder_marker">Marcador de carpeta propio de la carpeta %1$s; se usa .stfolder</string>
+    <string name="not_imported_default_folder_path">Ajustes predeterminados de carpetas nuevas: una ubicación fuera del almacenamiento del teléfono</string>
+    <string name="not_imported_default_folder_versioning">Ajustes predeterminados de carpetas nuevas: control de versiones externo</string>
+    <string name="not_imported_default_folder_versions_path">Ajustes predeterminados de carpetas nuevas: lugar propio para versiones antiguas</string>
+    <string name="not_imported_default_folder_marker">Ajustes predeterminados de carpetas nuevas: marcador de carpeta propio</string>
+    <string name="not_imported_device_addresses">Dispositivo %1$s: direcciones de retransmisión, o direcciones y redes no válidas</string>
+    <string name="not_imported_default_device_addresses">Ajustes predeterminados de dispositivos nuevos: direcciones de retransmisión, o direcciones y redes no válidas</string>
+    <string name="not_imported_discovery_servers">Servidores de descubrimiento propios; se usan los de Syncthing</string>
+    <string name="not_imported_stun_servers">Servidores STUN propios; se usan los de Syncthing</string>
+    <string name="not_imported_listen_addresses">Direcciones de escucha por retransmisión, o no válidas</string>
+    <string name="not_imported_local_networks">Redes siempre locales no válidas</string>
+    <string name="not_imported_local_discovery">Dirección o puerto propios para el descubrimiento local</string>
+    <string name="not_imported_feature_flags">Funciones experimentales</string>
 
     <string name="export_title">Exportar copia de seguridad</string>
     <string name="export_working">Exportando</string>

@@ -11,6 +11,7 @@ import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.ForkImport
 import eu.stedb.mysyncthing.core.ForkInspection
 import eu.stedb.mysyncthing.core.ForkPreview
+import eu.stedb.mysyncthing.core.ImportOutcome
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -55,10 +56,14 @@ class ImportViewModel(app: Application) : AndroidViewModel(app) {
         if (_step.value is ImportStep.Working) return
         _step.value = ImportStep.Working(text(R.string.import_importing))
         viewModelScope.launch {
-            val problem = ForkImport.import(
-                getApplication(), review.uri, review.password, keepIdentity, review.preview.conditions, review.preview.proxy, deleteBackup,
+            val outcome = ForkImport.import(
+                getApplication(), review.uri, review.password, review.preview, keepIdentity, deleteBackup,
             )
-            _step.value = ImportStep.Done(keepIdentity, problem)
+            _step.value = when (outcome) {
+                is ImportOutcome.Replaced -> ImportStep.Done(keepIdentity, outcome.problem)
+                // Refused or unreadable: nothing changed, so no "imported" text.
+                is ImportOutcome.NotReplaced -> ImportStep.Failed(outcome.reason)
+            }
         }
     }
 

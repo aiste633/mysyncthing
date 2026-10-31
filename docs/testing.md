@@ -18,7 +18,7 @@ uses anyone's real folders, devices or backups.
 | End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, process death, All files access taken away, monkey | Android 15 and 16, on every push |
 | App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15 and 16, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
-| Fuzzing | 8 Go fuzz targets on what reaches the core | 1 core bug found and fixed; long runs clean |
+| Fuzzing | 9 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
@@ -70,7 +70,11 @@ migration and writes on a full disk, the Syncthing-Fork import preview, and the 
 (every translated string must take the same placeholders as the English one). Go tests start
 and stop the real Syncthing core in-process and check the GUI lock, restarts in place, the
 proxy, the backup export (round trip, wrong passwords, known-answer tests of the AES zip
-format) and the Fork import.
+format) and the Fork import. Backups are treated as untrusted input: a hostile backup (external
+versioning, a versions folder that would be cleaned out, a folder in the app's own files,
+overlapping folders, bidi characters, relays and other servers, open GUI settings) is imported
+and the core started on it, and none of it is left; a backup replaced after its preview is
+refused, and a zip whose directory alone would fill memory too.
 
 ## Screen tests
 
@@ -180,7 +184,8 @@ was written (without network access, since a fuzzed configuration can switch on 
 | `FuzzCheckIgnores` | Ignore patterns | What the check accepts loads without error | 45 min, 1,344,638 inputs |
 | `FuzzProxyFrom` | Proxy settings | Refused, or the proxy URL reads back the same | 3 min |
 | `FuzzReadOwnSettings` | This app's backup settings | Refused, or they read back the same | 3 min |
-| `FuzzReadForkBackup` | Syncthing-Fork backup zips | Refused or read, never a crash | 3 min |
+| `FuzzReadForkBackup` | Backup zips (Syncthing-Fork's and this app's) | Refused, or read and passing the import policy, never a crash | 10 min, 499,258 inputs |
+| `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads, the import policy leaves nothing that runs a command, cleans out or reaches files outside shared storage, or reports elsewhere; a second run changes nothing | 15 min, 2,534,263 inputs (found a slice difference, fixed) |
 | `FuzzReadJavaPrefs` | Syncthing-Fork's saved preferences (Java serialization, read by a strict allowlist parser, never deserialized) | Refused or read, never a crash | 3 min |
 
 `FuzzRESTConfig` found a bug in Syncthing itself: six GUI setting changes in a row made the

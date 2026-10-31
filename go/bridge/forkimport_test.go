@@ -355,8 +355,18 @@ func TestZipAESGolden(t *testing.T) {
 	}
 }
 
-func TestInspect(t *testing.T) {
+// storageIn points the folder path rule at a temporary directory, for tests
+// whose folders must exist on disk.
+func storageIn(t *testing.T) string {
 	dir := t.TempDir()
+	old := sharedStorage
+	sharedStorage = dir
+	t.Cleanup(func() { sharedStorage = old })
+	return dir
+}
+
+func TestInspect(t *testing.T) {
+	dir := storageIn(t)
 	withMarker := filepath.Join(dir, "with-marker")
 	os.MkdirAll(filepath.Join(withMarker, ".stfolder"), 0o700)
 	noMarker := filepath.Join(dir, "no-marker")
@@ -380,7 +390,7 @@ func TestInspect(t *testing.T) {
 					if p.DeviceID != fx.id.id.String() || p.DeviceName != "Old phone" || p.ConfigVersion != version {
 						t.Errorf("identity: %+v", p)
 					}
-					if len(p.Devices) != 1 || p.Devices[0].ID != fixturePeer.String() {
+					if len(p.Devices) != 1 || p.Devices[0].ID != fixturePeer.String() || !p.Devices[0].AutoAccept || p.Devices[0].Introducer {
 						t.Errorf("devices: %+v", p.Devices)
 					}
 					want := []previewFolder{ // the core sorts by ID
@@ -472,8 +482,8 @@ func TestInspectRejects(t *testing.T) {
 func TestImportAndStart(t *testing.T) {
 	for _, keep := range []bool{true, false} {
 		t.Run(fmt.Sprintf("keepIdentity=%v", keep), func(t *testing.T) {
-			dir := t.TempDir()
-			home := filepath.Join(dir, "syncthing")
+			dir := storageIn(t)
+			home := filepath.Join(t.TempDir(), "syncthing")
 			if err := Start(home, "app-key", "android", "secret"); err != nil {
 				t.Fatal(err)
 			}
@@ -488,7 +498,13 @@ func TestImportAndStart(t *testing.T) {
 			os.WriteFile(f, fx.zip(t, "pw"), 0o600)
 			fd, _ := os.Open(f)
 			defer fd.Close()
-			if err := ImportForkBackup(int(fd.Fd()), "pw", home, keep); err != nil {
+			preview, err := InspectForkBackup(int(fd.Fd()), "pw")
+			if err != nil {
+				t.Fatal(err)
+			}
+			var p forkPreview
+			json.Unmarshal([]byte(preview), &p)
+			if err := ImportForkBackup(int(fd.Fd()), "pw", home, keep, p.Digest); err != nil {
 				t.Fatal(err)
 			}
 			if _, err := os.Stat(filepath.Join(home, "index-v2", "stale")); !errors.Is(err, os.ErrNotExist) {
@@ -697,6 +713,9 @@ func TestWriteDummyForkBackups(t *testing.T) {
 		{"fork-2.1-like", "minimal", "", config.CurrentVersion, true},
 		{"fork-2.1-encrypted", "full", "test-password", config.CurrentVersion, false},
 		{"fork-2.1-proxy", "proxy", "", config.CurrentVersion, true},
+		// Every setting the import policy takes out (importpolicy_test.go):
+		// the preview lists them, and the core runs none of them.
+		{"fork-2.1-hostile", "minimal", "", config.CurrentVersion, true},
 	} {
 		dir := filepath.Join(out, d.name)
 		os.MkdirAll(filepath.Join(dir, "index-v2"), 0o700)
@@ -704,8 +723,12 @@ func TestWriteDummyForkBackups(t *testing.T) {
 			fixtureFolder{"photo_backup_01", "Photos", root + "/" + d.name + "/photos", "sendonly"},
 			fixtureFolder{"docs", "Docs", root + "/" + d.name + "/docs", "sendreceive"})
 		fx.cfg.Paused = d.prefs == "full" // and Fork's pause button on: the import still starts syncing
+		configXML := fx.cfg.xml(t)
+		if d.name == "fork-2.1-hostile" {
+			configXML = hostileXML(t, root+"/"+d.name, fx.id.id)
+		}
 		for name, data := range map[string][]byte{
-			"config.xml": fx.cfg.xml(t), "cert.pem": fx.id.certPEM, "key.pem": fx.id.keyPEM,
+			"config.xml": configXML, "cert.pem": fx.id.certPEM, "key.pem": fx.id.keyPEM,
 			"https-cert.pem": fx.id.certPEM, "https-key.pem": fx.id.keyPEM,
 			"index-v2/main.db": []byte("stand-in database, must not be imported"),
 			"prefs-variant":    []byte(d.prefs), "password": []byte(d.password),
@@ -724,10 +747,11 @@ func TestPreviewJSONContract(t *testing.T) {
 		Source:   "fork",
 		DeviceID: "SELF-ID", DeviceName: "Old phone", ConfigVersion: 37,
 		Folders:     []previewFolder{{"photo_backup_01", "Photos", "/storage/emulated/0/DCIM/Camera", "sendonly", true, false}},
-		Devices:     []previewDevice{{"PEER-ID", "Example peer"}},
+		Devices:     []previewDevice{{"PEER-ID", "Example peer", true, false}},
 		Conditions:  runConditions{MobileData: true, Power: "BatteryOnly", RespectBatterySaver: true},
 		Proxy:       torProxy,
-		NotImported: []notImported{{"networks", ""}, {"folder_conditions", "Photos"}},
+		NotImported: []notImported{{"networks", ""}, {"folder_conditions", "Photos"}, {"folder_versioning", "Photos"}},
+		Digest:      "0123abcd",
 	}
 	got, err := json.MarshalIndent(p, "", "  ")
 	if err != nil {

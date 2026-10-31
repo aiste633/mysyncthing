@@ -18,13 +18,17 @@ class ForkPreviewTest {
         assertEquals("Old phone", p.deviceName)
         assertEquals(37, p.configVersion)
         assertEquals(ForkFolder("photo_backup_01", "Photos", "/storage/emulated/0/DCIM/Camera", "sendonly", exists = true, marker = false), p.folders.single())
-        assertEquals(ForkDevice("PEER-ID", "Example peer"), p.devices.single())
+        assertEquals(ForkDevice("PEER-ID", "Example peer", introducer = true, autoAccept = false), p.devices.single())
         assertEquals(
             RunConditions(meteredWifi = false, mobileData = true, power = PowerSource.BatteryOnly, respectBatterySaver = true, startOnBoot = false),
             p.conditions,
         )
         assertEquals(ProxySettings.TOR, p.proxy)
-        assertEquals(listOf(ForkNotImported("networks"), ForkNotImported("folder_conditions", "Photos")), p.notImported)
+        assertEquals(
+            listOf(ForkNotImported("networks"), ForkNotImported("folder_conditions", "Photos"), ForkNotImported("folder_versioning", "Photos")),
+            p.notImported,
+        )
+        assertEquals("0123abcd", p.digest)
     }
 
     /**

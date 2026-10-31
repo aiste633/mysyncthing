@@ -14,6 +14,7 @@ import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.File
+import java.io.FileNotFoundException
 
 /**
  * What a backup holds, as the import will apply it (go/bridge/forkimport.go):
@@ -30,6 +31,8 @@ data class ForkPreview(
     val conditions: RunConditions = RunConditions(),
     val proxy: ProxySettings = ProxySettings(),
     val notImported: List<ForkNotImported> = emptyList(),
+    /** Of what was read; the import refuses a file that no longer matches. */
+    val digest: String = "",
 )
 
 @Serializable
@@ -44,8 +47,9 @@ data class ForkFolder(
     val marker: Boolean = false,
 )
 
+/** [introducer] and [autoAccept]: the device may add devices or folders to this phone, which the preview says. */
 @Serializable
-data class ForkDevice(val id: String, val name: String = "")
+data class ForkDevice(val id: String, val name: String = "", val introducer: Boolean = false, val autoAccept: Boolean = false)
 
 /** A Fork setting without an equivalent here; [subject] names its folder or device. */
 @Serializable
@@ -71,7 +75,7 @@ object ForkImport {
 
     suspend fun inspect(resolver: ContentResolver, uri: Uri, password: String): ForkInspection = withContext(Dispatchers.IO) {
         try {
-            val preview = withFd(resolver, uri) { fd -> Stbridge.inspectForkBackup(fd.toLong(), password) }
+            val preview = withFd(resolver, uri, R.string.import_cannot_open) { fd -> Stbridge.inspectForkBackup(fd.toLong(), password) }
             ForkInspection.Ok(json.decodeFromString<ForkPreview>(preview))
         } catch (e: Exception) {
             when (e.message) {
@@ -83,22 +87,21 @@ object ForkImport {
     }
 
     /**
-     * Replaces this phone's Syncthing setup with the backup's. [keepIdentity]
-     * takes over the backup's device ID. [deleteBackup] removes the file after
+     * Replaces this phone's Syncthing setup with the backup's, as [preview]
+     * showed it: a file changed since is refused. [keepIdentity] takes over
+     * the backup's device ID. [deleteBackup] removes the file after
      * a successful import: it holds the private key in shared storage.
-     * Returns null on success, else what went wrong. The core runs again
-     * afterwards in either case. Not cancellable: once the core is stopped,
+     * The core runs again afterwards in either case. Not cancellable: once the core is stopped,
      * every step up to its restart must run, also when the caller goes away.
      */
     suspend fun import(
         context: Context,
         uri: Uri,
         password: String,
+        preview: ForkPreview,
         keepIdentity: Boolean,
-        conditions: RunConditions,
-        proxy: ProxySettings,
         deleteBackup: Boolean,
-    ): UiText? = withContext(Dispatchers.IO + NonCancellable) {
+    ): ImportOutcome = withContext(Dispatchers.IO + NonCancellable) {
         val settings = Settings(context)
         replaceSetup(SyncthingCore.homeLock, object : SetupReplacement {
             override suspend fun stopCore() {
@@ -108,14 +111,20 @@ object ForkImport {
 
             override fun install() {
                 val home = File(context.filesDir, "syncthing")
-                withFd(context.contentResolver, uri) { fd ->
-                    Stbridge.importForkBackup(fd.toLong(), password, home.absolutePath, keepIdentity)
+                try {
+                    // Deleted or moved since the preview: Android takes the read grant with it.
+                    withFd(context.contentResolver, uri, R.string.import_cannot_read_again) { fd ->
+                        Stbridge.importForkBackup(fd.toLong(), password, home.absolutePath, keepIdentity, preview.digest)
+                    }
+                } catch (e: Exception) {
+                    if (e.message == Stbridge.errBackupChanged()) throw UiTextException(text(R.string.import_backup_changed))
+                    throw e
                 }
             }
 
             override suspend fun applySettings() = listOf(
-                settings.update { conditions.copy(pausedByUser = it.pausedByUser) },
-                settings.setProxy(proxy),
+                settings.update { preview.conditions.copy(pausedByUser = it.pausedByUser) },
+                settings.setProxy(preview.proxy),
                 settings.setConditionPause(null), // the paused devices it remembers are the old setup's
                 // Without this the service takes the config without a database for a move from another
                 // phone and says so; the import screen already tells what the import means.
@@ -128,8 +137,17 @@ object ForkImport {
         })
     }
 
-    private inline fun <T> withFd(resolver: ContentResolver, uri: Uri, block: (Int) -> T): T =
-        (resolver.openFileDescriptor(uri, "r") ?: throw UiTextException(text(R.string.import_cannot_open))).use { block(it.fd) }
+    /** Runs [block] on the open file; if it can't be opened, fails with [cannotOpen]. */
+    private inline fun <T> withFd(resolver: ContentResolver, uri: Uri, cannotOpen: Int, block: (Int) -> T): T {
+        val pfd = try {
+            resolver.openFileDescriptor(uri, "r")
+        } catch (_: SecurityException) {
+            null
+        } catch (_: FileNotFoundException) {
+            null
+        } ?: throw UiTextException(text(cannotOpen))
+        return pfd.use { block(it.fd) }
+    }
 
     private fun delete(resolver: ContentResolver, uri: Uri): Boolean = runCatching {
         when (uri.scheme) {
@@ -137,6 +155,15 @@ object ForkImport {
             else -> DocumentsContract.deleteDocument(resolver, uri)
         }
     }.getOrDefault(false)
+}
+
+/** What an import did. */
+sealed interface ImportOutcome {
+    /** The backup's setup is in place; [problem] if a setting was not saved or the backup not deleted. */
+    data class Replaced(val problem: UiText?) : ImportOutcome
+
+    /** Nothing was changed (refused, or unreadable): the old setup runs again. */
+    data class NotReplaced(val reason: UiText) : ImportOutcome
 }
 
 /** The steps of replacing the core's setup, apart so their order can be tested. */
@@ -156,24 +183,26 @@ internal interface SetupReplacement {
  * old setup or the new one with the old settings. The core is started again
  * after the lock is released, also when stopping or installing failed.
  */
-internal suspend fun replaceSetup(lock: HomeLock, r: SetupReplacement): UiText? {
+internal suspend fun replaceSetup(lock: HomeLock, r: SetupReplacement): ImportOutcome {
     val outcome = lock.use {
         try {
             r.stopCore()
-            r.install()
+            r.install() // swaps the setup in last, atomically: a failure leaves the old one
         } catch (e: Exception) {
-            return@use e.sentenceText()
+            return@use ImportOutcome.NotReplaced(e.sentenceText())
         }
         val saved = r.applySettings()
         val removed = r.removeBackup()
         val notSaved = text(R.string.import_settings_not_saved)
         val notDeleted = text(R.string.import_backup_not_deleted)
-        when {
-            !saved && !removed -> text(R.string.two_sentences, notSaved, notDeleted)
-            !saved -> notSaved
-            !removed -> notDeleted
-            else -> null
-        }
+        ImportOutcome.Replaced(
+            when {
+                !saved && !removed -> text(R.string.two_sentences, notSaved, notDeleted)
+                !saved -> notSaved
+                !removed -> notDeleted
+                else -> null
+            },
+        )
     }
     r.startCore()
     return outcome

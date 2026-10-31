@@ -9,7 +9,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Collections
@@ -66,7 +65,7 @@ class ReplaceSetupTest {
         val steps = Steps(phase, events, pause = { 100 }, onInstall = {
             launch { competing.complete(serviceStart(lock, phase, events)) }
         })
-        assertNull(replaceSetup(lock, steps))
+        assertEquals(ImportOutcome.Replaced(null), replaceSetup(lock, steps))
         assertEquals(DONE, withTimeout(5_000) { competing.await() })
         assertEquals(listOf("stop", "install", "settings", "remove"), events.take(4))
         assertTrue(events.indexOf("core start") > events.indexOf("remove"))
@@ -87,7 +86,7 @@ class ReplaceSetupTest {
         assertEquals(OLD, phase.get()) // the import didn't stop the core under a starting service
         release.complete(Unit)
         start.join()
-        assertNull(import.await())
+        assertEquals(ImportOutcome.Replaced(null), import.await())
         assertEquals(listOf("core start", "stop", "install", "settings", "remove", "start requested"), events.toList())
     }
 
@@ -96,22 +95,23 @@ class ReplaceSetupTest {
         val lock = HomeLock()
         val phase = AtomicInteger(OLD)
         val events = Collections.synchronizedList(mutableListOf<String>())
-        val problem = replaceSetup(lock, Steps(phase, events, failInstall = "not a Syncthing backup: config.xml is missing"))
-        assertEquals("Not a Syncthing backup: config.xml is missing", problem.en())
+        val outcome = replaceSetup(lock, Steps(phase, events, failInstall = "not a Syncthing backup: config.xml is missing"))
+        // Nothing was replaced: the outcome says so, not "imported".
+        assertEquals("Not a Syncthing backup: config.xml is missing", (outcome as ImportOutcome.NotReplaced).reason.en())
         assertEquals(listOf("stop", "start requested"), events.toList())
         withTimeout(1_000) { lock.use { } } // released
     }
 
     @Test
     fun undeletedBackupIsReported() = runBlocking(Dispatchers.Default) {
-        val problem = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), Collections.synchronizedList(mutableListOf()), removed = false))
-        assertTrue(problem.en()!!.contains("could not be deleted"))
+        val outcome = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), Collections.synchronizedList(mutableListOf()), removed = false))
+        assertTrue((outcome as ImportOutcome.Replaced).problem.en()!!.contains("could not be deleted"))
     }
 
     @Test
     fun unsavedSettingsAreReportedAndTheCoreStillStarts() = runBlocking(Dispatchers.Default) {
         val events = Collections.synchronizedList(mutableListOf<String>())
-        val problem = replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), events, saved = false, removed = false)).en()!!
+        val problem = (replaceSetup(HomeLock(), Steps(AtomicInteger(OLD), events, saved = false, removed = false)) as ImportOutcome.Replaced).problem.en()!!
         assertTrue(problem.contains("could not all be saved"))
         assertTrue(problem.contains("could not be deleted"))
         assertEquals(listOf("stop", "install", "settings", "remove", "start requested"), events.toList())

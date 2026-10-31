@@ -7,12 +7,15 @@ import (
 	"archive/zip"
 	"bytes"
 	"cmp"
+	"crypto/sha256"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -53,16 +56,21 @@ type forkBackup struct {
 	configVersion   int
 	prefs           map[string]any // Fork's preferences
 	own             *ownSettings   // or the app's own settings
+	policy          []notImported  // what importPolicy took out of the config
+	digest          string         // of the entries read, see backupDigest
 }
 
 // ErrNeedPassword and ErrWrongPassword return the messages of the errors the
 // app tells apart, to ask for a password or ask again.
 func ErrNeedPassword() string  { return errNeedPassword.Error() }
 func ErrWrongPassword() string { return errWrongPassword.Error() }
+func ErrBackupChanged() string { return errBackupChanged.Error() }
+
+var errBackupChanged = errors.New("the backup changed after the preview")
 
 // InspectForkBackup reads the backup open at fd (the caller keeps it open
 // and closes it) and returns a JSON preview (see forkPreview). Nothing is
-// written.
+// written. The preview's digest goes to ImportForkBackup.
 func InspectForkBackup(fd int, password string) (string, error) {
 	b, err := readForkBackupFd(fd, password)
 	if err != nil {
@@ -77,10 +85,15 @@ func InspectForkBackup(fd int, password string) (string, error) {
 // and key); otherwise it keeps its own, or gets a new one, and the backup's
 // ID is dropped from the config. The database is removed. The core must be
 // stopped; the app's GUI login and API key are applied at the next start.
-func ImportForkBackup(fd int, password, homeDir string, keepIdentity bool) error {
+// digest is the preview's: the file is read again here, and must still be
+// the one the user saw (another app may have replaced it meanwhile).
+func ImportForkBackup(fd int, password, homeDir string, keepIdentity bool, digest string) error {
 	b, err := readForkBackupFd(fd, password)
 	if err != nil {
 		return err
+	}
+	if b.digest != digest {
+		return errBackupChanged
 	}
 	mu.Lock()
 	defer mu.Unlock()
@@ -111,11 +124,21 @@ func readForkBackupFd(fd int, password string) (*forkBackup, error) {
 	return readForkBackup(f, size, password)
 }
 
+// maxZipDirectory bounds the zip's central directory, which archive/zip
+// reads into memory, entry by entry, before any name can be checked. A Fork
+// backup holds the database too (LevelDB: thousands of files at most, about
+// 100 bytes each); millions of tiny entries would exhaust memory.
+const maxZipDirectory = 16 << 20
+
 func readForkBackup(r io.ReaderAt, size int64, password string) (*forkBackup, error) {
-	z, err := zip.NewReader(r, size)
-	if err != nil {
+	br := &budgetReaderAt{r: r, left: maxZipDirectory}
+	z, err := zip.NewReader(br, size)
+	if errors.Is(err, errZipDirectory) {
+		return nil, errors.New("the backup holds too many files")
+	} else if err != nil {
 		return nil, fmt.Errorf("not a zip file: %w", err)
 	}
+	br.lift()
 	found := map[string]*zip.File{}
 	for _, f := range z.File {
 		if _, ok := forkEntries[f.Name]; !ok {
@@ -150,7 +173,7 @@ func readForkBackup(r io.ReaderAt, size int64, password string) (*forkBackup, er
 		}
 	}
 
-	b := &forkBackup{certPEM: data["cert.pem"], keyPEM: data["key.pem"], configXML: data["config.xml"]}
+	b := &forkBackup{certPEM: data["cert.pem"], keyPEM: data["key.pem"], configXML: data["config.xml"], digest: backupDigest(data)}
 	cert, err := tls.X509KeyPair(b.certPEM, b.keyPEM)
 	if err != nil {
 		return nil, fmt.Errorf("device certificate: %w", err)
@@ -181,7 +204,7 @@ func readForkBackup(r io.ReaderAt, size int64, password string) (*forkBackup, er
 	if !own {
 		return nil, errors.New("the device certificate does not belong to this config")
 	}
-	if b.cfg, b.configVersion, err = config.ReadXML(bytes.NewReader(b.configXML), b.id); err != nil {
+	if b.cfg, b.configVersion, b.policy, err = readConfig(b.configXML, b.id); err != nil {
 		return nil, fmt.Errorf("config.xml: %w", err)
 	}
 
@@ -200,6 +223,49 @@ func readForkBackup(r io.ReaderAt, size int64, password string) (*forkBackup, er
 	}
 	return b, nil
 }
+
+// readConfig reads config.xml for the device id, made safe by importPolicy.
+func readConfig(xml []byte, id protocol.DeviceID) (config.Configuration, int, []notImported, error) {
+	cfg, version, err := config.ReadXML(bytes.NewReader(xml), id)
+	if err != nil {
+		return config.Configuration{}, 0, nil, err
+	}
+	return cfg, version, importPolicy(&cfg), nil
+}
+
+// backupDigest identifies what was read from a backup: SHA-256 over each
+// entry's name, length and content, in name order.
+func backupDigest(data map[string][]byte) string {
+	h := sha256.New()
+	for _, name := range slices.Sorted(maps.Keys(data)) {
+		fmt.Fprintf(h, "%s\x00%d\x00", name, len(data[name]))
+		h.Write(data[name])
+	}
+	return hex.EncodeToString(h.Sum(nil))
+}
+
+// budgetReaderAt lets zip.NewReader read at most left bytes, which bounds the
+// central directory it keeps in memory. Entry contents are read after lift,
+// with their own limits (readZipEntry).
+type budgetReaderAt struct {
+	r      io.ReaderAt
+	left   int64
+	lifted bool
+}
+
+var errZipDirectory = errors.New("zip directory too large")
+
+func (b *budgetReaderAt) ReadAt(p []byte, off int64) (int, error) {
+	if !b.lifted {
+		if int64(len(p)) > b.left {
+			return 0, errZipDirectory
+		}
+		b.left -= int64(len(p))
+	}
+	return b.r.ReadAt(p, off)
+}
+
+func (b *budgetReaderAt) lift() { b.lifted = true }
 
 // install writes the backup's config (and identity) under homeDir. The new
 // directory is built next to it and swapped in with one atomic rename, so an
@@ -233,9 +299,8 @@ func (b *forkBackup) install(homeDir string, keepIdentity bool) error {
 			return err
 		}
 	}
-	// The old install's GUI login and API key go; the app sets its own at the next start.
-	cfg.GUI.User, cfg.GUI.Password, cfg.GUI.APIKey = "", "", ""
-	cfg.Options.StartBrowser = false
+	// importPolicy dropped the old install's GUI login and API key; the app
+	// sets its own at the next start.
 	unpause(&cfg) // also for exports from other apps, or older ones
 
 	var buf bytes.Buffer
@@ -275,7 +340,7 @@ func ownCertificate(homeDir, certFile, keyFile string) (tls.Certificate, error) 
 // device this phone shares with. The core adds this phone (named by the app
 // at start) and shares every folder with it.
 func (b *forkBackup) withIdentity(id protocol.DeviceID) (config.Configuration, error) {
-	cfg, _, err := config.ReadXML(bytes.NewReader(b.configXML), id)
+	cfg, _, _, err := readConfig(b.configXML, id)
 	if err != nil {
 		return config.Configuration{}, err
 	}
@@ -330,6 +395,7 @@ type forkPreview struct {
 	Conditions    runConditions   `json:"conditions"`
 	Proxy         proxySettings   `json:"proxy"`
 	NotImported   []notImported   `json:"notImported"`
+	Digest        string          `json:"digest"` // passed back to ImportForkBackup
 }
 
 type previewFolder struct {
@@ -344,6 +410,10 @@ type previewFolder struct {
 type previewDevice struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+	// May add devices (introducer) or folders (auto-accept) to this phone:
+	// the preview says so.
+	Introducer bool `json:"introducer"`
+	AutoAccept bool `json:"autoAccept"`
 }
 
 func (b *forkBackup) preview(stat func(config.FolderConfiguration) (bool, bool)) forkPreview {
@@ -352,12 +422,13 @@ func (b *forkBackup) preview(stat func(config.FolderConfiguration) (bool, bool))
 		ConfigVersion: b.configVersion,
 		Folders:       []previewFolder{},
 		Devices:       []previewDevice{},
+		Digest:        b.digest,
 	}
 	for _, d := range b.cfg.Devices {
 		if d.DeviceID == b.id {
 			p.DeviceName = d.Name
 		} else {
-			p.Devices = append(p.Devices, previewDevice{d.DeviceID.String(), d.Name})
+			p.Devices = append(p.Devices, previewDevice{d.DeviceID.String(), d.Name, d.Introducer, d.AutoAcceptFolders})
 		}
 	}
 	for _, f := range b.cfg.Folders {
@@ -370,6 +441,7 @@ func (b *forkBackup) preview(stat func(config.FolderConfiguration) (bool, bool))
 		p.Source = "fork"
 		p.Conditions, p.Proxy, p.NotImported = mapForkPrefs(b.prefs, b.cfg)
 	}
+	p.NotImported = append(p.NotImported, b.policy...)
 	return p
 }
 

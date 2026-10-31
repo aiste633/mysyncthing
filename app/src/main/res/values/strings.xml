@@ -835,6 +835,8 @@
     <string name="import_keep_id_hint">Other devices must accept this phone as a new device. The old install can keep running.</string>
     <string name="import_sync_settings">Sync settings</string>
     <string name="import_not_imported">Not imported</string>
+    <string name="import_device_introducer">Introducer: can add devices to this phone</string>
+    <string name="import_device_auto_accept">Accepts its folders automatically</string>
     <string name="import_key_warning">The backup holds the device\'s private key. Any app that can read the file can pose as this device.</string>
     <string name="import_delete_backup">Delete the backup file after importing</string>
     <string name="action_import">Import</string>
@@ -889,6 +891,34 @@
     <string name="not_imported_folder_script">Script after syncing folder %1$s</string>
     <!-- %1$s: device name -->
     <string name="not_imported_device_conditions">Own sync conditions of device %1$s</string>
+    <!-- Settings a backup's config.xml may hold that could act beyond what the preview shows: reset, and listed -->
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_id">Folder %1$s: its ID has control characters</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_filesystem">Folder %1$s: not on a normal file system</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_path">Folder %1$s: not in the phone\'s storage or on an SD card</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_overlap">Folder %1$s: the same as, inside or around another folder</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_versioning">External file versioning of folder %1$s (runs a command); versioning is off</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_versions_path">Own place for old versions of folder %1$s; they go to .stversions in the folder</string>
+    <!-- %1$s: folder name -->
+    <string name="not_imported_folder_marker">Own folder marker of folder %1$s; .stfolder is used</string>
+    <string name="not_imported_default_folder_path">Default settings for new folders: a location outside the phone\'s storage</string>
+    <string name="not_imported_default_folder_versioning">Default settings for new folders: external file versioning</string>
+    <string name="not_imported_default_folder_versions_path">Default settings for new folders: own place for old versions</string>
+    <string name="not_imported_default_folder_marker">Default settings for new folders: own folder marker</string>
+    <!-- %1$s: device name -->
+    <string name="not_imported_device_addresses">Device %1$s: relay addresses, or addresses and networks that are not valid</string>
+    <string name="not_imported_default_device_addresses">Default settings for new devices: relay addresses, or addresses and networks that are not valid</string>
+    <string name="not_imported_discovery_servers">Own discovery servers; Syncthing\'s are used</string>
+    <string name="not_imported_stun_servers">Own STUN servers; Syncthing\'s are used</string>
+    <string name="not_imported_listen_addresses">Listen addresses through relays, or that are not valid</string>
+    <string name="not_imported_local_networks">Always-local networks that are not valid</string>
+    <string name="not_imported_local_discovery">Own address or port for local discovery</string>
+    <string name="not_imported_feature_flags">Experimental feature flags</string>
 
     <!-- Export screen -->
     <string name="export_title">Export backup</string>

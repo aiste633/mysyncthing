@@ -129,6 +129,8 @@
     </plurals>
 
     <string name="import_cannot_open">Impossible d’ouvrir la sauvegarde</string>
+    <string name="import_backup_changed">La sauvegarde a changé après sa lecture. Choisissez-la à nouveau.</string>
+    <string name="import_cannot_read_again">La sauvegarde ne peut plus être lue : elle a été déplacée ou supprimée. Choisissez-la à nouveau.</string>
     <string name="import_settings_not_saved">Les réglages de synchronisation n’ont pas tous pu être enregistrés, probablement parce que la mémoire est pleine. Vérifiez-les dans Configuration.</string>
     <string name="import_backup_not_deleted">Le fichier de sauvegarde n’a pas pu être supprimé. Supprimez-le vous-même : il contient la clé privée de l’appareil.</string>
     <string name="export_cannot_write">Impossible d’écrire le fichier</string>

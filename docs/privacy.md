@@ -47,6 +47,10 @@ A backup you export (Settings › System › Export a backup) contains the confi
 device keys. It is written where you choose, and is AES-256 encrypted if you set a password.
 Keep it safe: anyone with the file can act as this phone towards your devices.
 
+An imported backup (this app's or Syncthing-Fork's) never carries over consent to usage
+reporting, nor servers of its own for reports, discovery, relays or STUN: the app asks again and
+uses the Syncthing project's servers. The preview lists the other settings it leaves out.
+
 ## What leaves the phone
 
 ### To your own devices

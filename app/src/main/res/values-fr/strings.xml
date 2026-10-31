@@ -693,6 +693,8 @@
     <string name="import_keep_id_hint">Les autres appareils doivent accepter ce téléphone comme nouvel appareil. L’ancienne installation peut continuer à tourner.</string>
     <string name="import_sync_settings">Réglages de synchronisation</string>
     <string name="import_not_imported">Non importé</string>
+    <string name="import_device_introducer">Appareil introducteur : peut ajouter des appareils à ce téléphone</string>
+    <string name="import_device_auto_accept">Accepte automatiquement ses invitations</string>
     <string name="import_key_warning">La sauvegarde contient la clé privée de l’appareil. Toute appli capable de lire le fichier peut se faire passer pour cet appareil.</string>
     <string name="import_delete_backup">Supprimer le fichier de sauvegarde après l’importation</string>
     <string name="action_import">Importer</string>
@@ -737,6 +739,25 @@
     <string name="not_imported_folder_conditions">Conditions de synchronisation propres au partage %1$s</string>
     <string name="not_imported_folder_script">Script après la synchronisation du partage %1$s</string>
     <string name="not_imported_device_conditions">Conditions de synchronisation propres à l’appareil %1$s</string>
+    <string name="not_imported_folder_id">Partage %1$s : son ID contient des caractères de contrôle</string>
+    <string name="not_imported_folder_filesystem">Partage %1$s : pas sur un système de fichiers normal</string>
+    <string name="not_imported_folder_path">Partage %1$s : ni dans la mémoire du téléphone ni sur une carte SD</string>
+    <string name="not_imported_folder_overlap">Partage %1$s : identique à un autre partage, à l’intérieur ou autour de lui</string>
+    <string name="not_imported_folder_versioning">Gestion externe des versions du partage %1$s (exécute une commande) ; gestion des versions désactivée</string>
+    <string name="not_imported_folder_versions_path">Emplacement propre pour les anciennes versions du partage %1$s ; elles vont dans .stversions du partage</string>
+    <string name="not_imported_folder_marker">Marqueur propre du partage %1$s ; .stfolder est utilisé</string>
+    <string name="not_imported_default_folder_path">Configuration par défaut des nouveaux partages : un emplacement hors de la mémoire du téléphone</string>
+    <string name="not_imported_default_folder_versioning">Configuration par défaut des nouveaux partages : gestion externe des versions</string>
+    <string name="not_imported_default_folder_versions_path">Configuration par défaut des nouveaux partages : emplacement propre pour les anciennes versions</string>
+    <string name="not_imported_default_folder_marker">Configuration par défaut des nouveaux partages : marqueur propre</string>
+    <string name="not_imported_device_addresses">Appareil %1$s : adresses de relais, ou adresses et réseaux non valides</string>
+    <string name="not_imported_default_device_addresses">Configuration par défaut des nouveaux appareils : adresses de relais, ou adresses et réseaux non valides</string>
+    <string name="not_imported_discovery_servers">Serveurs de découverte globale propres ; ceux de Syncthing sont utilisés</string>
+    <string name="not_imported_stun_servers">Serveurs STUN propres ; ceux de Syncthing sont utilisés</string>
+    <string name="not_imported_listen_addresses">Adresses d’écoute par relais, ou non valides</string>
+    <string name="not_imported_local_networks">Réseaux toujours locaux non valides</string>
+    <string name="not_imported_local_discovery">Adresse ou port propre pour la découverte locale</string>
+    <string name="not_imported_feature_flags">Fonctions expérimentales</string>
 
     <string name="export_title">Exporter une sauvegarde</string>
     <string name="export_working">Exportation</string>

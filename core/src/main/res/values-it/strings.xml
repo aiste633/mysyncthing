@@ -128,6 +128,8 @@
     </plurals>
 
     <string name="import_cannot_open">Impossibile aprire il backup</string>
+    <string name="import_backup_changed">Il backup è cambiato dopo la lettura. Sceglilo di nuovo.</string>
+    <string name="import_cannot_read_again">Il backup non si può più leggere: è stato spostato o eliminato. Sceglilo di nuovo.</string>
     <string name="import_settings_not_saved">Non è stato possibile salvare tutte le impostazioni di sincronizzazione, probabilmente perché la memoria è piena. Controllale nelle Impostazioni.</string>
     <string name="import_backup_not_deleted">Non è stato possibile eliminare il file di backup. Eliminalo tu: contiene la chiave privata del dispositivo.</string>
     <string name="export_cannot_write">Impossibile scrivere il file</string>
