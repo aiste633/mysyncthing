@@ -56,7 +56,7 @@ class ImportViewModel(app: Application) : AndroidViewModel(app) {
         _step.value = ImportStep.Working(text(R.string.import_importing))
         viewModelScope.launch {
             val problem = ForkImport.import(
-                getApplication(), review.uri, review.password, keepIdentity, review.preview.conditions, review.preview.proxy, deleteBackup,
+                getApplication(), review.uri, review.password, review.preview, keepIdentity, deleteBackup,
             )
             _step.value = ImportStep.Done(keepIdentity, problem)
         }

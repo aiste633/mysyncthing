@@ -128,6 +128,7 @@
     </plurals>
 
     <string name="import_cannot_open">No se puede abrir la copia de seguridad</string>
+    <string name="import_backup_changed">La copia de seguridad cambió después de leerla. Elígela de nuevo.</string>
     <string name="import_settings_not_saved">No se han podido guardar todos los ajustes de sincronización, probablemente porque el almacenamiento está lleno. Revísalos en Ajustes.</string>
     <string name="import_backup_not_deleted">No se ha podido eliminar el archivo de copia de seguridad. Elimínalo tú: contiene la clave privada del dispositivo.</string>
     <string name="export_cannot_write">No se puede escribir el archivo</string>

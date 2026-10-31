@@ -667,6 +667,8 @@
     <string name="import_keep_id_hint">Andere Geräte müssen dieses Smartphone als neues Gerät annehmen. Die alte Installation kann weiterlaufen.</string>
     <string name="import_sync_settings">Synchronisierungseinstellungen</string>
     <string name="import_not_imported">Nicht importiert</string>
+    <string name="import_device_introducer">Verteilergerät: kann diesem Smartphone Geräte hinzufügen</string>
+    <string name="import_device_auto_accept">Nimmt seine Ordner automatisch an</string>
     <string name="import_key_warning">Die Sicherung enthält den privaten Schlüssel des Geräts. Jede App, die die Datei lesen kann, kann sich als dieses Gerät ausgeben.</string>
     <string name="import_delete_backup">Sicherungsdatei nach dem Import löschen</string>
     <string name="action_import">Importieren</string>
@@ -710,6 +712,25 @@
     <string name="not_imported_folder_conditions">Eigene Synchronisierungsbedingungen von Ordner %1$s</string>
     <string name="not_imported_folder_script">Skript nach dem Synchronisieren von Ordner %1$s</string>
     <string name="not_imported_device_conditions">Eigene Synchronisierungsbedingungen von Gerät %1$s</string>
+    <string name="not_imported_folder_id">Ordner %1$s: Die ID enthält Steuerzeichen</string>
+    <string name="not_imported_folder_filesystem">Ordner %1$s: nicht auf einem normalen Dateisystem</string>
+    <string name="not_imported_folder_path">Ordner %1$s: nicht im Speicher des Smartphones oder auf einer SD-Karte</string>
+    <string name="not_imported_folder_overlap">Ordner %1$s: gleich, innerhalb oder um einen anderen Ordner</string>
+    <string name="not_imported_folder_versioning">Externe Dateiversionierung von Ordner %1$s (führt einen Befehl aus); Versionierung ist aus</string>
+    <string name="not_imported_folder_versions_path">Eigener Ort für alte Versionen von Ordner %1$s; sie kommen nach .stversions im Ordner</string>
+    <string name="not_imported_folder_marker">Eigene Ordnermarkierung von Ordner %1$s; .stfolder wird verwendet</string>
+    <string name="not_imported_default_folder_path">Vorgaben für neue Ordner: ein Ort außerhalb des Speichers des Smartphones</string>
+    <string name="not_imported_default_folder_versioning">Vorgaben für neue Ordner: externe Dateiversionierung</string>
+    <string name="not_imported_default_folder_versions_path">Vorgaben für neue Ordner: eigener Ort für alte Versionen</string>
+    <string name="not_imported_default_folder_marker">Vorgaben für neue Ordner: eigene Ordnermarkierung</string>
+    <string name="not_imported_device_addresses">Gerät %1$s: Weiterleitungsadressen oder ungültige Adressen und Netzwerke</string>
+    <string name="not_imported_default_device_addresses">Vorgaben für neue Geräte: Weiterleitungsadressen oder ungültige Adressen und Netzwerke</string>
+    <string name="not_imported_discovery_servers">Eigene Gerätesuchserver; die von Syncthing werden verwendet</string>
+    <string name="not_imported_stun_servers">Eigene STUN-Server; die von Syncthing werden verwendet</string>
+    <string name="not_imported_listen_addresses">Empfangsadressen über Weiterleitung oder ungültige Empfangsadressen</string>
+    <string name="not_imported_local_networks">Ungültige stets lokale Netzwerke</string>
+    <string name="not_imported_local_discovery">Eigene Adresse oder eigener Port für die lokale Gerätesuche</string>
+    <string name="not_imported_feature_flags">Experimentelle Funktionsschalter</string>
 
     <string name="export_title">Sicherung exportieren</string>
     <string name="export_working">Wird exportiert</string>

@@ -240,7 +240,7 @@ class ValidationTest {
 
     private val path: Gen<String> = {
         val root = pick("/storage/emulated/0", "/storage/1234-ABCD", "/storage", "/sdcard", "/data/user/0/eu.stedb.mysyncthing/files", "", "~", "/")(this)
-        val parts = (0 until nextInt(0, 4)).map { pick("DCIM", "Music", "Camera", "my photos", ".", "..", "", "Ünï 😀", "a\nb", "...", "Android")(this) }
+        val parts = (0 until nextInt(0, 4)).map { pick("DCIM", "Music", "Camera", "my photos", ".", "..", "", "Ünï 😀", "a\nb", "...", "Android", "gpj\u202Eexe", "a\u2066b", "a\u200Fb")(this) }
         root + parts.joinToString("") { "/$it" } + pick("", "/", " ")(this)
     }
 
@@ -252,6 +252,7 @@ class ValidationTest {
         val parts = p.split('/').drop(1)
         assertTrue("normalised", parts.none { it.isEmpty() || it == "." || it == ".." })
         assertTrue("no control characters", p.none { it.isISOControl() })
+        assertTrue("no bidi controls", p.none { it == '\u061C' || it in '\u200E'..'\u200F' || it in '\u202A'..'\u202E' || it in '\u2066'..'\u2069' })
         assertEquals("normalised", java.io.File(p).normalize().path, p)
         for (e in existing.map { it.trimEnd('/') }) {
             assertFalse("overlaps $e", p == e || p.startsWith("$e/") || e.startsWith("$p/"))

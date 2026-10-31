@@ -92,10 +92,19 @@ class ImportTextTest {
         val keys = listOf(
             "networks", "force_start", "force_stop", "flight_mode", "master_sync", "wifi_allowlist",
             "schedule", "broadcasts", "socks_proxy", "http_proxy", "environment",
+            // go/bridge/importpolicy.go
+            "default_folder_path", "default_folder_versioning", "default_folder_versions_path", "default_folder_marker",
+            "default_device_addresses", "discovery_servers", "stun_servers", "listen_addresses", "local_networks",
+            "local_discovery", "feature_flags",
         )
         keys.forEach { assertFalse("$it has no text", notImportedText(ForkNotImported(it)).en().contains('_')) }
-        listOf("folder_conditions", "folder_script", "device_conditions").forEach {
-            assertTrue(notImportedText(ForkNotImported(it, "Photos")).en().endsWith("Photos"))
+        listOf(
+            "folder_conditions", "folder_script", "device_conditions",
+            "folder_id", "folder_filesystem", "folder_path", "folder_overlap", "folder_versioning", "folder_versions_path",
+            "folder_marker", "device_addresses",
+        ).forEach {
+            val text = notImportedText(ForkNotImported(it, "Photos")).en()
+            assertTrue(text, "Photos" in text && '_' !in text.replace("Photos", ""))
         }
         // A key a newer bridge sends still shows, with its subject.
         val r = Random(3)

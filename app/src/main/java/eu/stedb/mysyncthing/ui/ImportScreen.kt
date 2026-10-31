@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.ForkDevice
 import eu.stedb.mysyncthing.core.ForkFolder
 import eu.stedb.mysyncthing.core.ForkImport
 import eu.stedb.mysyncthing.core.ForkNotImported
@@ -193,7 +194,7 @@ private fun ReviewStep(p: ForkPreview, onImport: (keepIdentity: Boolean, deleteB
         p.folders.forEach { f -> SettingRow(f.label.ifEmpty { f.id }, folderImportText(f).asString(), Icons.Default.Folder) }
     }
     SettingsGroup(count(R.plurals.count_devices, p.devices.size).asString()) {
-        p.devices.forEach { d -> SettingRow(d.name.ifEmpty { shortId(d.id) }, shortId(d.id), Icons.Default.Devices) }
+        p.devices.forEach { d -> SettingRow(d.name.ifEmpty { shortId(d.id) }, deviceImportText(d), Icons.Default.Devices) }
     }
     SettingsGroup(stringResource(R.string.import_sync_settings)) {
         conditionsText(p.conditions, p.proxy).forEach { SettingRow(it.asString()) }
@@ -283,7 +284,15 @@ fun conditionsText(c: RunConditions, proxy: ProxySettings): List<UiText> = listO
     text(R.string.import_proxy, if (proxy.type == ProxyType.None) text(R.string.import_proxy_none) else proxyText(proxy)),
 )
 
-/** A Fork setting this app has no equivalent for, for people. */
+/** A device's short ID, and what it may add to this phone on its own. */
+@Composable
+private fun deviceImportText(d: ForkDevice): String = listOfNotNull(
+    shortId(d.id),
+    stringResource(R.string.import_device_introducer).takeIf { d.introducer },
+    stringResource(R.string.import_device_auto_accept).takeIf { d.autoAccept },
+).joinToString("\n")
+
+/** A Fork setting this app has no equivalent for, or one the import took out, for people. */
 fun notImportedText(n: ForkNotImported): UiText = when (n.key) {
     "networks" -> text(R.string.not_imported_networks)
     "force_start" -> text(R.string.not_imported_force_start)
@@ -299,6 +308,25 @@ fun notImportedText(n: ForkNotImported): UiText = when (n.key) {
     "folder_conditions" -> text(R.string.not_imported_folder_conditions, n.subject)
     "folder_script" -> text(R.string.not_imported_folder_script, n.subject)
     "device_conditions" -> text(R.string.not_imported_device_conditions, n.subject)
+    "folder_id" -> text(R.string.not_imported_folder_id, n.subject)
+    "folder_filesystem" -> text(R.string.not_imported_folder_filesystem, n.subject)
+    "folder_path" -> text(R.string.not_imported_folder_path, n.subject)
+    "folder_overlap" -> text(R.string.not_imported_folder_overlap, n.subject)
+    "folder_versioning" -> text(R.string.not_imported_folder_versioning, n.subject)
+    "folder_versions_path" -> text(R.string.not_imported_folder_versions_path, n.subject)
+    "folder_marker" -> text(R.string.not_imported_folder_marker, n.subject)
+    "default_folder_path" -> text(R.string.not_imported_default_folder_path)
+    "default_folder_versioning" -> text(R.string.not_imported_default_folder_versioning)
+    "default_folder_versions_path" -> text(R.string.not_imported_default_folder_versions_path)
+    "default_folder_marker" -> text(R.string.not_imported_default_folder_marker)
+    "device_addresses" -> text(R.string.not_imported_device_addresses, n.subject)
+    "default_device_addresses" -> text(R.string.not_imported_default_device_addresses)
+    "discovery_servers" -> text(R.string.not_imported_discovery_servers)
+    "stun_servers" -> text(R.string.not_imported_stun_servers)
+    "listen_addresses" -> text(R.string.not_imported_listen_addresses)
+    "local_networks" -> text(R.string.not_imported_local_networks)
+    "local_discovery" -> text(R.string.not_imported_local_discovery)
+    "feature_flags" -> text(R.string.not_imported_feature_flags)
     // A key from a newer bridge: shown as it came.
     else -> raw(listOf(n.key, n.subject).filter { it.isNotEmpty() }.joinToString(": "))
 }

@@ -581,7 +581,7 @@
    "host": "p",
    "port": 1080,
    "user": "me",
-   "password": "ab",
+   "password": "a\u007fb",
    "ok": false
   },
   {
@@ -647,7 +647,7 @@
    "ok": false
   },
   {
-   "password": "deletecharacter",
+   "password": "delete\u007fcharacter",
    "ok": false
   },
   {
@@ -801,6 +801,346 @@
    "days": [
     -1
    ],
+   "ok": false
+  }
+ ],
+ "folderPath": [
+  {
+   "path": "/storage/emulated/0/DCIM",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/0",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/1234-ABCD/Music",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/sdcard/Music",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/sdcard",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/self/primary/Docs",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/0/DCIM/",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "  /storage/emulated/0/Pad  ",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/0/Ünïcödé 写真",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "   ",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "relative/path",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "~/x",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "~",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/data/user/0/eu.stedb.mysyncthing/files/syncthing",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/data/local/tmp",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/sdcardx/Music",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storagex/a",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/a/../b",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/./a",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0//a",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/a\u0007b",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/a\u009fb",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/a\u202egpj.exe",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/a\u2066b",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/a\u200fb",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/a\u061cb",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/tab\there",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/DCIM/Camera",
+   "others": [
+    "/storage/emulated/0/DCIM"
+   ],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/DCIM",
+   "others": [
+    "/storage/emulated/0/DCIM/Camera"
+   ],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/DCIM",
+   "others": [
+    "/sdcard/DCIM"
+   ],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/DCIM2",
+   "others": [
+    "/storage/emulated/0/DCIM"
+   ],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/0/DCIM",
+   "others": [
+    "/storage/emulated/0/Music",
+    "/storage/1234-ABCD/DCIM"
+   ],
+   "ok": true
+  }
+ ],
+ "importAddress": [
+  {
+   "address": "tcp://192.0.2.10:22000",
+   "kind": "device",
+   "ok": true
+  },
+  {
+   "address": "tcp://192.0.2.10",
+   "kind": "device",
+   "ok": true
+  },
+  {
+   "address": "quic://[2001:db8::1]:22000",
+   "kind": "device",
+   "ok": true
+  },
+  {
+   "address": "tcp6://peer.example.org:22000",
+   "kind": "device",
+   "ok": true
+  },
+  {
+   "address": "tcp://192.0.2.10:0",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://:22000",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "relay://192.0.2.20:22067/?id=x",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "dynamic+https://relays.example.com/endpoint",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "http://192.0.2.10/",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://user@192.0.2.10:22000",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://192.0.2.10:65536",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://192.0.2.10:22000/path",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://192.0.2.10:22000/",
+   "kind": "device",
+   "ok": true
+  },
+  {
+   "address": "tcp://[2001:db8::1",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://192.0.2.1:2:3",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "TCP://192.0.2.10",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://192.0.2.10:22000\u000b",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://example.org x:1",
+   "kind": "device",
+   "ok": false
+  },
+  {
+   "address": "tcp://0.0.0.0:22000",
+   "kind": "listen",
+   "ok": true
+  },
+  {
+   "address": "tcp://:22000",
+   "kind": "listen",
+   "ok": true
+  },
+  {
+   "address": "quic://:0",
+   "kind": "listen",
+   "ok": true
+  },
+  {
+   "address": "tcp://127.0.0.1:0",
+   "kind": "listen",
+   "ok": true
+  },
+  {
+   "address": "tcp://",
+   "kind": "listen",
+   "ok": false
+  },
+  {
+   "address": "relay://192.0.2.20:22067",
+   "kind": "listen",
+   "ok": false
+  },
+  {
+   "address": "dynamic+https://relays.example.com/endpoint",
+   "kind": "listen",
+   "ok": false
+  },
+  {
+   "address": "tcp://[::]:22000",
+   "kind": "listen",
+   "ok": true
+  },
+  {
+   "address": "udp://:22000",
+   "kind": "listen",
+   "ok": false
+  },
+  {
+   "address": "tcp://:22000?x",
+   "kind": "listen",
    "ok": false
   }
  ]

@@ -29,16 +29,22 @@ func FuzzReadJavaPrefs(f *testing.F) {
 	})
 }
 
-// Any zip, encrypted or not, is read without panics or runaway memory.
+// Any zip, encrypted or not, is read without panics or runaway memory, and
+// what is read passes the import policy.
 func FuzzReadForkBackup(f *testing.F) {
-	fx := newBackup(f, 37, false, fixtureFolder{"f", "F", "/nonexistent/fuzz", "sendreceive"})
+	fx := newBackup(f, 37, false, fixtureFolder{"f", "F", "/storage/emulated/0/fuzz", "sendreceive"})
 	f.Add(fx.zip(f, ""), "")
 	f.Add(fx.zip(f, "pw"), "pw")
+	hostile := hostileBackup(f, "/storage/emulated/0")
+	f.Add(hostile.zip(f, ""), "")
 	f.Add(golden(f, "aes256-ae2.zip"), "test-password")
 	f.Add(golden(f, "aes128-ae1.zip"), "test-password")
 	f.Fuzz(func(t *testing.T, b []byte, password string) {
 		if bk, err := read(b, password); err == nil {
 			bk.preview(func(c config.FolderConfiguration) (bool, bool) { return false, false })
+			if err := checkPolicy(bk.cfg); err != nil {
+				t.Fatal(err)
+			}
 		}
 		// Every entry, not only the four the import reads.
 		if z, err := zip.NewReader(bytes.NewReader(b), int64(len(b))); err == nil {

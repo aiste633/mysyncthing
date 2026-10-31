@@ -30,6 +30,8 @@ data class ForkPreview(
     val conditions: RunConditions = RunConditions(),
     val proxy: ProxySettings = ProxySettings(),
     val notImported: List<ForkNotImported> = emptyList(),
+    /** Of what was read; the import refuses a file that no longer matches. */
+    val digest: String = "",
 )
 
 @Serializable
@@ -44,8 +46,9 @@ data class ForkFolder(
     val marker: Boolean = false,
 )
 
+/** [introducer] and [autoAccept]: the device may add devices or folders to this phone, which the preview says. */
 @Serializable
-data class ForkDevice(val id: String, val name: String = "")
+data class ForkDevice(val id: String, val name: String = "", val introducer: Boolean = false, val autoAccept: Boolean = false)
 
 /** A Fork setting without an equivalent here; [subject] names its folder or device. */
 @Serializable
@@ -83,8 +86,9 @@ object ForkImport {
     }
 
     /**
-     * Replaces this phone's Syncthing setup with the backup's. [keepIdentity]
-     * takes over the backup's device ID. [deleteBackup] removes the file after
+     * Replaces this phone's Syncthing setup with the backup's, as [preview]
+     * showed it: a file changed since is refused. [keepIdentity] takes over
+     * the backup's device ID. [deleteBackup] removes the file after
      * a successful import: it holds the private key in shared storage.
      * Returns null on success, else what went wrong. The core runs again
      * afterwards in either case. Not cancellable: once the core is stopped,
@@ -94,9 +98,8 @@ object ForkImport {
         context: Context,
         uri: Uri,
         password: String,
+        preview: ForkPreview,
         keepIdentity: Boolean,
-        conditions: RunConditions,
-        proxy: ProxySettings,
         deleteBackup: Boolean,
     ): UiText? = withContext(Dispatchers.IO + NonCancellable) {
         val settings = Settings(context)
@@ -108,14 +111,19 @@ object ForkImport {
 
             override fun install() {
                 val home = File(context.filesDir, "syncthing")
-                withFd(context.contentResolver, uri) { fd ->
-                    Stbridge.importForkBackup(fd.toLong(), password, home.absolutePath, keepIdentity)
+                try {
+                    withFd(context.contentResolver, uri) { fd ->
+                        Stbridge.importForkBackup(fd.toLong(), password, home.absolutePath, keepIdentity, preview.digest)
+                    }
+                } catch (e: Exception) {
+                    if (e.message == Stbridge.errBackupChanged()) throw UiTextException(text(R.string.import_backup_changed))
+                    throw e
                 }
             }
 
             override suspend fun applySettings() = listOf(
-                settings.update { conditions.copy(pausedByUser = it.pausedByUser) },
-                settings.setProxy(proxy),
+                settings.update { preview.conditions.copy(pausedByUser = it.pausedByUser) },
+                settings.setProxy(preview.proxy),
                 settings.setConditionPause(null), // the paused devices it remembers are the old setup's
                 // Without this the service takes the config without a database for a move from another
                 // phone and says so; the import screen already tells what the import means.

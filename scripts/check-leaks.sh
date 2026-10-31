@@ -84,6 +84,9 @@ while IFS= read -r line; do
   for u in $(matches "$url_host"); do
     h="${u#*://}"; h="${h##*@}"; h="${h%:*}"
     [[ "$h" =~ $ipv4 ]] && continue # reported above
+    # No host (all interfaces, as in tcp://:22000), or an allowed IPv6 address in brackets.
+    h="${h#[}"; h="${h%]}"
+    [[ -z "$h" || "$h" =~ $allowed_ip ]] && continue
     is_public_host "$h" || report "$commit: host in a URL that is not on the public allowlist"
   done
   for hp in $(matches "$host_port"); do

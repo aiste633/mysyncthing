@@ -300,19 +300,20 @@ func locked(gui config.GUIConfiguration) config.GUIConfiguration {
 	gui.InsecureAdminAccess = false
 	gui.InsecureSkipHostCheck = false
 	gui.MetricsWithoutAuth = false
+	gui.InsecureAllowFrameLoading = false // other origins framing the GUI
 	return gui
 }
 
 // guiAccess is the part of the GUI config that decides who can get in.
 type guiAccess struct {
-	enabled, tls, insecureAdmin, skipHostCheck, openMetrics bool
-	user, password, apiKey                                  string
-	authMode                                                config.AuthMode
+	enabled, tls, insecureAdmin, skipHostCheck, openMetrics, framing bool
+	user, password, apiKey                                           string
+	authMode                                                         config.AuthMode
 }
 
 func lockOf(g config.GUIConfiguration) guiAccess {
 	return guiAccess{
-		g.Enabled, g.RawUseTLS, g.InsecureAdminAccess, g.InsecureSkipHostCheck, g.MetricsWithoutAuth,
+		g.Enabled, g.RawUseTLS, g.InsecureAdminAccess, g.InsecureSkipHostCheck, g.MetricsWithoutAuth, g.InsecureAllowFrameLoading,
 		g.User, g.Password, g.APIKey, g.AuthMode,
 	}
 }

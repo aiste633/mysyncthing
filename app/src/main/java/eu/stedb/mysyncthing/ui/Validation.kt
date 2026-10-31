@@ -67,13 +67,19 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): UiT
     return when {
         p.isEmpty() -> text(R.string.error_required)
         !p.startsWith("/") -> text(R.string.error_path_absolute)
-        p.any { it.isISOControl() } -> text(R.string.error_control_characters)
+        p.any { it.isISOControl() || it in BIDI_CONTROLS } -> text(R.string.error_control_characters)
         p.split('/').drop(1).any { it.isEmpty() || it == "." || it == ".." } -> text(R.string.error_path_parts)
         !inside(p, "/storage") || p == "/storage" || p == "/storage/emulated" -> text(R.string.error_path_storage)
         others.map(::folderPath).any { inside(p, it) || inside(it, p) } -> text(R.string.error_path_overlap)
         else -> null
     }
 }
+
+/**
+ * Characters that reorder the text after them, so a path reads as another
+ * (go/bridge/importpolicy.go unsafeRune refuses the same in imported paths).
+ */
+private val BIDI_CONTROLS = setOf('\u061C', '\u200E', '\u200F') + ('\u202A'..'\u202E') + ('\u2066'..'\u2069')
 
 /** A folder path as saved: trimmed, without a trailing "/", and /sdcard, the old name of internal storage, spelled out. */
 @Suppress("SdCardPath") // recognises the aliases a user may type; it doesn't build paths from them

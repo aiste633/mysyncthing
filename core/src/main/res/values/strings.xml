@@ -165,6 +165,7 @@
 
     <!-- Import and export of a backup -->
     <string name="import_cannot_open">Cannot open the backup</string>
+    <string name="import_backup_changed">The backup changed after it was read. Choose it again.</string>
     <string name="import_settings_not_saved">The sync settings could not all be saved, probably because the storage is full. Check them in Settings.</string>
     <string name="import_backup_not_deleted">The backup file could not be deleted. Delete it yourself: it holds the device\'s private key.</string>
     <string name="export_cannot_write">Cannot write the file</string>

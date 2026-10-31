@@ -16,7 +16,9 @@
   "devices": [
     {
       "id": "PEER-ID",
-      "name": "Example peer"
+      "name": "Example peer",
+      "introducer": true,
+      "autoAccept": false
     }
   ],
   "conditions": {
@@ -43,6 +45,11 @@
     {
       "key": "folder_conditions",
       "subject": "Photos"
+    },
+    {
+      "key": "folder_versioning",
+      "subject": "Photos"
     }
-  ]
+  ],
+  "digest": "0123abcd"
 }
