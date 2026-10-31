@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Signs the unsigned APK that CI attached to a draft GitHub release, uploads the signed
 # APK and removes the unsigned one, so the release offers only the APK to install.
+# A copy of the signed APK and its SHA-256 stays in release/ (ignored by git): only the
+# latest release, the release page has them all.
 # The key never leaves this machine. F-Droid builds the same tag, checks that its APK
 # matches this one byte for byte apart from the signature, and then ships this one.
 # Anyone can do the same check: README, "Verify a release".
@@ -27,6 +29,7 @@ command -v apksigcopier >/dev/null || { echo "apksigcopier not found: apt instal
 unsigned="mysyncthing-$version-unsigned.apk"
 signed="mysyncthing-$version.apk"
 recipe="$(dirname "$0")/../fdroid/eu.stedb.mysyncthing.yml"
+keep="$(dirname "$0")/../release"
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
@@ -52,8 +55,13 @@ if [ -n "$allowed" ] && ! grep -qx "$digest" <<<"$allowed"; then
   exit 1
 fi
 gh release upload "$tag" "$work/$signed"
+# The new copy first, then the older ones go, so release/ is never empty.
+mkdir -p "$keep"
+cp "$work/$signed" "$keep/$signed"
+(cd "$keep" && sha256sum "$signed" >"$signed.sha256")
+find "$keep" -maxdepth 1 -name 'mysyncthing-*.apk*' ! -name "$signed" ! -name "$signed.sha256" -delete
 gh release delete-asset "$tag" "$unsigned" --yes
 
-echo "Uploaded $signed and removed $unsigned."
+echo "Uploaded $signed and removed $unsigned. Local copy: release/$signed (sha256sum -c in release/)."
 [ -n "$allowed" ] || echo "AllowedAPKSigningKeys in the F-Droid recipe is the SHA-256 above."
 echo "Publish when ready: gh release edit $tag --draft=false"
