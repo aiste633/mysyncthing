@@ -24,8 +24,8 @@
     <string name="discard_text">Ce que vous avez saisi ici sera perdu.</string>
 
     <string name="limit_label">Limite</string>
-    <string name="limit_none">Aucune limite</string>
-    <string name="limit_hint">Laissez vide ou 0 pour aucune limite.</string>
+    <string name="limit_zero">%1$s (aucune limite)</string>
+    <string name="limit_hint">0 = aucune limite</string>
     <string name="list_add_or_tick">Ajoutez-en une, ou cochez « %1$s »</string>
 
     <plurals name="count_items">
@@ -104,12 +104,7 @@
     <string name="compression_always">Toutes les données</string>
     <string name="compression_never">Désactivée</string>
     <string name="compression_always_hint">Économise des données sur les textes et documents, mais consomme de la batterie. Les photos et vidéos n’y gagnent presque rien.</string>
-    <string name="connections_auto">Automatique</string>
-    <plurals name="connections">
-        <item quantity="one">%1$d connexion</item>
-        <item quantity="many">%1$d de connexions</item>
-        <item quantity="other">%1$d connexions</item>
-    </plurals>
+    <string name="connections_auto">Automatique (%1$s)</string>
 
     <string name="internal_storage">Mémoire de stockage interne</string>
 
@@ -128,11 +123,11 @@
     <string name="versioning_trashcan_hint">Conserve la dernière version des fichiers modifiés ou supprimés sur d’autres appareils.</string>
     <string name="versioning_simple_hint">Conserve un nombre donné d’anciennes versions de chaque fichier.</string>
     <string name="versioning_staggered_hint">Conserve plus de versions récentes et moins d’anciennes, jusqu’à une ancienneté maximum.</string>
-    <string name="versioning_keep_days">Conserver pendant (jours, 0 = toujours)</string>
+    <string name="versioning_keep_days">Conserver pendant</string>
     <string name="versioning_keep_versions">Nombre de versions à conserver</string>
-    <string name="versioning_forever">Toujours</string>
+    <string name="versioning_days_zero">%1$s (toujours)</string>
+    <string name="versioning_days_hint">0 = conserver toujours</string>
     <string name="versioning_summary">%1$s · %2$s</string>
-    <string name="versioning_summary_forever">%1$s · conserver toujours</string>
 
     <string name="op_failed">%1$s a échoué : %2$s</string>
     <string name="op_clear">Effacer</string>
@@ -356,6 +351,28 @@
     <string name="listen_add_hint">Pour un autre port, ajoutez tcp://0.0.0.0:22001 et quic://0.0.0.0:22001 et décochez Par défaut.</string>
     <string name="servers_default_hint">Utilisés par la découverte globale</string>
     <string name="servers_add_hint">Votre propre serveur, par exemple https://discovery.example.com/ (https seulement)</string>
+    <string name="syntax_title">Formats que vous pouvez saisir</string>
+    <string name="syntax_listen_tcp">TCP sur tous les réseaux, port 22001</string>
+    <string name="syntax_listen_quic">QUIC sur tous les réseaux, port 22001</string>
+    <string name="syntax_listen_one_address">Uniquement sur cette adresse du téléphone</string>
+    <string name="syntax_ipv4_only">Uniquement en IPv4</string>
+    <string name="syntax_ipv6_only">Uniquement en IPv6</string>
+    <string name="syntax_listen_any_port">Sur n\'importe quel port libre</string>
+    <string name="syntax_relay">Par ce relais</string>
+    <string name="syntax_relay_pool">Par les relais de cette liste</string>
+    <string name="syntax_listen_note">Sans port, TCP et QUIC utilisent 22000. quic4:// et quic6:// n\'utilisent que IPv4 ou IPv6, comme tcp4:// et tcp6:// pour TCP. Ajoutez ?id= et l\'ID d\'appareil du relais pour le vérifier.</string>
+    <string name="syntax_server_own">Votre propre serveur (https seulement)</string>
+    <string name="syntax_server_port">Avec un port</string>
+    <string name="syntax_server_noannounce">Recherche seulement les appareils, n\'annonce jamais ce téléphone</string>
+    <string name="syntax_server_nolookup">Annonce seulement ce téléphone, ne recherche jamais les appareils</string>
+    <string name="syntax_server_insecure">Ne vérifie pas le certificat du serveur</string>
+    <string name="syntax_server_note">Ajoutez ?id= et l\'ID d\'appareil du serveur pour vérifier son certificat. Reliez les options par &amp;, par exemple ?id=…&amp;noannounce.</string>
+    <string name="syntax_address_tcp">TCP vers cette adresse et ce port</string>
+    <string name="syntax_address_bare">Compris comme TCP, port 22000</string>
+    <string name="syntax_address_name">Un nom d\'hôte ; sans port, 22000</string>
+    <string name="syntax_address_ipv6">Une adresse IPv6, entre crochets</string>
+    <string name="syntax_address_quic">QUIC au lieu de TCP</string>
+    <string name="syntax_address_note">Sans port, TCP et QUIC utilisent 22000. quic4:// et quic6:// n\'utilisent que IPv4 ou IPv6, comme tcp4:// et tcp6:// pour TCP. Ajoutez ?id= et l\'ID d\'appareil du relais pour le vérifier.</string>
 
     <string name="setup_title">Configuration</string>
     <string name="setup_intro">MySyncthing a besoin d’une autorisation pour synchroniser. Les autres la rendent plus fiable.</string>

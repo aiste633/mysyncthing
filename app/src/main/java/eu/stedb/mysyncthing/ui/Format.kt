@@ -185,7 +185,9 @@ fun limitKib(value: Double, unit: String): Long {
     return Math.round(b / 1024).coerceAtLeast(1)
 }
 
-fun limitText(kib: Long): UiText = if (kib <= 0) text(R.string.limit_none) else limitSi(kib).let { (v, u) -> withUnit(numberText(v), u) }
+/** "500 kB/s", or "0 kB/s (no limit)": 0 shows as a value too, as if typed. */
+fun limitText(kib: Long): UiText =
+    if (kib <= 0) text(R.string.limit_zero, withUnit(numberText(0.0), "kB/s")) else limitSi(kib).let { (v, u) -> withUnit(numberText(v), u) }
 
 val COMPRESSIONS = listOf(
     "metadata" to text(R.string.compression_metadata),
@@ -201,8 +203,13 @@ fun compressionHint(c: String): UiText? = when (c) {
     else -> null
 }
 
-/** 0 is Syncthing's choice, currently 3 connections. */
-fun connectionsText(n: Int): UiText = if (n <= 0) text(R.string.connections_auto) else plural(R.plurals.connections, n)
+/**
+ * 0 is Syncthing's choice, currently 3 (lib/config DeviceConfiguration.NumConnections).
+ * Just the number: the row is already called Connections.
+ */
+fun connectionsText(n: Int): UiText = if (n <= 0) text(R.string.connections_auto, num(AUTO_CONNECTIONS)) else num(n)
+
+private const val AUTO_CONNECTIONS = 3
 
 fun connectionChoices(current: Int): List<Pair<Int, UiText>> =
     (listOf(0, 1, 2, 3, 4, 8) + current.coerceAtLeast(0)).distinct().map { it to connectionsText(it) }
@@ -274,12 +281,26 @@ fun versioningParam(type: String): VersioningParam? = when (type) {
     else -> null
 }
 
-/** Staggered stores maxAge in seconds; the screen edits days. */
+/**
+ * The value the core uses, as the screen edits it (staggered: days, stored as seconds).
+ * Missing, blank or not a number reads as the core reads it (lib/versioner): trash can and
+ * simple's strconv errors give 0 and 5, staggered's 31536000 s. 0 or less keeps forever.
+ */
 fun versioningShown(type: String, raw: String?): String {
     val p = versioningParam(type) ?: return ""
-    val v = raw ?: return p.default
-    return if (p.key == "maxAge") ((v.toLongOrNull() ?: 0) / 86_400).toString() else v
+    val n = goInt(raw)
+    val value = when (p.key) {
+        // Under a day still expires; floor would show it as "forever".
+        "maxAge" -> (n ?: 31_536_000).let { if (it <= 0) 0 else (it / 86_400).coerceAtLeast(1) }
+        else -> n ?: p.default.toLong()
+    }
+    return value.coerceIn(0, Int.MAX_VALUE.toLong()).toString()
 }
+
+/** As Go's strconv.Atoi and ParseInt read a number: an optional sign and ASCII digits, in range. */
+private fun goInt(s: String?): Long? = s?.takeIf { GO_INT.matches(it) }?.toLongOrNull()
+
+private val GO_INT = Regex("[+-]?[0-9]+")
 
 /** As the core's strconv reads it: plain ASCII digits. */
 fun versioningStored(type: String, shown: String): String {
@@ -287,21 +308,23 @@ fun versioningStored(type: String, shown: String): String {
     return (if (versioningParam(type)?.key == "maxAge") n * 86_400 else n).toString()
 }
 
+/** "Trash can · 0 days (forever)", "Simple · 5". */
 fun versioningSummary(type: String, params: Map<String, String>): UiText {
     val label = versioningLabel(type)
     val p = versioningParam(type) ?: return label
-    val shown = versioningShown(type, params[p.key])
-    return if (p.days && shown == "0") text(R.string.versioning_summary_forever, label)
-    else text(R.string.versioning_summary, label, versioningAmount(p, shown))
+    return text(R.string.versioning_summary, label, versioningAmount(p, versioningShown(type, params[p.key])))
 }
 
-/** "Forever", "30 days" or "5 versions" for what [p] is set to, [shown] as the screen edits it. */
+/**
+ * "0 days (forever)", "30 days" or "5" for what [p] is set to, [shown] as the screen edits it.
+ * 0 shows as a value, as if typed. Versions are just the number: the row says Versions to keep.
+ */
 fun versioningAmount(p: VersioningParam, shown: String): UiText {
     val n = shown.toIntOrNull() ?: 0
     return when {
-        p.days && n == 0 -> text(R.string.versioning_forever)
+        p.days && n == 0 -> text(R.string.versioning_days_zero, count(R.plurals.count_days, 0))
         p.days -> count(R.plurals.count_days, n)
-        else -> count(R.plurals.count_versions, n)
+        else -> num(n)
     }
 }
 

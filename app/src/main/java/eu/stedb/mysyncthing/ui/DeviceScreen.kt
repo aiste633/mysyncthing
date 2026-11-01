@@ -214,6 +214,6 @@ internal fun addressesText(a: List<String>): String = when {
 @Composable
 internal fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSave: (List<String>) -> Unit) = ListEditDialog(
     stringResource(R.string.device_addresses), initial, token = "dynamic", tokenTitle = stringResource(R.string.addresses_find),
-    tokenHint = stringResource(R.string.addresses_find_hint), addHint = stringResource(R.string.addresses_add_hint), valid = ::isDeviceAddress, normalize = ::normalizeAddress,
+    tokenHint = stringResource(R.string.addresses_find_hint), addHint = stringResource(R.string.addresses_add_hint), syntax = ADDRESS_SYNTAX, valid = ::isDeviceAddress, normalize = ::normalizeAddress,
     onDismiss = onDismiss, onSave = onSave,
 )

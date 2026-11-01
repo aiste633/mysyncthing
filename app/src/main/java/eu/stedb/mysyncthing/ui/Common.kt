@@ -41,9 +41,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.HelpOutline
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Error
@@ -96,6 +98,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -581,12 +584,12 @@ fun GroupTitle(name: String) = Text(
 fun <T> grouped(items: List<T>, group: (T) -> String): Map<String, List<T>> =
     items.groupBy { group(it).trim() }.toSortedMap(String.CASE_INSENSITIVE_ORDER.thenBy { it })
 
-/** A speed limit in kB/s or MB/s; empty or 0 means no limit. Returns KiB/s, as the core stores it. */
+/** A speed limit in kB/s or MB/s; 0 (or empty) means no limit, and shows as "0" like any value. Returns KiB/s, as the core stores it. */
 @Composable
 fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (Long) -> Unit) {
     val (v0, u0) = limitSi(kib)
     val locale = currentStrings().locale
-    var value by rememberSaveable { mutableStateOf(if (kib > 0) fieldNumber(v0, locale) else "") }
+    var value by rememberSaveable { mutableStateOf(fieldNumber(v0, locale)) }
     var unit by rememberSaveable { mutableStateOf(u0) }
     val units = listOf("kB/s", "MB/s")
     val error = amountError(value, unit, emptyOk = true)?.asString()
@@ -596,7 +599,7 @@ fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (L
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
-                    value, { value = it }, label = { Text(stringResource(R.string.limit_label)) }, placeholder = { Text(stringResource(R.string.limit_none)) },
+                    value, { value = it }, label = { Text(stringResource(R.string.limit_label)) },
                     singleLine = true, isError = error != null, supportingText = error?.let { { Text(it) } },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
                 )
@@ -629,11 +632,13 @@ fun ListEditDialog(
     tokenTitle: String,
     tokenHint: String,
     addHint: String,
+    syntax: AddressSyntax,
     valid: (String) -> Boolean,
     normalize: (String) -> String = { it.trim() },
     onDismiss: () -> Unit,
     onSave: (List<String>) -> Unit,
 ) {
+    var help by rememberSaveable { mutableStateOf(false) }
     var auto by rememberSaveable { mutableStateOf(initial.isEmpty() || token in initial) }
     var own by rememberSaveable { mutableStateOf(initial.filter { it != token }) }
     var draft by rememberSaveable { mutableStateOf("") }
@@ -643,7 +648,12 @@ fun ListEditDialog(
     val all = (if (auto) listOf(token) else emptyList()) + (own + listOfNotNull(next.takeIf { draftValid })).distinct()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(title, Modifier.weight(1f))
+                IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Outlined.HelpOutline, stringResource(R.string.syntax_title)) }
+            }
+        },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
@@ -677,6 +687,31 @@ fun ListEditDialog(
         confirmButton = { TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text(stringResource(R.string.action_save)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
+    if (help) SyntaxDialog(token, tokenTitle, tokenHint, syntax) { help = false }
+}
+
+/** The forms an address list takes, each as typed (selectable, to copy) with what it does. */
+@Composable
+private fun SyntaxDialog(token: String, tokenTitle: String, tokenHint: String, syntax: AddressSyntax, onDismiss: () -> Unit) = AlertDialog(
+    onDismissRequest = onDismiss,
+    title = { Text(stringResource(R.string.syntax_title)) },
+    text = { Box(Modifier.verticalScroll(rememberScrollState())) { SyntaxList(token, tokenTitle, tokenHint, syntax) } },
+    confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
+)
+
+@Composable
+internal fun SyntaxList(token: String, tokenTitle: String, tokenHint: String, syntax: AddressSyntax) = SelectionContainer {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        val rows = listOf(token to stringResource(R.string.label_and_hint, tokenTitle, tokenHint)) +
+            syntax.examples.map { it.example to stringResource(it.meaning) }
+        rows.forEach { (example, meaning) ->
+            Column {
+                Text(example, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)
+                Text(meaning, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Text(stringResource(syntax.note), style = MaterialTheme.typography.bodySmall)
+    }
 }
 
 /**
