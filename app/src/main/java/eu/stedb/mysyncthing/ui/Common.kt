@@ -475,11 +475,15 @@ fun <T> ChoiceList(
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .selectable(value == selected, role = Role.RadioButton) { onPick(value) },
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
-                RadioButton(value == selected, onClick = null)
+                // Beside the name, not the middle of a name and hint that wrap at large fonts.
+                val firstLine = with(LocalDensity.current) { LocalTextStyle.current.lineHeight.toDp() }
+                Box(Modifier.padding(vertical = 12.dp).heightIn(min = firstLine), contentAlignment = Alignment.Center) {
+                    RadioButton(value == selected, onClick = null)
+                }
                 Spacer(Modifier.width(12.dp))
-                Column(Modifier.padding(vertical = 8.dp)) {
+                Column(Modifier.padding(vertical = 12.dp)) {
                     Text(label.asString())
                     describe(value)?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
