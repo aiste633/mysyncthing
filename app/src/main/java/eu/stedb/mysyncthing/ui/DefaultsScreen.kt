@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Versioning
+import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonObjectBuilder
 import kotlinx.serialization.json.JsonPrimitive
@@ -142,7 +143,8 @@ fun DefaultDeviceScreen(vm: MainViewModel, onBack: () -> Unit) {
             close(); vm.changeDefaultDevice(d.copy(compression = c), R.string.op_compression) { put("compression", c) }
         }
         DefaultsDialog.Connections -> ChoiceDialog(
-            stringResource(R.string.connections), connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0), onDismiss = close,
+            stringResource(R.string.connections), connectionChoices(d.numConnections), d.numConnections.coerceAtLeast(0),
+            { if (it == 0) text(R.string.connections_auto_hint) else null }, onDismiss = close,
         ) { n -> close(); vm.changeDefaultDevice(d.copy(numConnections = n), R.string.op_connections) { put("numConnections", n) } }
         else -> {}
     }

@@ -38,8 +38,9 @@
 
     <!-- Speed limit dialog; the unit (kB/s or MB/s) is picked beside the field -->
     <string name="limit_label">Limit</string>
-    <string name="limit_none">No limit</string>
-    <string name="limit_hint">Leave empty or 0 for no limit.</string>
+    <!-- %1$s: "0 kB/s"; a speed limit of 0 means no limit -->
+    <string name="limit_zero">%1$s (no limit)</string>
+    <string name="limit_hint">0 = no limit</string>
     <!-- List of addresses or servers with one automatic entry. %1$s: that entry's name, e.g. Default -->
     <string name="list_add_or_tick">Add one, or tick \"%1$s\"</string>
 
@@ -122,12 +123,8 @@
     <string name="compression_always">All data</string>
     <string name="compression_never">Off</string>
     <string name="compression_always_hint">Saves data on text and documents, costs battery. Photos and videos gain almost nothing.</string>
-    <!-- Number of connections to a device; automatic is Syncthing\'s choice -->
-    <string name="connections_auto">Automatic</string>
-    <plurals name="connections">
-        <item quantity="one">%1$d connection</item>
-        <item quantity="other">%1$d connections</item>
-    </plurals>
+    <!-- %1$s: the number of connections Syncthing currently picks, e.g. 3 -->
+    <string name="connections_auto">Automatic (%1$s)</string>
 
     <!-- The phone\'s shared storage, as the Files app calls it -->
     <string name="internal_storage">Internal storage</string>
@@ -149,13 +146,14 @@
     <string name="versioning_trashcan_hint">Keeps the last version of files changed or deleted on other devices.</string>
     <string name="versioning_simple_hint">Keeps a number of old versions of each file.</string>
     <string name="versioning_staggered_hint">Keeps more recent versions, fewer older ones, up to a maximum age.</string>
-    <string name="versioning_keep_days">Keep for (days, 0 = forever)</string>
+    <string name="versioning_keep_days">Keep for</string>
     <string name="versioning_keep_versions">Versions to keep</string>
-    <string name="versioning_forever">Forever</string>
-    <!-- %1$s: versioning method, %2$s: how long or how many, e.g. "Simple · 5 versions" -->
+    <!-- %1$s: "0 days"; 0 keeps old versions without a time limit -->
+    <string name="versioning_days_zero">%1$s (forever)</string>
+    <!-- Under the number of days to keep old versions -->
+    <string name="versioning_days_hint">0 = keep forever</string>
+    <!-- %1$s: versioning method, %2$s: how long or how many, e.g. "Simple · 5" -->
     <string name="versioning_summary">%1$s · %2$s</string>
-    <!-- %1$s: versioning method that keeps old versions without a time limit -->
-    <string name="versioning_summary_forever">%1$s · keep forever</string>
 
     <!-- Snackbar after an action failed. %1$s: the action (one of the op_* texts), %2$s: the reason -->
     <string name="op_failed">%1$s failed: %2$s</string>
@@ -420,6 +418,29 @@
     <string name="servers_default_hint">Used by internet discovery</string>
     <!-- Keep the address as it is -->
     <string name="servers_add_hint">Your own server, for example https://discovery.example.com/ (https only)</string>
+    <!-- The "?" beside a list of addresses: one line per form, under the form as typed (example addresses stay as they are) -->
+    <string name="syntax_title">Formats you can enter</string>
+    <string name="syntax_listen_tcp">TCP on every network, port 22001</string>
+    <string name="syntax_listen_quic">QUIC on every network, port 22001</string>
+    <string name="syntax_listen_one_address">Only on this one address of the phone</string>
+    <string name="syntax_ipv4_only">Over IPv4 only</string>
+    <string name="syntax_ipv6_only">Over IPv6 only</string>
+    <string name="syntax_listen_any_port">On any free port</string>
+    <string name="syntax_relay">Through this relay</string>
+    <string name="syntax_relay_pool">Through relays from this pool list</string>
+    <string name="syntax_listen_note">Without a port, TCP and QUIC use 22000. quic4:// and quic6:// keep to IPv4 or IPv6, as tcp4:// and tcp6:// do for TCP. Add ?id= and the relay\'s device ID to a relay to check it.</string>
+    <string name="syntax_server_own">Your own server (https only)</string>
+    <string name="syntax_server_port">With a port</string>
+    <string name="syntax_server_noannounce">Only looks devices up, never announces this phone</string>
+    <string name="syntax_server_nolookup">Only announces this phone, never looks devices up</string>
+    <string name="syntax_server_insecure">Does not check the server\'s certificate</string>
+    <string name="syntax_server_note">Add ?id= and the server\'s device ID to check its certificate. Join options with &amp;, for example ?id=…&amp;noannounce.</string>
+    <string name="syntax_address_tcp">TCP to this address and port</string>
+    <string name="syntax_address_bare">Taken as TCP, port 22000</string>
+    <string name="syntax_address_name">A host name; without a port, 22000</string>
+    <string name="syntax_address_ipv6">An IPv6 address, in square brackets</string>
+    <string name="syntax_address_quic">QUIC instead of TCP</string>
+    <string name="syntax_address_note">Without a port, TCP and QUIC use 22000. quic4:// and quic6:// keep to IPv4 or IPv6, as tcp4:// and tcp6:// do for TCP. Add ?id= and the relay\'s device ID to a relay to check it.</string>
 
     <!-- First-run checklist; Settings shows the same permission rows -->
     <string name="setup_title">Set up</string>

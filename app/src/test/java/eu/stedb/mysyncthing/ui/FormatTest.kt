@@ -32,8 +32,27 @@ class FormatTest {
         assertEquals("31536000", versioningStored("staggered", "365"))
         assertEquals("365", versioningShown("staggered", "31536000"))
         assertEquals("Staggered · 365 days", versioningSummary("staggered", mapOf("maxAge" to "31536000")).en())
-        assertEquals("Trash can · keep forever", versioningSummary("trashcan", emptyMap()).en())
-        assertEquals("Simple · 5 versions", versioningSummary("simple", emptyMap()).en())
+        assertEquals("Trash can · 0 days (forever)", versioningSummary("trashcan", emptyMap()).en())
+        assertEquals("Simple · 5", versioningSummary("simple", emptyMap()).en())
+        assertEquals("Staggered · 0 days (forever)", versioningSummary("staggered", mapOf("maxAge" to "0")).en())
+    }
+
+    @Test
+    fun versioningShowsWhatTheCoreUses() {
+        // Missing, blank or not a number: the core's strconv error defaults (lib/versioner).
+        for (raw in listOf(null, "", " 5", "abc", "1e3", "٣", "99999999999999999999")) {
+            assertEquals("trash can $raw", "0", versioningShown("trashcan", raw))
+            assertEquals("simple $raw", "5", versioningShown("simple", raw))
+            assertEquals("staggered $raw", "365", versioningShown("staggered", raw))
+        }
+        // Go reads a sign; 0 or less keeps forever.
+        assertEquals("7", versioningShown("trashcan", "+7"))
+        assertEquals("0", versioningShown("trashcan", "-3"))
+        assertEquals("0", versioningShown("staggered", "-86400"))
+        // Under a day still expires: not shown as forever.
+        assertEquals("1", versioningShown("staggered", "3600"))
+        assertEquals("2", versioningShown("staggered", "200000"))
+        assertEquals("Int.MAX_VALUE at most", Int.MAX_VALUE.toString(), versioningShown("trashcan", "9999999999999"))
     }
 
     @Test
@@ -153,7 +172,8 @@ class FormatTest {
 
     @Test
     fun speedLimitsRoundTripInSi() {
-        assertEquals("No limit", limitText(0).en())
+        assertEquals("0\u00A0kB/s (no limit)", limitText(0).en())
+        assertEquals("0\u00A0kB/s (no limit)", limitText(-5).en())
         assertEquals(488, limitKib(500.0, "kB/s"))
         assertEquals("500\u00A0kB/s", limitText(488).en())
         assertEquals(977, limitKib(1.0, "MB/s"))
@@ -161,7 +181,8 @@ class FormatTest {
         assertEquals("2.5\u00A0MB/s", limitText(limitKib(2.5, "MB/s")).en())
         assertEquals(1, limitKib(0.1, "kB/s"))
         assertEquals(0, limitKib(0.0, "MB/s"))
-        assertEquals("Automatic", connectionsText(0).en())
+        assertEquals("Automatic (3)", connectionsText(0).en())
+        assertEquals("2", connectionsText(2).en())
         assertEquals(listOf(0, 1, 2, 3, 4, 8, 6), connectionChoices(6).map { it.first })
     }
 

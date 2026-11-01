@@ -1,5 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.annotation.StringRes
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.num
@@ -297,6 +298,53 @@ fun isDiscoveryServer(s: String): Boolean {
     val query = a.rest.substringAfter('?', "")
     return a.rest.substringBefore('?').let { it.isEmpty() || it.startsWith("/") } && queryIdValid(query)
 }
+
+/** One way to write an entry: [example] as typed, and what it does. */
+data class SyntaxExample(val example: String, @param:StringRes val meaning: Int)
+
+/**
+ * What the "?" of an address list shows, beside the list's automatic entry: forms its
+ * check accepts (SyntaxTest keeps every example passing it) and a [note] on the rest.
+ */
+data class AddressSyntax(val examples: List<SyntaxExample>, @param:StringRes val note: Int)
+
+val LISTEN_SYNTAX = AddressSyntax(
+    listOf(
+        SyntaxExample("tcp://:22001", R.string.syntax_listen_tcp),
+        SyntaxExample("quic://:22001", R.string.syntax_listen_quic),
+        SyntaxExample("tcp://192.0.2.10:22001", R.string.syntax_listen_one_address),
+        SyntaxExample("tcp4://0.0.0.0:22001", R.string.syntax_ipv4_only),
+        SyntaxExample("tcp6://[::]:22001", R.string.syntax_ipv6_only),
+        SyntaxExample("tcp://:0", R.string.syntax_listen_any_port),
+        SyntaxExample("relay://relay.example.com:22067", R.string.syntax_relay),
+        SyntaxExample("dynamic+https://relays.syncthing.net/endpoint", R.string.syntax_relay_pool),
+    ),
+    R.string.syntax_listen_note,
+)
+
+val SERVER_SYNTAX = AddressSyntax(
+    listOf(
+        SyntaxExample("https://discovery.example.com/", R.string.syntax_server_own),
+        SyntaxExample("https://discovery.example.com:8443/", R.string.syntax_server_port),
+        SyntaxExample("https://discovery.example.com/?noannounce", R.string.syntax_server_noannounce),
+        SyntaxExample("https://discovery.example.com/?nolookup", R.string.syntax_server_nolookup),
+        SyntaxExample("https://discovery.example.com/?insecure", R.string.syntax_server_insecure),
+    ),
+    R.string.syntax_server_note,
+)
+
+val ADDRESS_SYNTAX = AddressSyntax(
+    listOf(
+        SyntaxExample("tcp://192.0.2.10:22000", R.string.syntax_address_tcp),
+        SyntaxExample("192.0.2.10", R.string.syntax_address_bare),
+        SyntaxExample("tcp://sync.example.com", R.string.syntax_address_name),
+        SyntaxExample("tcp://[2001:db8::10]:22000", R.string.syntax_address_ipv6),
+        SyntaxExample("quic://192.0.2.10:22000", R.string.syntax_address_quic),
+        SyntaxExample("tcp4://sync.example.com", R.string.syntax_ipv4_only),
+        SyntaxExample("relay://relay.example.com:22067", R.string.syntax_relay),
+    ),
+    R.string.syntax_address_note,
+)
 
 // Proxy fields: the bridge refuses the same (go/bridge/proxy.go proxyFrom), and
 // go/bridge/testdata/validation-contract.json pins both to the same cases.

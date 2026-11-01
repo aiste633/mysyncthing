@@ -209,6 +209,11 @@ class E2eTest {
         rule.onNode(hasSetTextAction()).assert(hasText(entry))
         rule.activityRule.scenario.recreate()
         rule.onNode(hasSetTextAction()).assert(hasText(entry))
+        // The "?" lists the forms the list takes, and closing it keeps what was typed.
+        tap(str(R.string.syntax_title))
+        rule.onNodeWithText("tcp" + "://:22001").assertIsDisplayed()
+        tap(str(R.string.action_close))
+        rule.onNode(hasSetTextAction()).assert(hasText(entry))
         tap(str(R.string.action_cancel))
         rule.onNodeWithText(str(R.string.listen_addresses)).assertIsDisplayed()
 

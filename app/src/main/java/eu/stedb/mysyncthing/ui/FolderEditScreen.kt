@@ -191,6 +191,7 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
         TextDialog(
             stringResource(param.label), versioningShown(v.type, v.params[param.key]),
             stringResource(if (param.days) R.string.versioning_unit_days else R.string.versioning_unit_versions),
+            supporting = if (param.days) stringResource(R.string.versioning_days_hint) else null,
             error = { wholeNumberError(it, param.min) },
             onDismiss = { editParam = false },
         ) {
