@@ -648,19 +648,16 @@ fun ListEditDialog(
     val all = (if (auto) listOf(token) else emptyList()) + (own + listOfNotNull(next.takeIf { draftValid })).distinct()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(title, Modifier.weight(1f))
-                IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Outlined.HelpOutline, stringResource(R.string.syntax_title)) }
-            }
-        },
+        title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Top,
                     modifier = Modifier.fillMaxWidth().toggleable(auto, role = Role.Checkbox) { auto = it },
                 ) {
-                    Checkbox(auto, onCheckedChange = null)
+                    // Beside the name, not the middle of a hint that wraps to several lines at large fonts.
+                    val firstLine = with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.lineHeight.toDp() }
+                    Box(Modifier.heightIn(min = firstLine), contentAlignment = Alignment.Center) { Checkbox(auto, onCheckedChange = null) }
                     Column(Modifier.weight(1f)) {
                         Text(tokenTitle, style = MaterialTheme.typography.bodyLarge)
                         Text(tokenHint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -677,6 +674,8 @@ fun ListEditDialog(
                     isError = (draft.isNotBlank() && !draftValid) || all.isEmpty(),
                     // Save is off with nothing in the list, so say why instead of the format hint.
                     supportingText = { Text(if (all.isEmpty()) stringResource(R.string.list_add_or_tick, tokenTitle) else addHint) },
+                    // Right at the field: the forms it takes.
+                    leadingIcon = { IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Outlined.HelpOutline, stringResource(R.string.syntax_title)) } },
                     trailingIcon = {
                         IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
                     },

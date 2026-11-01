@@ -14,6 +14,7 @@ import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.runtime.Composable
@@ -21,6 +22,8 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.core.SyncState
 
@@ -29,7 +32,21 @@ import eu.stedb.mysyncthing.core.SyncState
 fun AppTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
     val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
-    MaterialTheme(colorScheme = scheme, shapes = AppShapes, content = content)
+    MaterialTheme(colorScheme = scheme, shapes = AppShapes, typography = AppTypography, content = content)
+}
+
+/**
+ * Titles break a word too long for the line with a hyphen, by the language's rules, instead of
+ * anywhere: German compounds at the largest font split as "Empfangsadr/essen" in a dialog title.
+ * Body text keeps Android's default breaking.
+ */
+private val AppTypography = Typography().run {
+    fun TextStyle.hyphenated() = copy(hyphens = Hyphens.Auto)
+    copy(
+        displayLarge = displayLarge.hyphenated(), displayMedium = displayMedium.hyphenated(), displaySmall = displaySmall.hyphenated(),
+        headlineLarge = headlineLarge.hyphenated(), headlineMedium = headlineMedium.hyphenated(), headlineSmall = headlineSmall.hyphenated(),
+        titleLarge = titleLarge.hyphenated(), titleMedium = titleMedium.hyphenated(), titleSmall = titleSmall.hyphenated(),
+    )
 }
 
 /**
