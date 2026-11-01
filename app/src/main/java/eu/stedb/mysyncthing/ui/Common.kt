@@ -41,6 +41,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -65,6 +66,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -94,8 +96,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontFamily
@@ -104,6 +106,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
@@ -648,19 +651,16 @@ fun ListEditDialog(
     val all = (if (auto) listOf(token) else emptyList()) + (own + listOfNotNull(next.takeIf { draftValid })).distinct()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(title, Modifier.weight(1f))
-                IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Outlined.HelpOutline, stringResource(R.string.syntax_title)) }
-            }
-        },
+        title = { Text(title) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                    verticalAlignment = Alignment.Top,
                     modifier = Modifier.fillMaxWidth().toggleable(auto, role = Role.Checkbox) { auto = it },
                 ) {
-                    Checkbox(auto, onCheckedChange = null)
+                    // Beside the name, not the middle of a hint that wraps to several lines at large fonts.
+                    val firstLine = with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.lineHeight.toDp() }
+                    Box(Modifier.heightIn(min = firstLine), contentAlignment = Alignment.Center) { Checkbox(auto, onCheckedChange = null) }
                     Column(Modifier.weight(1f)) {
                         Text(tokenTitle, style = MaterialTheme.typography.bodyLarge)
                         Text(tokenHint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -673,10 +673,14 @@ fun ListEditDialog(
                     }
                 }
                 OutlinedTextField(
-                    draft, { draft = it }, label = { Text(stringResource(R.string.action_add)) }, singleLine = true,
+                    draft, { draft = it }, singleLine = true,
+                    // One line, shrunk to fit: "?" and "+" share the width, and "Hinzufügen" at the largest font wrapped.
+                    label = { Text(stringResource(R.string.action_add), maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = LocalTextStyle.current.fontSize)) },
                     isError = (draft.isNotBlank() && !draftValid) || all.isEmpty(),
                     // Save is off with nothing in the list, so say why instead of the format hint.
                     supportingText = { Text(if (all.isEmpty()) stringResource(R.string.list_add_or_tick, tokenTitle) else addHint) },
+                    // Right at the field: the forms it takes.
+                    leadingIcon = { IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Outlined.HelpOutline, stringResource(R.string.syntax_title)) } },
                     trailingIcon = {
                         IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
                     },

@@ -428,19 +428,19 @@
     <string name="syntax_listen_any_port">On any free port</string>
     <string name="syntax_relay">Through this relay</string>
     <string name="syntax_relay_pool">Through relays from this pool list</string>
-    <string name="syntax_listen_note">Without a port, TCP and QUIC use 22000. quic4:// and quic6:// keep to IPv4 or IPv6, as tcp4:// and tcp6:// do for TCP. Add ?id= and the relay\'s device ID to a relay to check it.</string>
+    <string name="syntax_listen_note">Without a port, TCP and QUIC use 22000. quic4:// and quic6:// keep to IPv4 or IPv6, as tcp4:// and tcp6:// do for TCP. Add ?\u2060id= and the relay\'s device ID to a relay to check it.</string>
     <string name="syntax_server_own">Your own server (https only)</string>
     <string name="syntax_server_port">With a port</string>
     <string name="syntax_server_noannounce">Only looks devices up, never announces this phone</string>
     <string name="syntax_server_nolookup">Only announces this phone, never looks devices up</string>
     <string name="syntax_server_insecure">Does not check the server\'s certificate</string>
-    <string name="syntax_server_note">Add ?id= and the server\'s device ID to check its certificate. Join options with &amp;, for example ?id=…&amp;noannounce.</string>
+    <string name="syntax_server_note">Add ?\u2060id= and the server\'s device ID to check its certificate. Join options with &amp;, for example ?\u2060id=…&amp;\u2060noannounce.</string>
     <string name="syntax_address_tcp">TCP to this address and port</string>
     <string name="syntax_address_bare">Taken as TCP, port 22000</string>
     <string name="syntax_address_name">A host name; without a port, 22000</string>
     <string name="syntax_address_ipv6">An IPv6 address, in square brackets</string>
     <string name="syntax_address_quic">QUIC instead of TCP</string>
-    <string name="syntax_address_note">Without a port, TCP and QUIC use 22000. quic4:// and quic6:// keep to IPv4 or IPv6, as tcp4:// and tcp6:// do for TCP. Add ?id= and the relay\'s device ID to a relay to check it.</string>
+    <string name="syntax_address_note">Without a port, TCP and QUIC use 22000. quic4:// and quic6:// keep to IPv4 or IPv6, as tcp4:// and tcp6:// do for TCP. Add ?\u2060id= and the relay\'s device ID to a relay to check it.</string>
 
     <!-- First-run checklist; Settings shows the same permission rows -->
     <string name="setup_title">Set up</string>
@@ -674,7 +674,7 @@
     <string name="addresses_find">Find automatically</string>
     <string name="addresses_find_hint">Through local and global discovery</string>
     <!-- Keep the address as it is -->
-    <string name="addresses_add_hint">For example tcp://192.0.2.10:22000 or a VPN address</string>
+    <string name="addresses_add_hint">The other device\'s address, for example tcp://192.0.2.10:22000</string>
 
     <!-- Add device screen -->
     <!-- Title when accepting a device that asked to connect. %1$s: its name or short ID. -->
