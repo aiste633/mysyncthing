@@ -690,11 +690,14 @@ func (r *run) buildTools() {
 	tool("jdk", jdk, "pkg:generic/openjdk@"+jdk, "GPL-2.0-only WITH Classpath-exception-2.0", "app/build.gradle.kts")
 }
 
-// Licences seen and accepted so far. A new one fails the run: check that it is an SPDX id and
-// that the app may ship it (AGPL-3.0, F-Droid), then add it here.
+// Licences seen and accepted so far. The app is free software, and so must be everything in it:
+// a new licence fails the run. Add one only when it is an SPDX id, the FSF lists it as a free
+// software licence (https://www.gnu.org/licenses/license-list.html), and it is compatible with
+// shipping inside an AGPL-3.0-or-later app (F-Droid takes the same licences).
 var knownLicenses = map[string]bool{
-	"AGPL-3.0-only": true, "Apache-2.0": true, "blessing": true, "BSD-2-Clause": true,
-	"BSD-2-Clause-Views": true, "BSD-3-Clause": true, "MIT": true, "MPL-2.0": true, "OFL-1.1": true,
+	"AGPL-3.0-or-later": true, "Apache-2.0": true, "BSD-2-Clause": true, "BSD-2-Clause-Views": true,
+	"BSD-3-Clause": true, "MIT": true, "MPL-2.0": true, "OFL-1.1": true,
+	"blessing": true, // SQLite's public-domain dedication
 	// Build tools only.
 	"GPL-2.0-only": true, "Classpath-exception-2.0": true,
 }
@@ -708,7 +711,7 @@ func (r *run) checkLicenses() {
 			}
 			for _, id := range strings.Fields(strings.NewReplacer("(", " ", ")", " ").Replace(ids[0])) {
 				if id != "AND" && id != "OR" && id != "WITH" && !knownLicenses[id] {
-					r.fail("%s: new licence %q: check it, then add it to knownLicenses", displayName(c), id)
+					r.fail("%s: new licence %q: add it to knownLicenses only if it is a free software licence (see there)", displayName(c), id)
 				}
 			}
 		}
@@ -792,7 +795,9 @@ func markdown(b *BOM) []byte {
 		case secWeb:
 			fmt.Fprintf(&w, "Third-party files in Syncthing's web GUI, as listed in `scripts/sbom/webgui.json`.\n\n")
 		case secBuild:
-			fmt.Fprintf(&w, "Not in the APK; listed because they shape it. The build is reproducible with exactly these.\n\n")
+			fmt.Fprintf(&w, "Not in the APK; listed because they shape it. The build is reproducible with exactly these.\n\n"+
+				"The Android NDK (listed with its source's licence) and the Android SDK platform the build compiles against are built from free source, Apache-2.0. "+
+				"Google's prebuilt downloads of them, which the build uses (F-Droid's too), come under Google's Android SDK licence agreement, which the FSF does not count as free.\n\n")
 		}
 		fmt.Fprintf(&w, "| Component | Version | Licence |\n|---|---|---|\n")
 		for _, c := range b.Components {

@@ -55,7 +55,7 @@ fun AboutScreen(onBack: () -> Unit) {
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             SettingsGroup(stringResource(R.string.app_name)) {
                 SettingRow(stringResource(R.string.about_version), version)
-                SettingRow(stringResource(R.string.about_licence), "AGPL-3.0", trailing = link) { uri.openUri(AGPL) }
+                SettingRow(stringResource(R.string.about_licence), "AGPL-3.0-or-later", trailing = link) { uri.openUri(AGPL) }
                 SettingRow(stringResource(R.string.about_source), SOURCE.removePrefix("https://"), trailing = link) { uri.openUri(SOURCE) }
             }
             SettingsGroup(stringResource(CoreR.string.syncthing)) {
