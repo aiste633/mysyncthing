@@ -674,7 +674,7 @@
     <string name="addresses_find">Find automatically</string>
     <string name="addresses_find_hint">Through local and global discovery</string>
     <!-- Keep the address as it is -->
-    <string name="addresses_add_hint">For example tcp://192.0.2.10:22000 or a VPN address</string>
+    <string name="addresses_add_hint">The other device\'s address, for example tcp://192.0.2.10:22000</string>
 
     <!-- Add device screen -->
     <!-- Title when accepting a device that asked to connect. %1$s: its name or short ID. -->

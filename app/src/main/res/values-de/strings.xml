@@ -541,7 +541,7 @@
     <string name="address_automatic">automatisch</string>
     <string name="addresses_find">Automatisch finden</string>
     <string name="addresses_find_hint">Über lokale und globale Gerätesuche</string>
-    <string name="addresses_add_hint">Zum Beispiel tcp://192.0.2.10:22000 oder eine VPN-Adresse</string>
+    <string name="addresses_add_hint">Die Adresse des anderen Geräts, zum Beispiel tcp://192.0.2.10:22000</string>
 
     <string name="device_add_named">„%1$s“ hinzufügen</string>
     <string name="device_wants_to_connect">Möchte sich von %1$s aus verbinden</string>
