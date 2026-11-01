@@ -54,6 +54,7 @@ private fun ProxyForm(initial: ProxySettings, running: Boolean, save: suspend (P
     var password by remember { mutableStateOf(initial.password) }
     var only by rememberSaveable { mutableStateOf(initial.only) }
     var show by remember { mutableStateOf(false) }
+    var hostHelp by rememberSaveable { mutableStateOf(false) }
     var saving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
@@ -95,8 +96,10 @@ private fun ProxyForm(initial: ProxySettings, running: Boolean, save: suspend (P
                             host, { host = it }, label = { Text(stringResource(R.string.proxy_host)) }, singleLine = true, isError = hostError != null,
                             supportingText = { Text(hostError?.asString() ?: stringResource(R.string.proxy_host_hint)) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
+                            leadingIcon = { SyntaxButton { hostHelp = true } },
                             modifier = Modifier.fillMaxWidth(),
                         )
+                        if (hostHelp) SyntaxDialog(PROXY_SYNTAX) { hostHelp = false }
                         OutlinedTextField(
                             port, { port = it }, label = { Text(stringResource(R.string.proxy_port)) }, singleLine = true, isError = portError != null,
                             supportingText = portError?.let { { Text(it.asString()) } },

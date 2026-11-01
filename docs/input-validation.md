@@ -10,8 +10,8 @@ Go fuzz targets and tests in `go/bridge`.
 ## Form fields
 
 Every value shows as the core holds it, defaults included ("0 days (forever)", "0 kB/s (no limit)"),
-and its dialog starts with that value, as if typed. The three address lists have a "?" that shows the
-forms they take; `everySyntaxExampleIsAccepted` keeps each example passing the list's check.
+and its dialog starts with that value, as if typed. The three address lists and the proxy host have a "?" that shows the
+forms they take; `everySyntaxExampleIsAccepted` keeps each example passing the field's check.
 
 | Field (screen) | Expected | App check | Core check |
 |---|---|---|---|
@@ -31,7 +31,7 @@ forms they take; `everySyntaxExampleIsAccepted` keeps each example passing the l
 | Versioning: versions to keep (Simple) | Whole number, 1 or more | `wholeNumberError(min = 1)`, as upstream's web GUI; a missing or unreadable stored value shows 5, the core's default | `strconv.Atoi`; 0 keeps no versions |
 | Keep free on this phone (Folder, Defaults) | Decimal 0-100 for %, 0 or more for MB/GB | `amountError()`, as for speed limits | None |
 | Encryption password (Share encrypted) | Non-empty; kept exactly as typed, spaces included, so it matches the other devices | Required | None |
-| Proxy host (Proxy) | IP address (IPv4 or IPv6, no zone) or DNS name: RFC 1123 labels, at most 253 characters, last label not all digits | `proxyHostError()`, mirroring the bridge | `proxyFrom` in `go/bridge/proxy.go` refuses the same; the core's dialer would fail at every dial |
+| Proxy host (Proxy) | IP address (IPv4 or IPv6, no zone) or DNS name: RFC 1123 labels, at most 253 characters, last label not all digits | `proxyHostError()`, mirroring the bridge; "?" lists the forms | `proxyFrom` in `go/bridge/proxy.go` refuses the same; the core's dialer would fail at every dial |
 | Proxy port (Proxy) | Whole number 1-65535 | `proxyPortError()`: 0-9 digits only, others refused with "Use the digits 0-9" | `proxyFrom` |
 | Proxy user name and password (Proxy) | Optional; a password needs a user name; each at most 255 UTF-8 bytes (SOCKS5, RFC 1929), no control characters | `proxyUserError()`, `proxyCredentialError()` | `proxyFrom` |
 | Time window (Sync times) | Start and end 00:00-23:59 from the 24-hour time picker, not the same time; an end before the start runs into the next day; at least one weekday; at most 8 windows; "Only at set times" needs a window | `syncWindowError()`, `scheduleError()` in `core/Schedule.kt`; Save stays off while one fails | `syncWindow.check`, `runConditions.check` in `go/bridge/forkimport.go` (export and import) |

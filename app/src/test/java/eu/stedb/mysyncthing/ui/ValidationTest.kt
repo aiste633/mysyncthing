@@ -90,6 +90,7 @@ class ValidationTest {
             Triple(LISTEN_SYNTAX, ::isListenAddress, { a: String -> a.trim() }),
             Triple(SERVER_SYNTAX, ::isDiscoveryServer, { a: String -> a.trim() }),
             Triple(ADDRESS_SYNTAX, ::isDeviceAddress, ::normalizeAddress),
+            Triple(PROXY_SYNTAX, { h: String -> proxyHostError(h) == null }, { a: String -> a.trim() }),
         )
         for ((syntax, valid, normalize) in lists) {
             assertTrue(syntax.examples.isNotEmpty())
