@@ -475,11 +475,15 @@ fun <T> ChoiceList(
             Row(
                 Modifier.fillMaxWidth().heightIn(min = 48.dp)
                     .selectable(value == selected, role = Role.RadioButton) { onPick(value) },
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
             ) {
-                RadioButton(value == selected, onClick = null)
+                // Beside the name, not the middle of a name and hint that wrap at large fonts.
+                val firstLine = with(LocalDensity.current) { LocalTextStyle.current.lineHeight.toDp() }
+                Box(Modifier.padding(vertical = 12.dp).heightIn(min = firstLine), contentAlignment = Alignment.Center) {
+                    RadioButton(value == selected, onClick = null)
+                }
                 Spacer(Modifier.width(12.dp))
-                Column(Modifier.padding(vertical = 8.dp)) {
+                Column(Modifier.padding(vertical = 12.dp)) {
                     Text(label.asString())
                     describe(value)?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 }
@@ -680,7 +684,7 @@ fun ListEditDialog(
                     // Save is off with nothing in the list, so say why instead of the format hint.
                     supportingText = { Text(if (all.isEmpty()) stringResource(R.string.list_add_or_tick, tokenTitle) else addHint) },
                     // Right at the field: the forms it takes.
-                    leadingIcon = { IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Outlined.HelpOutline, stringResource(R.string.syntax_title)) } },
+                    leadingIcon = { SyntaxButton { help = true } },
                     trailingIcon = {
                         IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
                     },
@@ -691,23 +695,26 @@ fun ListEditDialog(
         confirmButton = { TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text(stringResource(R.string.action_save)) } },
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
-    if (help) SyntaxDialog(token, tokenTitle, tokenHint, syntax) { help = false }
+    if (help) SyntaxDialog(syntax, token to stringResource(R.string.label_and_hint, tokenTitle, tokenHint)) { help = false }
 }
 
-/** The forms an address list takes, each as typed (selectable, to copy) with what it does. */
+/** The "?" at the start of an input field: opens the forms the field takes. */
 @Composable
-private fun SyntaxDialog(token: String, tokenTitle: String, tokenHint: String, syntax: AddressSyntax, onDismiss: () -> Unit) = AlertDialog(
+fun SyntaxButton(onClick: () -> Unit) = IconButton(onClick = onClick) { Icon(Icons.AutoMirrored.Outlined.HelpOutline, stringResource(R.string.syntax_title)) }
+
+/** The forms a field takes, each as typed (selectable, to copy) with what it does; [lead] is a list's automatic entry. */
+@Composable
+fun SyntaxDialog(syntax: AddressSyntax, lead: Pair<String, String>? = null, onDismiss: () -> Unit) = AlertDialog(
     onDismissRequest = onDismiss,
     title = { Text(stringResource(R.string.syntax_title)) },
-    text = { Box(Modifier.verticalScroll(rememberScrollState())) { SyntaxList(token, tokenTitle, tokenHint, syntax) } },
+    text = { Box(Modifier.verticalScroll(rememberScrollState())) { SyntaxList(syntax, lead) } },
     confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
 )
 
 @Composable
-internal fun SyntaxList(token: String, tokenTitle: String, tokenHint: String, syntax: AddressSyntax) = SelectionContainer {
+internal fun SyntaxList(syntax: AddressSyntax, lead: Pair<String, String>? = null) = SelectionContainer {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        val rows = listOf(token to stringResource(R.string.label_and_hint, tokenTitle, tokenHint)) +
-            syntax.examples.map { it.example to stringResource(it.meaning) }
+        val rows = listOfNotNull(lead) + syntax.examples.map { it.example to stringResource(it.meaning) }
         rows.forEach { (example, meaning) ->
             Column {
                 Text(example, style = MaterialTheme.typography.bodyMedium, fontFamily = FontFamily.Monospace)

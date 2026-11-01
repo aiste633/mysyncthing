@@ -346,6 +346,16 @@ val ADDRESS_SYNTAX = AddressSyntax(
     R.string.syntax_address_note,
 )
 
+val PROXY_SYNTAX = AddressSyntax(
+    listOf(
+        SyntaxExample("127.0.0.1", R.string.syntax_proxy_local),
+        SyntaxExample("192.0.2.10", R.string.syntax_proxy_ipv4),
+        SyntaxExample("2001:db8::10", R.string.syntax_proxy_ipv6),
+        SyntaxExample("proxy.example.com", R.string.syntax_proxy_name),
+    ),
+    R.string.syntax_proxy_note,
+)
+
 // Proxy fields: the bridge refuses the same (go/bridge/proxy.go proxyFrom), and
 // go/bridge/testdata/validation-contract.json pins both to the same cases.
 

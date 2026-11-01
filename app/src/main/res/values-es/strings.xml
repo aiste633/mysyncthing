@@ -365,6 +365,11 @@
     <string name="syntax_server_nolookup">Solo anuncia este teléfono, nunca busca dispositivos</string>
     <string name="syntax_server_insecure">No comprueba el certificado del servidor</string>
     <string name="syntax_server_note">Añade ?\u2060id= y el ID de dispositivo del servidor para comprobar su certificado. Une las opciones con &amp;, por ejemplo ?\u2060id=…&amp;\u2060noannounce.</string>
+    <string name="syntax_proxy_local">Un proxy en este teléfono, por ejemplo Orbot para Tor</string>
+    <string name="syntax_proxy_ipv4">Una dirección IPv4</string>
+    <string name="syntax_proxy_ipv6">Una dirección IPv6, sin corchetes</string>
+    <string name="syntax_proxy_name">Un nombre de host</string>
+    <string name="syntax_proxy_note">Solo el host: el puerto va en Puerto y el tipo se elige arriba, así que sin socks5:// ni http://.</string>
     <string name="syntax_address_tcp">TCP a esta dirección y puerto</string>
     <string name="syntax_address_bare">Se toma como TCP, puerto 22000</string>
     <string name="syntax_address_name">Un nombre de host; sin puerto, 22000</string>

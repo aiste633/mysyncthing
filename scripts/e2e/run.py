@@ -152,7 +152,7 @@ def prepare(apk: Path, test_apk: Path) -> None:
         sh(f"settings put global {s} 0")
     # Wi-Fi passes Android's internet check without reaching Google's server, which the emulator on a
     # CI runner sometimes cannot: mobile data then stays the default network (E2eTest.onWifi).
-    # Read when a network connects, so Wi-Fi reconnects after it.
+    # Read when a network connects, so Wi-Fi reconnects after it (E2eTest.onWifi joins it again).
     sh("settings put global captive_portal_mode 0")
     sh("svc wifi disable")
     sh("svc wifi enable")

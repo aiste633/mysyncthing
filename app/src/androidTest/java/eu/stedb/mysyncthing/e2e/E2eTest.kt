@@ -60,11 +60,28 @@ class E2eTest {
     /**
      * Every phase starts on Wi-Fi. run.py turns off the emulator's internet check: when Wi-Fi
      * failed it, mobile data stayed the default network and the run conditions paused syncing.
+     *
+     * Wi-Fi turned back on (run.py, [runConditions]) does not always join the emulator's network
+     * again by itself: on API 35 in CI it once kept scanning every 20 s for a minute without
+     * trying to join. So it is joined by name; a failure says what Wi-Fi saw.
      */
     @Before
-    fun onWifi() = eventually("Wi-Fi is the default network", 60_000) {
+    fun onWifi() {
+        if (!wifiIsDefault()) {
+            shell("svc wifi enable")
+            eventually("Wi-Fi on", 30_000) { "Wifi is enabled" in shell("cmd wifi status") }
+            shell("cmd wifi connect-network $EMULATOR_WIFI open")
+        }
+        try {
+            eventually("Wi-Fi is the default network", 60_000, ::wifiIsDefault)
+        } catch (e: IllegalStateException) {
+            throw IllegalStateException("${e.message}\n${shell("cmd wifi status")}\n${shell("cmd wifi list-scan-results")}", e)
+        }
+    }
+
+    private fun wifiIsDefault(): Boolean {
         val cm = app.getSystemService(ConnectivityManager::class.java)
-        cm.getNetworkCapabilities(cm.activeNetwork)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
+        return cm.getNetworkCapabilities(cm.activeNetwork)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
     }
 
     /** Waits for an enabled, tappable node showing [label] (its text or, for an icon, its description) and taps it. */
@@ -291,6 +308,8 @@ class E2eTest {
         Regex("Activities:\\s+(\\d+)").find(shell("dumpsys meminfo ${app.packageName}"))?.groupValues?.get(1)?.toInt()
 
     private companion object {
+        /** The open network every emulator image offers. */
+        const val EMULATOR_WIFI = "AndroidWifi"
         const val FOLDER = "e2e"
         const val FOLDER_LABEL = "E2E"
         const val PEER_NAME = "e2e-peer"
