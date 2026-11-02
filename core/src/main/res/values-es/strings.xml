@@ -14,7 +14,8 @@
     <string name="status_paused_because">En pausa: %1$s</string>
     <string name="status_paused">En pausa</string>
     <string name="status_no_network">Sin red</string>
-    <string name="status_not_connected">Sin conexión</string>
+    <string name="status_waiting">Esperando a los dispositivos</string>
+    <string name="status_no_device">Ningún dispositivo desde hace más de 30 min</string>
     <plurals name="status_problems">
         <item quantity="one">%1$d problema</item>
         <item quantity="many">%1$d problemas</item>
@@ -67,6 +68,11 @@
     <string name="schedule_outside">Fuera del horario de sincronización</string>
     <string name="schedule_outside_next">Fuera del horario · próxima %1$s</string>
     <string name="schedule_outside_next_day">Fuera del horario · próxima %1$s %2$s</string>
+    <string name="device_outside_next">Fuera de su horario · próxima %1$s</string>
+    <string name="device_outside_next_day">Fuera de su horario · próxima %1$s %2$s</string>
+    <string name="device_never_syncs">Nunca se sincroniza: su horario no coincide con el global</string>
+    <string name="status_paused_next">En pausa · próxima %1$s</string>
+    <string name="status_paused_next_day">En pausa · próxima %1$s %2$s</string>
     <string name="schedule_error_no_window">Añade una franja horaria</string>
     <string name="schedule_error_times">Horas de 00:00 a 23:59</string>
     <string name="schedule_error_same_times">El inicio y el fin deben ser distintos</string>
@@ -121,6 +127,8 @@
     <string name="widget_start">Iniciar Syncthing</string>
     <string name="widget_not_running">Detenido</string>
     <string name="widget_no_device">Sin conexión</string>
+    <string name="widget_last_seen">Último dispositivo visto %1$s</string>
+    <string name="when_yesterday">ayer, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d dispositivo conectado</item>
         <item quantity="many">%1$d dispositivos conectados</item>

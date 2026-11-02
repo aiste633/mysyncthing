@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"testing"
+	"time"
 
 	"github.com/syncthing/syncthing/lib/config"
 )
@@ -39,9 +40,26 @@ func FuzzReadForkBackup(f *testing.F) {
 	f.Add(hostile.zip(f, ""), "")
 	f.Add(golden(f, "aes256-ae2.zip"), "test-password")
 	f.Add(golden(f, "aes128-ae1.zip"), "test-password")
+	// The app's own backup, with devices' own sync windows.
+	home, _ := exportHome(f)
+	var own bytes.Buffer
+	if err := writeBackup(&own, home, "", settingsJSON(f, someSettings), time.Date(2026, 11, 2, 18, 0, 0, 0, time.UTC)); err != nil {
+		f.Fatal(err)
+	}
+	f.Add(own.Bytes(), "")
 	f.Fuzz(func(t *testing.T, b []byte, password string) {
 		if bk, err := read(b, password); err == nil {
-			bk.preview(func(c config.FolderConfiguration) (bool, bool) { return false, false })
+			p := bk.preview(func(c config.FolderConfiguration) (bool, bool) { return false, false })
+			// Own windows only for devices the import pairs with.
+			paired := map[string]bool{}
+			for _, d := range p.Devices {
+				paired[d.ID] = true
+			}
+			for id := range p.Conditions.DeviceWindows {
+				if !paired[id] {
+					t.Fatalf("own windows for %s, which the backup does not pair with", id)
+				}
+			}
 			if err := checkPolicy(bk.cfg); err != nil {
 				t.Fatal(err)
 			}

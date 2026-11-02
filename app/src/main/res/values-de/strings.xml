@@ -63,7 +63,6 @@
     <string name="label_and_hint">%1$s. %2$s</string>
     <string name="hint_default">Vorgabe</string>
 
-    <string name="when_yesterday">gestern, %1$s</string>
     <string name="day_today">Heute</string>
     <string name="day_yesterday">Gestern</string>
 
@@ -259,8 +258,6 @@
     <string name="settings_not_set">Nicht gesetzt</string>
     <string name="name">Name</string>
     <string name="settings_group_syncing">Synchronisierung</string>
-    <string name="settings_pause">Synchronisierung pausieren</string>
-    <string name="settings_pause_hint">Bis Sie sie hier oder im Widget fortsetzen</string>
     <string name="settings_ignored">Ignorierte Anfragen</string>
     <string name="settings_ignored_hint">Geräte und Ordner, bei denen Sie auf Ignorieren getippt haben, zum Rückgängigmachen</string>
     <string name="settings_group_sync_on">Synchronisieren über</string>
@@ -272,8 +269,7 @@
     <string name="settings_mobile_data_hint">Kann bei einem begrenzten Tarif Geld kosten</string>
     <string name="settings_roaming">Mobile Daten beim Roaming</string>
     <string name="settings_roaming_hint">Im Ausland oder in einem anderen Netz, wo Daten extra kosten können</string>
-    <string name="settings_group_time">Zeit</string>
-    <string name="sync_times">Synchronisierungszeiten</string>
+    <string name="sync_times">Sync-Zeiten</string>
     <string name="settings_group_power">Stromversorgung</string>
     <string name="settings_power">Synchronisieren</string>
     <string name="power_any">Beim Laden oder im Akkubetrieb</string>
@@ -525,10 +521,16 @@
     <string name="device_pause_hint">Bleibt pausiert, bis Sie dies ausschalten, auch wenn die Synchronisierung wieder erlaubt ist</string>
     <string name="device_pause_named">%1$s pausieren</string>
     <string name="device_resume_named">%1$s fortsetzen</string>
+    <string name="devices_all">Alle Geräte</string>
+    <string name="devices_pause_all">Pausieren</string>
+    <string name="devices_pause_off">Aus</string>
+    <string name="devices_pause_on">An</string>
+    <string name="devices_sync_times">Sync-Zeiten</string>
+    <string name="value_default">%1$s (Vorgabe)</string>
     <string name="device_paused_by_you">Von Ihnen</string>
     <string name="device_all_paused_by_you">Alles von Ihnen pausiert</string>
     <string name="device_block_note_conditions">Alle Geräte warten, bis die Synchronisierung wieder erlaubt ist. Danach wird dieses Gerät von selbst fortgesetzt, außer Sie pausieren es unten.</string>
-    <string name="device_block_note_user">Alle Geräte warten, bis Sie die Synchronisierung in den Einstellungen oder im Widget fortsetzen. Danach wird auch dieses Gerät fortgesetzt, außer Sie pausieren es unten.</string>
+    <string name="device_block_note_user">Alle Geräte warten, bis Sie die Synchronisierung auf dem Tab „Geräte“ oder im Widget fortsetzen. Danach wird auch dieses Gerät fortgesetzt, außer Sie pausieren es unten.</string>
     <string name="syncthing_version">Syncthing %1$s</string>
     <plurals name="device_still_needs">
         <item quantity="one">Braucht noch %1$s Element, %2$s von diesem Smartphone</item>
@@ -726,6 +728,9 @@
     <string name="import_boot_on">Beim Hochfahren starten: an</string>
     <string name="import_boot_off">Beim Hochfahren starten: aus</string>
     <string name="import_sync_times">Synchronisierungszeiten: %1$s</string>
+    <string name="import_own_windows">Eigene Sync-Zeiten: %1$s</string>
+    <string name="import_own_windows_device">%1$s %2$s</string>
+    <string name="import_never_syncs">Würden nie synchronisieren, da sich ihre eigenen Zeiten nicht mit den globalen überschneiden: %1$s</string>
     <string name="import_any_time">jederzeit</string>
     <string name="import_proxy">Proxy: %1$s</string>
     <string name="import_proxy_none">keiner</string>
@@ -838,4 +843,32 @@
 
     <string name="exact_time_just_now">%1$s · gerade eben</string>
     <string name="exact_time_ago">%1$s · vor %2$s</string>
+
+    <string name="device_windows_global">Globale Sync-Zeiten</string>
+    <string name="device_windows_own">Eigene Sync-Zeiten</string>
+    <string name="device_windows_on_hint">Synchronisiert nur, wenn diese und die globalen Sync-Zeiten offen sind</string>
+    <string name="device_windows_off_hint">Aus: folgt den globalen Sync-Zeiten</string>
+    <string name="device_windows_no_window_fix">Fügen Sie ein Zeitfenster hinzu oder schalten Sie „Eigene Sync-Zeiten“ aus.</string>
+    <string name="device_windows_same">Wie die globalen Sync-Zeiten</string>
+    <string name="device_windows_none">Kein Zeitfenster</string>
+    <string name="device_windows_week_short">synchronisiert %1$s pro Woche</string>
+    <string name="device_windows_never_short">synchronisiert nie</string>
+    <string name="device_block_note_own">Dieses Gerät wartet auf seine eigenen Sync-Zeiten. Danach wird es von selbst fortgesetzt, außer Sie pausieren es unten.</string>
+    <string name="windows_never">Synchronisiert nie</string>
+    <string name="windows_never_own">Diese Zeiten überschneiden sich nicht mit den globalen. Ändern Sie diese oder die globalen Sync-Zeiten im Tab Geräte.</string>
+    <string name="windows_week">Synchronisiert %1$s pro Woche</string>
+    <string name="windows_short_title">Unter 1 Std. am Stück</string>
+    <string name="windows_short_text">Android startet die Synchronisierung im Ruhezustand eventuell später, daher können diese ohne Synchronisierung vergehen.</string>
+    <string name="windows_next">Nächste: %1$s</string>
+    <string name="windows_next_day">Nächste: %1$s %2$s</string>
+    <string name="stretch_same_day">%1$s %2$s–%3$s</string>
+    <string name="stretch_other_day">%1$s %2$s–%3$s %4$s</string>
+    <string name="schedule_never_title">Einige Geräte würden nie synchronisieren</string>
+    <string name="schedule_never_text">Ihre eigenen Sync-Zeiten überschneiden sich nicht mit den neuen globalen:</string>
+    <string name="schedule_never_after">Sie bleiben pausiert, bis Sie deren Zeiten oder diese ändern.</string>
+    <string name="schedule_save_anyway">Trotzdem speichern</string>
+    <plurals name="windows_more">
+        <item quantity="one">und %1$d weiteres</item>
+        <item quantity="other">und %1$d weitere</item>
+    </plurals>
 </resources>

@@ -11,6 +11,7 @@ import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -96,6 +97,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -110,6 +112,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.whenText
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.R as CoreR
 import eu.stedb.mysyncthing.core.Summary
@@ -120,7 +123,7 @@ import eu.stedb.mysyncthing.core.SystemError
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.problemText
 import eu.stedb.mysyncthing.core.santaHat
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * System bars plus the camera cutout, without the keyboard. Material's bars only
@@ -167,18 +170,22 @@ fun BusyIndicator() {
     else Icon(Icons.Default.HourglassTop, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
 }
 
-/** Today's date, for [santaHat]; the screenshot tests fix it, so their images don't change in December. */
-val LocalToday = staticCompositionLocalOf<() -> LocalDate> { LocalDate::now }
+/**
+ * The time now, for what screens show from the clock ([santaHat], the next sync window). The
+ * screenshot tests fix it, so their images don't change with the day or the hour.
+ */
+val LocalNow = staticCompositionLocalOf<() -> LocalDateTime> { LocalDateTime::now }
 
 /**
  * A screen with a top bar on the app's tinted background. [onBack] adds a back
- * arrow; [status] adds the status chip after the title.
+ * arrow; [status] adds the status chip after the title; [subtitle] a line under it (what the screen is for).
  */
 @Composable
 fun AppScreen(
     title: String,
     onBack: (() -> Unit)? = null,
     status: Summary? = null,
+    subtitle: String? = null,
     actions: @Composable () -> Unit = {},
     fab: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -189,38 +196,53 @@ fun AppScreen(
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = { BoxWithConstraints {
             // The app mark and the spare action slot on the tabs only where the text keeps its room
-            // (as on the widget): at the largest font sizes they would cut the status chip.
+            // (as on the widget). At the largest font sizes the title and a long status ("Seit über
+            // 30 min kein Gerät") don't fit one row either: there the status gets its own row below.
             val roomy = status != null && maxWidth.value / LocalDensity.current.fontScale >= 300
-            TopAppBar(
-                title = {
-                    if (status == null) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    // In the title slot, not the actions: the bar sizes actions first, so a long
-                    // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
-                    else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        StatusChip(status, Modifier.weight(1f, fill = false).padding(start = 12.dp))
-                    }
-                },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
-                    } else if (roomy) {
-                        // The app mark on the tabs, where Back would be on the screens below them.
-                        Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
-                            Icon(painterResource(CoreR.drawable.widget_ic_app), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-                            // Drawn over the mark, so it takes no room (sizes: see widget_ic_hat).
-                            if (santaHat(LocalToday.current())) Image(painterResource(CoreR.drawable.widget_ic_hat), null, Modifier.size(24.dp * 66 / 62).offset(y = -(24.dp * 6 / 62)))
+            Column(Modifier.background(AppColors.background)) {
+                TopAppBar(
+                    title = {
+                        if (subtitle != null) Column {
+                            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                    }
-                },
-                actions = {
-                    // On the tabs, room for one action even when there is none (only Folders has
-                    // a menu), so the status chip keeps its place when switching tabs.
-                    if (roomy) Row(Modifier.widthIn(min = 48.dp), horizontalArrangement = Arrangement.End) { actions() } else actions()
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.background),
-                windowInsets = SafeBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
-            )
+                        else if (status == null || !roomy) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        // In the title slot, not the actions: the bar sizes actions first, so a long
+                        // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
+                        else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            StatusChip(status, Modifier.weight(1f, fill = false).padding(start = 12.dp))
+                        }
+                    },
+                    navigationIcon = {
+                        if (onBack != null) {
+                            IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.action_back)) }
+                        } else if (roomy) {
+                            // The app mark on the tabs, where Back would be on the screens below them.
+                            Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
+                                Icon(painterResource(CoreR.drawable.widget_ic_app), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
+                                // Drawn over the mark, so it takes no room (sizes: see widget_ic_hat).
+                                if (santaHat(LocalNow.current().toLocalDate())) Image(painterResource(CoreR.drawable.widget_ic_hat), null, Modifier.size(24.dp * 66 / 62).offset(y = -(24.dp * 6 / 62)))
+                            }
+                        }
+                    },
+                    actions = {
+                        // On the tabs, room for one action even when there is none (only Folders has
+                        // a menu), so the status chip keeps its place when switching tabs.
+                        if (roomy) Row(Modifier.widthIn(min = 48.dp), horizontalArrangement = Arrangement.End) { actions() } else actions()
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = AppColors.background),
+                    windowInsets = SafeBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
+                )
+                if (status != null && !roomy) {
+                    // Up to two lines; a longer one is cut, its whole text is in the notification and on the screens below.
+                    StatusChip(
+                        status, Modifier.testTag("statusRow").windowInsetsPadding(SafeBars.only(WindowInsetsSides.Horizontal))
+                            .padding(start = 16.dp, end = 12.dp, bottom = 8.dp),
+                        maxLines = 2,
+                    )
+                }
+            }
         } },
         // Scaffold lifts the FAB above the bottom insets only; in landscape the side
         // navigation bar would cover it.
@@ -243,7 +265,7 @@ fun ProgressBar(progress: Float, color: Color, modifier: Modifier = Modifier) {
 
 /** The notification's status line as a compact chip for top bars. */
 @Composable
-fun StatusChip(summary: Summary, modifier: Modifier = Modifier) {
+fun StatusChip(summary: Summary, modifier: Modifier = Modifier, maxLines: Int = 1) {
     val look = summary.state.look()
     Surface(
         modifier = modifier.padding(end = 4.dp),
@@ -254,7 +276,7 @@ fun StatusChip(summary: Summary, modifier: Modifier = Modifier) {
             Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
             Spacer(Modifier.width(6.dp))
             Text(
-                summary.text.asString(), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                summary.text.asString(), style = MaterialTheme.typography.labelLarge, maxLines = maxLines, overflow = TextOverflow.Ellipsis,
             )
         }
     }
@@ -334,7 +356,11 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
     ListCard(content = content)
 }
 
-/** One row in a [SettingsGroup]. The whole row is the touch target. */
+/**
+ * One row in a [SettingsGroup]. The whole row is the touch target. [danger]: the title in
+ * red, for a step that removes something; [problem]: its value too, for a setting that is a
+ * mistake to fix ("never syncs").
+ */
 @Composable
 fun SettingRow(
     title: String,
@@ -342,8 +368,9 @@ fun SettingRow(
     icon: ImageVector? = null,
     trailing: @Composable (() -> Unit)? = null,
     danger: Boolean = false,
+    problem: Boolean = false,
     onClick: (() -> Unit)? = null,
-) = SettingRowLayout(title, value, icon, trailing, if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier, danger)
+) = SettingRowLayout(title, value, icon, trailing, if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier, danger || problem, problem)
 
 /**
  * A row with a switch. The row is the toggle, so accessibility services read
@@ -380,6 +407,7 @@ private fun SettingRowLayout(
     trailing: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
     danger: Boolean = false,
+    problem: Boolean = false,
 ) {
     val color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     ListItem(
@@ -388,7 +416,7 @@ private fun SettingRowLayout(
         leadingContent = icon?.let { { Icon(it, null, tint = if (danger) color else MaterialTheme.colorScheme.onSurfaceVariant) } },
         headlineContent = { Text(title, color = color) },
         // No line limit: hints are sentences, and a cut one can't be read anywhere else.
-        supportingContent = value?.let { { Text(it) } },
+        supportingContent = value?.let { { Text(it, color = if (problem) color else Color.Unspecified) } },
         trailingContent = trailing,
     )
 }

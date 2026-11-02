@@ -42,7 +42,8 @@ class SummaryTest {
     @Test
     fun noNetworkOrNoConnectionIsNotSyncing() {
         assertEquals(SyncState.Problem to "No network", line(snap(connected = emptySet()), online = false))
-        assertEquals(SyncState.Problem to "Not connected", line(snap(connected = emptySet())))
+        // Just started: a wait, not a problem (NoDeviceTest has the hour).
+        assertEquals(SyncState.Waiting to "Waiting for devices", line(snap(connected = emptySet())))
     }
 
     @Test

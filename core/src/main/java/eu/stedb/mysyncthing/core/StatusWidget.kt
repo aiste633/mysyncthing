@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.util.SizeF
+import android.util.DisplayMetrics
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 /**
  * 4x1 home-screen widget: app mark (when wide enough), status icon and colour,
@@ -56,8 +59,27 @@ class StatusWidget : AppWidgetProvider() {
             val today = LocalDate.now()
             // The launcher picks the widest that fits: the app mark only where the text keeps its room.
             val hat = santaHat(today)
-            manager.updateAppWidget(ids, RemoteViews(mapOf(NARROW to views(context, summary, mark = false, hat), WITH_MARK to views(context, summary, mark = true, hat))))
+            val detail = detailFits(context.resources.displayMetrics)
+            manager.updateAppWidget(
+                ids, RemoteViews(mapOf(NARROW to views(context, summary, mark = false, hat, detail), WITH_MARK to views(context, summary, mark = true, hat, detail))),
+            )
+            drawnWithDetail = detail
             scheduleHatChange(context, today)
+        }
+
+        /** Whether the views last drawn by this process show the second line; null before the first. */
+        @Volatile
+        private var drawnWithDetail: Boolean? = null
+
+        /**
+         * The phone's font size changed. The launcher draws the views again in the new size, but whether
+         * the second line fits is decided here ([detailFits]): drawn at the normal size, it stayed and was
+         * cut at the largest, until the status changed. So the widget is drawn again when that decision
+         * changes. With no process running, the widget says the app is stopped and is drawn at the start.
+         */
+        fun redrawIfStale(context: Context) {
+            val drawn = drawnWithDetail ?: return
+            if (drawn != detailFits(context.resources.displayMetrics)) render(context, SyncStatus.summary.value)
         }
 
         /** The day the alarm below is set for in this process, so a render sets it once, not every time. */
@@ -83,7 +105,7 @@ class StatusWidget : AppWidgetProvider() {
         private val NARROW = SizeF(180f, 40f)
         private val WITH_MARK = SizeF(220f, 40f)
 
-        private fun views(context: Context, s: Summary, mark: Boolean, hat: Boolean): RemoteViews {
+        private fun views(context: Context, s: Summary, mark: Boolean, hat: Boolean, detail: Boolean): RemoteViews {
             val v = RemoteViews(context.packageName, R.layout.widget_status)
             val markVisibility = if (mark) View.VISIBLE else View.GONE
             v.setViewVisibility(R.id.widget_app_mark, markVisibility)
@@ -96,12 +118,14 @@ class StatusWidget : AppWidgetProvider() {
                 SyncState.Paused -> Triple(R.drawable.widget_ic_paused, AMBER_LIGHT, AMBER_DARK)
                 SyncState.NeedsInput -> Triple(R.drawable.widget_ic_input, AMBER_LIGHT, AMBER_DARK)
                 SyncState.Problem -> Triple(R.drawable.widget_ic_problem, 0xFFB3261E.toInt(), 0xFFFF6E66.toInt())
-                SyncState.Stopped -> Triple(R.drawable.widget_ic_stopped, 0xFF5F6368.toInt(), 0xFFBDC1C6.toInt())
+                SyncState.Waiting -> Triple(R.drawable.widget_ic_waiting, GREY_LIGHT, GREY_DARK)
+                SyncState.Stopped -> Triple(R.drawable.widget_ic_stopped, GREY_LIGHT, GREY_DARK)
             }
             v.setImageViewResource(R.id.widget_status_icon, icon)
             v.setColorInt(R.id.widget_status_icon, "setColorFilter", light, dark)
             v.setTextViewText(R.id.widget_title, s.text.resolve(context))
-            v.setTextViewText(R.id.widget_detail, detail(s).resolve(context))
+            v.setTextViewText(R.id.widget_detail, widgetDetail(s).resolve(context))
+            v.setViewVisibility(R.id.widget_detail, if (detail) View.VISIBLE else View.GONE)
 
             val progress = s.progress
             v.setViewVisibility(R.id.widget_progress, if (progress != null) View.VISIBLE else View.GONE)
@@ -120,14 +144,6 @@ class StatusWidget : AppWidgetProvider() {
             v.setContentDescription(R.id.widget_button, context.getString(label))
             v.setOnClickPendingIntent(R.id.widget_button, action)
             return v
-        }
-
-        /** Second line: the one connected device by name, else how many. */
-        private fun detail(s: Summary): UiText = when {
-            s.state == SyncState.Stopped -> text(R.string.widget_not_running)
-            s.connected.size == 1 -> raw(s.connected.single())
-            s.connected.size > 1 -> plural(R.plurals.widget_devices_connected, s.connected.size)
-            else -> text(R.string.widget_no_device)
         }
 
         private fun openApp(context: Context): PendingIntent {
@@ -150,5 +166,31 @@ class StatusWidget : AppWidgetProvider() {
 
         private val AMBER_LIGHT = 0xFF8A5A00.toInt()
         private val AMBER_DARK = 0xFFFDD663.toInt()
+        private val GREY_LIGHT = 0xFF5F6368.toInt()
+        private val GREY_DARK = 0xFFBDC1C6.toInt()
     }
 }
+
+/** The widget's second line: the one connected device by name, else how many, else when one last was. */
+internal fun widgetDetail(s: Summary, now: ZonedDateTime = ZonedDateTime.now()): UiText {
+    val seen = s.lastSeen
+    return when {
+        s.state == SyncState.Stopped -> text(R.string.widget_not_running)
+        s.connected.size == 1 -> raw(s.connected.single())
+        s.connected.size > 1 -> plural(R.plurals.widget_devices_connected, s.connected.size)
+        seen != null -> text(R.string.widget_last_seen, whenText(seen, now))
+        else -> text(R.string.widget_no_device)
+    }
+}
+
+/**
+ * Whether the second line fits under the first in the bar's 52 dp (widget_status.xml: 15 sp and
+ * 12 sp). At the largest font sizes it would be cut at the bottom; the status then has the bar alone.
+ */
+fun detailFits(metrics: DisplayMetrics): Boolean {
+    fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, metrics)
+    return (sp(15f) + sp(12f)) * LINE_HEIGHT <= TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 52f, metrics)
+}
+
+/** A line of Roboto is about 1.17 times its size (ascent plus descent). */
+private const val LINE_HEIGHT = 1.17f

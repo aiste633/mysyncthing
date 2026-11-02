@@ -81,8 +81,8 @@ class ImportTextTest {
             assertFalse(lines.any { "pause" in it.lowercase() && !it.startsWith("Pause in battery saver") })
             assertEquals(1, lines.count { it.startsWith("Start at boot") })
             assertEquals(proxy.type == ProxyType.None, "Proxy: none" in lines)
-            val times = lines.single { it.startsWith("Sync times: ") }
-            assertEquals(!c.timeSchedule, times == "Sync times: any time")
+            val times = lines.single { it.startsWith("Sync windows: ") }
+            assertEquals(!c.timeSchedule, times == "Sync windows: any time")
             if (c.timeSchedule) c.windows.forEach { assertTrue(windowText(it).en() in times) }
         }
     }

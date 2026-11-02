@@ -8,10 +8,16 @@ import eu.stedb.mysyncthing.core.DevicePause
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderStatus
 import eu.stedb.mysyncthing.core.PAUSED_BY_USER
+import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.isOpen
 import eu.stedb.mysyncthing.core.text
+import eu.stedb.mysyncthing.core.whenText
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import eu.stedb.mysyncthing.core.R as CoreR
 
 /** State and short text for one folder or device card. */
@@ -48,8 +54,8 @@ fun deviceStatus(d: Device, conn: Connection?, completion: Completion?, pause: D
 fun pauseReason(d: Device, pause: DevicePause): UiText? = when {
     !pause.paused(d) -> null
     pause.byUser(d) -> text(R.string.device_paused_by_you)
-    pause.blockedBy == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
-    else -> pause.blockedBy
+    pause.reason(d) == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
+    else -> pause.reason(d)
 }
 
 /**
@@ -67,3 +73,14 @@ fun connectionText(conn: Connection?, withAddress: Boolean = true): UiText? {
     )
     return if (withAddress) text(R.string.connection_with_address, via, conn.address) else via
 }
+
+/** "Last seen 13:41", or "Never connected" for a device the core has not seen. */
+fun lastSeenText(at: Instant?, now: ZonedDateTime = ZonedDateTime.now()): UiText =
+    at?.let { text(R.string.device_last_seen, whenText(it, now)) } ?: text(R.string.device_never_connected)
+
+/**
+ * Whether the sync times are what pauses the devices now. The user's own pause comes first,
+ * as in the run conditions; the run conditions must have paused the devices already.
+ */
+fun scheduleBlocks(rc: RunConditions, pause: DevicePause, now: LocalDateTime = LocalDateTime.now()): Boolean =
+    pause.allBlocked && !rc.pausedByUser && rc.timeSchedule && !rc.windows.isOpen(now)

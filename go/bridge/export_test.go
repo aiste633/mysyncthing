@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/syncthing/syncthing/lib/config"
+	"github.com/syncthing/syncthing/lib/protocol"
 )
 
 // exportHome is a home dir as the core leaves it, from a synthetic identity.
@@ -49,9 +50,17 @@ var someSettings = ownSettings{
 	Conditions: runConditions{
 		MeteredWifi: true, MobileData: true, Power: "BatteryOnly", StartOnBoot: true,
 		TimeSchedule: true, Windows: []syncWindow{{Start: 22 * 60, End: 7 * 60, Days: []int{1, 2, 3, 4, 5}}, {Start: 0, End: 1439, Days: []int{6, 7}}},
+		// The fixture's peer's own windows, and kept ones of a device the backup does not pair with.
+		DeviceWindows: map[string]deviceWindows{
+			fixturePeer.String(): {On: true, Windows: []syncWindow{{Start: 23 * 60, End: 5 * 60, Days: []int{6, 7}}}},
+			unpairedDevice:       {Windows: []syncWindow{{Start: 60, End: 120, Days: []int{3}}}},
+		},
 	},
 	Proxy: proxySettings{Type: "Socks5", Host: "proxy.example.org", Port: 1080, User: "me", Password: "p@1:w/ord", Only: true},
 }
+
+// unpairedDevice is a device the backup fixture does not pair with.
+var unpairedDevice = protocol.NewDeviceID([]byte("unpaired-device")).String()
 
 func TestExportRoundTrip(t *testing.T) {
 	home, fx := exportHome(t)
@@ -101,7 +110,10 @@ func TestExportRoundTrip(t *testing.T) {
 			}
 		}
 		p := b.preview(statFolder)
-		if p.Source != "own" || !reflect.DeepEqual(p.Conditions, someSettings.Conditions) || p.Proxy != someSettings.Proxy || len(p.NotImported) != 0 {
+		// Own windows only for the devices the backup pairs with.
+		want := someSettings.Conditions
+		want.DeviceWindows = map[string]deviceWindows{fixturePeer.String(): want.DeviceWindows[fixturePeer.String()]}
+		if p.Source != "own" || !reflect.DeepEqual(p.Conditions, want) || p.Proxy != someSettings.Proxy || len(p.NotImported) != 0 {
 			t.Errorf("preview %+v", p)
 		}
 		if len(p.Folders) != 1 || p.Folders[0].ID != "photo_backup_01" || len(p.Devices) != 1 || p.Devices[0].ID != fixturePeer.String() {
@@ -222,6 +234,7 @@ func TestExportRoundTripProperty(t *testing.T) {
 		c.Power = powers[r.Intn(len(powers))]
 		c.Windows = randomWindows(r)
 		c.TimeSchedule = c.TimeSchedule && len(c.Windows) > 0
+		c.DeviceWindows = randomDeviceWindows(r)
 		p := proxySettings{Type: "None"}
 		if u, err := proxyFrom(proxy.Scheme, proxy.Host, proxy.Port, proxy.User, proxy.Password); err == nil && u != nil {
 			p = proxySettings{map[string]string{"socks5": "Socks5", "http": "Http"}[proxy.Scheme], proxy.Host, proxy.Port, proxy.User, proxy.Password, r.Intn(2) == 0}
@@ -264,6 +277,82 @@ func randomWindows(r *rand.Rand) []syncWindow {
 		ws = append(ws, w)
 	}
 	return ws
+}
+
+// randomDeviceWindows is what the app can store: some devices' own windows, on or kept
+// while off, nil for none.
+func randomDeviceWindows(r *rand.Rand) map[string]deviceWindows {
+	var all map[string]deviceWindows
+	for range r.Intn(4) {
+		id := make([]byte, 8)
+		r.Read(id)
+		w := deviceWindows{Windows: randomWindows(r)}
+		w.On = len(w.Windows) > 0 && r.Intn(2) == 0
+		if all == nil {
+			all = map[string]deviceWindows{}
+		}
+		all[protocol.NewDeviceID(id).String()] = w
+	}
+	return all
+}
+
+// Own windows the app could not store, or for what is not a device ID as the core
+// writes it, make the whole settings file unreadable, as for the global windows.
+func TestDeviceWindowsCheck(t *testing.T) {
+	peer := fixturePeer.String()
+	night := []syncWindow{{Start: 22 * 60, End: 7 * 60, Days: []int{1}}}
+	devices := func(n int) map[string]deviceWindows {
+		all := map[string]deviceWindows{}
+		for i := range n {
+			all[protocol.NewDeviceID([]byte{byte(i), byte(i >> 8)}).String()] = deviceWindows{Windows: night}
+		}
+		return all
+	}
+	tooMany := make([]syncWindow, maxSyncWindows+1)
+	for i := range tooMany {
+		tooMany[i] = night[0]
+	}
+	for name, c := range map[string]struct {
+		windows map[string]deviceWindows
+		ok      bool
+	}{
+		"none":               {nil, true},
+		"on":                 {map[string]deviceWindows{peer: {On: true, Windows: night}}, true},
+		"kept while off":     {map[string]deviceWindows{peer: {Windows: night}}, true},
+		"off and empty":      {map[string]deviceWindows{peer: {}}, true},
+		"as many as allowed": {devices(maxDeviceWindows), true},
+		"on without windows": {map[string]deviceWindows{peer: {On: true}}, false},
+		"bad window":         {map[string]deviceWindows{peer: {Windows: []syncWindow{{Start: 60, End: 60, Days: []int{1}}}}}, false},
+		"too many windows":   {map[string]deviceWindows{peer: {Windows: tooMany}}, false},
+		"lower case ID":      {map[string]deviceWindows{strings.ToLower(peer): {Windows: night}}, false},
+		"ID without dashes":  {map[string]deviceWindows{strings.ReplaceAll(peer, "-", ""): {Windows: night}}, false},
+		"wrong check":        {map[string]deviceWindows{peer[:len(peer)-1] + "A": {Windows: night}}, false},
+		"not an ID":          {map[string]deviceWindows{"laptop": {Windows: night}}, false},
+		"empty ID":           {map[string]deviceWindows{"": {Windows: night}}, false},
+		"too many devices":   {devices(maxDeviceWindows + 1), false},
+	} {
+		s := someSettings
+		s.Conditions.DeviceWindows = c.windows
+		if _, err := readOwnSettings(settingsJSON(t, s)); (err == nil) != c.ok {
+			t.Errorf("%s: %v, want ok=%v", name, err, c.ok)
+		}
+	}
+}
+
+// A backup's own windows for a device it does not pair with are left out of the
+// preview, so they don't wait in the app for a device paired later.
+func TestOnlyForPairedDevices(t *testing.T) {
+	c := someSettings.Conditions
+	peer := fixturePeer.String()
+	if got := c.onlyFor(map[string]bool{peer: true}).DeviceWindows; len(got) != 1 || !reflect.DeepEqual(got[peer], c.DeviceWindows[peer]) {
+		t.Errorf("paired: %+v", got)
+	}
+	if got := c.onlyFor(map[string]bool{}).DeviceWindows; got != nil {
+		t.Errorf("none paired: %+v", got)
+	}
+	if len(c.DeviceWindows) != 2 {
+		t.Errorf("onlyFor changed its input: %+v", c.DeviceWindows)
+	}
 }
 
 func FuzzReadOwnSettings(f *testing.F) {
@@ -324,7 +413,9 @@ func TestValidationContract(t *testing.T) {
 // The app writes ownSettingsFile like this (core ForkPreviewTest writes and
 // compares the same file); the bridge must read it as written.
 func TestOwnSettingsContract(t *testing.T) {
-	s, err := readOwnSettings(golden(t, "../own-settings.json"))
+	// The file names its devices by placeholder: the leak check refuses device IDs in the repository.
+	js := strings.NewReplacer("$PEER", fixturePeer.String(), "$UNPAIRED", unpairedDevice).Replace(string(golden(t, "../own-settings.json")))
+	s, err := readOwnSettings([]byte(js))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -85,8 +85,6 @@
     <!-- Marks the default choice in a list of options -->
     <string name="hint_default">Default</string>
 
-    <!-- Times. %1$s: a time of day, e.g. 22:10 -->
-    <string name="when_yesterday">yesterday, %1$s</string>
     <!-- Headings over a day of changes -->
     <string name="day_today">Today</string>
     <string name="day_yesterday">Yesterday</string>
@@ -334,8 +332,6 @@
     <string name="settings_not_set">Not set</string>
     <string name="name">Name</string>
     <string name="settings_group_syncing">Syncing</string>
-    <string name="settings_pause">Pause syncing</string>
-    <string name="settings_pause_hint">Until you resume it here or on the widget</string>
     <string name="settings_ignored">Ignored requests</string>
     <!-- "Ignore" is the button on device and folder requests -->
     <string name="settings_ignored_hint">Devices and folders you tapped Ignore on, to undo it</string>
@@ -349,8 +345,7 @@
     <string name="settings_mobile_data_hint">Can cost money on a limited plan</string>
     <string name="settings_roaming">Mobile data while roaming</string>
     <string name="settings_roaming_hint">Abroad or on another network, where data can cost extra</string>
-    <string name="settings_group_time">Time</string>
-    <string name="sync_times">Sync times</string>
+    <string name="sync_times">Sync windows</string>
     <string name="settings_group_power">Power</string>
     <string name="settings_power">Sync when</string>
     <string name="power_any">Charging or on battery</string>
@@ -652,12 +647,23 @@
     <!-- %1$s: device name. What the pause toggle on the device's card does, read out by TalkBack -->
     <string name="device_pause_named">Pause %1$s</string>
     <string name="device_resume_named">Resume %1$s</string>
+    <!-- Devices tab: heading of the controls that apply to every device -->
+    <string name="devices_all">All devices</string>
+    <!-- A toggle under "All devices", half the screen wide: keep it short -->
+    <string name="devices_pause_all">Pause syncing</string>
+    <!-- State of devices_pause_all (the pause is off / on) -->
+    <string name="devices_pause_off">Off</string>
+    <string name="devices_pause_on">On</string>
+    <!-- A button under "All devices", half the screen wide, opening the sync times: keep it short -->
+    <string name="devices_sync_times">Sync windows</string>
+    <!-- A setting's value when it is the default. %1$s: the value, e.g. Off or Any time -->
+    <string name="value_default">%1$s (default)</string>
     <!-- Why a device is paused, at the start of its card's second line: "By you · 2 folders" -->
     <string name="device_paused_by_you">By you</string>
     <!-- The user paused all syncing (Settings, widget); on each device's card and screen -->
     <string name="device_all_paused_by_you">All paused by you</string>
     <string name="device_block_note_conditions">All devices wait until syncing is allowed again. This device then resumes on its own, unless you pause it below.</string>
-    <string name="device_block_note_user">All devices wait until you resume syncing in Settings or on the widget. This device then resumes too, unless you pause it below.</string>
+    <string name="device_block_note_user">All devices wait until you resume syncing on the Devices tab or the widget. This device then resumes too, unless you pause it below.</string>
     <!-- %1$s: version, e.g. v2.1.7 -->
     <string name="syncthing_version">Syncthing %1$s</string>
     <!-- %1$s: number of items, %2$s: their size -->
@@ -792,7 +798,7 @@
 
     <!-- Sync times screen -->
     <string name="schedule_only_at_set_times">Only at set times</string>
-    <string name="schedule_on_hint">Syncing pauses outside the times below</string>
+    <string name="schedule_on_hint">Syncing pauses outside the windows below</string>
     <string name="schedule_off_hint">Off: syncs at any time</string>
     <!-- %1$d: number of the window, from 1 -->
     <string name="schedule_window_title">Time window %1$d</string>
@@ -905,7 +911,13 @@
     <string name="import_boot_on">Start at boot: on</string>
     <string name="import_boot_off">Start at boot: off</string>
     <!-- %1$s: time windows separated by semicolons, or import_any_time -->
-    <string name="import_sync_times">Sync times: %1$s</string>
+    <string name="import_sync_times">Sync windows: %1$s</string>
+    <!-- %1$s: devices with their windows, separated by semicolons -->
+    <string name="import_own_windows">Own sync windows: %1$s</string>
+    <!-- %1$s: device name, %2$s: its windows -->
+    <string name="import_own_windows_device">%1$s %2$s</string>
+    <!-- %1$s: device names -->
+    <string name="import_never_syncs">Would never sync, as their own windows don\'t overlap the global ones: %1$s</string>
     <string name="import_any_time">any time</string>
     <!-- %1$s: proxy summary, or import_proxy_none -->
     <string name="import_proxy">Proxy: %1$s</string>
@@ -917,7 +929,7 @@
     <string name="not_imported_flight_mode">Sync in flight mode</string>
     <string name="not_imported_master_sync">Follow Android\'s auto-sync switch</string>
     <string name="not_imported_wifi_allowlist">Sync only on chosen Wi-Fi networks</string>
-    <string name="not_imported_schedule">Sync for some minutes every few hours (here: Sync times, by the clock)</string>
+    <string name="not_imported_schedule">Sync for some minutes every few hours (here: Sync windows, by the clock)</string>
     <string name="not_imported_broadcasts">Control by other apps</string>
     <string name="not_imported_socks_proxy">SOCKS proxy: not a valid address, or Tor was on</string>
     <string name="not_imported_http_proxy">HTTP proxy: not a valid address, or another proxy was on</string>
@@ -1050,4 +1062,43 @@
     <string name="exact_time_just_now">%1$s · just now</string>
     <!-- %1$s: time, such as 18:02:12; %2$s: minutes, such as "5 min" -->
     <string name="exact_time_ago">%1$s · %2$s ago</string>
+
+    <!-- Own sync windows of a device (device screen and its sync windows screen) -->
+    <!-- %1$s: device name -->
+    <!-- Heading of the read-only card with the windows for all devices -->
+    <string name="device_windows_global">Global sync windows</string>
+    <string name="device_windows_own">Own sync windows</string>
+    <string name="device_windows_on_hint">Syncs only while these and the global sync windows are open</string>
+    <string name="device_windows_off_hint">Off: follows the global sync windows</string>
+    <string name="device_windows_no_window_fix">Add a time window, or turn \"Own sync windows\" off.</string>
+    <!-- Value of "Own sync windows" when off, shown with value_default -->
+    <string name="device_windows_same">Same as the global sync windows</string>
+    <string name="device_windows_none">No time window</string>
+    <!-- After a window, e.g. "Mon–Fri 21:00–23:00 · syncs 5 h a week". %1$s: duration -->
+    <string name="device_windows_week_short">syncs %1$s a week</string>
+    <!-- After a window: these windows never overlap the global ones -->
+    <string name="device_windows_never_short">never syncs</string>
+    <string name="device_block_note_own">This device waits for its own sync windows. It then resumes on its own, unless you pause it below.</string>
+    <string name="windows_never">Never syncs</string>
+    <string name="windows_never_own">These windows don\'t overlap the global ones. Change these, or the global sync windows on the Devices tab.</string>
+    <!-- %1$s: duration, e.g. 5 h -->
+    <string name="windows_week">Syncs %1$s a week</string>
+    <string name="windows_short_title">Under 1 h at a time</string>
+    <string name="windows_short_text">Android may start syncing late while the phone is idle, so these may pass without a sync.</string>
+    <!-- %1$s: time today -->
+    <string name="windows_next">Next: %1$s</string>
+    <!-- %1$s: short weekday, %2$s: time -->
+    <string name="windows_next_day">Next: %1$s %2$s</string>
+    <!-- A stretch of syncing time: weekday, from, to -->
+    <string name="stretch_same_day">%1$s %2$s–%3$s</string>
+    <!-- A stretch ending on another day: weekday, from, weekday, to -->
+    <string name="stretch_other_day">%1$s %2$s–%3$s %4$s</string>
+    <string name="schedule_never_title">Some devices would never sync</string>
+    <string name="schedule_never_text">Their own sync windows don\'t overlap the new global ones:</string>
+    <string name="schedule_never_after">They stay paused until you change their windows or these.</string>
+    <string name="schedule_save_anyway">Save anyway</string>
+    <plurals name="windows_more">
+        <item quantity="one">and %1$d more</item>
+        <item quantity="other">and %1$d more</item>
+    </plurals>
 </resources>

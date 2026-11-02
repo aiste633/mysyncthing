@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing.ui
 
 import eu.stedb.mysyncthing.core.num
 import eu.stedb.mysyncthing.core.resolve
+import eu.stedb.mysyncthing.core.whenText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

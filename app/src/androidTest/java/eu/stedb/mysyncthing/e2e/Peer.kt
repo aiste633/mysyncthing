@@ -48,6 +48,11 @@ class Peer(val id: String, private val key: String, private val phoneAddress: St
     fun connected(device: String): Boolean =
         JSONObject(call("GET", "rest/system/connections")).getJSONObject("connections").optJSONObject(device)?.optBoolean("connected") == true
 
+    /** Pauses or resumes [device] on the peer's side, so it stays away without the phone pausing it. */
+    fun setPaused(device: String, paused: Boolean) {
+        call("POST", "rest/system/${if (paused) "pause" else "resume"}?device=$device")
+    }
+
     /** The peer's own copy of [file]: null when it has none or it is deleted. */
     fun localFile(folder: String, file: String): JSONObject? = runCatching {
         JSONObject(call("GET", "rest/db/file?folder=$folder&file=$file")).optJSONObject("local")

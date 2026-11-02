@@ -7,10 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.resume
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
@@ -52,7 +55,8 @@ fun scheduleError(on: Boolean, windows: List<SyncWindow>): UiText? = when {
     else -> windows.firstNotNullOfOrNull(::syncWindowError)
 }
 
-private fun minuteOfDay(t: LocalDateTime) = t.hour * 60 + t.minute
+/** Minutes after midnight, as a [SyncWindow] counts them. */
+fun minuteOfDay(t: LocalDateTime): Int = t.hour * 60 + t.minute
 
 /** Whether [t] falls in this window. */
 fun SyncWindow.isOpen(t: LocalDateTime): Boolean {
@@ -139,4 +143,110 @@ fun scheduleClock(context: Context, windows: List<SyncWindow>): Flow<LocalDateTi
     }
 }
 
+/**
+ * Returns once the wall clock reaches [at], or when the phone next wakes after that: the alarm
+ * never wakes it, as nobody looks at a sleeping phone's status. Inexact, so no permission: Android
+ * may deliver it up to 75 % of the wait late (seen on the emulator), which is fine here (user).
+ */
+suspend fun wallClockAt(context: Context, at: Instant) = suspendCancellableCoroutine { done ->
+    val alarms = context.getSystemService(AlarmManager::class.java)
+    val listener = AlarmManager.OnAlarmListener { done.resume(Unit) }
+    alarms.set(AlarmManager.RTC, at.toEpochMilli(), "mysyncthing:status", listener, null)
+    done.invokeOnCancellation { alarms.cancel(listener) }
+}
+
 private const val ACTION_SCHEDULE_TICK = "eu.stedb.mysyncthing.SCHEDULE_TICK"
+
+const val MINUTES_PER_WEEK = 7 * MINUTES_PER_DAY
+
+/** Shorter stretches of syncing time may pass without any sync: the alarm can come that late (user: 1 h). */
+const val SHORT_STRETCH_MINUTES = 60
+
+/** Monday 00:00 is 0; the phone's clock, as the windows are. */
+fun minuteOfWeek(t: LocalDateTime): Int = (t.dayOfWeek.value - 1) * MINUTES_PER_DAY + minuteOfDay(t)
+
+/**
+ * A stretch of the week in which syncing is allowed: from minute [start] of the week (see
+ * [minuteOfWeek]) for [length] minutes, running past Sunday night into Monday.
+ */
+data class Stretch(val start: Int, val length: Int) {
+    val end: Int get() = (start + length) % MINUTES_PER_WEEK
+}
+
+/**
+ * The minutes of a week in which syncing is allowed. The windows repeat every week, minute by
+ * minute, so this is exact: whether two schedules ever overlap, and for how long at a time, is
+ * a question about two sets of 10,080 minutes. Only a day with a clock change differs (the hour
+ * skipped in spring never comes).
+ */
+class WeekMask private constructor(private val open: BooleanArray) {
+    val isEmpty: Boolean get() = open.none { it }
+    val minutes: Int get() = open.count { it }
+
+    fun isOpen(t: LocalDateTime): Boolean = open[minuteOfWeek(t)]
+
+    infix fun and(other: WeekMask) = WeekMask(BooleanArray(MINUTES_PER_WEEK) { open[it] && other.open[it] })
+
+    /** The first minute after [t] in which syncing is allowed, or null when it never is. */
+    fun nextOpen(t: LocalDateTime): LocalDateTime? {
+        val now = t.truncatedTo(ChronoUnit.MINUTES)
+        val m = minuteOfWeek(now)
+        val ahead = (1..MINUTES_PER_WEEK).firstOrNull { open[(m + it) % MINUTES_PER_WEEK] } ?: return null
+        return now.plusMinutes(ahead.toLong())
+    }
+
+    /** The stretches of allowed time, the earliest in the week first; one across Sunday midnight counts once. */
+    fun stretches(): List<Stretch> {
+        if (open.all { it }) return listOf(Stretch(0, MINUTES_PER_WEEK))
+        // Start right after a closed minute, so a stretch across Sunday midnight is not cut in two.
+        val first = open.indexOfFirst { !it }
+        val result = mutableListOf<Stretch>()
+        var startAt = -1
+        for (k in 1..MINUTES_PER_WEEK) {
+            val m = (first + k) % MINUTES_PER_WEEK
+            if (open[m] && startAt < 0) startAt = m
+            if (!open[m] && startAt >= 0) {
+                result += Stretch(startAt, (m - startAt + MINUTES_PER_WEEK) % MINUTES_PER_WEEK)
+                startAt = -1
+            }
+        }
+        return result.sortedBy { it.start }
+    }
+
+    /** Stretches too short to rely on ([SHORT_STRETCH_MINUTES]). */
+    fun shortStretches(): List<Stretch> = stretches().filter { it.length < SHORT_STRETCH_MINUTES }
+
+    override fun equals(other: Any?) = other is WeekMask && open.contentEquals(other.open)
+    override fun hashCode() = open.contentHashCode()
+
+    companion object {
+        val ALWAYS = WeekMask(BooleanArray(MINUTES_PER_WEEK) { true })
+
+        /** The minutes [windows] allow; as [List.isOpen] answers for every minute of the week. */
+        fun of(windows: List<SyncWindow>): WeekMask {
+            val open = BooleanArray(MINUTES_PER_WEEK)
+            for (w in windows) for (day in w.days) {
+                val from = (day - 1) * MINUTES_PER_DAY + w.start
+                val length = if (w.end > w.start) w.end - w.start else MINUTES_PER_DAY - w.start + w.end
+                for (k in 0 until length) open[(from + k) % MINUTES_PER_WEEK] = true
+            }
+            return WeekMask(open)
+        }
+    }
+}
+
+/** The minutes the global schedule allows: all of them while it is off. */
+fun RunConditions.globalMask(): WeekMask = if (timeSchedule) WeekMask.of(windows) else WeekMask.ALWAYS
+
+/**
+ * When device [id] may sync by the clock: the global sync windows narrowed by its own. A device
+ * without its own windows follows the global ones.
+ */
+fun RunConditions.mask(id: String): WeekMask {
+    val own = deviceWindows[id]?.takeIf { it.on } ?: return globalMask()
+    return globalMask() and WeekMask.of(own.windows)
+}
+
+/** The devices whose own windows never overlap the global ones: they would never sync. */
+fun RunConditions.neverSyncing(): Set<String> =
+    deviceWindows.filter { (_, w) -> w.on }.keys.filterTo(LinkedHashSet()) { mask(it).isEmpty }

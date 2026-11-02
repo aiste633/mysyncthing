@@ -26,7 +26,10 @@
     <string name="status_paused_because">Paused: %1$s</string>
     <string name="status_paused">Paused</string>
     <string name="status_no_network">No network</string>
-    <string name="status_not_connected">Not connected</string>
+    <!-- No device that is not paused is connected, for less than 30 min -->
+    <string name="status_waiting">Waiting for devices</string>
+    <!-- No device that is not paused has been connected for over 30 minutes; keep "30 min" with its unit -->
+    <string name="status_no_device">No device for over 30 min</string>
     <!-- The core's notices (warnings) waiting to be read -->
     <plurals name="status_problems">
         <item quantity="one">%1$d problem</item>
@@ -83,12 +86,22 @@
     <string name="pause_reason_charging">Charging</string>
     <string name="pause_reason_battery_saver">Battery saver on</string>
 
-    <!-- Sync times: windows of the week in which syncing may run -->
-    <string name="schedule_outside">Outside sync times</string>
+    <!-- Sync windows: times of the week in which syncing may run -->
+    <string name="schedule_outside">Outside sync windows</string>
     <!-- %1$s: time the next window opens today, e.g. 22:00 -->
-    <string name="schedule_outside_next">Outside sync times · next %1$s</string>
+    <string name="schedule_outside_next">Outside sync windows · next %1$s</string>
     <!-- %1$s: short weekday, %2$s: time, when the next window opens on another day -->
-    <string name="schedule_outside_next_day">Outside sync times · next %1$s %2$s</string>
+    <string name="schedule_outside_next_day">Outside sync windows · next %1$s %2$s</string>
+    <!-- A device held by its own sync windows; %1$s: time it syncs next today, e.g. 22:00 -->
+    <string name="device_outside_next">Outside its sync windows · next %1$s</string>
+    <!-- %1$s: short weekday, %2$s: time, when the device syncs next on another day -->
+    <string name="device_outside_next_day">Outside its sync windows · next %1$s %2$s</string>
+    <!-- A device whose own sync windows never overlap the global ones -->
+    <string name="device_never_syncs">Never syncs: its windows don\'t overlap the global ones</string>
+    <!-- Every device paused; %1$s: time the first one held by its own windows syncs again today -->
+    <string name="status_paused_next">Paused · next %1$s</string>
+    <!-- %1$s: short weekday, %2$s: time -->
+    <string name="status_paused_next_day">Paused · next %1$s %2$s</string>
     <string name="schedule_error_no_window">Add a time window</string>
     <string name="schedule_error_times">Times from 00:00 to 23:59</string>
     <string name="schedule_error_same_times">Start and end must differ</string>
@@ -158,6 +171,10 @@
     <string name="widget_start">Start Syncthing</string>
     <string name="widget_not_running">Not running</string>
     <string name="widget_no_device">No device connected</string>
+    <!-- Widget second line while no device is connected. %1$s: a time from when_yesterday or a date, e.g. 14:41 -->
+    <string name="widget_last_seen">Last device seen %1$s</string>
+    <!-- Times. %1$s: a time of day, e.g. 22:10 -->
+    <string name="when_yesterday">yesterday, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d device connected</item>
         <item quantity="other">%1$d devices connected</item>

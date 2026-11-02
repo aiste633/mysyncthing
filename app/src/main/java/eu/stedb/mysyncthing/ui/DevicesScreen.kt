@@ -1,6 +1,23 @@
 package eu.stedb.mysyncthing.ui
 
 import android.content.Intent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
+import eu.stedb.mysyncthing.core.DevicePause
+import eu.stedb.mysyncthing.core.NEVER_SYNCS
+import eu.stedb.mysyncthing.core.RunConditions
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -63,10 +80,12 @@ fun DevicesScreen(
     vm: MainViewModel,
     onOpen: (String) -> Unit,
     onOpenThisPhone: () -> Unit,
+    onOpenSchedule: () -> Unit,
     onAdd: (id: String, name: String) -> Unit,
 ) {
     var showMyId by rememberSaveable { mutableStateOf(false) }
     val live by vm.liveStats.collectAsStateWithLifecycle()
+    val rc by vm.runConditions.collectAsStateWithLifecycle()
     AppScreen(
         title = stringResource(R.string.tab_devices),
         status = summary,
@@ -77,6 +96,9 @@ fun DevicesScreen(
         Box(Modifier.fillMaxSize().padding(padding)) {
             LazyColumn(contentPadding = PaddingValues(top = 4.dp, bottom = 96.dp)) {
                 item("me") { ThisDeviceCard(s, live, onOpenThisPhone) { showMyId = true } }
+                item("all") {
+                    AllDevices(rc, s.pause, onPause = { v -> vm.setRunConditions { it.copy(pausedByUser = v) } }, onOpenSchedule = onOpenSchedule)
+                }
                 s.pendingDevices.forEach { (id, p) ->
                     item("pending-$id") {
                         RequestCard(
@@ -177,7 +199,7 @@ private fun DeviceCard(d: Device, s: Snapshot, onPause: (Boolean) -> Unit, onCli
                 Spacer(Modifier.width(4.dp))
                 Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
                 // The same outline on and off: the icon (pause or play) says which it is.
-                val enabled = !pause.blocked
+                val enabled = !pause.blocked(d)
                 val on = MaterialTheme.colorScheme.onSurface
                 OutlinedIconToggleButton(
                     checked = byUser, onCheckedChange = onPause, enabled = enabled, shape = ButtonShape,
@@ -190,17 +212,81 @@ private fun DeviceCard(d: Device, s: Snapshot, onPause: (Boolean) -> Unit, onCli
                     Icon(if (byUser) Icons.Default.PlayArrow else Icons.Default.Pause, label, Modifier.size(20.dp))
                 }
             }
+            val reasonText = pauseReason(d, pause)
+            val reason = reasonText?.asString()
+            val where = connectionText(conn, withAddress = false)?.asString()
+                ?: lastSeenText(s.lastSeen[d.deviceID]).asString().let { if (reason != null) it.replaceFirstChar { c -> c.lowercase() } else it }
             Text(
-                listOfNotNull(pauseReason(d, pause) ?: connectionText(conn, withAddress = false), count(R.plurals.count_folders, folders))
-                    .map { it.asString() }.joinToString(" · ")
+                listOfNotNull(reason, where, count(R.plurals.count_folders, folders).asString()).joinToString(" · ")
                     // A reason written to follow "Paused: " starts lower case in some languages (Italian).
                     .replaceFirstChar { it.titlecase() },
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                // Never syncing is a mistake to fix, not a state to wait out.
+                color = if (reasonText == NEVER_SYNCS) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(end = 8.dp),
             )
             status.progress?.let {
                 ProgressBar(it, look.color, Modifier.padding(top = 6.dp, end = 8.dp))
             }
+        }
+    }
+}
+
+/**
+ * The controls that apply to every device: the user's pause, a toggle, and the sync times,
+ * which open their screen. Each shows its value, the default marked; the one that pauses
+ * the devices now is in amber.
+ */
+@Composable
+private fun AllDevices(rc: RunConditions, pause: DevicePause, onPause: (Boolean) -> Unit, onOpenSchedule: () -> Unit) {
+    GroupTitle(stringResource(R.string.devices_all))
+    Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min).padding(horizontal = 16.dp, vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        val paused = rc.pausedByUser
+        ControlCard(
+            stringResource(R.string.devices_pause_all),
+            if (paused) stringResource(R.string.devices_pause_on) else stringResource(R.string.value_default, stringResource(R.string.devices_pause_off)),
+            active = paused,
+            Modifier.weight(1f).fillMaxHeight().testTag("pauseAll").toggleable(paused, role = Role.Switch, onValueChange = onPause),
+        ) {
+            // A smaller switch, so the label keeps one line in half the width; it only draws the card's state.
+            Box(Modifier.size(42.dp, 26.dp), contentAlignment = Alignment.Center) {
+                Switch(paused, onCheckedChange = null, modifier = Modifier.wrapContentSize(unbounded = true).scale(0.8f))
+            }
+        }
+        // Half the width: at the largest font a time range may not fit a line.
+        val times = breakableRanges(scheduleText(rc).asString())
+        ControlCard(
+            stringResource(R.string.devices_sync_times),
+            if (rc.timeSchedule) times else stringResource(R.string.value_default, times),
+            active = scheduleBlocks(rc, pause),
+            Modifier.weight(1f).fillMaxHeight().testTag("syncTimes").clickable(onClick = onOpenSchedule),
+        ) {
+            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null, Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** Half of the [AllDevices] row: a title, its value and a trailing mark; the modifier makes it a toggle or a button. */
+@Composable
+private fun ControlCard(title: String, value: String, active: Boolean, modifier: Modifier, trailing: @Composable () -> Unit) {
+    val base = AppColors.card().containerColor
+    val amber = AppColors.busy
+    Surface(
+        modifier = modifier, shape = MaterialTheme.shapes.extraSmall,
+        color = if (active) amber.copy(alpha = ACTIVE_ALPHA).compositeOver(base) else base,
+        border = if (active) BorderStroke(1.dp, amber) else AppColors.cardBorder(),
+    ) {
+        Row(Modifier.padding(start = 12.dp, end = 8.dp, top = 10.dp, bottom = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.labelLarge)
+                Text(
+                    value, style = MaterialTheme.typography.bodySmall,
+                    color = if (active) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = if (active) FontWeight.Medium else null,
+                )
+            }
+            Spacer(Modifier.width(4.dp))
+            trailing()
         }
     }
 }
@@ -223,3 +309,6 @@ private fun MyIdDialog(id: String, onDismiss: () -> Unit) {
 
 /** Material's opacity for a disabled control's outline. */
 private const val DISABLED_ALPHA = 0.12f
+
+/** The amber tint of a control that pauses the devices now. */
+private const val ACTIVE_ALPHA = 0.14f

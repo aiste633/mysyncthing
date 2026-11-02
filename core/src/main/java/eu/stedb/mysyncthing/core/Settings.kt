@@ -14,6 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
@@ -38,6 +40,7 @@ enum class PowerSource { Any, ChargingOnly, BatteryOnly }
  * allowed; the network switches add the others (see [blockedBy]). Serialized
  * with the bridge's names (go/bridge runConditions) for import and export.
  */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class RunConditions(
     /** Metered Wi-Fi and Ethernet, hotspots and tethering. */
@@ -57,7 +60,30 @@ data class RunConditions(
     val timeSchedule: Boolean = false,
     /** Kept while [timeSchedule] is off, so turning it on again restores them. */
     val windows: List<SyncWindow> = emptyList(),
+    /**
+     * Devices' own sync windows, by device ID. They narrow the global ones: a device with its
+     * own syncs only while both are open (see [mask]). Left out of an export without any, so
+     * app versions from before them still read it.
+     */
+    @EncodeDefault(EncodeDefault.Mode.NEVER) val deviceWindows: Map<String, DeviceWindows> = emptyMap(),
 )
+
+/** A device's own sync windows: like [RunConditions.timeSchedule] and its windows, kept while off. */
+@Serializable
+data class DeviceWindows(val on: Boolean = false, val windows: List<SyncWindow> = emptyList())
+
+/** [id]'s own windows set to [w]; an entry that says nothing (off, no windows) is dropped. */
+fun RunConditions.withDeviceWindows(id: String, w: DeviceWindows): RunConditions =
+    copy(deviceWindows = if (w == DeviceWindows()) deviceWindows - id else deviceWindows + (id to w))
+
+/**
+ * The devices the run conditions pause now ([held]), and which of them the user had paused too
+ * ([userPaused]): their own choice, kept for when the hold ends. [held] is null for a record from
+ * before devices had their own windows, when a hold always took every device.
+ */
+data class ConditionHolds(val held: Set<String>?, val userPaused: Set<String>) {
+    fun holds(id: String): Boolean = held?.contains(id) ?: true
+}
 
 /** How the core connects to other devices, relays and discovery servers. */
 @Serializable
@@ -141,6 +167,7 @@ class Settings internal constructor(
         it[PAUSED_BY_USER] = c.pausedByUser
         it[TIME_SCHEDULE] = c.timeSchedule
         it[WINDOWS] = json.encodeToString(c.windows)
+        if (c.deviceWindows.isEmpty()) it.remove(DEVICE_WINDOWS) else it[DEVICE_WINDOWS] = json.encodeToString(c.deviceWindows)
     }
 
     /** True once the user tapped Done on the setup checklist. */
@@ -208,24 +235,40 @@ class Settings internal constructor(
     suspend fun setProxy(p: ProxySettings): Boolean = write { it[PROXY] = json.encodeToString(p) }
 
     /**
-     * Devices the user had paused before a run condition paused everything,
-     * so resuming does not undo the user's own choice. Null when not paused by us.
+     * The devices the run conditions hold paused, with the user's own choice for each, so the end
+     * of a hold does not undo it. Null when they hold none.
      */
-    suspend fun conditionPause(): Set<String>? = store.data.first()[CONDITION_PAUSE]
+    suspend fun conditionHolds(): ConditionHolds? = store.data.first().conditionHolds()
 
-    suspend fun setConditionPause(userPaused: Set<String>?): Boolean =
-        write { if (userPaused == null) it.remove(CONDITION_PAUSE) else it[CONDITION_PAUSE] = userPaused }
+    val holds: Flow<ConditionHolds?> = store.data.map { it.conditionHolds() }.distinctUntilChanged()
 
-    val conditionPauses: Flow<Set<String>?> = store.data.map { it[CONDITION_PAUSE] }.distinctUntilChanged()
+    /** The user's own pauses among the held devices (see [conditionHolds]); null when none is held. */
+    suspend fun conditionPause(): Set<String>? = conditionHolds()?.userPaused
+
+    suspend fun setConditionHolds(h: ConditionHolds?): Boolean = write {
+        if (h == null || h.held?.isEmpty() == true) {
+            it.remove(CONDITION_PAUSE)
+            it.remove(CONDITION_HELD)
+        } else {
+            it[CONDITION_PAUSE] = h.userPaused
+            if (h.held == null) it.remove(CONDITION_HELD) else it[CONDITION_HELD] = h.held
+        }
+    }
 
     /**
-     * While a run condition pauses everything, records the user's own choice for [device] in place
-     * of the one [conditionPause] first recorded. False when nothing is recorded (syncing is
-     * allowed), null when the write failed. Callers hold the lock that orders the record's writers.
+     * While the run conditions hold [device], records the user's own choice for it, for when the
+     * hold ends. False when they don't hold it, null when the write failed. Callers hold the lock
+     * that orders the record's writers.
      */
     suspend fun recordUserPause(device: String, paused: Boolean): Boolean? {
-        val recorded = conditionPause() ?: return false
-        return if (setConditionPause(if (paused) recorded + device else recorded - device)) true else null
+        val h = conditionHolds()?.takeIf { it.holds(device) } ?: return false
+        val userPaused = if (paused) h.userPaused + device else h.userPaused - device
+        return if (setConditionHolds(h.copy(userPaused = userPaused))) true else null
+    }
+
+    private fun Preferences.conditionHolds(): ConditionHolds? {
+        val userPaused = this[CONDITION_PAUSE] ?: return null
+        return ConditionHolds(this[CONDITION_HELD], userPaused)
     }
 
     private fun Preferences.credentials(): Credentials? {
@@ -251,7 +294,10 @@ class Settings internal constructor(
         val RESPECT_BATTERY_SAVER = booleanPreferencesKey("respect_battery_saver")
         val START_ON_BOOT = booleanPreferencesKey("start_on_boot")
         val PAUSED_BY_USER = booleanPreferencesKey("paused_by_user")
+        /** The user's own pauses among the held devices; present while any device is held. */
         val CONDITION_PAUSE = stringSetPreferencesKey("condition_pause")
+        /** The held devices; missing in a record from before own windows: then every device. */
+        val CONDITION_HELD = stringSetPreferencesKey("condition_held")
         val SETUP_DONE = booleanPreferencesKey("setup_done")
         val MOVED = booleanPreferencesKey("moved_from_other_phone")
         val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
@@ -260,6 +306,7 @@ class Settings internal constructor(
         val PROXY = stringPreferencesKey("proxy")
         val TIME_SCHEDULE = booleanPreferencesKey("time_schedule")
         val WINDOWS = stringPreferencesKey("sync_windows")
+        val DEVICE_WINDOWS = stringPreferencesKey("device_sync_windows")
 
         val json = Json { ignoreUnknownKeys = true }
 
@@ -298,6 +345,7 @@ internal fun Preferences.runConditions(): RunConditions {
         pausedByUser = this[Settings.PAUSED_BY_USER] ?: false,
         timeSchedule = this[Settings.TIME_SCHEDULE] ?: false,
         windows = storedWindows(),
+        deviceWindows = storedDeviceWindows(),
     )
 }
 
@@ -310,4 +358,16 @@ private fun Preferences.storedWindows(): List<SyncWindow> {
     val stored = this[Settings.WINDOWS] ?: return emptyList()
     return runCatching { Settings.json.decodeFromString<List<SyncWindow>>(stored) }.getOrDefault(emptyList())
         .filter { syncWindowError(it) == null }.take(MAX_SYNC_WINDOWS)
+}
+
+/**
+ * The stored own windows of devices. As for [storedWindows], a window that can't be read or is
+ * not valid is left out, and so is a device whose entry can't be read: it then follows the global
+ * windows, as a device the user never set any for. One that is on with no windows left lets
+ * nothing through.
+ */
+private fun Preferences.storedDeviceWindows(): Map<String, DeviceWindows> {
+    val stored = this[Settings.DEVICE_WINDOWS] ?: return emptyMap()
+    val all = runCatching { Settings.json.decodeFromString<Map<String, DeviceWindows>>(stored) }.getOrDefault(emptyMap())
+    return all.mapValues { (_, w) -> w.copy(windows = w.windows.filter { syncWindowError(it) == null }.take(MAX_SYNC_WINDOWS)) }
 }

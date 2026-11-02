@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HourglassEmpty
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.StopCircle
@@ -99,5 +100,6 @@ fun SyncState.look(): StatusLook = when (this) {
     SyncState.Paused -> StatusLook(Icons.Default.PauseCircle, AppColors.busy)
     SyncState.NeedsInput -> StatusLook(Icons.Default.NotificationsActive, AppColors.busy)
     SyncState.Problem -> StatusLook(Icons.Default.Error, AppColors.problem)
+    SyncState.Waiting -> StatusLook(Icons.Default.HourglassEmpty, AppColors.neutral)
     SyncState.Stopped -> StatusLook(Icons.Default.StopCircle, AppColors.neutral)
 }

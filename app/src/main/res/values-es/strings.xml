@@ -71,7 +71,6 @@
     <string name="label_and_hint">%1$s. %2$s</string>
     <string name="hint_default">Predeterminado</string>
 
-    <string name="when_yesterday">ayer, %1$s</string>
     <string name="day_today">Hoy</string>
     <string name="day_yesterday">Ayer</string>
 
@@ -274,8 +273,6 @@
     <string name="settings_not_set">Sin establecer</string>
     <string name="name">Nombre</string>
     <string name="settings_group_syncing">Sincronización</string>
-    <string name="settings_pause">Pausar la sincronización</string>
-    <string name="settings_pause_hint">Hasta que la reanudes aquí o en el widget</string>
     <string name="settings_ignored">Solicitudes ignoradas</string>
     <string name="settings_ignored_hint">Dispositivos y carpetas en los que tocaste Ignorar, para deshacerlo</string>
     <string name="settings_group_sync_on">Sincronizar con</string>
@@ -287,7 +284,6 @@
     <string name="settings_mobile_data_hint">Puede costar dinero con una tarifa limitada</string>
     <string name="settings_roaming">Datos móviles en itinerancia</string>
     <string name="settings_roaming_hint">En el extranjero o en otra red, donde los datos pueden costar más</string>
-    <string name="settings_group_time">Horario</string>
     <string name="sync_times">Horarios de sincronización</string>
     <string name="settings_group_power">Energía</string>
     <string name="settings_power">Sincronizar</string>
@@ -544,10 +540,16 @@
     <string name="device_pause_hint">Sigue en pausa hasta que desactives esta opción, también cuando se vuelva a permitir la sincronización</string>
     <string name="device_pause_named">Pausar %1$s</string>
     <string name="device_resume_named">Reanudar %1$s</string>
+    <string name="devices_all">Todos los dispositivos</string>
+    <string name="devices_pause_all">Pausar</string>
+    <string name="devices_pause_off">Desactivada</string>
+    <string name="devices_pause_on">Activada</string>
+    <string name="devices_sync_times">Horarios</string>
+    <string name="value_default">%1$s (predeterminado)</string>
     <string name="device_paused_by_you">Por ti</string>
     <string name="device_all_paused_by_you">Todo pausado por ti</string>
     <string name="device_block_note_conditions">Todos los dispositivos esperan hasta que se vuelva a permitir la sincronización. Después este dispositivo se reanuda solo, salvo que lo pauses abajo.</string>
-    <string name="device_block_note_user">Todos los dispositivos esperan hasta que reanudes la sincronización en Ajustes o en el widget. Después este dispositivo también se reanuda, salvo que lo pauses abajo.</string>
+    <string name="device_block_note_user">Todos los dispositivos esperan hasta que reanudes la sincronización en la pestaña Dispositivos o en el widget. Después este dispositivo también se reanuda, salvo que lo pauses abajo.</string>
     <string name="syncthing_version">Syncthing %1$s</string>
     <plurals name="device_still_needs">
         <item quantity="one">Aún necesita %1$s elemento, %2$s de este teléfono</item>
@@ -749,6 +751,9 @@
     <string name="import_boot_on">Iniciar al encender: activado</string>
     <string name="import_boot_off">Iniciar al encender: desactivado</string>
     <string name="import_sync_times">Horarios de sincronización: %1$s</string>
+    <string name="import_own_windows">Horarios propios: %1$s</string>
+    <string name="import_own_windows_device">%1$s %2$s</string>
+    <string name="import_never_syncs">Nunca sincronizarían, porque sus horarios propios no coinciden con los globales: %1$s</string>
     <string name="import_any_time">a cualquier hora</string>
     <string name="import_proxy">Proxy: %1$s</string>
     <string name="import_proxy_none">ninguno</string>
@@ -863,4 +868,33 @@
 
     <string name="exact_time_just_now">%1$s · ahora mismo</string>
     <string name="exact_time_ago">%1$s · hace %2$s</string>
+
+    <string name="device_windows_global">Horarios globales</string>
+    <string name="device_windows_own">Horarios propios</string>
+    <string name="device_windows_on_hint">Solo sincroniza cuando están abiertos estos horarios y los globales</string>
+    <string name="device_windows_off_hint">Desactivado: sigue los horarios globales</string>
+    <string name="device_windows_no_window_fix">Añade una franja horaria o desactiva «Horarios propios».</string>
+    <string name="device_windows_same">Igual que los horarios globales</string>
+    <string name="device_windows_none">Ninguna franja horaria</string>
+    <string name="device_windows_week_short">sincroniza %1$s por semana</string>
+    <string name="device_windows_never_short">nunca sincroniza</string>
+    <string name="device_block_note_own">Este dispositivo espera a sus propios horarios. Después se reanuda solo, salvo que lo pauses abajo.</string>
+    <string name="windows_never">Nunca sincroniza</string>
+    <string name="windows_never_own">Estos horarios no coinciden con los globales. Cámbialos, o cambia los horarios globales en la pestaña Dispositivos.</string>
+    <string name="windows_week">Sincroniza %1$s por semana</string>
+    <string name="windows_short_title">Menos de 1 h seguida</string>
+    <string name="windows_short_text">Android puede empezar a sincronizar tarde mientras el teléfono está inactivo, así que estas franjas pueden pasar sin sincronizar.</string>
+    <string name="windows_next">Próxima: %1$s</string>
+    <string name="windows_next_day">Próxima: %1$s %2$s</string>
+    <string name="stretch_same_day">%1$s %2$s–%3$s</string>
+    <string name="stretch_other_day">%1$s %2$s–%3$s %4$s</string>
+    <string name="schedule_never_title">Algunos dispositivos nunca sincronizarían</string>
+    <string name="schedule_never_text">Sus horarios propios no coinciden con los nuevos horarios globales:</string>
+    <string name="schedule_never_after">Siguen en pausa hasta que cambies sus horarios o estos.</string>
+    <string name="schedule_save_anyway">Guardar de todos modos</string>
+    <plurals name="windows_more">
+        <item quantity="one">y %1$d más</item>
+        <item quantity="many">y %1$d más</item>
+        <item quantity="other">y %1$d más</item>
+    </plurals>
 </resources>

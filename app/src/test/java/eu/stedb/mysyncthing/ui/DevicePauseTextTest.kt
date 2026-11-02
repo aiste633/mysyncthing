@@ -1,6 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
 import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.ConditionHolds
 import eu.stedb.mysyncthing.core.DevicePause
 import eu.stedb.mysyncthing.core.PAUSED_BY_USER
 import eu.stedb.mysyncthing.core.R
@@ -13,7 +14,7 @@ import org.junit.Test
 /** Who paused a device, as its card and its screen say it. */
 class DevicePauseTextTest {
     private val laptop = Device("A", "Laptop")
-    private val mobileData = DevicePause(text(R.string.pause_reason_mobile_data), recorded = setOf("B"))
+    private val mobileData = DevicePause(text(R.string.pause_reason_mobile_data), holds = ConditionHolds(null, setOf("B")))
 
     @Test fun notPausedSaysNothing() {
         assertNull(pauseReason(laptop, DevicePause()).en())
@@ -42,7 +43,7 @@ class DevicePauseTextTest {
 
     /** The user's pause of all syncing must not read like a device's own "By you". */
     @Test fun pauseOfEverything() {
-        val all = DevicePause(PAUSED_BY_USER, recorded = emptySet())
+        val all = DevicePause(PAUSED_BY_USER, holds = ConditionHolds(null, emptySet()))
         val paused = laptop.copy(paused = true)
         assertEquals("All paused by you", pauseReason(paused, all).en())
         assertEquals("All paused by you", pauseTitle(paused, all).en())

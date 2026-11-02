@@ -51,6 +51,7 @@ import eu.stedb.mysyncthing.core.PowerSource
 import eu.stedb.mysyncthing.core.ProxySettings
 import eu.stedb.mysyncthing.core.ProxyType
 import eu.stedb.mysyncthing.core.RunConditions
+import eu.stedb.mysyncthing.core.neverSyncing
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.joined
 import eu.stedb.mysyncthing.core.plural
@@ -197,7 +198,7 @@ private fun ReviewStep(p: ForkPreview, onImport: (keepIdentity: Boolean, deleteB
         p.devices.forEach { d -> SettingRow(d.name.ifEmpty { shortId(d.id) }, deviceImportText(d), Icons.Default.Devices) }
     }
     SettingsGroup(stringResource(R.string.import_sync_settings)) {
-        conditionsText(p.conditions, p.proxy).forEach { SettingRow(it.asString()) }
+        conditionsText(p.conditions, p.proxy, p.devices.associate { it.id to it.name.ifEmpty { shortId(it.id) } }).forEach { SettingRow(it.asString()) }
     }
     if (p.notImported.isNotEmpty()) {
         SettingsGroup(stringResource(R.string.import_not_imported)) {
@@ -268,7 +269,12 @@ fun folderImportText(f: ForkFolder): UiText = text(
     displayPath(f.path).let { if (it is UiText.Raw) raw(wrapPath(it.text)) else it },
 )
 
-fun conditionsText(c: RunConditions, proxy: ProxySettings): List<UiText> = listOfNotNull(
+/**
+ * The backup's run conditions and proxy, for people. Devices' own sync windows come by their
+ * [names] (the bridge drops those of devices the backup does not pair with), and any that would
+ * never sync with the backup's global windows are named apart.
+ */
+fun conditionsText(c: RunConditions, proxy: ProxySettings, names: Map<String, String> = emptyMap()): List<UiText> = listOfNotNull(
     text(
         R.string.import_on,
         listOfNotNull(
@@ -281,6 +287,11 @@ fun conditionsText(c: RunConditions, proxy: ProxySettings): List<UiText> = listO
     text(if (c.respectBatterySaver) R.string.import_battery_saver_on else R.string.import_battery_saver_off),
     text(if (c.startOnBoot) R.string.import_boot_on else R.string.import_boot_off),
     text(R.string.import_sync_times, if (c.timeSchedule) c.windows.map(::windowText).joined("; ") else text(R.string.import_any_time)),
+    c.deviceWindows.filter { (id, w) -> w.on && id in names }.entries.sortedBy { names.getValue(it.key) }
+        .map { (id, w) -> text(R.string.import_own_windows_device, names.getValue(id), w.windows.map(::windowText).joined("; ")) }
+        .takeIf { it.isNotEmpty() }?.let { text(R.string.import_own_windows, it.joined("; ")) },
+    c.neverSyncing().filter { it in names }.map { names.getValue(it) }.sorted().takeIf { it.isNotEmpty() }
+        ?.let { text(R.string.import_never_syncs, it.joinToString(", ")) },
     text(R.string.import_proxy, if (proxy.type == ProxyType.None) text(R.string.import_proxy_none) else proxyText(proxy)),
 )
 

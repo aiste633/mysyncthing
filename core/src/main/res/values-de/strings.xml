@@ -14,7 +14,8 @@
     <string name="status_paused_because">Pausiert: %1$s</string>
     <string name="status_paused">Pausiert</string>
     <string name="status_no_network">Kein Netzwerk</string>
-    <string name="status_not_connected">Nicht verbunden</string>
+    <string name="status_waiting">Warten auf Geräte</string>
+    <string name="status_no_device">Seit über 30 min kein Gerät</string>
     <plurals name="status_problems">
         <item quantity="one">%1$d Problem</item>
         <item quantity="other">%1$d Probleme</item>
@@ -62,6 +63,11 @@
     <string name="schedule_outside">Außerhalb der Synchronisierungszeiten</string>
     <string name="schedule_outside_next">Außerhalb der Zeiten · nächste %1$s</string>
     <string name="schedule_outside_next_day">Außerhalb der Zeiten · nächste %1$s %2$s</string>
+    <string name="device_outside_next">Außerhalb seiner Sync-Zeiten · nächste %1$s</string>
+    <string name="device_outside_next_day">Außerhalb seiner Sync-Zeiten · nächste %1$s %2$s</string>
+    <string name="device_never_syncs">Synchronisiert nie: seine Sync-Zeiten überschneiden sich nicht mit den globalen</string>
+    <string name="status_paused_next">Pausiert · nächste %1$s</string>
+    <string name="status_paused_next_day">Pausiert · nächste %1$s %2$s</string>
     <string name="schedule_error_no_window">Fügen Sie ein Zeitfenster hinzu</string>
     <string name="schedule_error_times">Zeiten von 00:00 bis 23:59</string>
     <string name="schedule_error_same_times">Beginn und Ende müssen sich unterscheiden</string>
@@ -114,6 +120,8 @@
     <string name="widget_start">Syncthing starten</string>
     <string name="widget_not_running">Läuft nicht</string>
     <string name="widget_no_device">Kein Gerät verbunden</string>
+    <string name="widget_last_seen">Letztes Gerät gesehen %1$s</string>
+    <string name="when_yesterday">gestern, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d Gerät verbunden</item>
         <item quantity="other">%1$d Geräte verbunden</item>
