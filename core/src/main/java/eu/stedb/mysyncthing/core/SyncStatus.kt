@@ -2,17 +2,22 @@ package eu.stedb.mysyncthing.core
 
 import android.os.SystemClock
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
+import java.time.Duration
+import java.time.Instant
 
 /** Everything the screens, the notification and the widget show, refreshed from REST on relevant events. */
 data class Snapshot(
@@ -31,6 +36,8 @@ data class Snapshot(
     val localDiscovery: Boolean = false,
     /** Who paused the devices; from the service, not the core. */
     val pause: DevicePause = DevicePause(),
+    /** When each device was last connected; missing for one never connected. */
+    val lastSeen: Map<String, Instant> = emptyMap(),
 )
 
 /**
@@ -124,6 +131,7 @@ object SyncStatus {
         val pendingFolders = async { c.pendingFolders() }
         val errors = async { runCatching { c.systemErrors() }.getOrDefault(emptyList()) }
         val options = async { c.options() }
+        val stats = async { runCatching { c.deviceStats() }.getOrDefault(emptyMap()) }
         val me = myId.await()
         val folderList = folders.await()
         val allDevices = devices.await()
@@ -143,17 +151,23 @@ object SyncStatus {
             pendingFolders = pendingFolders.await(),
             systemErrors = errors.await(),
             localDiscovery = options.await().localAnnounceEnabled,
+            lastSeen = stats.await().mapNotNull { (id, st) -> instantOf(st.lastSeen)?.let { id to it } }.toMap(),
         )
     }
 }
 
 /** Overall state, in the order the notification and widget rank them. */
-enum class SyncState { Stopped, Problem, Paused, NeedsInput, Syncing, UpToDate }
+enum class SyncState { Stopped, Problem, Paused, Waiting, NeedsInput, Syncing, UpToDate }
+
+/** How long no device may be connected before that is a problem rather than a wait. */
+val NO_DEVICE_LIMIT: Duration = Duration.ofHours(1)
 
 /**
  * One-line status for the notification and the widget. [connected] holds the
  * names of connected devices; [progress] is 0..100 while syncing.
  * [publicText] is [text] without folder names, for the lock screen.
+ * While no device is connected, [lastSeen] is when one last was, and
+ * [recheckAt] when the wait becomes a problem.
  */
 data class Summary(
     val state: SyncState,
@@ -161,6 +175,8 @@ data class Summary(
     val progress: Int? = null,
     val connected: List<String> = emptyList(),
     val publicText: UiText = text,
+    val lastSeen: Instant? = null,
+    val recheckAt: Instant? = null,
 )
 
 private val SYNCING_STATES = setOf("syncing", "sync-preparing")
@@ -168,8 +184,19 @@ private val SYNCING_STATES = setOf("syncing", "sync-preparing")
 /**
  * Ranks what the user most needs to know: errors first, then deliberate pauses,
  * then requests waiting for them, then sync progress.
+ *
+ * No device connected is a wait, not a problem, for [NO_DEVICE_LIMIT] after the last
+ * device that is not paused was seen, or after [startedAt] when none was since. Paused
+ * devices don't count: the user chose not to see them.
  */
-fun summarize(core: CoreState, s: Snapshot, blockedBy: UiText?, online: Boolean): Summary {
+fun summarize(
+    core: CoreState,
+    s: Snapshot,
+    blockedBy: UiText?,
+    online: Boolean,
+    now: Instant = Instant.now(),
+    startedAt: Instant = now,
+): Summary {
     when (core) {
         is CoreState.Failed -> return Summary(SyncState.Problem, text(R.string.status_stopped_error))
         CoreState.Stopped -> return Summary(SyncState.Stopped, text(R.string.status_stopped))
@@ -218,7 +245,15 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: UiText?, online: Boolean)
     if (s.devices.isEmpty()) return result(SyncState.NeedsInput, text(R.string.status_no_devices))
     if (s.folders.isEmpty()) return result(SyncState.NeedsInput, text(R.string.status_no_folders))
     if (s.devices.all { it.paused } || active.isEmpty()) return result(SyncState.Paused, text(R.string.status_paused))
-    if (connected.isEmpty()) return result(SyncState.Problem, text(R.string.status_not_connected))
+    if (connected.isEmpty()) {
+        val seen = s.devices.filter { !it.paused }.mapNotNull { s.lastSeen[it.deviceID] }.maxOrNull()
+        val due = maxOf(seen ?: startedAt, startedAt) + NO_DEVICE_LIMIT
+        return if (now >= due) {
+            result(SyncState.Problem, text(R.string.status_no_device)).copy(lastSeen = seen)
+        } else {
+            result(SyncState.Waiting, text(R.string.status_waiting)).copy(lastSeen = seen, recheckAt = due)
+        }
+    }
 
     // A send-only folder never downloads; what it "needs" is the review above.
     val statuses = active.filter { it.type != "sendonly" }.mapNotNull { s.folderStatus[it.id] }
@@ -240,6 +275,20 @@ fun summarize(core: CoreState, s: Snapshot, blockedBy: UiText?, online: Boolean)
 
 private fun Snapshot.connectedNames() = devices.filter { connections[it.deviceID]?.connected == true }
     .map { it.name.ifEmpty { it.deviceID.substringBefore('-') } }
+
+/**
+ * Each input's summary, and that summary again at its [Summary.recheckAt]: a wait turns into
+ * a problem with no event to tell. [at] returns once the wall clock reaches the given time.
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
+internal fun Flow<(Instant) -> Summary>.timed(clock: () -> Instant, at: suspend (Instant) -> Unit): Flow<Summary> =
+    transformLatest { summarize ->
+        while (true) {
+            val summary = summarize(clock())
+            emit(summary)
+            at(summary.recheckAt ?: break)
+        }
+    }
 
 /** The notification line: state, then who it is connected to. */
 fun Summary.line(): UiText = when {

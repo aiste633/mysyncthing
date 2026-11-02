@@ -7,10 +7,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.Serializable
+import kotlin.coroutines.resume
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
@@ -137,6 +140,17 @@ fun scheduleClock(context: Context, windows: List<SyncWindow>): Flow<LocalDateTi
         context.unregisterReceiver(receiver)
         alarms.cancel(tick)
     }
+}
+
+/**
+ * Returns once the wall clock reaches [at], or when the phone next wakes after that: the
+ * alarm never wakes it, as nobody looks at a sleeping phone's status. No permission needed.
+ */
+suspend fun wallClockAt(context: Context, at: Instant) = suspendCancellableCoroutine { done ->
+    val alarms = context.getSystemService(AlarmManager::class.java)
+    val listener = AlarmManager.OnAlarmListener { done.resume(Unit) }
+    alarms.set(AlarmManager.RTC, at.toEpochMilli(), "mysyncthing:status", listener, null)
+    done.invokeOnCancellation { alarms.cancel(listener) }
 }
 
 private const val ACTION_SCHEDULE_TICK = "eu.stedb.mysyncthing.SCHEDULE_TICK"

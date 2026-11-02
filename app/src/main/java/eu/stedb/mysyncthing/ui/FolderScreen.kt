@@ -44,6 +44,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.whenText
 import eu.stedb.mysyncthing.core.DiskSize
 import eu.stedb.mysyncthing.core.FileError
 import eu.stedb.mysyncthing.core.FolderStats

@@ -14,7 +14,8 @@
     <string name="status_paused_because">En pause : %1$s</string>
     <string name="status_paused">En pause</string>
     <string name="status_no_network">Aucun réseau</string>
-    <string name="status_not_connected">Non connecté</string>
+    <string name="status_waiting">En attente des appareils</string>
+    <string name="status_no_device">Aucun appareil depuis plus d’1 h</string>
     <plurals name="status_problems">
         <item quantity="one">%1$d problème</item>
         <item quantity="many">%1$d de problèmes</item>
@@ -122,6 +123,8 @@
     <string name="widget_start">Démarrer Syncthing</string>
     <string name="widget_not_running">Arrêté</string>
     <string name="widget_no_device">Aucune connexion</string>
+    <string name="widget_last_seen">Dernier appareil vu %1$s</string>
+    <string name="when_yesterday">hier, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d appareil connecté</item>
         <item quantity="many">%1$d d’appareils connectés</item>

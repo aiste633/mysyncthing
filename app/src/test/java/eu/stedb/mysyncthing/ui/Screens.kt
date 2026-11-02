@@ -25,14 +25,19 @@ val screens = listOf(
     ScreenCase("folder-accept") {
         FolderEditScreen(snapshot, draftFor(snapshot, "holiday", Fixtures.laptop, Folder()), Fixtures.laptop, pathBase(Folder()), onBack = {}, onSave = {})
     },
-    ScreenCase("devices") { DevicesScreen(snapshot, summary, it, onOpen = {}, onOpenThisPhone = {}, onAdd = { _, _ -> }) },
-    ScreenCase("devices-blocked") { DevicesScreen(Fixtures.blocked, Fixtures.blockedSummary, it, onOpen = {}, onOpenThisPhone = {}, onAdd = { _, _ -> }) },
+    ScreenCase("devices") { DevicesScreen(snapshot, summary, it, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> }) },
+    ScreenCase("devices-blocked") {
+        DevicesScreen(Fixtures.blocked, Fixtures.blockedSummary, it, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> })
+    },
+    ScreenCase("devices-no-device") {
+        DevicesScreen(Fixtures.waiting, Fixtures.noDeviceSummary, it, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> })
+    },
     ScreenCase("device") { DeviceScreen(snapshot, Fixtures.server, it, onBack = {}, onOpenNeeds = {}) },
     ScreenCase("device-blocked") { DeviceScreen(Fixtures.blocked, Fixtures.laptop, it, onBack = {}, onOpenNeeds = {}) },
     ScreenCase("device-add") { DeviceEditScreen(snapshot, "", "", it, onBack = {}, onSave = { _, _, _ -> }) },
     ScreenCase("this-phone") { ThisPhoneScreen(snapshot, it, onBack = {}) },
     ScreenCase("settings") {
-        SettingsScreen(it, snapshot, summary, core, PermissionState(LocalContext.current), {}, {}, {}, {}, {}, {}, {}, {}, {})
+        SettingsScreen(it, snapshot, summary, core, PermissionState(LocalContext.current), {}, {}, {}, {}, {}, {}, {}, {})
     },
     ScreenCase("proxy") { ProxyScreen(it, core, onBack = {}) },
     ScreenCase("schedule") { ScheduleScreen(it, onBack = {}) },

@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lan
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
-import androidx.compose.material.icons.filled.PauseCircle
 import androidx.compose.material.icons.filled.PowerSettingsNew
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.QueryStats
@@ -30,7 +29,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.SaveAlt
-import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SettingsEthernet
 import androidx.compose.material.icons.filled.SettingsInputAntenna
 import androidx.compose.material.icons.filled.SignalCellularAlt
@@ -85,7 +83,6 @@ fun SettingsScreen(
     onOpenImport: () -> Unit,
     onOpenExport: () -> Unit,
     onOpenProxy: () -> Unit,
-    onOpenSchedule: () -> Unit,
 ) {
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
@@ -121,9 +118,6 @@ fun SettingsScreen(
             }
 
             SettingsGroup(stringResource(R.string.settings_group_syncing)) {
-                Toggle(stringResource(R.string.settings_pause), stringResource(R.string.settings_pause_hint), Icons.Default.PauseCircle, rc.pausedByUser) { v ->
-                    vm.setRunConditions { it.copy(pausedByUser = v) }
-                }
                 SettingRow(
                     stringResource(R.string.settings_ignored), stringResource(R.string.settings_ignored_hint),
                     Icons.Default.Block, onClick = if (running) onOpenIgnored else null,
@@ -144,10 +138,6 @@ fun SettingsScreen(
                         vm.setRunConditions { it.copy(roaming = v) }
                     }
                 }
-            }
-
-            SettingsGroup(stringResource(R.string.settings_group_time)) {
-                SettingRow(stringResource(R.string.sync_times), scheduleText(rc).asString(), Icons.Default.Schedule, onClick = onOpenSchedule)
             }
 
             SettingsGroup(stringResource(R.string.settings_group_power)) {

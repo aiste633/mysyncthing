@@ -193,6 +193,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         DevicesScreen(
                             snapshot, summary, vm, onOpen = { nav.navigate(Routes.device(it)) },
                             onOpenThisPhone = { nav.navigate(Routes.THIS_PHONE) },
+                            onOpenSchedule = { nav.navigate(Routes.SCHEDULE) },
                             onAdd = { id, name -> nav.navigate(Routes.addDevice(id, name)) },
                         )
                     }
@@ -207,7 +208,6 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         onOpenImport = { nav.navigate(Routes.FORK_IMPORT) },
                         onOpenExport = { nav.navigate(Routes.EXPORT) },
                         onOpenProxy = { nav.navigate(Routes.PROXY) },
-                        onOpenSchedule = { nav.navigate(Routes.SCHEDULE) },
                     )
                 }
                 composable(Routes.FOLDER) { entry ->

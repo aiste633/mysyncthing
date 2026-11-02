@@ -71,7 +71,6 @@
     <string name="label_and_hint">%1$s. %2$s</string>
     <string name="hint_default">Predefinito</string>
 
-    <string name="when_yesterday">ieri, %1$s</string>
     <string name="day_today">Oggi</string>
     <string name="day_yesterday">Ieri</string>
 
@@ -274,8 +273,6 @@
     <string name="settings_not_set">Non impostato</string>
     <string name="name">Nome</string>
     <string name="settings_group_syncing">Sincronizzazione</string>
-    <string name="settings_pause">Metti in pausa la sincronizzazione</string>
-    <string name="settings_pause_hint">Finché non la riprendi qui o dal widget</string>
     <string name="settings_ignored">Richieste ignorate</string>
     <string name="settings_ignored_hint">Dispositivi e cartelle su cui hai toccato Ignora, per annullarlo</string>
     <string name="settings_group_sync_on">Sincronizza su</string>
@@ -287,7 +284,6 @@
     <string name="settings_mobile_data_hint">Può costare se il piano dati è limitato</string>
     <string name="settings_roaming">Dati mobili in roaming</string>
     <string name="settings_roaming_hint">All\'estero o su un\'altra rete, dove i dati possono costare di più</string>
-    <string name="settings_group_time">Orari</string>
     <string name="sync_times">Orari di sincronizzazione</string>
     <string name="settings_group_power">Alimentazione</string>
     <string name="settings_power">Sincronizza quando</string>
@@ -544,6 +540,12 @@
     <string name="device_pause_hint">Resta in pausa finché non disattivi questa opzione, anche quando la sincronizzazione è di nuovo consentita</string>
     <string name="device_pause_named">Metti in pausa %1$s</string>
     <string name="device_resume_named">Riprendi %1$s</string>
+    <string name="devices_all">Tutti i dispositivi</string>
+    <string name="devices_pause_all">Metti in pausa</string>
+    <string name="devices_pause_off">Disattivata</string>
+    <string name="devices_pause_on">Attivata</string>
+    <string name="devices_sync_times">Orari</string>
+    <string name="value_default">%1$s (predefinito)</string>
     <string name="device_paused_by_you">Pausa manuale</string>
     <string name="device_all_paused_by_you">Tutto in pausa manuale</string>
     <string name="device_block_note_conditions">Tutti i dispositivi attendono finché la sincronizzazione non è di nuovo consentita. Poi questo dispositivo riprende da solo, a meno che tu non lo metta in pausa qui sotto.</string>

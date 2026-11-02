@@ -63,7 +63,6 @@
     <string name="label_and_hint">%1$s. %2$s</string>
     <string name="hint_default">Vorgabe</string>
 
-    <string name="when_yesterday">gestern, %1$s</string>
     <string name="day_today">Heute</string>
     <string name="day_yesterday">Gestern</string>
 
@@ -259,8 +258,6 @@
     <string name="settings_not_set">Nicht gesetzt</string>
     <string name="name">Name</string>
     <string name="settings_group_syncing">Synchronisierung</string>
-    <string name="settings_pause">Synchronisierung pausieren</string>
-    <string name="settings_pause_hint">Bis Sie sie hier oder im Widget fortsetzen</string>
     <string name="settings_ignored">Ignorierte Anfragen</string>
     <string name="settings_ignored_hint">Geräte und Ordner, bei denen Sie auf Ignorieren getippt haben, zum Rückgängigmachen</string>
     <string name="settings_group_sync_on">Synchronisieren über</string>
@@ -272,7 +269,6 @@
     <string name="settings_mobile_data_hint">Kann bei einem begrenzten Tarif Geld kosten</string>
     <string name="settings_roaming">Mobile Daten beim Roaming</string>
     <string name="settings_roaming_hint">Im Ausland oder in einem anderen Netz, wo Daten extra kosten können</string>
-    <string name="settings_group_time">Zeit</string>
     <string name="sync_times">Synchronisierungszeiten</string>
     <string name="settings_group_power">Stromversorgung</string>
     <string name="settings_power">Synchronisieren</string>
@@ -525,6 +521,12 @@
     <string name="device_pause_hint">Bleibt pausiert, bis Sie dies ausschalten, auch wenn die Synchronisierung wieder erlaubt ist</string>
     <string name="device_pause_named">%1$s pausieren</string>
     <string name="device_resume_named">%1$s fortsetzen</string>
+    <string name="devices_all">Alle Geräte</string>
+    <string name="devices_pause_all">Pausieren</string>
+    <string name="devices_pause_off">Aus</string>
+    <string name="devices_pause_on">An</string>
+    <string name="devices_sync_times">Sync-Zeiten</string>
+    <string name="value_default">%1$s (Vorgabe)</string>
     <string name="device_paused_by_you">Von Ihnen</string>
     <string name="device_all_paused_by_you">Alles von Ihnen pausiert</string>
     <string name="device_block_note_conditions">Alle Geräte warten, bis die Synchronisierung wieder erlaubt ist. Danach wird dieses Gerät von selbst fortgesetzt, außer Sie pausieren es unten.</string>

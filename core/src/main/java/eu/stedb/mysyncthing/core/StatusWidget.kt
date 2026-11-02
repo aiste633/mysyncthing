@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.ZoneId
+import java.time.ZonedDateTime
 
 /**
  * 4x1 home-screen widget: app mark (when wide enough), status icon and colour,
@@ -96,12 +97,13 @@ class StatusWidget : AppWidgetProvider() {
                 SyncState.Paused -> Triple(R.drawable.widget_ic_paused, AMBER_LIGHT, AMBER_DARK)
                 SyncState.NeedsInput -> Triple(R.drawable.widget_ic_input, AMBER_LIGHT, AMBER_DARK)
                 SyncState.Problem -> Triple(R.drawable.widget_ic_problem, 0xFFB3261E.toInt(), 0xFFFF6E66.toInt())
-                SyncState.Stopped -> Triple(R.drawable.widget_ic_stopped, 0xFF5F6368.toInt(), 0xFFBDC1C6.toInt())
+                SyncState.Waiting -> Triple(R.drawable.widget_ic_waiting, GREY_LIGHT, GREY_DARK)
+                SyncState.Stopped -> Triple(R.drawable.widget_ic_stopped, GREY_LIGHT, GREY_DARK)
             }
             v.setImageViewResource(R.id.widget_status_icon, icon)
             v.setColorInt(R.id.widget_status_icon, "setColorFilter", light, dark)
             v.setTextViewText(R.id.widget_title, s.text.resolve(context))
-            v.setTextViewText(R.id.widget_detail, detail(s).resolve(context))
+            v.setTextViewText(R.id.widget_detail, widgetDetail(s).resolve(context))
 
             val progress = s.progress
             v.setViewVisibility(R.id.widget_progress, if (progress != null) View.VISIBLE else View.GONE)
@@ -120,14 +122,6 @@ class StatusWidget : AppWidgetProvider() {
             v.setContentDescription(R.id.widget_button, context.getString(label))
             v.setOnClickPendingIntent(R.id.widget_button, action)
             return v
-        }
-
-        /** Second line: the one connected device by name, else how many. */
-        private fun detail(s: Summary): UiText = when {
-            s.state == SyncState.Stopped -> text(R.string.widget_not_running)
-            s.connected.size == 1 -> raw(s.connected.single())
-            s.connected.size > 1 -> plural(R.plurals.widget_devices_connected, s.connected.size)
-            else -> text(R.string.widget_no_device)
         }
 
         private fun openApp(context: Context): PendingIntent {
@@ -150,5 +144,19 @@ class StatusWidget : AppWidgetProvider() {
 
         private val AMBER_LIGHT = 0xFF8A5A00.toInt()
         private val AMBER_DARK = 0xFFFDD663.toInt()
+        private val GREY_LIGHT = 0xFF5F6368.toInt()
+        private val GREY_DARK = 0xFFBDC1C6.toInt()
+    }
+}
+
+/** The widget's second line: the one connected device by name, else how many, else when one last was. */
+internal fun widgetDetail(s: Summary, now: ZonedDateTime = ZonedDateTime.now()): UiText {
+    val seen = s.lastSeen
+    return when {
+        s.state == SyncState.Stopped -> text(R.string.widget_not_running)
+        s.connected.size == 1 -> raw(s.connected.single())
+        s.connected.size > 1 -> plural(R.plurals.widget_devices_connected, s.connected.size)
+        seen != null -> text(R.string.widget_last_seen, whenText(seen, now))
+        else -> text(R.string.widget_no_device)
     }
 }

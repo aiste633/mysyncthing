@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -153,9 +154,10 @@ class SyncthingService : LifecycleService() {
                     combine(applied, settings.conditionPauses, ::DevicePause).collect { SyncStatus.publishPause(it) }
                 }
                 launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
+                val startedAt = Instant.now()
                 combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
-                    summarize(core, snap, reason, d.online)
-                }.collect { summary ->
+                    { now: Instant -> summarize(core, snap, reason, d.online, now, startedAt) }
+                }.timed(Instant::now) { wallClockAt(this@SyncthingService, it) }.collect { summary ->
                     SyncStatus.publish(summary)
                     updateNotification(summary.line(), summary.publicText)
                 }

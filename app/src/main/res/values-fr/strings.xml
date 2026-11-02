@@ -71,7 +71,6 @@
     <string name="label_and_hint">%1$s. %2$s</string>
     <string name="hint_default">Par défaut</string>
 
-    <string name="when_yesterday">hier, %1$s</string>
     <string name="day_today">Aujourd’hui</string>
     <string name="day_yesterday">Hier</string>
 
@@ -276,8 +275,6 @@
     <string name="settings_not_set">Non défini</string>
     <string name="name">Nom</string>
     <string name="settings_group_syncing">Synchronisation</string>
-    <string name="settings_pause">Suspendre la synchronisation</string>
-    <string name="settings_pause_hint">Jusqu’à ce que vous la repreniez ici ou sur le widget</string>
     <string name="settings_ignored">Invitations refusées</string>
     <string name="settings_ignored_hint">Appareils et partages sur lesquels vous avez touché Refuser, pour revenir en arrière</string>
     <string name="settings_group_sync_on">Synchroniser sur</string>
@@ -289,7 +286,6 @@
     <string name="settings_mobile_data_hint">Peut coûter de l’argent avec un forfait limité</string>
     <string name="settings_roaming">Données mobiles en itinérance</string>
     <string name="settings_roaming_hint">À l’étranger ou sur un autre réseau, où les données peuvent coûter plus cher</string>
-    <string name="settings_group_time">Horaires</string>
     <string name="sync_times">Horaires de synchronisation</string>
     <string name="settings_group_power">Alimentation</string>
     <string name="settings_power">Synchroniser</string>
@@ -546,6 +542,12 @@
     <string name="device_pause_hint">Reste suspendu jusqu’à ce que vous désactiviez ceci, même quand la synchronisation est de nouveau permise</string>
     <string name="device_pause_named">Suspendre %1$s</string>
     <string name="device_resume_named">Reprendre %1$s</string>
+    <string name="devices_all">Tous les appareils</string>
+    <string name="devices_pause_all">Suspendre</string>
+    <string name="devices_pause_off">Désactivée</string>
+    <string name="devices_pause_on">Activée</string>
+    <string name="devices_sync_times">Horaires</string>
+    <string name="value_default">%1$s (par défaut)</string>
     <string name="device_paused_by_you">Par vous</string>
     <string name="device_all_paused_by_you">Tout suspendu par vous</string>
     <string name="device_block_note_conditions">Tous les appareils attendent que la synchronisation soit de nouveau permise. Cet appareil reprend ensuite de lui-même, sauf si vous le suspendez ci-dessous.</string>

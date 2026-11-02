@@ -247,6 +247,15 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Tests: ConditionPauseTest property test, DevicePauseTextTest, DevicePauseScreenTest, screenshots devices-blocked / device-blocked, e2e phase `devicePause`.
 - Local build in the cloud container works: SDK in /opt/android-sdk via cmdline-tools; Maven Central gives 429 through the proxy, so a local Gradle init script points it at Google's mirror (not committed).
 
+## Devices tab and the 1 h status rule (2026-11-02)
+- User's design: no unpaused device connected = grey "Waiting for devices" (`SyncState.Waiting`), red "No device for over 1 h" (`NO_DEVICE_LIMIT`) counted from the newest lastSeen of unpaused devices, or from the service start when that is later (a phone off for days gets its hour). Paused devices never count. Replaces red "Not connected".
+- `summarize(…, now, startedAt)` sets `Summary.lastSeen` / `recheckAt`; the service re-summarizes at `recheckAt` via `timed()` + `wallClockAt()` (non-waking RTC alarm with an OnAlarmListener: no permission, no wake-up). Widget line 2: "Last device seen 14:41".
+- `Snapshot.lastSeen` from `rest/stats/device` (the core records it at connect and at disconnect, before the DeviceDisconnected event). Every device card that is not connected says "Last seen …"/"Never connected"; the device screen no longer does (user).
+- "Pause syncing" (a toggle, no dialog: user) and "Sync times" (opens ScheduleScreen) moved from Settings to an "All devices" row under the This device card; values show the default ("Off (default)", "Any time (default)"); amber when that control pauses the devices now. The Devices tab is behind CoreGate, so both are reachable only while the core runs (the widget still pauses).
+- `whenText` and `when_yesterday` moved to the core module (widget uses them).
+- Tests: NoDeviceTest (property + timed flow), AllDevicesScreenTest, AllDevicesTextTest (property vs blockedBy), screenshots devices-no-device, e2e phase `devicesTab` (peer pauses the phone via REST to get the wait).
+- Robolectric screen tests share one DataStore per process: reset settings in @Before, and let the main looper run (waitForIdle loop) when waiting for a view-model write.
+
 ## Upkeep check (2026-10-30)
 - `.github/workflows/upkeep.yml`: job `upkeep` monthly (10th, 05:23 UTC), on `v*` tags, dispatch, and PRs touching it or `scripts/upkeep/`; job `quiet` weekly (Monday 05:47 UTC). Jobs pick their cron via `github.event.schedule`, so keep the cron strings and the `if:` lines in step.
 - `scripts/upkeep/versions.py`: newest stable release per pin (Python stdlib only). Go from proxy.golang.org's `golang.org/toolchain` list (what GOTOOLCHAIN downloads); Maven metadata from Google Maven, then Central, then the Gradle plugin portal; actions and osv-scanner by `git ls-remote` tags; NDK from Google's repository2-3.xml (channel-0). Only `golang.org/x/mobile` among Go modules (`GO_MODULES`): the rest come with Syncthing. `FOLLOWS` skips catalog versions tied to another entry. Each check prints Markdown and exits 0/1/else, like the vulnerability scans.

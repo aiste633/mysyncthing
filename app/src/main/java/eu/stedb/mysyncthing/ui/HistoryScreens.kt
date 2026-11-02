@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.whenText
 import eu.stedb.mysyncthing.core.DiskChange
 import eu.stedb.mysyncthing.core.FileVersion
 import eu.stedb.mysyncthing.core.Snapshot

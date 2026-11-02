@@ -17,6 +17,7 @@ import eu.stedb.mysyncthing.core.Versioning
 import eu.stedb.mysyncthing.core.summarize
 import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.R as CoreR
+import java.time.Instant
 
 private const val B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
@@ -82,6 +83,12 @@ object Fixtures {
         ),
         completion = mapOf(laptop to Completion(64.0, needBytes = 450_000_000, needItems = 37), server to Completion(100.0)),
         pendingFolders = mapOf("holiday" to PendingFolder(mapOf(laptop to PendingFolderOffer("Holiday 2026")))),
+        // A year back, so the screenshots show the same date on any day.
+        lastSeen = mapOf(
+            laptop to Instant.parse("2025-10-03T18:42:00Z"),
+            server to Instant.parse("2025-10-03T17:15:00Z"),
+            tablet to Instant.parse("2025-09-28T09:05:00Z"),
+        ),
     )
 
     val core = CoreState.Running(RestClient("127.0.0.1:9", "test"), "127.0.0.1:9", myId, Credentials("test", "test", "test"))
@@ -97,4 +104,20 @@ object Fixtures {
         pause = DevicePause(mobileData, recorded = setOf(tablet)),
     )
     val blockedSummary = summarize(core, blocked, blockedBy = mobileData, online = true)
+
+    /**
+     * Nothing connected and nothing paused, half an hour after the laptop was last seen; the tablet
+     * never was. No folder errors or requests, which would rank first.
+     */
+    val waiting = snapshot.copy(
+        devices = snapshot.devices.map { it.copy(paused = false) },
+        connections = emptyMap(),
+        completion = emptyMap(),
+        folderStatus = snapshot.folderStatus.mapValues { FolderStatus("idle") },
+        pendingFolders = emptyMap(),
+        lastSeen = snapshot.lastSeen - tablet,
+    )
+    private val laptopSeen = snapshot.lastSeen.getValue(laptop)
+    val waitingSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(1800), startedAt = laptopSeen.minusSeconds(86_400))
+    val noDeviceSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(3 * 3600), startedAt = laptopSeen.minusSeconds(86_400))
 }

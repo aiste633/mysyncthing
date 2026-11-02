@@ -269,6 +269,7 @@ def main() -> None:
                 eventually("old versioned.txt on the peer's disk", 60, lambda: (peer.folder / "versioned.txt").read_text() == V1)
             phase("runConditions", peer, a.out)
             phase("devicePause", peer, a.out)
+            phase("devicesTab", peer, a.out)
             phase("textDialogsKeepTypedText", peer, a.out)
             process_death(peer, phone)
             storage_revoked(peer, phone)

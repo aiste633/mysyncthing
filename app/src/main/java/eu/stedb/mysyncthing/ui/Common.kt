@@ -110,6 +110,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.whenText
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.R as CoreR
 import eu.stedb.mysyncthing.core.Summary
