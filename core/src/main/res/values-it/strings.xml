@@ -68,6 +68,11 @@
     <string name="schedule_outside">Fuori dagli orari di sincronizzazione</string>
     <string name="schedule_outside_next">Fuori orario · prossima alle %1$s</string>
     <string name="schedule_outside_next_day">Fuori orario · prossima %1$s alle %2$s</string>
+    <string name="device_outside_next">Fuori dai suoi orari · prossima alle %1$s</string>
+    <string name="device_outside_next_day">Fuori dai suoi orari · prossima %1$s alle %2$s</string>
+    <string name="device_never_syncs">Non sincronizza mai: i suoi orari non si sovrappongono a quelli globali</string>
+    <string name="status_paused_next">In pausa · prossima alle %1$s</string>
+    <string name="status_paused_next_day">In pausa · prossima %1$s alle %2$s</string>
     <string name="schedule_error_no_window">Aggiungi una fascia oraria</string>
     <string name="schedule_error_times">Orari da 00:00 a 23:59</string>
     <string name="schedule_error_same_times">Inizio e fine devono essere diversi</string>

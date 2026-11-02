@@ -30,19 +30,35 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.ui.platform.testTag
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Device
 import eu.stedb.mysyncthing.core.DevicePause
 import eu.stedb.mysyncthing.core.PAUSED_BY_USER
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.SyncState
+import eu.stedb.mysyncthing.core.plural
+import eu.stedb.mysyncthing.core.neverSyncing
+import eu.stedb.mysyncthing.core.mask
+import eu.stedb.mysyncthing.core.joined
+import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.R as CoreR
 
 /** Settings and status of one remote device. */
 @Composable
-fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit, onOpenNeeds: (folder: String) -> Unit) {
+fun DeviceScreen(
+    s: Snapshot,
+    id: String,
+    vm: MainViewModel,
+    onBack: () -> Unit,
+    onOpenNeeds: (folder: String) -> Unit,
+    onOpenSchedule: () -> Unit = {},
+) {
     val d = s.devices.find { it.deviceID == id }
     if (d == null) {
         LaunchedEffect(s.loaded) { if (s.loaded) onBack() }
@@ -51,8 +67,10 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
     val conn = s.connections[id]
     val pause = s.pause
     val status = deviceStatus(d, conn, s.completion[id], pause)
-    val look = status.state.look()
     val byUser = pause.byUser(d)
+    // Never syncing is a mistake to fix (in red), not a pause to wait out.
+    val never = !byUser && pause.devices[id]?.never == true
+    val look = (if (never) SyncState.Problem else status.state).look()
     var dialog by rememberSaveable { mutableStateOf<DeviceDialog?>(null) }
     // The folder whose password dialog is open, for an encrypted share.
     var encrypt by rememberSaveable { mutableStateOf<String?>(null) }
@@ -75,8 +93,12 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                         Text(pauseTitle(d, pause)?.asString() ?: status.text.asString(), style = MaterialTheme.typography.titleMedium, color = look.color)
                     }
                     val muted = MaterialTheme.colorScheme.onSurfaceVariant
-                    if (pause.blocked && !byUser) {
-                        val note = if (pause.blockedBy == PAUSED_BY_USER) R.string.device_block_note_user else R.string.device_block_note_conditions
+                    if (pause.blocked(d) && !byUser && !never) {
+                        val note = when {
+                            pause.blockedBy == PAUSED_BY_USER -> R.string.device_block_note_user
+                            pause.allBlocked && pause.reason(d) == pause.blockedBy -> R.string.device_block_note_conditions
+                            else -> R.string.device_block_note_own
+                        }
                         Text(stringResource(note), style = MaterialTheme.typography.bodySmall, color = muted)
                     }
                     connectionText(conn)?.let {
@@ -103,6 +125,16 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                 HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 // The user's own choice; it also works while the run conditions pause everything.
                 SwitchRow(stringResource(R.string.device_pause), stringResource(R.string.device_pause_hint), byUser) { vm.setDevicePaused(id, it) }
+                val rc by vm.storedRunConditions.collectAsStateWithLifecycle()
+                rc?.let { c ->
+                    val never = id in c.neverSyncing()
+                    Box(Modifier.testTag("deviceWindows")) {
+                        SettingRow(
+                            stringResource(R.string.device_windows_own), ownWindowsText(c, id).asString(), Icons.Default.Schedule,
+                            trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, danger = never, onClick = onOpenSchedule,
+                        )
+                    }
+                }
             }
 
             SettingsGroup(stringResource(R.string.group_trust)) {
@@ -224,12 +256,30 @@ internal fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSav
  * outlasts any other; otherwise why everything is paused. Null when it is not paused.
  */
 fun pauseTitle(d: Device, pause: DevicePause): UiText? {
-    val reason = pause.blockedBy
+    val reason = pause.reason(d)
     return when {
         !pause.paused(d) -> null
         pause.byUser(d) -> text(CoreR.string.pause_reason_user)
         reason == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
+        // A sentence of its own: "Paused: Never syncs: …" would say it twice.
+        pause.devices[d.deviceID]?.never == true -> reason
         reason != null -> text(CoreR.string.status_paused_because, reason)
         else -> null
     }
+}
+
+/**
+ * The device screen's "Own sync windows" value: the default, or its windows and what they give
+ * together with the global ones ("Mon–Fri 21:00–23:00 · syncs 5 h a week", "… · never syncs").
+ */
+fun ownWindowsText(c: RunConditions, id: String): UiText {
+    val own = c.deviceWindows[id]?.takeIf { it.on } ?: return text(R.string.value_default, text(R.string.device_windows_same))
+    val windows = when (own.windows.size) {
+        0 -> text(R.string.device_windows_none)
+        1 -> windowText(own.windows.single())
+        else -> plural(R.plurals.schedule_and_more, own.windows.size - 1, windowText(own.windows.first()), own.windows.size - 1)
+    }
+    val m = c.mask(id)
+    val result = if (m.isEmpty) text(R.string.device_windows_never_short) else text(R.string.device_windows_week_short, durationText(m.minutes * 60L))
+    return listOf(windows, result).joined(" · ")
 }

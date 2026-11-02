@@ -54,8 +54,8 @@ fun deviceStatus(d: Device, conn: Connection?, completion: Completion?, pause: D
 fun pauseReason(d: Device, pause: DevicePause): UiText? = when {
     !pause.paused(d) -> null
     pause.byUser(d) -> text(R.string.device_paused_by_you)
-    pause.blockedBy == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
-    else -> pause.blockedBy
+    pause.reason(d) == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
+    else -> pause.reason(d)
 }
 
 /**
@@ -83,4 +83,4 @@ fun lastSeenText(at: Instant?, now: ZonedDateTime = ZonedDateTime.now()): UiText
  * as in the run conditions; the run conditions must have paused the devices already.
  */
 fun scheduleBlocks(rc: RunConditions, pause: DevicePause, now: LocalDateTime = LocalDateTime.now()): Boolean =
-    pause.blocked && !rc.pausedByUser && rc.timeSchedule && !rc.windows.isOpen(now)
+    pause.allBlocked && !rc.pausedByUser && rc.timeSchedule && !rc.windows.isOpen(now)

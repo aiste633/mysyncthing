@@ -133,9 +133,12 @@ class StatusBarFitTest(private val language: String, private val width: Int) {
                 plural(CoreR.plurals.status_items_failed, 120),
                 plural(CoreR.plurals.status_requests, 3),
                 plural(CoreR.plurals.status_folders_review, 3),
+                // Every device outside its own sync windows.
+                text(CoreR.string.status_paused_next, raw("22:00")),
+                text(CoreR.string.status_paused_next_day, raw("Mo."), raw("22:00")),
             )
 
-        /** May be cut even on a Pixel 7: the next sync time is on the Devices tab's Sync times button. */
+        /** May be cut even on a Pixel 7: the next sync time is on the Devices tab's Sync windows button. */
         val LONG: List<UiText> = listOf(
             text(CoreR.string.status_paused_because, text(CoreR.string.schedule_outside_next_day, raw("Mo."), raw("22:00"))),
         )

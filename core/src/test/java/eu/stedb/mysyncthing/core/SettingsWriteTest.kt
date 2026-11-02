@@ -37,7 +37,7 @@ class SettingsWriteTest {
         assertFalse(settings.update { it.copy(respectBatterySaver = false) })
         assertFalse(settings.setSetupDone())
         assertFalse(settings.setMovedFromOtherPhone(true))
-        assertFalse(settings.setConditionPause(setOf("A")))
+        assertFalse(settings.setConditionHolds(ConditionHolds(setOf("A"), emptySet())))
         assertFalse(settings.setProxy(ProxySettings.TOR))
         // Nothing changed: what was stored before the storage filled up stays.
         val c = settings.runConditions.first()

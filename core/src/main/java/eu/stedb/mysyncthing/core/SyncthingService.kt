@@ -140,25 +140,30 @@ class SyncthingService : LifecycleService() {
                 launch { applyPhoneDefaults(running.client) }
 
                 val device = deviceState(this@SyncthingService).stateIn(this)
-                // The clock belongs to the conditions it was set for, so a changed schedule is never judged by the old one's time.
+                // The clock belongs to the conditions it was set for, so a changed schedule is never judged by
+                // the old one's time. One clock and one alarm for the global windows and every device's own.
                 val timed = settings.runConditions.flatMapLatest { c ->
-                    if (c.timeSchedule) scheduleClock(this@SyncthingService, c.windows).map { c to it } else flowOf(c to LocalDateTime.now())
+                    val windows = c.clockWindows()
+                    if (c.timeSchedule || windows.isNotEmpty()) scheduleClock(this@SyncthingService, windows).map { c to it } else flowOf(c to LocalDateTime.now())
                 }
-                // Shared: one clock and one alarm.
-                val blockedBy = combine(timed, device) { (c, now), d -> c.blockedBy(d, now) }.stateIn(this)
-                // Also when a device is added or resumed, so none syncs while the conditions block it.
-                val anyUnpaused = SyncStatus.snapshot.map { s -> s.devices.any { !it.paused } }.distinctUntilChanged()
-                // The block the devices are in line with: the screens show a device as paused by the run
-                // conditions only once they are, so a choice made then always goes to the record.
-                val applied = MutableStateFlow<UiText?>(null)
+                val blocks = combine(timed, device) { (c, now), d ->
+                    val reason = c.blockedBy(d, now)
+                    DevicePause(reason, devices = c.deviceHolds(now), bySchedule = reason != null && c.blockedBySchedule(now))
+                }.distinctUntilChanged().stateIn(this)
+                val blockedBy = blocks.map { it.blockedBy }.distinctUntilChanged().stateIn(this)
+                // Also when a device is added, removed or resumed, so none syncs while the conditions hold it.
+                val unpaused = SyncStatus.snapshot.map { s -> s.devices.map { it.deviceID to it.paused } }.distinctUntilChanged()
+                // The holds the devices are in line with: the screens show a device as paused by the run
+                // conditions only once it is, so a choice made then always goes to the record.
+                val applied = MutableStateFlow(DevicePause())
                 launch {
-                    combine(blockedBy, anyUnpaused) { reason, _ -> reason }.collectLatest { reason ->
-                        while (!applyConditions(running.client.pauses(), settings, reason)) delay(5_000)
-                        applied.value = reason
+                    combine(blocks, unpaused) { b, _ -> b }.collectLatest { b ->
+                        while (!applyConditions(running.client.pauses(), settings, b.blockedBy, b.devices.keys)) delay(5_000)
+                        applied.value = b
                     }
                 }
                 launch {
-                    combine(applied, settings.conditionPauses, ::DevicePause).collect { SyncStatus.publishPause(it) }
+                    combine(applied, settings.holds) { b, h -> b.copy(holds = h) }.collect { SyncStatus.publishPause(it) }
                 }
                 launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
                 val waitingSince = combine(blockedBy, SyncStatus.snapshot) { reason, s ->

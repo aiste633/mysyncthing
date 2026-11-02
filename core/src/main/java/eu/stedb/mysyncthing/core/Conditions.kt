@@ -57,31 +57,96 @@ fun RunConditions.blockedBy(d: DeviceState, now: LocalDateTime = LocalDateTime.n
 }
 
 /**
- * What the devices need under the run conditions, from the devices the user had paused already
- * ([recorded], null while syncing is allowed) and the devices now. While syncing is blocked every
- * device is paused, also one added or resumed meanwhile, and the user's own pauses are recorded
- * once; when syncing is allowed again only the other devices are resumed.
+ * Why device windows hold one device: outside its own sync windows ([next] when they next let it
+ * sync), or [never], when they never overlap the global ones.
+ */
+data class Hold(val reason: UiText, val next: LocalDateTime? = null, val never: Boolean = false)
+
+/** "Never syncs: its windows don't overlap the global ones". */
+val NEVER_SYNCS = text(R.string.device_never_syncs)
+
+/**
+ * The devices their own sync windows hold now ([RunConditions.deviceWindows]), by ID. Judged on
+ * what both windows allow together, so "next" is when the device really syncs next, and a device
+ * whose windows never overlap the global ones is held for good. The global windows themselves
+ * hold every device ([blockedBy]); a device is in here whenever the clock keeps it from syncing.
+ */
+fun RunConditions.deviceHolds(now: LocalDateTime = LocalDateTime.now()): Map<String, Hold> =
+    deviceWindows.filterValues { it.on }.mapNotNull { (id, _) ->
+        val m = mask(id)
+        when {
+            m.isEmpty -> id to Hold(NEVER_SYNCS, never = true)
+            m.isOpen(now) -> null
+            else -> id to Hold(nextText(R.string.device_outside_next, R.string.device_outside_next_day, m.nextOpen(now)!!, now), m.nextOpen(now))
+        }
+    }.toMap()
+
+/** "… next 22:00", with the weekday when [next] is on another day than [now]. */
+fun nextText(sameDay: Int, otherDay: Int, next: LocalDateTime, now: LocalDateTime): UiText {
+    val time = timeText(next.hour * 60 + next.minute)
+    return if (next.toLocalDate() == now.toLocalDate()) text(sameDay, time) else text(otherDay, shortDay(next.dayOfWeek), time)
+}
+
+/** Every window the clock must wake up for: the global ones while on, and each device's own while on. */
+fun RunConditions.clockWindows(): List<SyncWindow> =
+    (if (timeSchedule) windows else emptyList()) + deviceWindows.values.filter { it.on }.flatMap { it.windows }
+
+/** Whether [blockedBy] gives the global sync windows' reason at [now]. */
+fun RunConditions.blockedBySchedule(now: LocalDateTime): Boolean = !pausedByUser && timeSchedule && !windows.isOpen(now)
+
+/**
+ * What the devices need under the run conditions, from what the record holds ([ConditionHolds])
+ * and the devices now. A device held is paused, also one added or resumed meanwhile; the user's
+ * own pause of it is recorded once, when the hold starts. When the hold ends only the devices the
+ * user had not paused are resumed. [hold] is written before anything is paused (unrecorded, a
+ * pause would never be undone), [released] after the resumes, when [release] is set.
  */
 internal data class ConditionPause(
-    val record: Set<String>? = null,
+    val hold: ConditionHolds? = null,
     val pauseAll: Boolean = false,
+    val pause: List<String> = emptyList(),
     val resume: List<String> = emptyList(),
-    val clearRecord: Boolean = false,
+    val release: Boolean = false,
+    val released: ConditionHolds? = null,
 )
 
 /**
- * Why the run conditions pause every device ([blockedBy], null while syncing is allowed) and the
- * devices the user paused themselves meanwhile ([recorded], see [conditionPause]). The core's own
- * `paused` then says only that a device is paused, not who wanted it.
+ * Why the run conditions pause devices now: every device ([blockedBy], null while syncing is
+ * allowed; [bySchedule] when that is the global sync windows) or single devices by their own
+ * windows ([devices]), and the record of who paused what ([holds], see [conditionPause]). The
+ * core's own `paused` then says only that a device is paused, not who wanted it.
  */
-data class DevicePause(val blockedBy: UiText? = null, val recorded: Set<String>? = null) {
-    val blocked: Boolean get() = blockedBy != null
+data class DevicePause(
+    val blockedBy: UiText? = null,
+    val holds: ConditionHolds? = null,
+    val devices: Map<String, Hold> = emptyMap(),
+    val bySchedule: Boolean = false,
+) {
+    /** The run conditions pause every device. */
+    val allBlocked: Boolean get() = blockedBy != null
 
-    /** The user's own choice for [d]: while the run conditions pause everything, the recorded one. */
-    fun byUser(d: Device): Boolean = recorded?.contains(d.deviceID) ?: d.paused
+    /** The run conditions pause [d], for every device or by its own windows. */
+    fun blocked(d: Device): Boolean = blockedBy != null || d.deviceID in devices
+
+    /**
+     * Why the run conditions pause [d], for its card and screen, or null. Never syncing comes
+     * first, as no other change helps; then the reasons for every device, but the global windows
+     * only when the device has none of its own: its own hold says when it really syncs next.
+     */
+    fun reason(d: Device): UiText? {
+        val own = devices[d.deviceID]
+        return when {
+            own?.never == true -> own.reason
+            blockedBy != null && !(bySchedule && own != null) -> blockedBy
+            else -> own?.reason
+        }
+    }
+
+    /** The user's own choice for [d]: while the run conditions hold it, the recorded one. */
+    fun byUser(d: Device): Boolean = holds?.takeIf { it.holds(d.deviceID) }?.let { d.deviceID in it.userPaused } ?: d.paused
 
     /** Paused now, by the user or by the run conditions. */
-    fun paused(d: Device): Boolean = d.paused || blocked
+    fun paused(d: Device): Boolean = d.paused || blocked(d)
 }
 
 /** The core's device pauses, as the steps below use them; a fake in tests. */
@@ -106,8 +171,8 @@ internal fun RestClient.pauses(): CorePauses {
 private val pauseLock = Mutex()
 
 /**
- * Pauses or resumes [id] as the user's own choice. While the run conditions pause everything only
- * the record changes: the device stays paused until they allow syncing, and then follows it.
+ * Pauses or resumes [id] as the user's own choice. While the run conditions hold it only the
+ * record changes: the device stays paused until they let it go, and then follows it.
  */
 suspend fun setDevicePausedByUser(client: RestClient, settings: Settings, id: String, paused: Boolean) =
     setDevicePausedByUser(client.pauses(), settings, id, paused)
@@ -120,24 +185,51 @@ internal suspend fun setDevicePausedByUser(core: CorePauses, settings: Settings,
     }
 }
 
-/** Brings the devices in line with the run conditions ([conditionPause]); false if a step failed. */
-internal suspend fun applyConditions(core: CorePauses, settings: Settings, reason: UiText?): Boolean = pauseLock.withLock {
-    val plan = runCatching { conditionPause(reason, settings.conditionPause(), core.devices()) }.getOrElse { return false }
+/**
+ * Brings the devices in line with the run conditions ([conditionPause]): [reason] holds every
+ * device, [own] the devices their own windows hold. False if a step failed.
+ */
+internal suspend fun applyConditions(core: CorePauses, settings: Settings, reason: UiText?, own: Set<String> = emptySet()): Boolean = pauseLock.withLock {
+    val plan = runCatching { conditionPause(reason != null, own, settings.conditionHolds(), core.devices()) }.getOrElse { return false }
     // Unrecorded, the pause would never be undone.
-    if (plan.record != null && !settings.setConditionPause(plan.record)) return false
+    if (plan.hold != null && !settings.setConditionHolds(plan.hold)) return false
     runCatching {
         if (plan.pauseAll) core.setPaused(null, true)
+        plan.pause.forEach { core.setPaused(it, true) }
         plan.resume.forEach { core.setPaused(it, false) }
-    }.isSuccess && (!plan.clearRecord || settings.setConditionPause(null))
+    }.isSuccess && (!plan.release || settings.setConditionHolds(plan.released))
 }
 
-internal fun conditionPause(reason: UiText?, recorded: Set<String>?, devices: List<Device>): ConditionPause = when {
-    reason != null -> ConditionPause(
-        record = if (recorded == null) devices.filter { it.paused }.mapTo(mutableSetOf()) { it.deviceID } else null,
-        pauseAll = devices.any { !it.paused },
+/**
+ * The steps for [devices] when [all] of them, or those in [own], are to be held, given what
+ * [recorded] holds already. A device that leaves the hold (or the list) is let go: resumed unless
+ * the user had paused it too. One the conditions pause but the core shows running (resumed in the
+ * web GUI, or a step that failed) is paused again.
+ */
+internal fun conditionPause(all: Boolean, own: Set<String>, recorded: ConditionHolds?, devices: List<Device>): ConditionPause {
+    val ids = devices.mapTo(LinkedHashSet()) { it.deviceID }
+    val blocked = if (all) ids else ids.filterTo(LinkedHashSet()) { it in own }
+    val held = recorded?.let { it.held ?: ids } ?: emptySet()
+    val userPaused = recorded?.userPaused ?: emptySet()
+    val newly = devices.filter { it.deviceID in blocked && it.deviceID !in held }
+    val nowHeld = held + newly.map { it.deviceID }
+    val nowUserPaused = userPaused + newly.filter { it.paused }.map { it.deviceID }
+    // A record from before own windows is written out with its devices, so it no longer means "all".
+    val hold = if (newly.isNotEmpty() || (recorded != null && recorded.held == null && nowHeld.isNotEmpty())) ConditionHolds(nowHeld, nowUserPaused) else null
+    val running = devices.filter { it.deviceID in blocked && !it.paused }.map { it.deviceID }
+    val letGo = held - blocked
+    val resume = devices.filter { it.deviceID in letGo && it.paused && it.deviceID !in userPaused }.map { it.deviceID }
+    val left = ConditionHolds(nowHeld - letGo, nowUserPaused - letGo).takeIf { it.held!!.isNotEmpty() }
+    // Also a record that holds nothing (a start with no devices) is cleared.
+    val release = letGo.isNotEmpty() || (recorded != null && nowHeld.isEmpty())
+    return ConditionPause(
+        hold = hold,
+        pauseAll = all && running.isNotEmpty(),
+        pause = if (all) emptyList() else running,
+        resume = resume,
+        release = release,
+        released = left.takeIf { release },
     )
-    recorded != null -> ConditionPause(resume = devices.filter { it.paused && it.deviceID !in recorded }.map { it.deviceID }, clearRecord = true)
-    else -> ConditionPause()
 }
 
 fun deviceState(context: Context): Flow<DeviceState> = combine(network(context), power(context)) { n, p ->

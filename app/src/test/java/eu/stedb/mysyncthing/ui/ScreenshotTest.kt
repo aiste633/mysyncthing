@@ -12,7 +12,6 @@ import org.junit.runner.RunWith
 import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.ParameterizedRobolectricTestRunner.Parameters
 import org.robolectric.RuntimeEnvironment
-import java.time.LocalDate
 
 /**
  * Every screen of [screens] in light and dark, at the largest font size, in Italian and in
@@ -39,14 +38,11 @@ class ScreenshotTest(private val screen: ScreenCase, private val variant: Varian
         RuntimeEnvironment.setFontScale(variant.fontScale)
         compose.activityRule.scenario.recreate()
         val vm = MainViewModel(ApplicationProvider.getApplicationContext())
-        compose.setContent { CompositionLocalProvider(LocalToday provides { DAY }) { AppTheme { screen.content(vm) } } }
+        compose.setContent { CompositionLocalProvider(LocalNow provides { Fixtures.NOW }) { AppTheme { screen.content(vm) } } }
         compose.onRoot().captureRoboImage("src/test/screenshots/${screen.name}-${variant.name.lowercase()}.png")
     }
 
     companion object {
-        /** Outside the Santa hat's days, so the images don't change in December. */
-        private val DAY = LocalDate.of(2026, 10, 30)
-
         @JvmStatic
         @Parameters(name = "{0}-{1}")
         fun cases() = screens.flatMap { s -> Variant.entries.map { arrayOf<Any>(s, it) } }

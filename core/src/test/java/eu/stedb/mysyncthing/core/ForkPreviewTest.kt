@@ -42,11 +42,24 @@ class ForkPreviewTest {
                 // Paused, but a backup never holds the pause.
                 meteredWifi = true, mobileData = true, power = PowerSource.BatteryOnly, startOnBoot = true, pausedByUser = true, timeSchedule = true,
                 windows = listOf(SyncWindow(22 * 60, 7 * 60, (1..5).toSet()), SyncWindow(0, 1439, setOf(6, 7))),
+                // A device's own windows, and another's kept while off. The bridge's test puts
+                // real device IDs in for the placeholders, which the app does not check here.
+                deviceWindows = mapOf(
+                    "\$PEER" to DeviceWindows(true, listOf(SyncWindow(23 * 60, 5 * 60, setOf(6, 7)))),
+                    "\$UNPAIRED" to DeviceWindows(false, listOf(SyncWindow(60, 120, setOf(3)))),
+                ),
             ),
             ProxySettings(ProxyType.Socks5, "proxy.example.org", 1080, "me", "p@1:w/ord", only = true),
         )
         val golden = File("../go/bridge/testdata/own-settings.json").readText()
         assertEquals(Json.parseToJsonElement(golden), Json.parseToJsonElement(written))
         assertEquals(setOf("version", "conditions", "proxy"), Json.parseToJsonElement(written).jsonObject.keys)
+    }
+
+    /** No own windows, no key: app versions from before them read the backup (their bridge refuses unknown keys). */
+    @Test
+    fun exportWithoutOwnWindowsLeavesTheKeyOut() {
+        val written = ConfigExport.settingsJson(RunConditions(), ProxySettings())
+        assertEquals(false, "deviceWindows" in Json.parseToJsonElement(written).jsonObject.getValue("conditions").jsonObject)
     }
 }

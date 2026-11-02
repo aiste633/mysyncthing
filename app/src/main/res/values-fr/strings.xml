@@ -551,7 +551,7 @@
     <string name="device_paused_by_you">Par vous</string>
     <string name="device_all_paused_by_you">Tout suspendu par vous</string>
     <string name="device_block_note_conditions">Tous les appareils attendent que la synchronisation soit de nouveau permise. Cet appareil reprend ensuite de lui-même, sauf si vous le suspendez ci-dessous.</string>
-    <string name="device_block_note_user">Tous les appareils attendent que vous repreniez la synchronisation dans Configuration ou sur le widget. Cet appareil reprend alors aussi, sauf si vous le suspendez ci-dessous.</string>
+    <string name="device_block_note_user">Tous les appareils attendent que vous repreniez la synchronisation dans l\'onglet Appareils ou sur le widget. Cet appareil reprend alors aussi, sauf si vous le suspendez ci-dessous.</string>
     <string name="syncthing_version">Syncthing %1$s</string>
     <plurals name="device_still_needs">
         <item quantity="one">A encore besoin de %1$s élément, %2$s depuis ce téléphone</item>
@@ -754,6 +754,9 @@
     <string name="import_boot_on">Démarrer au démarrage du téléphone : activé</string>
     <string name="import_boot_off">Démarrer au démarrage du téléphone : désactivé</string>
     <string name="import_sync_times">Horaires de synchronisation : %1$s</string>
+    <string name="import_own_windows">Horaires propres : %1$s</string>
+    <string name="import_own_windows_device">%1$s %2$s</string>
+    <string name="import_never_syncs">Ne se synchroniseraient jamais, car leurs horaires propres ne recoupent pas les horaires globaux : %1$s</string>
     <string name="import_any_time">à toute heure</string>
     <string name="import_proxy">Proxy : %1$s</string>
     <string name="import_proxy_none">aucun</string>
@@ -868,4 +871,33 @@
 
     <string name="exact_time_just_now">%1$s · à l’instant</string>
     <string name="exact_time_ago">%1$s · il y a %2$s</string>
+
+    <string name="device_windows_global">Horaires globaux</string>
+    <string name="device_windows_own">Horaires propres</string>
+    <string name="device_windows_on_hint">Se synchronise seulement quand ces horaires et les horaires globaux sont ouverts</string>
+    <string name="device_windows_off_hint">Désactivé : suit les horaires globaux</string>
+    <string name="device_windows_no_window_fix">Ajoutez une plage horaire ou désactivez « Horaires propres ».</string>
+    <string name="device_windows_same">Comme les horaires globaux</string>
+    <string name="device_windows_none">Aucune plage horaire</string>
+    <string name="device_windows_week_short">synchronise %1$s par semaine</string>
+    <string name="device_windows_never_short">jamais synchronisé</string>
+    <string name="device_block_note_own">Cet appareil attend ses propres horaires. Il reprend ensuite de lui-même, sauf si vous le suspendez ci-dessous.</string>
+    <string name="windows_never">Jamais synchronisé</string>
+    <string name="windows_never_own">Ces horaires ne recoupent pas les horaires globaux. Modifiez-les, ou les horaires globaux dans l\'onglet Appareils.</string>
+    <string name="windows_week">Synchronise %1$s par semaine</string>
+    <string name="windows_short_title">Moins d\'1 h d\'affilée</string>
+    <string name="windows_short_text">Android peut lancer la synchronisation en retard quand le téléphone est en veille : ces plages peuvent passer sans synchronisation.</string>
+    <string name="windows_next">Prochain : %1$s</string>
+    <string name="windows_next_day">Prochain : %1$s %2$s</string>
+    <string name="stretch_same_day">%1$s %2$s–%3$s</string>
+    <string name="stretch_other_day">%1$s %2$s–%3$s %4$s</string>
+    <string name="schedule_never_title">Certains appareils ne se synchroniseraient jamais</string>
+    <string name="schedule_never_text">Leurs horaires propres ne recoupent pas les nouveaux horaires globaux :</string>
+    <string name="schedule_never_after">Ils restent suspendus jusqu\'à ce que vous modifiiez leurs horaires ou ceux-ci.</string>
+    <string name="schedule_save_anyway">Enregistrer quand même</string>
+    <plurals name="windows_more">
+        <item quantity="one">et %1$d de plus</item>
+        <item quantity="many">et %1$d de plus</item>
+        <item quantity="other">et %1$d de plus</item>
+    </plurals>
 </resources>

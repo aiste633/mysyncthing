@@ -5,7 +5,12 @@ import eu.stedb.mysyncthing.core.Connection
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.Credentials
 import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.ConditionHolds
 import eu.stedb.mysyncthing.core.DevicePause
+import eu.stedb.mysyncthing.core.DeviceWindows
+import eu.stedb.mysyncthing.core.RunConditions
+import eu.stedb.mysyncthing.core.SyncWindow
+import eu.stedb.mysyncthing.core.deviceHolds
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.FolderStatus
@@ -18,6 +23,7 @@ import eu.stedb.mysyncthing.core.summarize
 import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.R as CoreR
 import java.time.Instant
+import java.time.LocalDateTime
 
 private const val B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
@@ -101,7 +107,7 @@ object Fixtures {
         devices = snapshot.devices.map { it.copy(paused = true) },
         connections = emptyMap(),
         completion = emptyMap(),
-        pause = DevicePause(mobileData, recorded = setOf(tablet)),
+        pause = DevicePause(mobileData, holds = ConditionHolds(null, setOf(tablet))),
     )
     val blockedSummary = summarize(core, blocked, blockedBy = mobileData, online = true)
 
@@ -120,4 +126,45 @@ object Fixtures {
     private val laptopSeen = snapshot.lastSeen.getValue(laptop)
     val waitingSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(600), waitingSince = laptopSeen.minusSeconds(86_400))
     val noDeviceSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(3 * 3600), waitingSince = laptopSeen.minusSeconds(86_400))
+
+    /** The screenshot tests' time: a Friday at noon, outside the Santa hat's days. */
+    val NOW: LocalDateTime = LocalDateTime.of(2026, 10, 30, 12, 0)
+
+    private val everyDay = (1..7).toSet()
+    private val workdays = (1..5).toSet()
+    private fun at(h: Int, m: Int = 0) = h * 60 + m
+
+    /**
+     * Global windows 08:00–20:00 every day. The server's own windows (18:00–23:00) narrow them to
+     * 18:00–20:00; the tablet's (21:00–23:00) don't overlap them, so it never syncs; the laptop
+     * has none of its own.
+     */
+    val ownWindows = RunConditions(
+        timeSchedule = true,
+        windows = listOf(SyncWindow(at(8), at(20), everyDay)),
+        deviceWindows = mapOf(
+            server to DeviceWindows(true, listOf(SyncWindow(at(18), at(23), everyDay))),
+            tablet to DeviceWindows(true, listOf(SyncWindow(at(21), at(23), everyDay))),
+        ),
+    )
+
+    /** At [NOW]: the server waits for its own window, the tablet never syncs, the laptop syncs. */
+    val heldByOwn = snapshot.copy(
+        devices = snapshot.devices.map { it.copy(paused = it.deviceID != laptop) },
+        connections = snapshot.connections.filterKeys { it == laptop },
+        completion = snapshot.completion.filterKeys { it == laptop },
+        pause = DevicePause(holds = ConditionHolds(setOf(server, tablet), emptySet()), devices = ownWindows.deviceHolds(NOW)),
+    )
+    val heldByOwnSummary = summarize(core, heldByOwn, blockedBy = null, online = true)
+
+    /** The editor cases: the server's own windows narrowing the global ones to [own]. */
+    fun withServerWindows(vararg own: SyncWindow) = ownWindows.copy(deviceWindows = mapOf(server to DeviceWindows(true, own.toList())))
+    val shortOverlap = withServerWindows(SyncWindow(at(19, 30), at(23), workdays))
+    val noOverlap = withServerWindows(SyncWindow(at(21), at(23), everyDay))
+
+    /** Global windows with a 30 min stretch on Saturdays, besides the nights. */
+    val globalShort = RunConditions(
+        timeSchedule = true,
+        windows = listOf(SyncWindow(at(22), at(7), workdays), SyncWindow(at(12), at(12, 30), setOf(6))),
+    )
 }

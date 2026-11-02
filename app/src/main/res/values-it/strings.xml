@@ -549,7 +549,7 @@
     <string name="device_paused_by_you">Pausa manuale</string>
     <string name="device_all_paused_by_you">Tutto in pausa manuale</string>
     <string name="device_block_note_conditions">Tutti i dispositivi attendono finché la sincronizzazione non è di nuovo consentita. Poi questo dispositivo riprende da solo, a meno che tu non lo metta in pausa qui sotto.</string>
-    <string name="device_block_note_user">Tutti i dispositivi attendono finché non riprendi la sincronizzazione nelle Impostazioni o dal widget. Poi anche questo dispositivo riprende, a meno che tu non lo metta in pausa qui sotto.</string>
+    <string name="device_block_note_user">Tutti i dispositivi attendono finché non riprendi la sincronizzazione nella scheda Dispositivi o dal widget. Poi anche questo dispositivo riprende, a meno che tu non lo metta in pausa qui sotto.</string>
     <string name="syncthing_version">Syncthing %1$s</string>
     <plurals name="device_still_needs">
         <item quantity="one">Ha ancora bisogno di %1$s elemento, %2$s da questo telefono</item>
@@ -751,6 +751,9 @@
     <string name="import_boot_on">Avvia all\'accensione: attivo</string>
     <string name="import_boot_off">Avvia all\'accensione: disattivato</string>
     <string name="import_sync_times">Orari di sincronizzazione: %1$s</string>
+    <string name="import_own_windows">Orari propri: %1$s</string>
+    <string name="import_own_windows_device">%1$s %2$s</string>
+    <string name="import_never_syncs">Non sincronizzerebbero mai, perché i loro orari non si sovrappongono a quelli globali: %1$s</string>
     <string name="import_any_time">a qualsiasi ora</string>
     <string name="import_proxy">Proxy: %1$s</string>
     <string name="import_proxy_none">nessuno</string>
@@ -865,4 +868,33 @@
 
     <string name="exact_time_just_now">%1$s · proprio ora</string>
     <string name="exact_time_ago">%1$s · %2$s fa</string>
+
+    <string name="device_windows_global">Orari globali</string>
+    <string name="device_windows_own">Orari propri</string>
+    <string name="device_windows_on_hint">Sincronizza solo quando sono aperti sia questi orari sia quelli globali</string>
+    <string name="device_windows_off_hint">Disattivato: segue gli orari globali</string>
+    <string name="device_windows_no_window_fix">Aggiungi una fascia oraria o disattiva \"Orari propri\".</string>
+    <string name="device_windows_same">Come gli orari globali</string>
+    <string name="device_windows_none">Nessuna fascia oraria</string>
+    <string name="device_windows_week_short">sincronizza %1$s a settimana</string>
+    <string name="device_windows_never_short">non sincronizza mai</string>
+    <string name="device_block_note_own">Questo dispositivo attende i suoi orari. Poi riprende da solo, a meno che tu non lo metta in pausa qui sotto.</string>
+    <string name="windows_never">Non sincronizza mai</string>
+    <string name="windows_never_own">Questi orari non si sovrappongono a quelli globali. Cambia questi, o gli orari globali nella scheda Dispositivi.</string>
+    <string name="windows_week">Sincronizza %1$s a settimana</string>
+    <string name="windows_short_title">Meno di 1 h di fila</string>
+    <string name="windows_short_text">Android può avviare la sincronizzazione in ritardo mentre il telefono è inattivo, quindi queste fasce possono passare senza sincronizzare.</string>
+    <string name="windows_next">Prossima: %1$s</string>
+    <string name="windows_next_day">Prossima: %1$s %2$s</string>
+    <string name="stretch_same_day">%1$s %2$s–%3$s</string>
+    <string name="stretch_other_day">%1$s %2$s–%3$s %4$s</string>
+    <string name="schedule_never_title">Alcuni dispositivi non sincronizzerebbero mai</string>
+    <string name="schedule_never_text">I loro orari propri non si sovrappongono ai nuovi orari globali:</string>
+    <string name="schedule_never_after">Restano in pausa finché non cambi i loro orari o questi.</string>
+    <string name="schedule_save_anyway">Salva comunque</string>
+    <plurals name="windows_more">
+        <item quantity="one">e %1$d altro</item>
+        <item quantity="many">e %1$d altri</item>
+        <item quantity="other">e %1$d altri</item>
+    </plurals>
 </resources>

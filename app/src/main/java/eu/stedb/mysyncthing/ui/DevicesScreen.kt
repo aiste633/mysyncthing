@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import eu.stedb.mysyncthing.core.DevicePause
+import eu.stedb.mysyncthing.core.NEVER_SYNCS
 import eu.stedb.mysyncthing.core.RunConditions
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -198,7 +199,7 @@ private fun DeviceCard(d: Device, s: Snapshot, onPause: (Boolean) -> Unit, onCli
                 Spacer(Modifier.width(4.dp))
                 Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
                 // The same outline on and off: the icon (pause or play) says which it is.
-                val enabled = !pause.blocked
+                val enabled = !pause.blocked(d)
                 val on = MaterialTheme.colorScheme.onSurface
                 OutlinedIconToggleButton(
                     checked = byUser, onCheckedChange = onPause, enabled = enabled, shape = ButtonShape,
@@ -211,14 +212,17 @@ private fun DeviceCard(d: Device, s: Snapshot, onPause: (Boolean) -> Unit, onCli
                     Icon(if (byUser) Icons.Default.PlayArrow else Icons.Default.Pause, label, Modifier.size(20.dp))
                 }
             }
-            val reason = pauseReason(d, pause)?.asString()
+            val reasonText = pauseReason(d, pause)
+            val reason = reasonText?.asString()
             val where = connectionText(conn, withAddress = false)?.asString()
                 ?: lastSeenText(s.lastSeen[d.deviceID]).asString().let { if (reason != null) it.replaceFirstChar { c -> c.lowercase() } else it }
             Text(
                 listOfNotNull(reason, where, count(R.plurals.count_folders, folders).asString()).joinToString(" · ")
                     // A reason written to follow "Paused: " starts lower case in some languages (Italian).
                     .replaceFirstChar { it.titlecase() },
-                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall,
+                // Never syncing is a mistake to fix, not a state to wait out.
+                color = if (reasonText == NEVER_SYNCS) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(end = 8.dp),
             )
             status.progress?.let {

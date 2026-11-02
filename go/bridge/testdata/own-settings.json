@@ -28,7 +28,34 @@
           7
         ]
       }
-    ]
+    ],
+    "deviceWindows": {
+      "$PEER": {
+        "on": true,
+        "windows": [
+          {
+            "start": 1380,
+            "end": 300,
+            "days": [
+              6,
+              7
+            ]
+          }
+        ]
+      },
+      "$UNPAIRED": {
+        "on": false,
+        "windows": [
+          {
+            "start": 60,
+            "end": 120,
+            "days": [
+              3
+            ]
+          }
+        ]
+      }
+    }
   },
   "proxy": {
     "type": "Socks5",

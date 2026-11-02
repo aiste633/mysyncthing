@@ -18,7 +18,8 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning; restore older versions of a file.
 - Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver; only at set times of the week (for example 22:00–07:00 on weekdays).
 - Pause single devices from their card. Each card says why a device is paused (by you, or for example on mobile data), and a device you paused stays paused when the run conditions allow syncing again.
-- The Devices tab has the switches for all devices together: pause syncing, and the sync times. Every device card says when the device was last seen.
+- Sync windows per device: a device can have its own windows, which narrow the global ones (for example the NAS only at night). The app warns of windows shorter than 1 h and refuses own windows that never overlap the global ones; the device card says "Outside its sync windows · next 22:00".
+- The Devices tab has the switches for all devices together: pause syncing, and the sync windows. Every device card says when the device was last seen.
 - No device connected is a grey "Waiting for devices" for 30 minutes, and only then a red problem; devices you paused don't count.
 - Connect through a SOCKS5 or HTTP proxy, such as Tor with Orbot, optionally with nothing going around it.
 - Easy switch from Syncthing-Fork: import its backup, encrypted ones too, and take over its device ID, folders and devices. Export this app's setup to a zip, optionally AES-256 encrypted, and import it on another phone.
@@ -36,7 +37,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 ### Light on battery and flash
 
 - When idle, the app writes about 0.02–0.14 MB an hour to flash; it keeps no log files. Writes come from syncing itself.
-- The run conditions and sync times let it sync only when it suits you: on Wi-Fi, while charging, at night.
+- The run conditions and sync windows let it sync only when it suits you: on Wi-Fi, while charging, at night, and each device at its own times.
 
 ### Privacy
 

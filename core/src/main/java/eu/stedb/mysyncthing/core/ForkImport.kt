@@ -125,7 +125,7 @@ object ForkImport {
             override suspend fun applySettings() = listOf(
                 settings.update { preview.conditions.copy(pausedByUser = it.pausedByUser) },
                 settings.setProxy(preview.proxy),
-                settings.setConditionPause(null), // the paused devices it remembers are the old setup's
+                settings.setConditionHolds(null), // the paused devices it remembers are the old setup's
                 // Without this the service takes the config without a database for a move from another
                 // phone and says so; the import screen already tells what the import means.
                 settings.setFreshDatabaseExpected(true),

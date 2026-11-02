@@ -28,6 +28,12 @@ import androidx.test.platform.app.InstrumentationRegistry
 import eu.stedb.mysyncthing.MainActivity
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.DeviceWindows
+import eu.stedb.mysyncthing.core.MINUTES_PER_DAY
+import eu.stedb.mysyncthing.core.RunConditions
+import eu.stedb.mysyncthing.core.SyncWindow
+import eu.stedb.mysyncthing.core.minuteOfDay
+import eu.stedb.mysyncthing.core.withDeviceWindows
 import eu.stedb.mysyncthing.core.NO_DEVICE_LIMIT
 import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.SyncState
@@ -47,6 +53,7 @@ import org.junit.runner.RunWith
 import java.io.File
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
 import eu.stedb.mysyncthing.core.R as CoreR
 
 /**
@@ -301,6 +308,60 @@ class E2eTest {
         assertFalse(runBlocking { Settings(app).runConditions.first().timeSchedule })
     }
 
+    /**
+     * A device's own sync windows with the real core: closed now, they pause the peer (its card's
+     * button rests, its screen says why); turned off in their editor, it syncs again. Then own
+     * windows that miss the global ones: the peer never syncs, and the card says so. The windows
+     * are set around the phone's clock, every day, so the test does not wait for an alarm.
+     */
+    @Test
+    fun deviceWindows() {
+        val me = phoneId()
+        eventually("peer connected", 90_000) { peer.connected(me) }
+        val settings = Settings(app)
+        val before = runBlocking { settings.runConditions.first() }
+        val now = minuteOfDay(LocalDateTime.now())
+        fun window(from: Int, to: Int) = SyncWindow(Math.floorMod(now + from, MINUTES_PER_DAY), Math.floorMod(now + to, MINUTES_PER_DAY), (1..7).toSet())
+        fun set(c: (RunConditions) -> RunConditions) = runBlocking { check(settings.update(c)) }
+        try {
+            // Closed for the next two hours.
+            set { it.withDeviceWindows(peer.id, DeviceWindows(true, listOf(window(120, 180)))) }
+            eventually("peer disconnected: outside its own windows", 60_000) { !peer.connected(me) }
+            eventually("held by its own windows", 10_000) { runBlocking { settings.conditionHolds() }?.holds(peer.id) == true }
+            assertCorePaused("held by its own windows")
+            val hold = checkNotNull(SyncStatus.snapshot.value.pause.devices[peer.id]) { "no hold published ${pauseState()}" }
+            assertEquals(window(120, 180).start, hold.next?.let(::minuteOfDay))
+
+            tap(str(R.string.tab_devices))
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(hold.reason.resolve(app), substring = true)).fetchSemanticsNodes().isNotEmpty() }
+            rule.onNode(hasContentDescription(app.getString(R.string.device_pause_named, PEER_NAME))).assertIsNotEnabled()
+            tap(PEER_NAME)
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(str(R.string.device_block_note_own))).fetchSemanticsNodes().isNotEmpty() }
+            rule.onNode(hasTestTag("deviceWindows")).scrolledTo().performClick()
+            rule.waitUntil(20_000) { rule.onAllNodes(hasTestTag("globalWindows")).fetchSemanticsNodes().isNotEmpty() }
+            rule.onNode(hasTestTag("windowsResult")).scrolledTo().assertIsDisplayed()
+            rule.onNode(hasTestTag("ownWindows")).performClick()
+            rule.onNode(hasTestTag("saveWindows")).performClick()
+            eventually("own windows off, kept", 10_000) {
+                runBlocking { settings.runConditions.first() }.deviceWindows[peer.id] == DeviceWindows(false, listOf(window(120, 180)))
+            }
+            eventually("peer connected: own windows off", 120_000) { peer.connected(me) }
+            eventually("hold released", 10_000) { runBlocking { settings.conditionHolds() } == null }
+
+            // Open now globally, but own windows only later: never.
+            set {
+                it.copy(timeSchedule = true, windows = listOf(window(-60, 60)))
+                    .withDeviceWindows(peer.id, DeviceWindows(true, listOf(window(120, 180))))
+            }
+            eventually("peer disconnected: never syncs", 60_000) { !peer.connected(me) }
+            assertTrue("not judged never ${pauseState()}", SyncStatus.snapshot.value.pause.devices[peer.id]?.never == true)
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(app.getString(CoreR.string.device_never_syncs), substring = true)).fetchSemanticsNodes().isNotEmpty() }
+        } finally {
+            set { before }
+        }
+        eventually("peer connected again", 120_000) { peer.connected(me) }
+    }
+
     private fun pauseAll(paused: Boolean) = runBlocking { check(Settings(app).update { it.copy(pausedByUser = paused) }) }
 
     private fun recorded(): Set<String>? = runBlocking { Settings(app).conditionPause() }
@@ -325,7 +386,7 @@ class E2eTest {
     private fun pauseState(): String {
         val s = SyncStatus.snapshot.value
         return "[snapshot: ${s.devices.find { it.deviceID == peer.id }?.paused}, record: ${recorded()?.map { it.take(7) }}, " +
-            "blocked: ${s.pause.blocked}, published record: ${s.pause.recorded?.map { it.take(7) }}]"
+            "blocked: ${s.pause.allBlocked}, published record: ${s.pause.holds?.userPaused?.map { it.take(7) }}]"
     }
 
     /**

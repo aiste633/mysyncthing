@@ -10,6 +10,7 @@ import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.DeviceWindows
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.DiskChange
 import eu.stedb.mysyncthing.core.DiskSize
@@ -39,6 +40,7 @@ import eu.stedb.mysyncthing.core.messageText
 import eu.stedb.mysyncthing.core.plural
 import eu.stedb.mysyncthing.core.restoreDatedNow
 import eu.stedb.mysyncthing.core.setDevicePausedByUser
+import eu.stedb.mysyncthing.core.withDeviceWindows
 import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -312,7 +314,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         runCatching { if (folder == null) c.unignoreDevice(device) else c.unignoreFolder(folder, device) }
             .onFailure { _message.send(failed(R.string.op_unignore, it)) }.isSuccess
     }
-    fun removeDevice(id: String) = act(R.string.op_remove_device) { removeDevice(id) }
+    /** Its own sync windows go too: a device added again starts with the global ones. */
+    fun removeDevice(id: String) = act(R.string.op_remove_device) {
+        removeDevice(id)
+        settings.update { it.withDeviceWindows(id, DeviceWindows()) }
+    }
     fun renameDevice(id: String, name: String) = act(R.string.op_rename) { setDeviceName(id, name.trim()) }
     /** The user's own pause of [id]; while the run conditions pause everything, it decides whether [id] resumes afterwards. */
     fun setDevicePaused(id: String, paused: Boolean) = act(R.string.op_pause) { setDevicePausedByUser(this, settings, id, paused) }

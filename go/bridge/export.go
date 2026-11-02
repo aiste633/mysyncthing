@@ -74,6 +74,7 @@ func readOwnSettings(js []byte) (*ownSettings, error) {
 	if err := s.Conditions.check(); err != nil {
 		return nil, err
 	}
+	s.Conditions = s.Conditions.normalized()
 	if err := s.Proxy.check(); err != nil {
 		return nil, err
 	}
