@@ -26,10 +26,10 @@
     <string name="status_paused_because">Paused: %1$s</string>
     <string name="status_paused">Paused</string>
     <string name="status_no_network">No network</string>
-    <!-- No device that is not paused is connected, for less than 1 h -->
+    <!-- No device that is not paused is connected, for less than 30 min -->
     <string name="status_waiting">Waiting for devices</string>
-    <!-- No device that is not paused has been connected for over an hour; keep "1 h" with its unit -->
-    <string name="status_no_device">No device for over 1 h</string>
+    <!-- No device that is not paused has been connected for over 30 minutes; keep "30 min" with its unit -->
+    <string name="status_no_device">No device for over 30 min</string>
     <!-- The core's notices (warnings) waiting to be read -->
     <plurals name="status_problems">
         <item quantity="one">%1$d problem</item>

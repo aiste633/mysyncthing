@@ -198,8 +198,10 @@ fun AppScreen(
                     // In the title slot, not the actions: the bar sizes actions first, so a long
                     // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
                     else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        StatusChip(status, Modifier.weight(1f, fill = false).padding(start = 12.dp))
+                        // At the largest font sizes the tab bar's label names the tab, and the status gets the bar:
+                        // next to the title a long one ("Seit über 30 min kein Gerät") was cut.
+                        if (roomy) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        StatusChip(status, Modifier.weight(1f, fill = false).padding(start = if (roomy) 12.dp else 0.dp))
                     }
                 },
                 navigationIcon = {

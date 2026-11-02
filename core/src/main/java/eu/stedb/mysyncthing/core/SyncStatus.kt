@@ -160,7 +160,7 @@ object SyncStatus {
 enum class SyncState { Stopped, Problem, Paused, Waiting, NeedsInput, Syncing, UpToDate }
 
 /** How long no device may be connected before that is a problem rather than a wait. */
-val NO_DEVICE_LIMIT: Duration = Duration.ofHours(1)
+val NO_DEVICE_LIMIT: Duration = Duration.ofMinutes(30)
 
 /**
  * One-line status for the notification and the widget. [connected] holds the

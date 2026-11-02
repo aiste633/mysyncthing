@@ -17,9 +17,9 @@ import java.time.ZonedDateTime
 import kotlin.random.Random
 
 /**
- * No device connected: grey "Waiting for devices" for an hour after the last device that is not
+ * No device connected: grey "Waiting for devices" for 30 min after the last device that is not
  * paused was seen (or after the start, when none was since), then red. The service summarizes
- * again at the hour, as no event says the time is up.
+ * again then, as no event says the time is up.
  */
 class NoDeviceTest {
     private val running = CoreState.Running(RestClient("127.0.0.1:1", "k"), "127.0.0.1:1", "ME", Credentials("k", "u", "p"))
@@ -37,17 +37,23 @@ class NoDeviceTest {
 
     private fun at(s: Snapshot, now: Instant, startedAt: Instant) = summarize(running, s, null, true, now, startedAt)
 
+    /** The user's choice (2026-11-02): 30 min; the text names it. */
     @Test
-    fun anHourOfWaitingThenAProblem() {
+    fun theLimitIsHalfAnHour() {
+        assertEquals(Duration.ofMinutes(30), NO_DEVICE_LIMIT)
+    }
+
+    @Test
+    fun halfAnHourOfWaitingThenAProblem() {
         val s = snap(seen = mapOf(server.deviceID to t0, laptop.deviceID to t0.minusSeconds(600)))
         val start = t0.minus(Duration.ofDays(1))
-        at(s, t0.plus(Duration.ofMinutes(59)), start).let {
+        at(s, t0.plus(Duration.ofMinutes(29)), start).let {
             assertEquals(SyncState.Waiting to "Waiting for devices", it.state to it.line().en())
             assertEquals(t0, it.lastSeen)
             assertEquals(t0.plus(NO_DEVICE_LIMIT), it.recheckAt)
         }
         at(s, t0.plus(NO_DEVICE_LIMIT), start).let {
-            assertEquals(SyncState.Problem to "No device for over 1 h", it.state to it.line().en())
+            assertEquals(SyncState.Problem to "No device for over 30 min", it.state to it.line().en())
             assertEquals(t0, it.lastSeen)
             assertNull(it.recheckAt)
         }
@@ -56,7 +62,7 @@ class NoDeviceTest {
     @Test
     fun neverSeenCountsFromTheStart() {
         val s = snap()
-        at(s, t0.plusSeconds(1800), t0).let {
+        at(s, t0.plusSeconds(900), t0).let {
             assertEquals(SyncState.Waiting, it.state)
             assertNull(it.lastSeen)
             assertEquals(t0.plus(NO_DEVICE_LIMIT), it.recheckAt)
@@ -64,7 +70,7 @@ class NoDeviceTest {
         assertEquals(SyncState.Problem, at(s, t0.plus(Duration.ofHours(2)), t0).state)
     }
 
-    /** A phone switched off for days gets its hour after the start, not a red status at once. */
+    /** A phone switched off for days gets its 30 min after the start, not a red status at once. */
     @Test
     fun theStartGivesAnHourAfterALongBreak() {
         val s = snap(seen = mapOf(server.deviceID to t0.minus(Duration.ofDays(3))))

@@ -277,7 +277,7 @@ class E2eTest {
             eventually("resumed", 10_000) { runBlocking { !Settings(app).runConditions.first().pausedByUser } }
             eventually("peer connected again", 120_000) { peer.connected(me) }
 
-            // Away without a pause on the phone: a grey wait for an hour, not red at once.
+            // Away without a pause on the phone: a grey wait for 30 min, not red at once.
             peer.setPaused(me, true)
             eventually("peer gone", 60_000) { !peer.connected(me) }
             eventually("waiting for devices", 30_000) { SyncStatus.summary.value.state == SyncState.Waiting }

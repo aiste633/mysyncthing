@@ -106,7 +106,7 @@ object Fixtures {
     val blockedSummary = summarize(core, blocked, blockedBy = mobileData, online = true)
 
     /**
-     * Nothing connected and nothing paused, half an hour after the laptop was last seen; the tablet
+     * Nothing connected and nothing paused, 10 min after the laptop was last seen; the tablet
      * never was. No folder errors or requests, which would rank first.
      */
     val waiting = snapshot.copy(
@@ -118,6 +118,6 @@ object Fixtures {
         lastSeen = snapshot.lastSeen - tablet,
     )
     private val laptopSeen = snapshot.lastSeen.getValue(laptop)
-    val waitingSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(1800), startedAt = laptopSeen.minusSeconds(86_400))
+    val waitingSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(600), startedAt = laptopSeen.minusSeconds(86_400))
     val noDeviceSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(3 * 3600), startedAt = laptopSeen.minusSeconds(86_400))
 }

@@ -9,6 +9,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.util.SizeF
+import android.util.DisplayMetrics
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import kotlinx.coroutines.CoroutineScope
@@ -104,6 +106,7 @@ class StatusWidget : AppWidgetProvider() {
             v.setColorInt(R.id.widget_status_icon, "setColorFilter", light, dark)
             v.setTextViewText(R.id.widget_title, s.text.resolve(context))
             v.setTextViewText(R.id.widget_detail, widgetDetail(s).resolve(context))
+            v.setViewVisibility(R.id.widget_detail, if (detailFits(context.resources.displayMetrics)) View.VISIBLE else View.GONE)
 
             val progress = s.progress
             v.setViewVisibility(R.id.widget_progress, if (progress != null) View.VISIBLE else View.GONE)
@@ -160,3 +163,15 @@ internal fun widgetDetail(s: Summary, now: ZonedDateTime = ZonedDateTime.now()):
         else -> text(R.string.widget_no_device)
     }
 }
+
+/**
+ * Whether the second line fits under the first in the bar's 52 dp (widget_status.xml: 15 sp and
+ * 12 sp). At the largest font sizes it would be cut at the bottom; the status then has the bar alone.
+ */
+fun detailFits(metrics: DisplayMetrics): Boolean {
+    fun sp(v: Float) = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, v, metrics)
+    return (sp(15f) + sp(12f)) * LINE_HEIGHT <= TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 52f, metrics)
+}
+
+/** A line of Roboto is about 1.17 times its size (ascent plus descent). */
+private const val LINE_HEIGHT = 1.17f

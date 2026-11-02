@@ -15,7 +15,7 @@
     <string name="status_paused">In pausa</string>
     <string name="status_no_network">Nessuna rete</string>
     <string name="status_waiting">In attesa dei dispositivi</string>
-    <string name="status_no_device">Nessun dispositivo da oltre 1 h</string>
+    <string name="status_no_device">Nessun dispositivo da oltre 30 min</string>
     <plurals name="status_problems">
         <item quantity="one">%1$d problema</item>
         <item quantity="many">%1$d problemi</item>

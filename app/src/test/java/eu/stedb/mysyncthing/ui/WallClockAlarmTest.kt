@@ -5,7 +5,6 @@ import android.app.Application
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import eu.stedb.mysyncthing.core.WALL_CLOCK_WINDOW
 import eu.stedb.mysyncthing.core.wallClockAt
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
@@ -16,11 +15,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.shadows.ShadowAlarmManager
 import java.time.Instant
 
 /**
  * The alarm that turns "Waiting for devices" red: on the wall clock, never waking the phone,
- * and inside a 10 min window. A plain inexact alarm came 45 min late on the emulator.
+ * and inexact (no permission; late by up to 75 % of the wait, which is fine).
  */
 @RunWith(AndroidJUnit4::class)
 class WallClockAlarmTest {
@@ -35,8 +35,7 @@ class WallClockAlarmTest {
         val alarm = alarms.scheduledAlarms.single()
         assertEquals("wall clock, never waking the phone", AlarmManager.RTC, alarm.getType())
         assertEquals(at.toEpochMilli(), alarm.triggerAtMs)
-        assertEquals(10 * 60_000L, WALL_CLOCK_WINDOW.toMillis())
-        assertEquals(WALL_CLOCK_WINDOW.toMillis(), alarm.windowLengthMs)
+        assertEquals("inexact: Android picks the window", ShadowAlarmManager.WINDOW_HEURISTIC, alarm.windowLengthMs)
         assertFalse(alarm.isAllowWhileIdle)
         assertFalse(returned)
         alarms.fireAlarm(alarm)

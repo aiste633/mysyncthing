@@ -15,7 +15,7 @@
     <string name="status_paused">Pausiert</string>
     <string name="status_no_network">Kein Netzwerk</string>
     <string name="status_waiting">Warten auf Geräte</string>
-    <string name="status_no_device">Seit über 1 h kein Gerät</string>
+    <string name="status_no_device">Seit über 30 min kein Gerät</string>
     <plurals name="status_problems">
         <item quantity="one">%1$d Problem</item>
         <item quantity="other">%1$d Probleme</item>

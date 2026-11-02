@@ -129,7 +129,7 @@ class AllDevicesScreenTest : ScreenTest() {
     }
 
     @Test
-    fun anHourWithoutDevicesIsAProblem() {
+    fun halfAnHourWithoutDevicesIsAProblem() {
         devices(Fixtures.waiting, Fixtures.noDeviceSummary)
         compose.onNodeWithText(str(CoreR.string.status_no_device)).assertExists()
     }
