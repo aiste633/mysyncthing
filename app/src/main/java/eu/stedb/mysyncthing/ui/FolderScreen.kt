@@ -183,7 +183,7 @@ fun FolderScreen(
                 s.devices.forEach { dev ->
                     val entry = f.devices.find { it.deviceID == dev.deviceID }
                     // A device's sync state only means something for folders it shares.
-                    val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null).text else text(R.string.shared_with_not)
+                    val state = if (entry != null) deviceStatus(dev, s.connections[dev.deviceID], null, s.pause).text else text(R.string.shared_with_not)
                     CheckRow(
                         dev.name.ifEmpty { shortId(dev.deviceID) }, listOfNotNull(state, encryptionText(dev, entry)).map { it.asString() }.joinToString(" · "), entry != null,
                     ) { if (sharesEncrypted(dev, entry)) encrypt = dev.deviceID else vm.setShared(f, dev.deviceID, it) }

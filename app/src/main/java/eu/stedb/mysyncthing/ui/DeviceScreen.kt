@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
@@ -14,9 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,8 +32,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Completion
+import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.DevicePause
+import eu.stedb.mysyncthing.core.PAUSED_BY_USER
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.text
+import eu.stedb.mysyncthing.core.R as CoreR
 
 /** Settings and status of one remote device. */
 @Composable
@@ -47,8 +49,10 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
         return
     }
     val conn = s.connections[id]
-    val status = deviceStatus(d, conn, s.completion[id])
+    val pause = s.pause
+    val status = deviceStatus(d, conn, s.completion[id], pause)
     val look = status.state.look()
+    val byUser = pause.byUser(d)
     var dialog by rememberSaveable { mutableStateOf<DeviceDialog?>(null) }
     // The folder whose password dialog is open, for an encrypted share.
     var encrypt by rememberSaveable { mutableStateOf<String?>(null) }
@@ -70,9 +74,13 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(look.icon, null, tint = look.color)
                         Spacer(Modifier.width(8.dp))
-                        Text(status.text.asString(), style = MaterialTheme.typography.titleMedium, color = look.color)
+                        Text(pauseTitle(d, pause)?.asString() ?: status.text.asString(), style = MaterialTheme.typography.titleMedium, color = look.color)
                     }
                     val muted = MaterialTheme.colorScheme.onSurfaceVariant
+                    if (pause.blocked && !byUser) {
+                        val note = if (pause.blockedBy == PAUSED_BY_USER) R.string.device_block_note_user else R.string.device_block_note_conditions
+                        Text(stringResource(note), style = MaterialTheme.typography.bodySmall, color = muted)
+                    }
                     connectionText(conn)?.let {
                         Text(it.asString(), style = MaterialTheme.typography.bodyMedium, color = muted)
                     }
@@ -96,12 +104,10 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                         )
                     }
                     status.progress?.let { ProgressBar(it, look.color) }
-                    FilledTonalButton(shape = ButtonShape, onClick = { vm.setDevicePaused(id, !d.paused) }, modifier = Modifier.padding(top = 4.dp)) {
-                        Icon(if (d.paused) Icons.Default.PlayArrow else Icons.Default.Pause, null, Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text(stringResource(if (d.paused) R.string.action_resume else R.string.action_pause))
-                    }
                 }
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                // The user's own choice; it also works while the run conditions pause everything.
+                SwitchRow(stringResource(R.string.device_pause), stringResource(R.string.device_pause_hint), byUser) { vm.setDevicePaused(id, it) }
             }
 
             SettingsGroup(stringResource(R.string.group_trust)) {
@@ -217,3 +223,18 @@ internal fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSav
     tokenHint = stringResource(R.string.addresses_find_hint), addHint = stringResource(R.string.addresses_add_hint), syntax = ADDRESS_SYNTAX, valid = ::isDeviceAddress, normalize = ::normalizeAddress,
     onDismiss = onDismiss, onSave = onSave,
 )
+
+/**
+ * The device screen's status line while [d] is paused: "Paused by you" for its own pause, which
+ * outlasts any other; otherwise why everything is paused. Null when it is not paused.
+ */
+fun pauseTitle(d: Device, pause: DevicePause): UiText? {
+    val reason = pause.blockedBy
+    return when {
+        !pause.paused(d) -> null
+        pause.byUser(d) -> text(CoreR.string.pause_reason_user)
+        reason == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
+        reason != null -> text(CoreR.string.status_paused_because, reason)
+        else -> null
+    }
+}

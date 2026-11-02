@@ -141,8 +141,11 @@ class SyncthingService : LifecycleService() {
                 val anyUnpaused = SyncStatus.snapshot.map { s -> s.devices.any { !it.paused } }.distinctUntilChanged()
                 launch {
                     combine(blockedBy, anyUnpaused) { reason, _ -> reason }.collectLatest { reason ->
-                        while (!applyConditions(running.client, reason)) delay(5_000)
+                        while (!applyConditions(running.client.pauses(), settings, reason)) delay(5_000)
                     }
+                }
+                launch {
+                    combine(blockedBy, settings.conditionPauses, ::DevicePause).collect { SyncStatus.publishPause(it) }
                 }
                 launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
                 combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
@@ -185,17 +188,6 @@ class SyncthingService : LifecycleService() {
         }
         clearCoreNotices()
         super.onDestroy()
-    }
-
-    /** Brings the devices in line with the run conditions ([conditionPause]); false if a step failed. */
-    private suspend fun applyConditions(client: RestClient, reason: UiText?): Boolean {
-        val plan = runCatching { conditionPause(reason, settings.conditionPause(), client.devices()) }.getOrElse { return false }
-        // Unrecorded, the pause would never be undone.
-        if (plan.record != null && !settings.setConditionPause(plan.record)) return false
-        return runCatching {
-            if (plan.pauseAll) client.setAllPaused(true)
-            plan.resume.forEach { client.setDevicePaused(it, false) }
-        }.isSuccess && (!plan.clearRecord || settings.setConditionPause(null))
     }
 
     /**

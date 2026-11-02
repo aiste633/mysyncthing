@@ -11,6 +11,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
@@ -214,6 +215,18 @@ class Settings internal constructor(
 
     suspend fun setConditionPause(userPaused: Set<String>?): Boolean =
         write { if (userPaused == null) it.remove(CONDITION_PAUSE) else it[CONDITION_PAUSE] = userPaused }
+
+    val conditionPauses: Flow<Set<String>?> = store.data.map { it[CONDITION_PAUSE] }.distinctUntilChanged()
+
+    /**
+     * While a run condition pauses everything, records the user's own choice for [device] in place
+     * of the one [conditionPause] first recorded. False when nothing is recorded (syncing is
+     * allowed), null when the write failed. Callers hold the lock that orders the record's writers.
+     */
+    suspend fun recordUserPause(device: String, paused: Boolean): Boolean? {
+        val recorded = conditionPause() ?: return false
+        return if (setConditionPause(if (paused) recorded + device else recorded - device)) true else null
+    }
 
     private fun Preferences.credentials(): Credentials? {
         val key = this[API_KEY] ?: return null
