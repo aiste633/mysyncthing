@@ -13,7 +13,7 @@ mode; BACK is then safe to send. A host thread pins it again if the pin is lost 
 Setups:
   plain     English, light, normal font; a little rotation
   de-big    German, dark, font 2.0 (the largest); a little rotation; the peer away for 35 min
-            from minute 10, so the Devices tab shows the grey wait and then the red state
+            from minute 3, so the Devices tab shows the grey wait and then the red state
   recreate  "Don't keep activities" on, much rotation
 
 A run ends at the first crash or ANR (the monkey stops there, so the seed and event count
@@ -55,14 +55,14 @@ DROPBOX_TAGS = ["data_app_crash", "data_app_anr", "data_app_native_crash", "data
 
 class Churn(threading.Thread):
     """During the run: the peer changes a file every 20 s and drops the phone for 30 s every 5 min.
-    With [away_min], the peer stays away that long from minute 10 on, so the Devices tab goes from
+    With [away_min], the peer stays away that long from minute 3 on, so the Devices tab goes from
     grey "Waiting for devices" to red after 30 min. The screen is woken and the app pinned again
     whenever either is lost (both logged)."""
 
     def __init__(self, peer: "run.Peer", phone: str, out: Path, away_min: int = 0) -> None:
         super().__init__(daemon=True)
         self.peer, self.phone, self.out = peer, phone, out
-        self.away = range(30, 30 + away_min * 3) if away_min else range(0)  # in 20 s ticks
+        self.away = range(9, 9 + away_min * 3) if away_min else range(0)  # in 20 s ticks
         self.stop = threading.Event()
         self.pin_losses: list[str] = []
         self.sleeps: list[str] = []
@@ -78,7 +78,7 @@ class Churn(threading.Thread):
                 self.peer.scan()
                 if tick in self.away or tick % 15 == 0:
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": True})
-                elif tick % 15 == 2 or tick == self.away.stop:
+                elif tick % 15 == 2:
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": False})
                 if not awake():
                     self.sleeps.append(time.strftime("%H:%M:%S"))
