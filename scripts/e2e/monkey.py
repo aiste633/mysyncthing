@@ -42,96 +42,26 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run  # noqa: E402  (scripts/e2e/run.py: adb, Peer, prepare, phase)
-from run import ADB, APP, adb, log, sh  # noqa: E402
+from run import ADB, APP, MONKEY_MIX, Device, adb, awake, log, pin, pinned, sh  # noqa: E402
 
-# Monkey event mix. Not set: touch, motion, trackball, majornav and anyevent keep their defaults.
-# syskeys: BACK (and HOME, volume, CALL), harmless while pinned. appswitch: starts MainActivity
-# again. permission 0: runtime permissions stay as installed (-g). Rotation per setup.
-BASE = ["--pct-syskeys", "5", "--pct-appswitch", "2", "--pct-permission", "0", "--pct-flip", "0",
-        "--monitor-native-crashes", "-v", "-v", "-v"]
 SETUPS = {
     "plain": {"rotation": "2"},
     "de-big": {"rotation": "2", "locale": "de-DE", "font": "2.0", "night": "yes"},
     "recreate": {"rotation": "10", "dont_keep": True},
 }
 DROPBOX_TAGS = ["data_app_crash", "data_app_anr", "data_app_native_crash", "data_app_wtf", "SYSTEM_TOMBSTONE"]
-NAVBAR = "com.android.internal.systemui.navbar."
-
-
-class Device:
-    """System settings the setups change, read first and put back by restore()."""
-
-    def __init__(self) -> None:
-        self.saved = {
-            "font_scale": sh("settings get system font_scale"),
-            "accelerometer_rotation": sh("settings get system accelerometer_rotation"),
-            "user_rotation": sh("settings get system user_rotation"),
-            "screen_off_timeout": sh("settings get system screen_off_timeout"),
-            "always_finish_activities": sh("settings get global always_finish_activities"),
-        }
-        self.night = sh("cmd uimode night").rsplit(":", 1)[-1].strip()  # "Night mode: no"
-        self.nav = next((m.group(1) for m in re.finditer(r"\[x\] " + re.escape(NAVBAR) + r"(\w+)", sh("cmd overlay list"))), None)
-
-    def keep_awake(self) -> None:
-        sh("svc power stayon true")
-        sh("settings put system screen_off_timeout 1800000")
-        sh("locksettings set-disabled true", check=False)
-        sh("input keyevent KEYCODE_WAKEUP")
-        sh("wm dismiss-keyguard", check=False)
-        if self.nav != "threebutton":
-            sh(f"cmd overlay enable-exclusive --category {NAVBAR}threebutton")
-
-    def apply(self, setup: dict) -> None:
-        sh(f"settings put system font_scale {setup.get('font', '1.0')}")
-        sh(f"cmd uimode night {setup.get('night', 'no')}")
-        sh(f"settings put global always_finish_activities {1 if setup.get('dont_keep') else 0}")
-        sh("settings put system accelerometer_rotation 0")
-        sh("settings put system user_rotation 0")
-        if "locale" in setup:
-            sh(f"cmd locale set-app-locales {APP} --locales {setup['locale']}")
-
-    def restore(self) -> None:
-        sh("am task lock stop", check=False)
-        sh(f"cmd uimode night {self.night}", check=False)
-        for key, value in self.saved.items():
-            ns = "global" if key == "always_finish_activities" else "system"
-            if value in ("null", ""):
-                sh(f"settings delete {ns} {key}", check=False)
-            else:
-                sh(f"settings put {ns} {key} {value}", check=False)
-        if self.nav and self.nav != "threebutton":
-            sh(f"cmd overlay enable-exclusive --category {NAVBAR}{self.nav}", check=False)
-        sh("svc power stayon false", check=False)
-
-
-def task_id() -> str | None:
-    m = re.search(r"Task\{\w+ #(\d+)[^\n]*A=\d+:" + re.escape(APP) + r"\b", sh("dumpsys activity activities"))
-    return m.group(1) if m else None
-
-
-def pinned() -> bool:
-    return "=PINNED" in sh("dumpsys activity activities | grep -m1 mLockTaskModeState"
-                          " || dumpsys activity | grep -m1 mLockTaskModeState", check=False)
-
-
-def pin() -> bool:
-    run.open_app()
-    tid = task_id()
-    if tid is None:
-        return False
-    sh(f"am task lock {tid}", check=False)
-    return run.eventually("app pinned", 15, pinned)
 
 
 class Churn(threading.Thread):
     """During the run: the peer changes a file every 20 s, drops the phone for 30 s every 5 min,
-    and the app is pinned again whenever the pin is lost."""
+    and the screen is woken and the app pinned again whenever either is lost (both logged)."""
 
     def __init__(self, peer: "run.Peer", phone: str, out: Path) -> None:
         super().__init__(daemon=True)
         self.peer, self.phone, self.out = peer, phone, out
         self.stop = threading.Event()
         self.pin_losses: list[str] = []
+        self.sleeps: list[str] = []
 
     def run(self) -> None:
         tick = 0
@@ -146,6 +76,9 @@ class Churn(threading.Thread):
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": True})
                 elif tick % 15 == 2:
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": False})
+                if not awake():
+                    self.sleeps.append(time.strftime("%H:%M:%S"))
+                    run.Device.wake()
                 if not pinned():
                     self.pin_losses.append(time.strftime("%H:%M:%S"))
                     pin()
@@ -232,7 +165,7 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         start = device_time()
         began = time.monotonic()
         cmd = [ADB, "shell", "monkey", "-p", APP, "-s", str(seed), "--throttle", str(a.throttle),
-               "--pct-rotation", setup["rotation"], *BASE, str(a.events)]
+               "--pct-rotation", setup["rotation"], *MONKEY_MIX, str(a.events)]
         log(f"{name} seed {seed}: {' '.join(cmd[2:])}")
         with (out / "monkey.txt").open("w") as f:
             try:
@@ -249,6 +182,7 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         result["monkey_finished"] = "// Monkey finished" in monkey and not timed_out
         result["dropbox"] = dropbox_since(start)
         result["pin_losses"] = churn.pin_losses
+        result["sleeps"] = churn.sleeps
     finally:
         if churn:
             churn.finish()
@@ -285,10 +219,10 @@ def report(results: list[dict], a) -> str:
     api = sh("getprop ro.build.version.sdk")
     rows = [f"# Monkey run, API {api}, {time.strftime('%Y-%m-%d %H:%M')}", "",
             f"{a.events} events per run, throttle {a.throttle} ms.", "",
-            "| Setup | Seed | Result | Events | Minutes | StrictMode | Pin losses |", "|---|---|---|---|---|---|---|"]
+            "| Setup | Seed | Result | Events | Minutes | StrictMode | Pin losses | Screen off |", "|---|---|---|---|---|---|---|---|"]
     for r in results:
         rows.append(f"| {r['setup']} | {r['seed']} | {r['result']} | {r.get('injected')} | {r.get('minutes')} | "
-                    f"{sum(r.get('strictmode', {}).values())} | {len(r.get('pin_losses', []))} |")
+                    f"{sum(r.get('strictmode', {}).values())} | {len(r.get('pin_losses', []))} | {len(r.get('sleeps', []))} |")
     sm: Counter = Counter()
     for r in results:
         sm.update(r.get("strictmode", {}))

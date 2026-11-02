@@ -18,6 +18,7 @@ Runs only on an emulator: it wipes the app's data and its test folder.
 import argparse
 import json
 import os
+import re
 import secrets
 import shutil
 import subprocess
@@ -38,7 +39,13 @@ FOLDER, LABEL = "e2e", "E2E"
 PHONE_DIR = "/sdcard/Syncthing/E2E"
 SEEDS = 20
 V1, V2 = "version 1\n", "second version\n"  # E2eTest's V1 and V2
-MONKEY = ["-s", "4242", "--throttle", "150", "--pct-syskeys", "0", "--pct-appswitch", "0", "-v", "2500"]
+# Monkey event mix. Not set: touch, motion, trackball, majornav and anyevent keep their defaults.
+# syskeys: BACK (and HOME, volume, CALL), harmless while pinned. appswitch: starts MainActivity
+# again. permission 0: runtime permissions stay as installed (-g). Rotation per run.
+MONKEY_MIX = ["--pct-syskeys", "5", "--pct-appswitch", "2", "--pct-permission", "0", "--pct-flip", "0",
+              "--monitor-native-crashes", "-v", "-v", "-v"]
+MONKEY = ["-s", "4242", "--throttle", "100", *MONKEY_MIX, "--pct-rotation", "2", "10000"]
+NAVBAR = "com.android.internal.systemui.navbar."
 
 failures: list[str] = []
 _tools = Path(os.environ.get("ANDROID_HOME", "/nonexistent")) / "platform-tools/adb"
@@ -237,12 +244,98 @@ def storage_revoked(peer: Peer, phone: str) -> None:
     eventually("phone reconnected with All files access back", 120, lambda: peer.connected(phone))
 
 
+class Device:
+    """System settings the monkey runs change: read first, put back by restore()."""
+
+    def __init__(self) -> None:
+        self.saved = {
+            "font_scale": sh("settings get system font_scale"),
+            "accelerometer_rotation": sh("settings get system accelerometer_rotation"),
+            "user_rotation": sh("settings get system user_rotation"),
+            "screen_off_timeout": sh("settings get system screen_off_timeout"),
+            "always_finish_activities": sh("settings get global always_finish_activities"),
+        }
+        self.night = sh("cmd uimode night").rsplit(":", 1)[-1].strip()  # "Night mode: no"
+        self.nav = next((m.group(1) for m in re.finditer(r"\[x\] " + re.escape(NAVBAR) + r"(\w+)", sh("cmd overlay list"))), None)
+
+    def keep_awake(self) -> None:
+        sh("svc power stayon true")
+        sh("settings put system screen_off_timeout 1800000")
+        sh("locksettings set-disabled true", check=False)
+        self.wake()
+        if self.nav != "threebutton":
+            sh(f"cmd overlay enable-exclusive --category {NAVBAR}threebutton")
+
+    @staticmethod
+    def wake() -> None:
+        sh("input keyevent KEYCODE_WAKEUP")
+        sh("wm dismiss-keyguard", check=False)
+
+    def apply(self, setup: dict) -> None:
+        sh(f"settings put system font_scale {setup.get('font', '1.0')}")
+        sh(f"cmd uimode night {setup.get('night', 'no')}")
+        sh(f"settings put global always_finish_activities {1 if setup.get('dont_keep') else 0}")
+        sh("settings put system accelerometer_rotation 0")
+        sh("settings put system user_rotation 0")
+        if "locale" in setup:
+            sh(f"cmd locale set-app-locales {APP} --locales {setup['locale']}")
+
+    def restore(self) -> None:
+        sh("am task lock stop", check=False)
+        sh(f"cmd uimode night {self.night}", check=False)
+        for key, value in self.saved.items():
+            ns = "global" if key == "always_finish_activities" else "system"
+            if value in ("null", ""):
+                sh(f"settings delete {ns} {key}", check=False)
+            else:
+                sh(f"settings put {ns} {key} {value}", check=False)
+        if self.nav and self.nav != "threebutton":
+            sh(f"cmd overlay enable-exclusive --category {NAVBAR}{self.nav}", check=False)
+        sh("svc power stayon false", check=False)
+
+
+def task_id() -> str | None:
+    m = re.search(r"Task\{\w+ #(\d+)[^\n]*A=\d+:" + re.escape(APP) + r"\b", sh("dumpsys activity activities"))
+    return m.group(1) if m else None
+
+
+def awake() -> bool:
+    return "mWakefulness=Awake" in sh("dumpsys power | grep -m1 mWakefulness=", check=False)
+
+
+def pinned() -> bool:
+    return "=PINNED" in sh("dumpsys activity activities | grep -m1 mLockTaskModeState"
+                          " || dumpsys activity | grep -m1 mLockTaskModeState", check=False)
+
+
+def pin() -> bool:
+    open_app()
+    tid = task_id()
+    if tid is None:
+        return False
+    sh(f"am task lock {tid}", check=False)
+    return eventually("app pinned", 15, pinned)
+
+
 def monkey(out: Path) -> None:
+    """Random events with a fixed seed. The app is pinned (am task lock, three-button navigation), so
+    BACK can be sent and no tap reaches the notification shade or quick settings."""
     log("monkey")
-    r = subprocess.run([ADB, "shell", "monkey", "-p", APP, *MONKEY], capture_output=True, text=True, timeout=1200)
-    (out / "monkey.txt").write_text(r.stdout + r.stderr)
-    if "// CRASH" in r.stdout or "// NOT RESPONDING" in r.stdout or "Monkey finished" not in r.stdout:
-        fail("monkey: crash, ANR or aborted (see monkey.txt)")
+    dev = Device()
+    try:
+        dev.keep_awake()
+        dev.apply({})
+        if not pin():
+            fail("monkey: the app could not be pinned")
+            return
+        r = subprocess.run([ADB, "shell", "monkey", "-p", APP, *MONKEY], capture_output=True, text=True, timeout=3600)
+        (out / "monkey.txt").write_text(r.stdout + r.stderr)
+        if "// CRASH" in r.stdout or "// NOT RESPONDING" in r.stdout or "Monkey finished" not in r.stdout:
+            fail("monkey: crash, ANR or aborted (see monkey.txt)")
+        if not pinned() or not awake():
+            fail("monkey: at the end the app was no longer pinned or the screen was off, so events may have gone elsewhere")
+    finally:
+        dev.restore()
 
 
 def main() -> None:
