@@ -131,7 +131,7 @@ fun DeviceScreen(
                     Box(Modifier.testTag("deviceWindows")) {
                         SettingRow(
                             stringResource(R.string.device_windows_own), ownWindowsText(c, id).asString(), Icons.Default.Schedule,
-                            trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, danger = never, onClick = onOpenSchedule,
+                            trailing = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, null) }, problem = never, onClick = onOpenSchedule,
                         )
                     }
                 }
@@ -280,6 +280,6 @@ fun ownWindowsText(c: RunConditions, id: String): UiText {
         else -> plural(R.plurals.schedule_and_more, own.windows.size - 1, windowText(own.windows.first()), own.windows.size - 1)
     }
     val m = c.mask(id)
-    val result = if (m.isEmpty) text(R.string.device_windows_never_short) else text(R.string.device_windows_week_short, durationText(m.minutes * 60L))
+    val result = if (m.isEmpty) text(R.string.device_windows_never_short) else text(R.string.device_windows_week_short, weekText(m.minutes))
     return listOf(windows, result).joined(" · ")
 }

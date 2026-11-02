@@ -356,7 +356,11 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
     ListCard(content = content)
 }
 
-/** One row in a [SettingsGroup]. The whole row is the touch target. */
+/**
+ * One row in a [SettingsGroup]. The whole row is the touch target. [danger]: the title in
+ * red, for a step that removes something; [problem]: its value too, for a setting that is a
+ * mistake to fix ("never syncs").
+ */
 @Composable
 fun SettingRow(
     title: String,
@@ -364,8 +368,9 @@ fun SettingRow(
     icon: ImageVector? = null,
     trailing: @Composable (() -> Unit)? = null,
     danger: Boolean = false,
+    problem: Boolean = false,
     onClick: (() -> Unit)? = null,
-) = SettingRowLayout(title, value, icon, trailing, if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier, danger)
+) = SettingRowLayout(title, value, icon, trailing, if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier, danger || problem, problem)
 
 /**
  * A row with a switch. The row is the toggle, so accessibility services read
@@ -402,6 +407,7 @@ private fun SettingRowLayout(
     trailing: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
     danger: Boolean = false,
+    problem: Boolean = false,
 ) {
     val color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     ListItem(
@@ -410,7 +416,7 @@ private fun SettingRowLayout(
         leadingContent = icon?.let { { Icon(it, null, tint = if (danger) color else MaterialTheme.colorScheme.onSurfaceVariant) } },
         headlineContent = { Text(title, color = color) },
         // No line limit: hints are sentences, and a cut one can't be read anywhere else.
-        supportingContent = value?.let { { Text(it) } },
+        supportingContent = value?.let { { Text(it, color = if (problem) color else Color.Unspecified) } },
         trailingContent = trailing,
     )
 }

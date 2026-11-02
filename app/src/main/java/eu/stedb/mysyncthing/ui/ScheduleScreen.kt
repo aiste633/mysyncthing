@@ -68,6 +68,7 @@ import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.SyncWindow
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.joined
+import eu.stedb.mysyncthing.core.num
 import eu.stedb.mysyncthing.core.plural
 import eu.stedb.mysyncthing.core.raw
 import eu.stedb.mysyncthing.core.scheduleError
@@ -294,7 +295,7 @@ private fun WindowsResult(mask: WeekMask) {
                     return@Column
                 }
                 Text(
-                    if (short.isEmpty()) stringResource(R.string.windows_week, durationText(mask.minutes * 60L).asString()) else stringResource(R.string.windows_short_title),
+                    if (short.isEmpty()) stringResource(R.string.windows_week, weekText(mask.minutes).asString()) else stringResource(R.string.windows_short_title),
                     color = color, style = MaterialTheme.typography.titleSmall,
                 )
                 if (short.isEmpty()) {
@@ -331,6 +332,16 @@ internal fun effectiveWindows(mask: WeekMask): List<SyncWindow> = mask.stretches
     .groupBy { it.start % MINUTES_PER_DAY to it.length }
     .map { (k, list) -> SyncWindow(k.first, (k.first + k.second) % MINUTES_PER_DAY, list.mapTo(LinkedHashSet()) { it.start / MINUTES_PER_DAY + 1 }) }
     .sortedBy { it.days.min() * MINUTES_PER_DAY + it.start }
+
+/**
+ * How long a week lets a device sync, exact and in hours, never rounded up to days: "24 h 30 min",
+ * "168 h", "45 min".
+ */
+fun weekText(minutes: Int): UiText {
+    val h = minutes / 60
+    val m = minutes % 60
+    return listOfNotNull(withUnit(num(h), "h").takeIf { h > 0 }, withUnit(num(m), "min").takeIf { m > 0 || h == 0 }).joined(" ")
+}
 
 /** "Tue 06:30–07:00", or "Fri 22:00–Mon 07:00" for a stretch that ends on another day. */
 fun stretchText(s: Stretch): UiText {

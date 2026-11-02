@@ -42,6 +42,18 @@ class DeviceWindowsTextTest {
         assertEquals(listOf("Mon 01:00–01:30", "Tue 02:00–02:30", "Wed 03:00–03:30", "and 2 more"), effectiveText(five).map { it.en() })
     }
 
+    /** A week's total is exact, in hours: 24 h 30 min was shown as "1 d". */
+    @Test
+    fun weekTotalsInHours() {
+        assertEquals("24\u00a0h 30\u00a0min", weekText(24 * 60 + 30).en())
+        assertEquals("168\u00a0h", weekText(168 * 60).en())
+        assertEquals("45\u00a0min", weekText(45).en())
+        assertEquals("0\u00a0min", weekText(0).en())
+        val m = Fixtures.withServerWindows(SyncWindow(at(8), at(11, 30), (1..7).toSet())).mask(server)
+        assertEquals("Every day 08:00–11:30 · syncs 24\u00a0h 30\u00a0min a week", ownWindowsText(Fixtures.withServerWindows(SyncWindow(at(8), at(11, 30), (1..7).toSet())), server).en())
+        assertEquals(24 * 60 + 30, m.minutes)
+    }
+
     @Test
     fun stretchesForPeople() {
         assertEquals("Tue 06:30–07:00", stretchText(Stretch(MINUTES_PER_DAY + at(6, 30), 30)).en())

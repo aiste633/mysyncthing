@@ -253,7 +253,8 @@ private fun AllDevices(rc: RunConditions, pause: DevicePause, onPause: (Boolean)
                 Switch(paused, onCheckedChange = null, modifier = Modifier.wrapContentSize(unbounded = true).scale(0.8f))
             }
         }
-        val times = scheduleText(rc).asString()
+        // Half the width: at the largest font a time range may not fit a line.
+        val times = breakableRanges(scheduleText(rc).asString())
         ControlCard(
             stringResource(R.string.devices_sync_times),
             if (rc.timeSchedule) times else stringResource(R.string.value_default, times),

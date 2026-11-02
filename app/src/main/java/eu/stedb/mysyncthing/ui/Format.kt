@@ -45,6 +45,13 @@ fun bytes(n: Long): String = bytesText(n).asString()
 /** A transfer speed with its unit, e.g. "1.2 MB/s". */
 fun rateText(bytesPerSecond: Long): UiText = listOf(bytesText(bytesPerSecond), raw("/s")).joined("")
 
+/**
+ * [s] with a line break allowed after each range dash: Android does not break "11:00–13:00"
+ * there, so a range too wide for its line was cut inside a time ("13:0" / "0"). The zero-width
+ * space is not seen or read aloud.
+ */
+fun breakableRanges(s: String): String = s.replace("–", "–\u200B")
+
 /** "12 min", "3 h 5 min", "2 d 4 h": the two largest units. */
 fun durationText(seconds: Long): UiText {
     val d = seconds / 86_400

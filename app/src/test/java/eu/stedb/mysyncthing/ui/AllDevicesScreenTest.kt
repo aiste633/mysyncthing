@@ -93,7 +93,8 @@ class AllDevicesScreenTest : ScreenTest() {
         val day = SyncWindow(7 * 60, 22 * 60, (1..5).toSet())
         runBlocking { check(settings.update { it.copy(timeSchedule = true, windows = listOf(day)) }) }
         devices()
-        val expected = scheduleText(conditions()).shown()
+        val expected = breakableRanges(scheduleText(conditions()).shown())
+        assertTrue("no break allowed in $expected", "–\u200B" in expected)
         settle("schedule shown") { compose.onAllNodes(hasText(expected)).fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText(str(R.string.value_default, str(R.string.any_time))).assertDoesNotExist()
     }
