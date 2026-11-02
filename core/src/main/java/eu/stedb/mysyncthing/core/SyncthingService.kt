@@ -18,6 +18,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -139,13 +140,17 @@ class SyncthingService : LifecycleService() {
                 val blockedBy = combine(timed, device) { (c, now), d -> c.blockedBy(d, now) }.stateIn(this)
                 // Also when a device is added or resumed, so none syncs while the conditions block it.
                 val anyUnpaused = SyncStatus.snapshot.map { s -> s.devices.any { !it.paused } }.distinctUntilChanged()
+                // The block the devices are in line with: the screens show a device as paused by the run
+                // conditions only once they are, so a choice made then always goes to the record.
+                val applied = MutableStateFlow<UiText?>(null)
                 launch {
                     combine(blockedBy, anyUnpaused) { reason, _ -> reason }.collectLatest { reason ->
                         while (!applyConditions(running.client.pauses(), settings, reason)) delay(5_000)
+                        applied.value = reason
                     }
                 }
                 launch {
-                    combine(blockedBy, settings.conditionPauses, ::DevicePause).collect { SyncStatus.publishPause(it) }
+                    combine(applied, settings.conditionPauses, ::DevicePause).collect { SyncStatus.publishPause(it) }
                 }
                 launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
                 combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
