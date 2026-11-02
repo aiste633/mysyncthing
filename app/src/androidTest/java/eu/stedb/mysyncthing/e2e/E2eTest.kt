@@ -362,6 +362,28 @@ class E2eTest {
         eventually("peer connected again", 120_000) { peer.connected(me) }
     }
 
+    /**
+     * Not part of the e2e run: scripts/e2e/monkey.py's "recreate" setup starts from here. Sync
+     * times on and open now, the peer's own windows only later, so it never syncs: the monkey
+     * starts on the "Never syncs" card, with the device and global editors (and the global
+     * editor's "Save anyway" dialog) one tap away. Left set on purpose.
+     */
+    @Test
+    fun monkeyNeverSyncs() {
+        val me = phoneId()
+        eventually("peer connected", 90_000) { peer.connected(me) }
+        val now = minuteOfDay(LocalDateTime.now())
+        fun window(from: Int, to: Int) = SyncWindow(Math.floorMod(now + from, MINUTES_PER_DAY), Math.floorMod(now + to, MINUTES_PER_DAY), (1..7).toSet())
+        runBlocking {
+            check(Settings(app).update {
+                it.copy(timeSchedule = true, windows = listOf(window(-60, 600)))
+                    .withDeviceWindows(peer.id, DeviceWindows(true, listOf(window(660, 720))))
+            })
+        }
+        eventually("peer disconnected: never syncs", 60_000) { !peer.connected(me) }
+        assertTrue("not judged never ${pauseState()}", SyncStatus.snapshot.value.pause.devices[peer.id]?.never == true)
+    }
+
     private fun pauseAll(paused: Boolean) = runBlocking { check(Settings(app).update { it.copy(pausedByUser = paused) }) }
 
     private fun recorded(): Set<String>? = runBlocking { Settings(app).conditionPause() }

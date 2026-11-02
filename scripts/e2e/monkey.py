@@ -14,7 +14,11 @@ Setups:
   plain     English, light, normal font; a little rotation
   de-big    German, dark, font 2.0 (the largest); a little rotation; the peer away for 35 min
             from minute 3, so the Devices tab shows the grey wait and then the red state
-  recreate  "Don't keep activities" on, much rotation
+  recreate  "Don't keep activities" on, much rotation; starts with the peer never syncing (sync
+            times open now, its own windows later: E2eTest#monkeyNeverSyncs), so the "Never syncs"
+            card, the sync window editors and "Save anyway" are close
+
+Not reachable by the monkey: the backup import preview (the file picker is another app).
 
 A run ends at the first crash or ANR (the monkey stops there, so the seed and event count
 reproduce it). Collected per run: the monkey's log of every event, the whole logcat, the
@@ -48,7 +52,7 @@ from run import ADB, APP, MONKEY_MIX, Device, adb, awake, log, pin, pinned, sh  
 SETUPS = {
     "plain": {"rotation": "2"},
     "de-big": {"rotation": "2", "locale": "de-DE", "font": "2.0", "night": "yes", "away_min": 35},
-    "recreate": {"rotation": "10", "dont_keep": True},
+    "recreate": {"rotation": "10", "dont_keep": True, "phase": "monkeyNeverSyncs"},
 }
 DROPBOX_TAGS = ["data_app_crash", "data_app_anr", "data_app_native_crash", "data_app_wtf", "SYSTEM_TOMBSTONE"]
 
@@ -160,6 +164,9 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
             return result
         phone = run.phone_id(peer)
         offer_folder(peer, phone)
+        if "phase" in setup and not run.phase(setup["phase"], peer, out):
+            result["result"] = f"setup failed: {'; '.join(run.failures)}"
+            return result
         dev.apply(setup)
         if not pin():
             result["result"] = "setup failed: could not pin the app"
