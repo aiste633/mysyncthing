@@ -108,7 +108,8 @@ through a relay, offline and paused by the user) and a folder offer. No real dev
   every card that is not connected says when the device was last seen (or never), after the
   reason it is paused; the device's screen no longer does.
 - Largest font: the widget's second line shows only while it fits under the first (it was cut at
-  200 % on the emulator), and at that size the tabs' status gets its own row under the title,
+  200 % on the emulator), and the widget is drawn again when the font size changes that, with no
+  new status (WidgetRedrawTest), and at that size the tabs' status gets its own row under the title,
   up to two lines (StatusBarFitTest: every status in every language at 360 and 412 dp; on a
   Pixel 7's width all read in full but the pause outside the sync times with its next time,
   and none runs into the screen below).

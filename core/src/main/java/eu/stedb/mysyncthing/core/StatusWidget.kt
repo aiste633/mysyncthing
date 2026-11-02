@@ -59,8 +59,27 @@ class StatusWidget : AppWidgetProvider() {
             val today = LocalDate.now()
             // The launcher picks the widest that fits: the app mark only where the text keeps its room.
             val hat = santaHat(today)
-            manager.updateAppWidget(ids, RemoteViews(mapOf(NARROW to views(context, summary, mark = false, hat), WITH_MARK to views(context, summary, mark = true, hat))))
+            val detail = detailFits(context.resources.displayMetrics)
+            manager.updateAppWidget(
+                ids, RemoteViews(mapOf(NARROW to views(context, summary, mark = false, hat, detail), WITH_MARK to views(context, summary, mark = true, hat, detail))),
+            )
+            drawnWithDetail = detail
             scheduleHatChange(context, today)
+        }
+
+        /** Whether the views last drawn by this process show the second line; null before the first. */
+        @Volatile
+        private var drawnWithDetail: Boolean? = null
+
+        /**
+         * The phone's font size changed. The launcher draws the views again in the new size, but whether
+         * the second line fits is decided here ([detailFits]): drawn at the normal size, it stayed and was
+         * cut at the largest, until the status changed. So the widget is drawn again when that decision
+         * changes. With no process running, the widget says the app is stopped and is drawn at the start.
+         */
+        fun redrawIfStale(context: Context) {
+            val drawn = drawnWithDetail ?: return
+            if (drawn != detailFits(context.resources.displayMetrics)) render(context, SyncStatus.summary.value)
         }
 
         /** The day the alarm below is set for in this process, so a render sets it once, not every time. */
@@ -86,7 +105,7 @@ class StatusWidget : AppWidgetProvider() {
         private val NARROW = SizeF(180f, 40f)
         private val WITH_MARK = SizeF(220f, 40f)
 
-        private fun views(context: Context, s: Summary, mark: Boolean, hat: Boolean): RemoteViews {
+        private fun views(context: Context, s: Summary, mark: Boolean, hat: Boolean, detail: Boolean): RemoteViews {
             val v = RemoteViews(context.packageName, R.layout.widget_status)
             val markVisibility = if (mark) View.VISIBLE else View.GONE
             v.setViewVisibility(R.id.widget_app_mark, markVisibility)
@@ -106,7 +125,7 @@ class StatusWidget : AppWidgetProvider() {
             v.setColorInt(R.id.widget_status_icon, "setColorFilter", light, dark)
             v.setTextViewText(R.id.widget_title, s.text.resolve(context))
             v.setTextViewText(R.id.widget_detail, widgetDetail(s).resolve(context))
-            v.setViewVisibility(R.id.widget_detail, if (detailFits(context.resources.displayMetrics)) View.VISIBLE else View.GONE)
+            v.setViewVisibility(R.id.widget_detail, if (detail) View.VISIBLE else View.GONE)
 
             val progress = s.progress
             v.setViewVisibility(R.id.widget_progress, if (progress != null) View.VISIBLE else View.GONE)

@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Environment
 import androidx.annotation.StringRes
@@ -42,6 +43,12 @@ import java.time.LocalDateTime
  */
 class SyncthingService : LifecycleService() {
     private lateinit var settings: Settings
+
+    /** The widget's second line depends on the font size (StatusWidget.redrawIfStale). */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        StatusWidget.redrawIfStale(this)
+    }
 
     override fun onCreate() {
         super.onCreate()
