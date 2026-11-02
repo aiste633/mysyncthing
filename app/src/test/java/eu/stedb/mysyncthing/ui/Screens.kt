@@ -26,7 +26,9 @@ val screens = listOf(
         FolderEditScreen(snapshot, draftFor(snapshot, "holiday", Fixtures.laptop, Folder()), Fixtures.laptop, pathBase(Folder()), onBack = {}, onSave = {})
     },
     ScreenCase("devices") { DevicesScreen(snapshot, summary, it, onOpen = {}, onOpenThisPhone = {}, onAdd = { _, _ -> }) },
+    ScreenCase("devices-blocked") { DevicesScreen(Fixtures.blocked, Fixtures.blockedSummary, it, onOpen = {}, onOpenThisPhone = {}, onAdd = { _, _ -> }) },
     ScreenCase("device") { DeviceScreen(snapshot, Fixtures.server, it, onBack = {}, onOpenNeeds = {}) },
+    ScreenCase("device-blocked") { DeviceScreen(Fixtures.blocked, Fixtures.laptop, it, onBack = {}, onOpenNeeds = {}) },
     ScreenCase("device-add") { DeviceEditScreen(snapshot, "", "", it, onBack = {}, onSave = { _, _, _ -> }) },
     ScreenCase("this-phone") { ThisPhoneScreen(snapshot, it, onBack = {}) },
     ScreenCase("settings") {

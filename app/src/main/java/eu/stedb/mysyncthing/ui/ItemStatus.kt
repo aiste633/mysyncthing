@@ -4,8 +4,10 @@ import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connection
 import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.DevicePause
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderStatus
+import eu.stedb.mysyncthing.core.PAUSED_BY_USER
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.plural
@@ -31,12 +33,23 @@ fun folderStatus(f: Folder, st: FolderStatus?): ItemStatus = when {
 }
 
 /** A device being offline is normal (a laptop asleep), so it is grey, not red. */
-fun deviceStatus(d: Device, conn: Connection?, completion: Completion?): ItemStatus = when {
-    d.paused -> ItemStatus(SyncState.Paused, text(CoreR.string.status_paused))
+fun deviceStatus(d: Device, conn: Connection?, completion: Completion?, pause: DevicePause = DevicePause()): ItemStatus = when {
+    pause.paused(d) -> ItemStatus(SyncState.Paused, text(CoreR.string.status_paused))
     conn?.connected != true -> ItemStatus(SyncState.Stopped, text(R.string.item_disconnected))
     completion != null && completion.needBytes > 0 ->
         ItemStatus(SyncState.Syncing, text(CoreR.string.status_syncing_percent, completion.completion.toInt()), (completion.completion / 100).toFloat())
     else -> ItemStatus(SyncState.UpToDate, text(CoreR.string.status_up_to_date))
+}
+
+/**
+ * Who paused [d], for its card: the user, the user's pause of all syncing, or a run condition
+ * ("On mobile data"). Null when it is not paused.
+ */
+fun pauseReason(d: Device, pause: DevicePause): UiText? = when {
+    !pause.paused(d) -> null
+    pause.byUser(d) -> text(R.string.device_paused_by_you)
+    pause.blockedBy == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
+    else -> pause.blockedBy
 }
 
 /**

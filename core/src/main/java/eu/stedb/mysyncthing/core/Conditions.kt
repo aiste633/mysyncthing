@@ -14,6 +14,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.io.IOException
 import java.time.LocalDateTime
 
 /** Device state relevant to run conditions. */
@@ -65,6 +68,68 @@ internal data class ConditionPause(
     val resume: List<String> = emptyList(),
     val clearRecord: Boolean = false,
 )
+
+/**
+ * Why the run conditions pause every device ([blockedBy], null while syncing is allowed) and the
+ * devices the user paused themselves meanwhile ([recorded], see [conditionPause]). The core's own
+ * `paused` then says only that a device is paused, not who wanted it.
+ */
+data class DevicePause(val blockedBy: UiText? = null, val recorded: Set<String>? = null) {
+    val blocked: Boolean get() = blockedBy != null
+
+    /** The user's own choice for [d]: while the run conditions pause everything, the recorded one. */
+    fun byUser(d: Device): Boolean = recorded?.contains(d.deviceID) ?: d.paused
+
+    /** Paused now, by the user or by the run conditions. */
+    fun paused(d: Device): Boolean = d.paused || blocked
+}
+
+/** The core's device pauses, as the steps below use them; a fake in tests. */
+internal interface CorePauses {
+    suspend fun devices(): List<Device>
+
+    /** All devices when [id] is null. */
+    suspend fun setPaused(id: String?, paused: Boolean)
+}
+
+internal fun RestClient.pauses(): CorePauses {
+    val client = this
+    return object : CorePauses {
+        override suspend fun devices() = client.devices()
+        override suspend fun setPaused(id: String?, paused: Boolean) {
+            if (id == null) client.setAllPaused(paused) else client.setDevicePaused(id, paused)
+        }
+    }
+}
+
+/** Orders the service's run-condition steps and the user's own pauses, so neither undoes the other. */
+private val pauseLock = Mutex()
+
+/**
+ * Pauses or resumes [id] as the user's own choice. While the run conditions pause everything only
+ * the record changes: the device stays paused until they allow syncing, and then follows it.
+ */
+suspend fun setDevicePausedByUser(client: RestClient, settings: Settings, id: String, paused: Boolean) =
+    setDevicePausedByUser(client.pauses(), settings, id, paused)
+
+internal suspend fun setDevicePausedByUser(core: CorePauses, settings: Settings, id: String, paused: Boolean) = pauseLock.withLock {
+    when (settings.recordUserPause(id, paused)) {
+        true -> Unit
+        false -> core.setPaused(id, paused)
+        null -> throw IOException("app settings not writable")
+    }
+}
+
+/** Brings the devices in line with the run conditions ([conditionPause]); false if a step failed. */
+internal suspend fun applyConditions(core: CorePauses, settings: Settings, reason: UiText?): Boolean = pauseLock.withLock {
+    val plan = runCatching { conditionPause(reason, settings.conditionPause(), core.devices()) }.getOrElse { return false }
+    // Unrecorded, the pause would never be undone.
+    if (plan.record != null && !settings.setConditionPause(plan.record)) return false
+    runCatching {
+        if (plan.pauseAll) core.setPaused(null, true)
+        plan.resume.forEach { core.setPaused(it, false) }
+    }.isSuccess && (!plan.clearRecord || settings.setConditionPause(null))
+}
 
 internal fun conditionPause(reason: UiText?, recorded: Set<String>?, devices: List<Device>): ConditionPause = when {
     reason != null -> ConditionPause(

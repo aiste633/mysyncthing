@@ -7,6 +7,7 @@ import androidx.annotation.StringRes
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
@@ -186,6 +187,64 @@ class E2eTest {
             shell("svc wifi enable")
         }
         eventually("peer connected again on Wi-Fi", 120_000) { peer.connected(me) }
+    }
+
+    /**
+     * The user's own pause of a device: from its card while syncing is allowed, and from its
+     * screen while everything is paused (here by the user's pause of all syncing, enforced like
+     * a run condition). A resume then used to be undone at once; now the choice holds afterwards.
+     */
+    @Test
+    fun devicePause() {
+        val me = phoneId()
+        eventually("peer connected", 90_000) { peer.connected(me) }
+        val pauseCard = app.getString(R.string.device_pause_named, PEER_NAME)
+        val resumeCard = app.getString(R.string.device_resume_named, PEER_NAME)
+        tap(str(R.string.tab_devices))
+        tap(pauseCard)
+        eventually("peer disconnected: paused on its card", 60_000) { !peer.connected(me) }
+        try {
+            pauseAll(true)
+            // The card's toggle rests while everything is paused.
+            rule.waitUntil(30_000) { rule.onAllNodes(hasContentDescription(resumeCard)).fetchSemanticsNodes().isNotEmpty() }
+            rule.onNode(hasContentDescription(resumeCard)).assertIsNotEnabled()
+
+            // Resumed on its screen while blocked: still paused now, resumed when the block ends.
+            tap(PEER_NAME)
+            tap(str(R.string.device_pause))
+            eventually("the choice recorded", 10_000) { recorded() == emptySet<String>() }
+            assertTrue("still paused while blocked", corePaused())
+            pauseAll(false)
+            eventually("peer connected: resumed after the block", 120_000) { peer.connected(me) }
+
+            // Paused on its screen while blocked: stays paused when the block ends.
+            pauseAll(true)
+            eventually("peer disconnected: all paused", 60_000) { !peer.connected(me) }
+            tap(str(R.string.device_pause))
+            eventually("the choice recorded", 10_000) { recorded() == setOf(peer.id) }
+            pauseAll(false)
+            eventually("block over", 30_000) { recorded() == null }
+            assertTrue("still paused by the user after the block", corePaused())
+            val end = System.currentTimeMillis() + 20_000
+            while (System.currentTimeMillis() < end) {
+                assertFalse("the peer reconnected to a device the user paused", peer.connected(me))
+                Thread.sleep(1_000)
+            }
+        } finally {
+            pauseAll(false)
+        }
+        tap(str(R.string.device_pause))
+        eventually("peer connected again", 120_000) { peer.connected(me) }
+    }
+
+    private fun pauseAll(paused: Boolean) = runBlocking { check(Settings(app).update { it.copy(pausedByUser = paused) }) }
+
+    private fun recorded(): Set<String>? = runBlocking { Settings(app).conditionPause() }
+
+    /** The phone's core has the peer paused (SyncStatus follows its config). */
+    private fun corePaused(): Boolean {
+        eventually("peer in the phone's config", 10_000) { SyncStatus.snapshot.value.devices.any { it.deviceID == peer.id } }
+        return SyncStatus.snapshot.value.devices.first { it.deviceID == peer.id }.paused
     }
 
     /**

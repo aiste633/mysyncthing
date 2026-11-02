@@ -39,6 +39,7 @@ import eu.stedb.mysyncthing.core.Versioning
 import eu.stedb.mysyncthing.core.messageText
 import eu.stedb.mysyncthing.core.plural
 import eu.stedb.mysyncthing.core.restoreDatedNow
+import eu.stedb.mysyncthing.core.setDevicePausedByUser
 import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
@@ -315,7 +316,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
     fun removeDevice(id: String) = act(R.string.op_remove_device) { removeDevice(id) }
     fun renameDevice(id: String, name: String) = act(R.string.op_rename) { setDeviceName(id, name.trim()) }
-    fun setDevicePaused(id: String, paused: Boolean) = act(R.string.op_pause) { setDevicePaused(id, paused) }
+    /** The user's own pause of [id]; while the run conditions pause everything, it decides whether [id] resumes afterwards. */
+    fun setDevicePaused(id: String, paused: Boolean) = act(R.string.op_pause) { setDevicePausedByUser(this, settings, id, paused) }
     fun ignoreDevice(id: String) = act(R.string.op_ignore) { ignoreDevice(id) }
     fun ignoreFolder(folder: String, device: String) = act(R.string.op_ignore) { ignoreFolder(folder, device) }
 

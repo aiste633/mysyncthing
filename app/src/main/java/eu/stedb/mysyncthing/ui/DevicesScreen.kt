@@ -1,6 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
 import android.content.Intent
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.OutlinedIconToggleButton
+import androidx.compose.ui.graphics.Color
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,7 +90,7 @@ fun DevicesScreen(
                 }
                 grouped(s.devices) { it.group }.forEach { (group, devices) ->
                     if (group.isNotEmpty()) item("group-$group") { GroupTitle(group) }
-                    items(devices, key = { it.deviceID }) { d -> DeviceCard(d, s) { onOpen(d.deviceID) } }
+                    items(devices, key = { it.deviceID }) { d -> DeviceCard(d, s, onPause = { vm.setDevicePaused(d.deviceID, it) }) { onOpen(d.deviceID) } }
                 }
                 if (s.loaded && s.devices.isEmpty() && s.pendingDevices.isEmpty()) {
                     item("empty") {
@@ -99,34 +108,41 @@ fun DevicesScreen(
     if (showMyId) MyIdDialog(s.myId) { showMyId = false }
 }
 
+/** This phone, in its own colour so it is never taken for one of the remote devices below. */
 @Composable
 private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, onShowQr: () -> Unit) {
     val context = LocalContext.current
-    ListCard(onClick = onOpen) {
+    val on = MaterialTheme.colorScheme.onSecondaryContainer
+    // Tonal buttons are secondaryContainer too: on this card they take the other cards' colour.
+    val buttons = ButtonDefaults.filledTonalButtonColors(containerColor = AppColors.card().containerColor, contentColor = on)
+    Card(
+        onClick = onOpen, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = on),
+    ) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Smartphone, null, tint = MaterialTheme.colorScheme.primary)
+                Icon(Icons.Default.Smartphone, null, tint = on)
                 Spacer(Modifier.width(8.dp))
                 Column {
                     Text(s.myName.ifEmpty { stringResource(R.string.this_phone) }, style = MaterialTheme.typography.titleMedium)
-                    Text(stringResource(R.string.devices_this_device_id, shortId(s.myId)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(stringResource(R.string.devices_this_device_id, shortId(s.myId)), style = MaterialTheme.typography.bodySmall)
                 }
             }
-            Text(speedText(live?.total ?: Speed.Zero).asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(speedText(live?.total ?: Speed.Zero).asString(), style = MaterialTheme.typography.bodySmall)
             live?.let { l ->
                 val look = l.health.look()
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
                     Spacer(Modifier.width(6.dp))
-                    Text(l.healthText.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(l.healthText.asString(), style = MaterialTheme.typography.bodySmall)
                 }
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
-                FilledTonalButton(shape = ButtonShape, onClick = onShowQr) {
+                FilledTonalButton(shape = ButtonShape, colors = buttons, onClick = onShowQr) {
                     Icon(Icons.Default.QrCode, null, Modifier.size(18.dp)); Spacer(Modifier.width(6.dp)); Text(stringResource(R.string.devices_show_id))
                 }
                 val chooserTitle = stringResource(R.string.devices_share_id_title)
-                FilledTonalButton(shape = ButtonShape, onClick = {
+                FilledTonalButton(shape = ButtonShape, colors = buttons, onClick = {
                     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, s.myId)
                     context.startActivity(Intent.createChooser(send, chooserTitle))
                 }) {
@@ -137,29 +153,53 @@ private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, on
     }
 }
 
+/**
+ * A remote device: its status, why it is paused, and the user's own pause as a toggle. While the
+ * run conditions pause everything the toggle is off limits; the device's screen still sets it.
+ */
 @Composable
-private fun DeviceCard(d: Device, s: Snapshot, onClick: () -> Unit) {
+private fun DeviceCard(d: Device, s: Snapshot, onPause: (Boolean) -> Unit, onClick: () -> Unit) {
     val conn = s.connections[d.deviceID]
-    val status = deviceStatus(d, conn, s.completion[d.deviceID])
+    val pause = s.pause
+    val status = deviceStatus(d, conn, s.completion[d.deviceID], pause)
     val look = status.state.look()
     val folders = s.folders.count { f -> f.devices.any { it.deviceID == d.deviceID } }
+    val name = d.name.ifEmpty { shortId(d.deviceID) }
+    val byUser = pause.byUser(d)
     ListCard(onClick = onClick) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Column(Modifier.padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    d.name.ifEmpty { shortId(d.deviceID) }, style = MaterialTheme.typography.titleMedium,
+                    name, style = MaterialTheme.typography.titleMedium,
                     maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f),
                 )
                 Icon(look.icon, null, Modifier.size(18.dp), tint = look.color)
                 Spacer(Modifier.width(4.dp))
                 Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
+                // The same outline on and off: the icon (pause or play) says which it is.
+                val enabled = !pause.blocked
+                val on = MaterialTheme.colorScheme.onSurface
+                OutlinedIconToggleButton(
+                    checked = byUser, onCheckedChange = onPause, enabled = enabled, shape = ButtonShape,
+                    colors = IconButtonDefaults.outlinedIconToggleButtonColors(
+                        contentColor = on, checkedContentColor = on, checkedContainerColor = Color.Transparent,
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = if (enabled) 1f else DISABLED_ALPHA)),
+                ) {
+                    val label = stringResource(if (byUser) R.string.device_resume_named else R.string.device_pause_named, name)
+                    Icon(if (byUser) Icons.Default.PlayArrow else Icons.Default.Pause, label, Modifier.size(20.dp))
+                }
             }
             Text(
-                listOfNotNull(connectionText(conn, withAddress = false), count(R.plurals.count_folders, folders)).map { it.asString() }.joinToString(" · "),
+                listOfNotNull(pauseReason(d, pause) ?: connectionText(conn, withAddress = false), count(R.plurals.count_folders, folders))
+                    .map { it.asString() }.joinToString(" · ")
+                    // A reason written to follow "Paused: " starts lower case in some languages (Italian).
+                    .replaceFirstChar { it.titlecase() },
                 style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(end = 8.dp),
             )
             status.progress?.let {
-                ProgressBar(it, look.color, Modifier.padding(top = 6.dp))
+                ProgressBar(it, look.color, Modifier.padding(top = 6.dp, end = 8.dp))
             }
         }
     }
@@ -180,3 +220,6 @@ private fun MyIdDialog(id: String, onDismiss: () -> Unit) {
         confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) } },
     )
 }
+
+/** Material's opacity for a disabled control's outline. */
+private const val DISABLED_ALPHA = 0.12f

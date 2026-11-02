@@ -5,6 +5,7 @@ import eu.stedb.mysyncthing.core.Connection
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.Credentials
 import eu.stedb.mysyncthing.core.Device
+import eu.stedb.mysyncthing.core.DevicePause
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.FolderStatus
@@ -14,6 +15,8 @@ import eu.stedb.mysyncthing.core.RestClient
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Versioning
 import eu.stedb.mysyncthing.core.summarize
+import eu.stedb.mysyncthing.core.text
+import eu.stedb.mysyncthing.core.R as CoreR
 
 private const val B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
@@ -54,7 +57,7 @@ object Fixtures {
         devices = listOf(
             Device(laptop, "Laptop"),
             Device(server, "Home server", addresses = listOf("dynamic", "tcp" + "://192.0.2.10:22000")),
-            Device(tablet, "Old tablet"),
+            Device(tablet, "Old tablet", paused = true), // by the user
         ),
         folders = listOf(
             Folder(
@@ -84,4 +87,14 @@ object Fixtures {
     val core = CoreState.Running(RestClient("127.0.0.1:9", "test"), "127.0.0.1:9", myId, Credentials("test", "test", "test"))
 
     val summary = summarize(core, snapshot, blockedBy = null, online = true)
+
+    /** On mobile data with syncing off there: every device paused, the tablet also by the user. */
+    private val mobileData = text(CoreR.string.pause_reason_mobile_data)
+    val blocked = snapshot.copy(
+        devices = snapshot.devices.map { it.copy(paused = true) },
+        connections = emptyMap(),
+        completion = emptyMap(),
+        pause = DevicePause(mobileData, recorded = setOf(tablet)),
+    )
+    val blockedSummary = summarize(core, blocked, blockedBy = mobileData, online = true)
 }

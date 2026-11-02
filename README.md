@@ -17,6 +17,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Folders and devices as clear cards with colour and icon status. Pair devices by QR code or device ID.
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning; restore older versions of a file.
 - Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver; only at set times of the week (for example 22:00–07:00 on weekdays).
+- Pause single devices from their card. Each card says why a device is paused (by you, or for example on mobile data), and a device you paused stays paused when the run conditions allow syncing again.
 - Connect through a SOCKS5 or HTTP proxy, such as Tor with Orbot, optionally with nothing going around it.
 - Easy switch from Syncthing-Fork: import its backup, encrypted ones too, and take over its device ID, folders and devices. Export this app's setup to a zip, optionally AES-256 encrypted, and import it on another phone.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.

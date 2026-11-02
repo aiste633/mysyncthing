@@ -521,6 +521,14 @@
     <string name="device_traffic">Empfangen %1$s · gesendet %2$s</string>
     <string name="device_last_seen">Zuletzt online %1$s</string>
     <string name="device_never_connected">Nie verbunden</string>
+    <string name="device_pause">Dieses Gerät pausieren</string>
+    <string name="device_pause_hint">Bleibt pausiert, bis Sie dies ausschalten, auch wenn die Synchronisierung wieder erlaubt ist</string>
+    <string name="device_pause_named">%1$s pausieren</string>
+    <string name="device_resume_named">%1$s fortsetzen</string>
+    <string name="device_paused_by_you">Von Ihnen</string>
+    <string name="device_all_paused_by_you">Alles von Ihnen pausiert</string>
+    <string name="device_block_note_conditions">Alle Geräte warten, bis die Synchronisierung wieder erlaubt ist. Danach wird dieses Gerät von selbst fortgesetzt, außer Sie pausieren es unten.</string>
+    <string name="device_block_note_user">Alle Geräte warten, bis Sie die Synchronisierung in den Einstellungen oder im Widget fortsetzen. Danach wird auch dieses Gerät fortgesetzt, außer Sie pausieren es unten.</string>
     <string name="syncthing_version">Syncthing %1$s</string>
     <plurals name="device_still_needs">
         <item quantity="one">Braucht noch %1$s Element, %2$s von diesem Smartphone</item>

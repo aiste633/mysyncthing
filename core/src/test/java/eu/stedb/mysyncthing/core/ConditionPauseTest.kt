@@ -1,8 +1,11 @@
 package eu.stedb.mysyncthing.core
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
+import java.io.IOException
 import kotlin.random.Random
 
 /**
@@ -14,15 +17,28 @@ import kotlin.random.Random
 class ConditionPauseTest {
     private val blocked = text(R.string.pause_reason_mobile_data)
 
-    /** The core's devices after the service carried out [conditionPause], and the record it keeps. */
-    private class Phone(var devices: List<Device>, var recorded: Set<String>? = null) {
-        fun apply(reason: UiText?) {
-            val plan = conditionPause(reason, recorded, devices)
-            plan.record?.let { recorded = it }
-            if (plan.pauseAll) devices = devices.map { it.copy(paused = true) }
-            devices = devices.map { if (it.deviceID in plan.resume) it.copy(paused = false) else it }
-            if (plan.clearRecord) recorded = null
+    /**
+     * The core's devices, a fake of its REST calls, with the service's [applyConditions] and the
+     * app's [setDevicePausedByUser] run on them as the phone runs them, record in real [Settings].
+     */
+    private class Phone(var devices: List<Device>) : CorePauses {
+        val store = FillableStore()
+        val settings = Settings(store)
+        var reason: UiText? = null
+        val recorded: Set<String>? get() = runBlocking { settings.conditionPause() }
+        val pause get() = DevicePause(reason, recorded)
+
+        override suspend fun devices() = devices
+        override suspend fun setPaused(id: String?, paused: Boolean) {
+            devices = devices.map { if (id == null || it.deviceID == id) it.copy(paused = paused) else it }
         }
+
+        fun apply(reason: UiText?) = runBlocking {
+            this@Phone.reason = reason
+            assertTrue(applyConditions(this@Phone, settings, reason))
+        }
+
+        fun userPause(id: String, paused: Boolean) = runBlocking { setDevicePausedByUser(this@Phone, settings, id, paused) }
     }
 
     private fun dev(id: String, paused: Boolean = false) = Device(deviceID = id, paused = paused)
@@ -39,6 +55,40 @@ class ConditionPauseTest {
         phone.apply(null)
         assertEquals(listOf(false, true, false), phone.devices.map { it.paused })
         assertEquals(null, phone.recorded)
+    }
+
+    /** Resume on a device while on mobile data used to be undone at once, and the device stayed paused afterwards. */
+    @Test
+    fun theUsersChoiceWhileBlockedHoldsAfterwards() {
+        val phone = Phone(listOf(dev("A"), dev("B", paused = true)))
+        phone.apply(blocked)
+        phone.userPause("B", false)
+        phone.userPause("A", true)
+        assertTrue("still blocked: nothing resumes", phone.devices.all { it.paused })
+        assertEquals(setOf("A"), phone.recorded)
+        assertTrue(phone.pause.byUser(dev("A")))
+        phone.apply(blocked) // an event or a new device while still blocked
+        assertTrue(phone.devices.all { it.paused })
+        phone.apply(null)
+        assertEquals(listOf(true, false), phone.devices.map { it.paused })
+        assertEquals(null, phone.recorded)
+    }
+
+    /**
+     * With syncing allowed the pause goes to the core at once, also with the storage full. While
+     * blocked a choice that can't be recorded fails, so the screen does not show it as taken.
+     */
+    @Test
+    fun allowedGoesToTheCoreAndAnUnrecordedChoiceFails() {
+        val phone = Phone(listOf(dev("A"), dev("B")))
+        phone.store.full = true
+        phone.userPause("A", true)
+        assertEquals(listOf(true, false), phone.devices.map { it.paused })
+        phone.store.full = false
+        phone.apply(blocked)
+        phone.store.full = true
+        assertThrows(IOException::class.java) { phone.userPause("B", true) }
+        assertEquals(setOf("A"), phone.recorded)
     }
 
     @Test
@@ -61,15 +111,18 @@ class ConditionPauseTest {
                 val reason = if (r.nextBoolean()) blocked else null
                 when (r.nextInt(4)) {
                     0 -> phone.devices += dev("D${next++}") // added in the app or the web GUI
-                    1 -> if (phone.recorded == null && phone.devices.isNotEmpty()) {
-                        // The user pauses or resumes a device while syncing is allowed.
-                        val d = phone.devices.random(r)
-                        phone.devices = phone.devices.map { if (it == d) it.copy(paused = !it.paused) else it }
-                        if (d.paused) userPaused -= d.deviceID else userPaused += d.deviceID
+                    // The user pauses or resumes a device, also while the run conditions pause everything.
+                    1 -> if (phone.devices.isNotEmpty()) {
+                        val d = phone.devices.random(r).deviceID
+                        val paused = d !in userPaused
+                        phone.userPause(d, paused)
+                        if (paused) userPaused += d else userPaused -= d
                     }
                 }
+                assertEquals("the screens show the user's own choice", userPaused, phone.devices.filter { phone.pause.byUser(it) }.map { it.deviceID }.toSet())
                 phone.apply(reason)
                 if (reason != null) assertTrue("blocked: every device paused", phone.devices.all { it.paused })
+                assertEquals("the screens show the user's own choice", userPaused, phone.devices.filter { phone.pause.byUser(it) }.map { it.deviceID }.toSet())
             }
             phone.apply(null)
             assertEquals(userPaused, phone.devices.filter { it.paused }.map { it.deviceID }.toSet())

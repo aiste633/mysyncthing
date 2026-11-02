@@ -647,6 +647,17 @@
     <!-- %1$s: when, e.g. "yesterday, 22:10" -->
     <string name="device_last_seen">Last seen %1$s</string>
     <string name="device_never_connected">Never connected</string>
+    <string name="device_pause">Pause this device</string>
+    <string name="device_pause_hint">Stays paused until you switch this off, also when syncing is allowed again</string>
+    <!-- %1$s: device name. What the pause toggle on the device's card does, read out by TalkBack -->
+    <string name="device_pause_named">Pause %1$s</string>
+    <string name="device_resume_named">Resume %1$s</string>
+    <!-- Why a device is paused, at the start of its card's second line: "By you · 2 folders" -->
+    <string name="device_paused_by_you">By you</string>
+    <!-- The user paused all syncing (Settings, widget); on each device's card and screen -->
+    <string name="device_all_paused_by_you">All paused by you</string>
+    <string name="device_block_note_conditions">All devices wait until syncing is allowed again. This device then resumes on its own, unless you pause it below.</string>
+    <string name="device_block_note_user">All devices wait until you resume syncing in Settings or on the widget. This device then resumes too, unless you pause it below.</string>
     <!-- %1$s: version, e.g. v2.1.7 -->
     <string name="syncthing_version">Syncthing %1$s</string>
     <!-- %1$s: number of items, %2$s: their size -->

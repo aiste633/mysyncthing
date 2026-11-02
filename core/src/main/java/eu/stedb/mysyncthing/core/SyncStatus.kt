@@ -29,6 +29,8 @@ data class Snapshot(
     val systemErrors: List<SystemError> = emptyList(),
     /** The core's local discovery setting (options.localAnnounceEnabled). */
     val localDiscovery: Boolean = false,
+    /** Who paused the devices; from the service, not the core. */
+    val pause: DevicePause = DevicePause(),
 )
 
 /**
@@ -51,6 +53,10 @@ object SyncStatus {
         _summary.value = summary
     }
 
+    internal fun publishPause(pause: DevicePause) {
+        _snapshot.update { it.copy(pause = pause) }
+    }
+
     /** Clears the core's notices; the snapshot follows at once instead of at the next check. */
     suspend fun clearErrors(client: RestClient) {
         client.clearErrors()
@@ -71,7 +77,7 @@ object SyncStatus {
             coroutineScope {
                 launch {
                     for (r in refresh) {
-                        runCatching { _snapshot.value = load(client) }
+                        runCatching { load(client) }.onSuccess { fresh -> _snapshot.update { fresh.copy(pause = it.pause) } }
                         delay(1_000)
                     }
                 }
