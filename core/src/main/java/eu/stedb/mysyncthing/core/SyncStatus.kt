@@ -12,6 +12,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.runningFold
 import kotlinx.coroutines.flow.transformLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -186,8 +189,9 @@ private val SYNCING_STATES = setOf("syncing", "sync-preparing")
  * then requests waiting for them, then sync progress.
  *
  * No device connected is a wait, not a problem, for [NO_DEVICE_LIMIT] after the last
- * device that is not paused was seen, or after [startedAt] when none was since. Paused
- * devices don't count: the user chose not to see them.
+ * device that is not paused was seen, or after [waitingSince] when that is later (see
+ * [waitingSince]: the start, syncing allowed again, a device resumed). Paused devices
+ * don't count: the user chose not to see them.
  */
 fun summarize(
     core: CoreState,
@@ -195,7 +199,7 @@ fun summarize(
     blockedBy: UiText?,
     online: Boolean,
     now: Instant = Instant.now(),
-    startedAt: Instant = now,
+    waitingSince: Instant = now,
 ): Summary {
     when (core) {
         is CoreState.Failed -> return Summary(SyncState.Problem, text(R.string.status_stopped_error))
@@ -247,7 +251,7 @@ fun summarize(
     if (s.devices.all { it.paused } || active.isEmpty()) return result(SyncState.Paused, text(R.string.status_paused))
     if (connected.isEmpty()) {
         val seen = s.devices.filter { !it.paused }.mapNotNull { s.lastSeen[it.deviceID] }.maxOrNull()
-        val due = maxOf(seen ?: startedAt, startedAt) + NO_DEVICE_LIMIT
+        val due = maxOf(seen ?: waitingSince, waitingSince) + NO_DEVICE_LIMIT
         return if (now >= due) {
             result(SyncState.Problem, text(R.string.status_no_device)).copy(lastSeen = seen)
         } else {
@@ -275,6 +279,18 @@ fun summarize(
 
 private fun Snapshot.connectedNames() = devices.filter { connections[it.deviceID]?.connected == true }
     .map { it.name.ifEmpty { it.deviceID.substringBefore('-') } }
+
+/**
+ * Since when the phone waits for its devices, for [summarize], from whether syncing is allowed
+ * and which devices are not paused: [start], then each time syncing is allowed again or a device
+ * is resumed or added. Their last-seen time is from before the pause, so counted from it alone a
+ * device resumed after hours, or every device when the run conditions allow syncing again, was
+ * "No device for over 30 min" at once, before it had a chance to connect.
+ */
+internal fun Flow<Pair<Boolean, Set<String>>>.waitingSince(start: Instant, clock: () -> Instant): Flow<Instant> =
+    runningFold(Triple(start, true, emptySet<String>())) { (at, wasAllowed, was), (allowed, unpaused) ->
+        Triple(if (allowed && (!wasAllowed || !was.containsAll(unpaused))) clock() else at, allowed, unpaused)
+    }.map { it.first }.distinctUntilChanged()
 
 /**
  * Each input's summary, and that summary again at its [Summary.recheckAt]: a wait turns into

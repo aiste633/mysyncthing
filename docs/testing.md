@@ -68,7 +68,9 @@ syncing is paused too, and only the user's own pauses stay afterwards; a propert
 resumes devices at random, also while everything is blocked, and checks that the screens always
 show the user's own choice and that it holds when the block ends), the overall status while no
 device is connected (a property test: grey "Waiting for devices" until 30 min after the last
-device that is not paused was seen, or after the start, then red; the status is summarized again
+device that is not paused was seen, or after the start, the end of a block or a device resumed
+when that is later, so a device resumed after days gets its 30 min too (a second property test
+against a plain model), then red; the status is summarized again
 then by the wall clock, and a device that connects ends the wait; the alarm for it never wakes the
 phone), "Sync times" in amber
 exactly when the sync times are what pauses the devices (a property test against the run

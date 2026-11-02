@@ -3,6 +3,7 @@ package eu.stedb.mysyncthing.core
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -18,7 +19,8 @@ import kotlin.random.Random
 
 /**
  * No device connected: grey "Waiting for devices" for 30 min after the last device that is not
- * paused was seen (or after the start, when none was since), then red. The service summarizes
+ * paused was seen, or after the start, syncing allowed again or a device resumed when that is
+ * later (waitingSince), then red. The service summarizes
  * again then, as no event says the time is up.
  */
 class NoDeviceTest {
@@ -35,7 +37,7 @@ class NoDeviceTest {
         lastSeen = seen,
     )
 
-    private fun at(s: Snapshot, now: Instant, startedAt: Instant) = summarize(running, s, null, true, now, startedAt)
+    private fun at(s: Snapshot, now: Instant, since: Instant) = summarize(running, s, null, true, now, since)
 
     /** The user's choice (2026-11-02): 30 min; the text names it. */
     @Test
@@ -191,5 +193,81 @@ class NoDeviceTest {
         inputs.close()
         job.join()
         assertTrue(results.tryReceive().isFailure)
+    }
+
+    /** Steps of (syncing allowed, devices not paused) at their times, through [waitingSince]. */
+    private fun since(vararg steps: Pair<Instant, Pair<Boolean, Set<String>>>): List<Instant> = runBlocking {
+        var clock = t0
+        val inputs = Channel<Pair<Boolean, Set<String>>>(Channel.UNLIMITED)
+        steps.forEach { inputs.send(it.second) }
+        inputs.close()
+        var i = 0
+        inputs.consumeAsFlow().map { v -> clock = steps[i++].first; v }.waitingSince(t0) { clock }.toList()
+    }
+
+    private val both = setOf(server.deviceID, laptop.deviceID)
+
+    @Test
+    fun theWaitStartsAgainWhenADeviceIsResumed() {
+        val (t1, t2, t3) = listOf(1L, 2L, 3L).map { t0.plus(Duration.ofHours(it)) }
+        // Loaded, laptop paused by the user, laptop resumed hours later.
+        assertEquals(
+            listOf(t0, t1, t3),
+            since(t1 to (true to both), t2 to (true to setOf(server.deviceID)), t3 to (true to both)),
+        )
+    }
+
+    @Test
+    fun theWaitStartsAgainWhenSyncingIsAllowedAgain() {
+        val (t1, t2, t3, t4) = listOf(1L, 2L, 3L, 4L).map { t0.plus(Duration.ofHours(it)) }
+        assertEquals(
+            listOf(t0, t1, t4),
+            // Blocked (the run conditions pause every device), then allowed, then the devices resumed.
+            since(t1 to (true to both), t2 to (false to both), t3 to (false to emptySet()), t4 to (true to emptySet()), t4 to (true to both)),
+        )
+    }
+
+    @Test
+    fun aDevicePausedOrResumedWhileBlockedWaitsForTheEndOfTheBlock() {
+        val (t1, t2, t3) = listOf(1L, 2L, 3L).map { t0.plus(Duration.ofHours(it)) }
+        assertEquals(listOf(t0, t3), since(t1 to (false to emptySet()), t2 to (false to both), t3 to (true to both)))
+    }
+
+    /** The finding (2026-11-02): resumed after days away, the device gets its 30 min, then red. */
+    @Test
+    fun aDeviceResumedAfterDaysIsWaitedForFirst() {
+        val resumed = t0.plus(Duration.ofDays(3))
+        val s = snap(seen = mapOf(server.deviceID to t0, laptop.deviceID to t0))
+        at(s, resumed.plusSeconds(60), resumed).let {
+            assertEquals(SyncState.Waiting, it.state)
+            assertEquals(t0, it.lastSeen)
+            assertEquals(resumed.plus(NO_DEVICE_LIMIT), it.recheckAt)
+        }
+        assertEquals(SyncState.Problem, at(s, resumed.plus(NO_DEVICE_LIMIT), resumed).state)
+    }
+
+    /** Against a plain model: the wait restarts exactly at an allowed step that ends a block or adds a device. */
+    @Test
+    fun waitingSinceProperty() {
+        val r = Random(2026110216)
+        val ids = List(4) { "DEV$it-X" }
+        repeat(2_000) {
+            val steps = List(r.nextInt(1, 12)) { i ->
+                t0.plusSeconds(600L * (i + 1)) to ((r.nextInt(4) != 0) to ids.filter { r.nextBoolean() }.toSet())
+            }.toTypedArray()
+            var expected = t0
+            var allowed = true
+            var unpaused = emptySet<String>()
+            val model = mutableListOf(t0)
+            for ((at, v) in steps) {
+                if (v.first && (!allowed || !unpaused.containsAll(v.second))) expected = at
+                allowed = v.first
+                unpaused = v.second
+                if (expected != model.last()) model += expected
+            }
+            val got = since(*steps)
+            assertEquals(model, got)
+            assertEquals(got.sorted(), got)
+        }
     }
 }

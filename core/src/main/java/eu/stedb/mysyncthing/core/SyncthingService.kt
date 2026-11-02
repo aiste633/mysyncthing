@@ -154,9 +154,11 @@ class SyncthingService : LifecycleService() {
                     combine(applied, settings.conditionPauses, ::DevicePause).collect { SyncStatus.publishPause(it) }
                 }
                 launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
-                val startedAt = Instant.now()
-                combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
-                    { now: Instant -> summarize(core, snap, reason, d.online, now, startedAt) }
+                val waitingSince = combine(blockedBy, SyncStatus.snapshot) { reason, s ->
+                    (reason == null) to s.devices.filterNot { it.paused }.mapTo(HashSet()) { it.deviceID }
+                }.distinctUntilChanged().waitingSince(Instant.now(), Instant::now)
+                combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device, waitingSince) { core, snap, reason, d, since ->
+                    { now: Instant -> summarize(core, snap, reason, d.online, now, since) }
                 }.timed(Instant::now) { wallClockAt(this@SyncthingService, it) }.collect { summary ->
                     SyncStatus.publish(summary)
                     updateNotification(summary.line(), summary.publicText)

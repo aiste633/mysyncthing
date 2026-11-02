@@ -118,6 +118,6 @@ object Fixtures {
         lastSeen = snapshot.lastSeen - tablet,
     )
     private val laptopSeen = snapshot.lastSeen.getValue(laptop)
-    val waitingSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(600), startedAt = laptopSeen.minusSeconds(86_400))
-    val noDeviceSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(3 * 3600), startedAt = laptopSeen.minusSeconds(86_400))
+    val waitingSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(600), waitingSince = laptopSeen.minusSeconds(86_400))
+    val noDeviceSummary = summarize(core, waiting, null, true, now = laptopSeen.plusSeconds(3 * 3600), waitingSince = laptopSeen.minusSeconds(86_400))
 }
