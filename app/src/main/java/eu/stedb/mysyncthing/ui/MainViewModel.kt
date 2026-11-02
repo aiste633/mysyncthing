@@ -10,7 +10,6 @@ import eu.stedb.mysyncthing.core.Completion
 import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.CoreState
 import eu.stedb.mysyncthing.core.Device
-import eu.stedb.mysyncthing.core.DeviceStats
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.DiskChange
 import eu.stedb.mysyncthing.core.DiskSize
@@ -121,7 +120,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     suspend fun folderErrors(folder: String): List<FileError> =
         runCatching { client?.folderErrors(folder)?.errors }.getOrNull().orEmpty()
     suspend fun folderStats(folder: String): FolderStats? = runCatching { client?.folderStats()?.get(folder) }.getOrNull()
-    suspend fun deviceStats(device: String): DeviceStats? = runCatching { client?.deviceStats()?.get(device) }.getOrNull()
     suspend fun need(folder: String, perPage: Int): NeedPage? = runCatching { client?.need(folder, 1, perPage) }.getOrNull()
     suspend fun remoteNeed(folder: String, device: String, perPage: Int): List<FileEntry>? =
         runCatching { client?.remoteNeed(folder, device, 1, perPage)?.files.orEmpty() }.getOrNull()

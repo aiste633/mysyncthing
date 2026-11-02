@@ -8,9 +8,12 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -25,9 +28,13 @@ import androidx.test.platform.app.InstrumentationRegistry
 import eu.stedb.mysyncthing.MainActivity
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.NO_DEVICE_LIMIT
 import eu.stedb.mysyncthing.core.Settings
+import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
+import eu.stedb.mysyncthing.core.resolve
+import eu.stedb.mysyncthing.ui.lastSeenText
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -38,6 +45,8 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
+import java.time.Duration
+import java.time.Instant
 import eu.stedb.mysyncthing.core.R as CoreR
 
 /**
@@ -208,12 +217,14 @@ class E2eTest {
             // The card's toggle rests while everything is paused.
             rule.waitUntil(30_000) { rule.onAllNodes(hasContentDescription(resumeCard)).fetchSemanticsNodes().isNotEmpty() }
             rule.onNode(hasContentDescription(resumeCard)).assertIsNotEnabled()
+            // The card's pause went to the record when everything was paused.
+            assertEquals("the card's pause recorded ${pauseState()}", setOf(peer.id), recorded())
 
             // Resumed on its screen while blocked: still paused now, resumed when the block ends.
             tap(PEER_NAME)
             tap(str(R.string.device_pause))
             eventually("the choice recorded", 10_000) { recorded() == emptySet<String>() }
-            assertTrue("still paused while blocked", corePaused())
+            assertCorePaused("still paused while blocked")
             pauseAll(false)
             eventually("peer connected: resumed after the block", 120_000) { peer.connected(me) }
 
@@ -224,7 +235,7 @@ class E2eTest {
             eventually("the choice recorded", 10_000) { recorded() == setOf(peer.id) }
             pauseAll(false)
             eventually("block over", 30_000) { recorded() == null }
-            assertTrue("still paused by the user after the block", corePaused())
+            assertCorePaused("still paused by the user after the block")
             val end = System.currentTimeMillis() + 20_000
             while (System.currentTimeMillis() < end) {
                 assertFalse("the peer reconnected to a device the user paused", peer.connected(me))
@@ -237,14 +248,84 @@ class E2eTest {
         eventually("peer connected again", 120_000) { peer.connected(me) }
     }
 
+    /**
+     * The Devices tab with the real core: the pause of all syncing as a toggle there, "last seen"
+     * from the core's statistics on the card, the grey wait while no device is connected, and
+     * the sync times opening their screen.
+     */
+    @Test
+    fun devicesTab() {
+        val me = phoneId()
+        eventually("peer connected", 90_000) { peer.connected(me) }
+        tap(str(R.string.tab_devices))
+        try {
+            // The pause of all syncing, from the tab.
+            rule.waitUntil(20_000) { rule.onAllNodes(hasTestTag("pauseAll")).fetchSemanticsNodes().isNotEmpty() }
+            rule.onNode(hasTestTag("pauseAll")).assertIsOff().performClick()
+            eventually("stored", 10_000) { runBlocking { Settings(app).runConditions.first().pausedByUser } }
+            eventually("peer disconnected: all paused", 60_000) { !peer.connected(me) }
+            eventually("summary paused", 10_000) { SyncStatus.summary.value.state == SyncState.Paused }
+            rule.onNode(hasTestTag("pauseAll")).assertIsOn()
+            rule.onNode(hasContentDescription(app.getString(R.string.device_pause_named, PEER_NAME))).assertIsNotEnabled()
+
+            // The card says when the core last saw the peer: at the disconnect, not before.
+            eventually("last seen from the core", 30_000) {
+                SyncStatus.snapshot.value.lastSeen[peer.id]?.let { Duration.between(it, Instant.now()).abs() < Duration.ofMinutes(5) } == true
+            }
+            val seen = lastSeenText(SyncStatus.snapshot.value.lastSeen.getValue(peer.id)).resolve(app).replaceFirstChar { it.lowercase() }
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(seen, substring = true)).fetchSemanticsNodes().isNotEmpty() }
+
+            rule.onNode(hasTestTag("pauseAll")).performClick()
+            eventually("resumed", 10_000) { runBlocking { !Settings(app).runConditions.first().pausedByUser } }
+            eventually("peer connected again", 120_000) { peer.connected(me) }
+
+            // Away without a pause on the phone: a grey wait for 30 min, not red at once.
+            peer.setPaused(me, true)
+            eventually("peer gone", 60_000) { !peer.connected(me) }
+            eventually("waiting for devices", 30_000) { SyncStatus.summary.value.state == SyncState.Waiting }
+            SyncStatus.summary.value.let { s ->
+                val last = checkNotNull(s.lastSeen) { "no last seen while waiting" }
+                assertEquals(last.plus(NO_DEVICE_LIMIT), s.recheckAt)
+            }
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(app.getString(CoreR.string.status_waiting))).fetchSemanticsNodes().isNotEmpty() }
+        } finally {
+            pauseAll(false)
+            peer.setPaused(me, false)
+        }
+        eventually("peer connected after the wait", 120_000) { peer.connected(me) }
+        eventually("up to date or syncing again", 60_000) { SyncStatus.summary.value.state != SyncState.Waiting }
+
+        // The sync times open their screen; the button itself changes nothing.
+        rule.onNode(hasTestTag("syncTimes")).performClick()
+        rule.waitUntil(20_000) { rule.onAllNodes(hasText(str(R.string.schedule_only_at_set_times))).fetchSemanticsNodes().isNotEmpty() }
+        assertFalse(runBlocking { Settings(app).runConditions.first().timeSchedule })
+    }
+
     private fun pauseAll(paused: Boolean) = runBlocking { check(Settings(app).update { it.copy(pausedByUser = paused) }) }
 
     private fun recorded(): Set<String>? = runBlocking { Settings(app).conditionPause() }
 
-    /** The phone's core has the peer paused (SyncStatus follows its config). */
-    private fun corePaused(): Boolean {
-        eventually("peer in the phone's config", 10_000) { SyncStatus.snapshot.value.devices.any { it.deviceID == peer.id } }
-        return SyncStatus.snapshot.value.devices.first { it.deviceID == peer.id }.paused
+    /**
+     * Asserts the peer's pause in the phone's core, read from the core itself, and then that the
+     * screens' view (SyncStatus, refreshed on the core's events) agrees within a few seconds. Each
+     * failure says which of the two was wrong and the state around it, as CI's artifact is not
+     * always at hand.
+     */
+    private fun assertCorePaused(why: String, paused: Boolean = true) {
+        val core = (SyncthingCore.state.value as CoreState.Running).client
+        val inCore = runBlocking { core.devices() }.first { it.deviceID == peer.id }.paused
+        assertEquals("$why (the core) ${pauseState()}", paused, inCore)
+        try {
+            eventually("screens follow the core", 10_000) { SyncStatus.snapshot.value.devices.find { it.deviceID == peer.id }?.paused == paused }
+        } catch (e: IllegalStateException) {
+            throw AssertionError("$why (the screens' view) ${pauseState()}", e)
+        }
+    }
+
+    private fun pauseState(): String {
+        val s = SyncStatus.snapshot.value
+        return "[snapshot: ${s.devices.find { it.deviceID == peer.id }?.paused}, record: ${recorded()?.map { it.take(7) }}, " +
+            "blocked: ${s.pause.blocked}, published record: ${s.pause.recorded?.map { it.take(7) }}]"
     }
 
     /**

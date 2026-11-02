@@ -20,7 +20,7 @@ import eu.stedb.mysyncthing.core.R as CoreR
 class DevicePauseScreenTest : ScreenTest() {
     private fun devices(blocked: Boolean) = show {
         val s = if (blocked) Fixtures.blocked else Fixtures.snapshot
-        DevicesScreen(s, if (blocked) Fixtures.blockedSummary else Fixtures.summary, vm, onOpen = {}, onOpenThisPhone = {}, onAdd = { _, _ -> })
+        DevicesScreen(s, if (blocked) Fixtures.blockedSummary else Fixtures.summary, vm, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> })
     }
 
     private val pauseSwitch get() = compose.onNode(isToggleable() and hasText(str(R.string.device_pause)))

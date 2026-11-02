@@ -72,23 +72,6 @@ fun count(@PluralsRes id: Int, n: Int): UiText = plural(id, n, num(n))
 /** The Revert confirmation for [n] locally changed items, with the verbs agreeing. */
 fun revertText(n: Int): UiText = plural(R.plurals.revert_text, n, num(n))
 
-/**
- * A REST time stamp (RFC 3339) for people, in the language's order and the phone's
- * clock setting: "12:03" today, "yesterday, 22:10", "25 Oct, 12:03" this year, else
- * with the year. Null for Go's zero time, which the core uses for "never".
- */
-fun whenText(rfc3339: String, now: ZonedDateTime = ZonedDateTime.now()): UiText? {
-    val t = runCatching { OffsetDateTime.parse(rfc3339).atZoneSameInstant(now.zone) }.getOrNull() ?: return null
-    if (t.year < 2000) return null
-    val day = t.toLocalDate()
-    return when {
-        day == now.toLocalDate() -> time(t, "jm")
-        day == now.toLocalDate().minusDays(1) -> text(R.string.when_yesterday, time(t, "jm"))
-        t.year == now.year -> time(t, "dMMMjm")
-        else -> time(t, "dMMMyjm")
-    }
-}
-
 /** An absolute time, e.g. "26 Oct 2026, 19:27", for a file's date. */
 fun dateTimeText(epochMillis: Long, zone: ZoneId = ZoneId.systemDefault()): UiText =
     time(Instant.ofEpochMilli(epochMillis).atZone(zone), "dMMMyjm")

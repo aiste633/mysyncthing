@@ -26,7 +26,10 @@
     <string name="status_paused_because">Paused: %1$s</string>
     <string name="status_paused">Paused</string>
     <string name="status_no_network">No network</string>
-    <string name="status_not_connected">Not connected</string>
+    <!-- No device that is not paused is connected, for less than 30 min -->
+    <string name="status_waiting">Waiting for devices</string>
+    <!-- No device that is not paused has been connected for over 30 minutes; keep "30 min" with its unit -->
+    <string name="status_no_device">No device for over 30 min</string>
     <!-- The core's notices (warnings) waiting to be read -->
     <plurals name="status_problems">
         <item quantity="one">%1$d problem</item>
@@ -158,6 +161,10 @@
     <string name="widget_start">Start Syncthing</string>
     <string name="widget_not_running">Not running</string>
     <string name="widget_no_device">No device connected</string>
+    <!-- Widget second line while no device is connected. %1$s: a time from when_yesterday or a date, e.g. 14:41 -->
+    <string name="widget_last_seen">Last device seen %1$s</string>
+    <!-- Times. %1$s: a time of day, e.g. 22:10 -->
+    <string name="when_yesterday">yesterday, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d device connected</item>
         <item quantity="other">%1$d devices connected</item>

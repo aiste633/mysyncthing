@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Environment
 import androidx.annotation.StringRes
@@ -32,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -41,6 +43,12 @@ import java.time.LocalDateTime
  */
 class SyncthingService : LifecycleService() {
     private lateinit var settings: Settings
+
+    /** The widget's second line depends on the font size (StatusWidget.redrawIfStale). */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        StatusWidget.redrawIfStale(this)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -153,9 +161,12 @@ class SyncthingService : LifecycleService() {
                     combine(applied, settings.conditionPauses, ::DevicePause).collect { SyncStatus.publishPause(it) }
                 }
                 launch { holdMulticastLock(this@SyncthingService, combine(device, SyncStatus.snapshot, blockedBy, ::wantsMulticast)) }
-                combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device) { core, snap, reason, d ->
-                    summarize(core, snap, reason, d.online)
-                }.collect { summary ->
+                val waitingSince = combine(blockedBy, SyncStatus.snapshot) { reason, s ->
+                    (reason == null) to s.devices.filterNot { it.paused }.mapTo(HashSet()) { it.deviceID }
+                }.distinctUntilChanged().waitingSince(Instant.now(), Instant::now)
+                combine(SyncthingCore.state, SyncStatus.snapshot, blockedBy, device, waitingSince) { core, snap, reason, d, since ->
+                    { now: Instant -> summarize(core, snap, reason, d.online, now, since) }
+                }.timed(Instant::now) { wallClockAt(this@SyncthingService, it) }.collect { summary ->
                     SyncStatus.publish(summary)
                     updateNotification(summary.line(), summary.publicText)
                 }

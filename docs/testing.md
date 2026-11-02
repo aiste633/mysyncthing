@@ -66,7 +66,15 @@ with `gh attestation verify` (see the [security policy](../SECURITY.md)).
 Kotlin unit tests cover, among others: the form checks, the run conditions and sync times (also: a device added while they block
 syncing is paused too, and only the user's own pauses stay afterwards; a property test pauses and
 resumes devices at random, also while everything is blocked, and checks that the screens always
-show the user's own choice and that it holds when the block ends), the
+show the user's own choice and that it holds when the block ends), the overall status while no
+device is connected (a property test: grey "Waiting for devices" until 30 min after the last
+device that is not paused was seen, or after the start, the end of a block or a device resumed
+when that is later, so a device resumed after days gets its 30 min too (a second property test
+against a plain model), then red; the status is summarized again
+then by the wall clock, and a device that connects ends the wait; the alarm for it never wakes the
+phone), "Sync times" in amber
+exactly when the sync times are what pauses the devices (a property test against the run
+conditions), "last seen" in the phone's time zone, the
 notification and widget texts, the REST client's paths, version restores, the settings
 migration and writes on a full disk, the Syncthing-Fork import preview, and the translations
 (every translated string must take the same placeholders as the English one). Go tests start
@@ -84,9 +92,10 @@ The app's real screens run on the JVM (Robolectric, Android 16) with made-up fol
 devices: three folders (up to date, syncing, stopped by an error), three devices (on the LAN,
 through a relay, offline and paused by the user) and a folder offer. No real device ID, name or address is used.
 
-- Screenshots: 16 screens, from the first-run checklist to the export form, each in light,
-  dark, the largest font (200 %), Italian and German (the longest text): 80 images in `app/src/test/screenshots/`.
-  The device list and a device's screen are also shown while a run condition pauses every device. CI
+- Screenshots: 17 screens, from the first-run checklist to the export form, each in light,
+  dark, the largest font (200 %), Italian and German (the longest text): 85 images in `app/src/test/screenshots/`.
+  The device list and a device's screen are also shown while a run condition pauses every device,
+  and the device list after 30 min with no device connected. CI
   compares every screen with its image and attaches the difference when one changes.
 - TalkBack: on every screen, every control that can be tapped or switched must have a name.
 - Forms: the device ID check character, a device already added, the suggested path for an
@@ -94,6 +103,16 @@ through a relay, offline and paused by the user) and a folder offer. No real dev
   and a shown password marking the window secure.
 - Device pause: each card's toggle shows the user's own pause and rests while a run condition
   pauses everything, with the reason on the card; the device's screen still sets the choice then.
+- Devices tab: "Pause syncing" is a switch of the stored setting and "Sync times" opens its
+  screen, both showing their value with the default marked, and neither is left in Settings;
+  every card that is not connected says when the device was last seen (or never), after the
+  reason it is paused; the device's screen no longer does.
+- Largest font: the widget's second line shows only while it fits under the first (it was cut at
+  200 % on the emulator), and the widget is drawn again when the font size changes that, with no
+  new status (WidgetRedrawTest), and at that size the tabs' status gets its own row under the title,
+  up to two lines (StatusBarFitTest: every status in every language at 360 and 412 dp; on a
+  Pixel 7's width all read in full but the pause outside the sync times with its next time,
+  and none runs into the screen below).
 
 Both checks were tried on purpose against a broken screen, and both failed as they should.
 Dialogs with a text field are left out: on Robolectric they never settle. The end-to-end
@@ -114,6 +133,7 @@ real phone.
 | Restore a version | The peer changes a file; the old one is restored from the phone's Trash can, and the peer gets it back too |
 | Run conditions | Wi-Fi off (mobile data, which is off for syncing by default): the peer loses the phone; Wi-Fi on: it comes back. Every step starts on Wi-Fi, with the emulator's internet check off so a runner without Google's check server still uses Wi-Fi |
 | Device pause | Paused from its card: the peer loses the phone. With all syncing paused, the card's toggle is disabled; resumed on the device's screen, it stays paused until syncing is allowed, then the peer connects. Paused on its screen while blocked, it stays paused after the block (the peer stays away for 20 s), and resumes from the screen |
+| Devices tab | "Pause syncing" on the tab: stored, the peer loses the phone, the status says paused and the cards' toggles rest; the card says when the core last saw the peer; switched off, the peer comes back. The peer pausing the phone on its side: the status is the grey "Waiting for devices", red due 30 min after the peer was last seen. "Sync times" opens its screen and changes nothing |
 | Typed text | Text typed in a rename dialog and in list dialogs (Settings, device defaults) survives the screen being recreated. Checked at once, with no wait: dialogs on values read from Syncthing are there on the recreated screen's first frame, and Settings keeps its scroll position. Afterwards only one copy of the screen stays in memory |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |

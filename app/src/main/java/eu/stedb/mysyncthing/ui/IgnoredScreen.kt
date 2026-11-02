@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.whenText
 import eu.stedb.mysyncthing.core.IgnoredRequests
 import kotlinx.coroutines.launch
 

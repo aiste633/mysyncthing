@@ -101,13 +101,14 @@ private fun ScheduleForm(initial: RunConditions, save: suspend ((RunConditions) 
             windows.forEachIndexed { i, w ->
                 SettingsGroup(stringResource(R.string.schedule_window_title, i + 1)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            OutlinedButton(shape = ButtonShape, onClick = { picking = i to true }) { Text(stringResource(R.string.schedule_from, timeText(w.start).asString())) }
-                            OutlinedButton(shape = ButtonShape, onClick = { picking = i to false }) { Text(stringResource(R.string.schedule_to, timeText(w.end).asString())) }
-                            Row(Modifier.weight(1f), horizontalArrangement = Arrangement.End) {
-                                IconButton(onClick = { edit(windows.filterIndexed { j, _ -> j != i }) }) {
-                                    Icon(Icons.Default.Delete, stringResource(R.string.schedule_delete_window, i + 1))
-                                }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // The times wrap at large font sizes, so Delete keeps its place at the end.
+                            FlowRow(Modifier.weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                OutlinedButton(shape = ButtonShape, onClick = { picking = i to true }) { Text(stringResource(R.string.schedule_from, timeText(w.start).asString())) }
+                                OutlinedButton(shape = ButtonShape, onClick = { picking = i to false }) { Text(stringResource(R.string.schedule_to, timeText(w.end).asString())) }
+                            }
+                            IconButton(onClick = { edit(windows.filterIndexed { j, _ -> j != i }) }) {
+                                Icon(Icons.Default.Delete, stringResource(R.string.schedule_delete_window, i + 1))
                             }
                         }
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {

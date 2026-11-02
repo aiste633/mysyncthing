@@ -57,8 +57,6 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
     // The folder whose password dialog is open, for an encrypted share.
     var encrypt by rememberSaveable { mutableStateOf<String?>(null) }
     val live by vm.liveStats.collectAsStateWithLifecycle()
-    var lastSeen by remember { mutableStateOf<String?>(null) }
-    LaunchedEffect(id, conn?.connected) { lastSeen = vm.deviceStats(id)?.lastSeen }
     // Per folder, what this device still needs from the phone; reread when its overall completion changes.
     val shared = s.folders.filter { f -> f.devices.any { it.deviceID == id } }
     var needs by remember { mutableStateOf<Map<String, Completion>>(emptyMap()) }
@@ -90,9 +88,6 @@ fun DeviceScreen(s: Snapshot, id: String, vm: MainViewModel, onBack: () -> Unit,
                             stringResource(R.string.device_traffic, bytes(conn.inBytesTotal), bytes(conn.outBytesTotal)),
                             style = MaterialTheme.typography.bodySmall, color = muted,
                         )
-                    } else {
-                        val seen = lastSeen?.let { whenText(it) }?.asString()
-                        Text(if (seen != null) stringResource(R.string.device_last_seen, seen) else stringResource(R.string.device_never_connected), style = MaterialTheme.typography.bodyMedium, color = muted)
                     }
                     conn?.clientVersion?.ifEmpty { null }?.let {
                         Text(if (it.startsWith("v")) stringResource(R.string.syncthing_version, it) else it, style = MaterialTheme.typography.bodySmall, color = muted)

@@ -85,8 +85,6 @@
     <!-- Marks the default choice in a list of options -->
     <string name="hint_default">Default</string>
 
-    <!-- Times. %1$s: a time of day, e.g. 22:10 -->
-    <string name="when_yesterday">yesterday, %1$s</string>
     <!-- Headings over a day of changes -->
     <string name="day_today">Today</string>
     <string name="day_yesterday">Yesterday</string>
@@ -334,8 +332,6 @@
     <string name="settings_not_set">Not set</string>
     <string name="name">Name</string>
     <string name="settings_group_syncing">Syncing</string>
-    <string name="settings_pause">Pause syncing</string>
-    <string name="settings_pause_hint">Until you resume it here or on the widget</string>
     <string name="settings_ignored">Ignored requests</string>
     <!-- "Ignore" is the button on device and folder requests -->
     <string name="settings_ignored_hint">Devices and folders you tapped Ignore on, to undo it</string>
@@ -349,7 +345,6 @@
     <string name="settings_mobile_data_hint">Can cost money on a limited plan</string>
     <string name="settings_roaming">Mobile data while roaming</string>
     <string name="settings_roaming_hint">Abroad or on another network, where data can cost extra</string>
-    <string name="settings_group_time">Time</string>
     <string name="sync_times">Sync times</string>
     <string name="settings_group_power">Power</string>
     <string name="settings_power">Sync when</string>
@@ -652,6 +647,17 @@
     <!-- %1$s: device name. What the pause toggle on the device's card does, read out by TalkBack -->
     <string name="device_pause_named">Pause %1$s</string>
     <string name="device_resume_named">Resume %1$s</string>
+    <!-- Devices tab: heading of the controls that apply to every device -->
+    <string name="devices_all">All devices</string>
+    <!-- A toggle under "All devices", half the screen wide: keep it short -->
+    <string name="devices_pause_all">Pause syncing</string>
+    <!-- State of devices_pause_all (the pause is off / on) -->
+    <string name="devices_pause_off">Off</string>
+    <string name="devices_pause_on">On</string>
+    <!-- A button under "All devices", half the screen wide, opening the sync times: keep it short -->
+    <string name="devices_sync_times">Sync times</string>
+    <!-- A setting's value when it is the default. %1$s: the value, e.g. Off or Any time -->
+    <string name="value_default">%1$s (default)</string>
     <!-- Why a device is paused, at the start of its card's second line: "By you · 2 folders" -->
     <string name="device_paused_by_you">By you</string>
     <!-- The user paused all syncing (Settings, widget); on each device's card and screen -->
