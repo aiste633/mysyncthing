@@ -86,12 +86,22 @@
     <string name="pause_reason_charging">Charging</string>
     <string name="pause_reason_battery_saver">Battery saver on</string>
 
-    <!-- Sync times: windows of the week in which syncing may run -->
-    <string name="schedule_outside">Outside sync times</string>
+    <!-- Sync windows: times of the week in which syncing may run -->
+    <string name="schedule_outside">Outside sync windows</string>
     <!-- %1$s: time the next window opens today, e.g. 22:00 -->
-    <string name="schedule_outside_next">Outside sync times · next %1$s</string>
+    <string name="schedule_outside_next">Outside sync windows · next %1$s</string>
     <!-- %1$s: short weekday, %2$s: time, when the next window opens on another day -->
-    <string name="schedule_outside_next_day">Outside sync times · next %1$s %2$s</string>
+    <string name="schedule_outside_next_day">Outside sync windows · next %1$s %2$s</string>
+    <!-- A device held by its own sync windows; %1$s: time it syncs next today, e.g. 22:00 -->
+    <string name="device_outside_next">Outside its sync windows · next %1$s</string>
+    <!-- %1$s: short weekday, %2$s: time, when the device syncs next on another day -->
+    <string name="device_outside_next_day">Outside its sync windows · next %1$s %2$s</string>
+    <!-- A device whose own sync windows never overlap the global ones -->
+    <string name="device_never_syncs">Never syncs: its windows don\'t overlap the global ones</string>
+    <!-- Every device paused; %1$s: time the first one held by its own windows syncs again today -->
+    <string name="status_paused_next">Paused · next %1$s</string>
+    <!-- %1$s: short weekday, %2$s: time -->
+    <string name="status_paused_next_day">Paused · next %1$s %2$s</string>
     <string name="schedule_error_no_window">Add a time window</string>
     <string name="schedule_error_times">Times from 00:00 to 23:59</string>
     <string name="schedule_error_same_times">Start and end must differ</string>

@@ -63,6 +63,11 @@
     <string name="schedule_outside">Außerhalb der Synchronisierungszeiten</string>
     <string name="schedule_outside_next">Außerhalb der Zeiten · nächste %1$s</string>
     <string name="schedule_outside_next_day">Außerhalb der Zeiten · nächste %1$s %2$s</string>
+    <string name="device_outside_next">Außerhalb seiner Sync-Zeiten · nächste %1$s</string>
+    <string name="device_outside_next_day">Außerhalb seiner Sync-Zeiten · nächste %1$s %2$s</string>
+    <string name="device_never_syncs">Synchronisiert nie: seine Sync-Zeiten überschneiden sich nicht mit den globalen</string>
+    <string name="status_paused_next">Pausiert · nächste %1$s</string>
+    <string name="status_paused_next_day">Pausiert · nächste %1$s %2$s</string>
     <string name="schedule_error_no_window">Fügen Sie ein Zeitfenster hinzu</string>
     <string name="schedule_error_times">Zeiten von 00:00 bis 23:59</string>
     <string name="schedule_error_same_times">Beginn und Ende müssen sich unterscheiden</string>

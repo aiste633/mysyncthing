@@ -17,6 +17,8 @@ class ScreenCase(val name: String, val content: @Composable (MainViewModel) -> U
  * core (recent changes, versions, ignore patterns, defaults) are left out: without a
  * core they are empty. Dialogs are covered on the emulator (see androidTest).
  */
+private val names = snapshot.devices.associate { it.deviceID to it.name }
+
 val screens = listOf(
     ScreenCase("setup") { SetupScreen(PermissionState(LocalContext.current), mobileData = false, onMobileData = {}, onDone = {}) },
     ScreenCase("folders") { FoldersScreen(snapshot, summary, it, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = {}) },
@@ -29,18 +31,28 @@ val screens = listOf(
     ScreenCase("devices-blocked") {
         DevicesScreen(Fixtures.blocked, Fixtures.blockedSummary, it, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> })
     },
+    ScreenCase("devices-own-windows") {
+        DevicesScreen(Fixtures.heldByOwn, Fixtures.heldByOwnSummary, it, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> })
+    },
     ScreenCase("devices-no-device") {
         DevicesScreen(Fixtures.waiting, Fixtures.noDeviceSummary, it, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> })
     },
     ScreenCase("device") { DeviceScreen(snapshot, Fixtures.server, it, onBack = {}, onOpenNeeds = {}) },
     ScreenCase("device-blocked") { DeviceScreen(Fixtures.blocked, Fixtures.laptop, it, onBack = {}, onOpenNeeds = {}) },
+    ScreenCase("device-own-windows") { DeviceScreen(Fixtures.heldByOwn, Fixtures.server, it, onBack = {}, onOpenNeeds = {}) },
+    ScreenCase("device-never") { DeviceScreen(Fixtures.heldByOwn, Fixtures.tablet, it, onBack = {}, onOpenNeeds = {}) },
     ScreenCase("device-add") { DeviceEditScreen(snapshot, "", "", it, onBack = {}, onSave = { _, _, _ -> }) },
     ScreenCase("this-phone") { ThisPhoneScreen(snapshot, it, onBack = {}) },
     ScreenCase("settings") {
         SettingsScreen(it, snapshot, summary, core, PermissionState(LocalContext.current), {}, {}, {}, {}, {}, {}, {}, {})
     },
     ScreenCase("proxy") { ProxyScreen(it, core, onBack = {}) },
-    ScreenCase("schedule") { ScheduleScreen(it, onBack = {}) },
+    ScreenCase("schedule") { ScheduleScreen(it, snapshot, onBack = {}) },
+    ScreenCase("windows-global-short") { ScheduleForm(Fixtures.globalShort, null, names, save = { true }, onBack = {}) },
+    ScreenCase("windows-device") { ScheduleForm(Fixtures.ownWindows, Fixtures.server, names, save = { true }, onBack = {}) },
+    ScreenCase("windows-device-short") { ScheduleForm(Fixtures.shortOverlap, Fixtures.server, names, save = { true }, onBack = {}) },
+    ScreenCase("windows-device-never") { ScheduleForm(Fixtures.noOverlap, Fixtures.server, names, save = { true }, onBack = {}) },
+    ScreenCase("windows-device-default") { ScheduleForm(Fixtures.globalShort, Fixtures.laptop, names, save = { true }, onBack = {}) },
     ScreenCase("export") { ExportScreen(onBack = {}) },
     ScreenCase("import") { ImportScreen(onBack = {}) },
 )

@@ -123,7 +123,7 @@ import eu.stedb.mysyncthing.core.SystemError
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.problemText
 import eu.stedb.mysyncthing.core.santaHat
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 /**
  * System bars plus the camera cutout, without the keyboard. Material's bars only
@@ -170,18 +170,22 @@ fun BusyIndicator() {
     else Icon(Icons.Default.HourglassTop, null, Modifier.size(48.dp), tint = MaterialTheme.colorScheme.primary)
 }
 
-/** Today's date, for [santaHat]; the screenshot tests fix it, so their images don't change in December. */
-val LocalToday = staticCompositionLocalOf<() -> LocalDate> { LocalDate::now }
+/**
+ * The time now, for what screens show from the clock ([santaHat], the next sync window). The
+ * screenshot tests fix it, so their images don't change with the day or the hour.
+ */
+val LocalNow = staticCompositionLocalOf<() -> LocalDateTime> { LocalDateTime::now }
 
 /**
  * A screen with a top bar on the app's tinted background. [onBack] adds a back
- * arrow; [status] adds the status chip after the title.
+ * arrow; [status] adds the status chip after the title; [subtitle] a line under it (what the screen is for).
  */
 @Composable
 fun AppScreen(
     title: String,
     onBack: (() -> Unit)? = null,
     status: Summary? = null,
+    subtitle: String? = null,
     actions: @Composable () -> Unit = {},
     fab: @Composable () -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
@@ -198,7 +202,11 @@ fun AppScreen(
             Column(Modifier.background(AppColors.background)) {
                 TopAppBar(
                     title = {
-                        if (status == null || !roomy) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        if (subtitle != null) Column {
+                            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        else if (status == null || !roomy) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         // In the title slot, not the actions: the bar sizes actions first, so a long
                         // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
                         else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -214,7 +222,7 @@ fun AppScreen(
                             Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                                 Icon(painterResource(CoreR.drawable.widget_ic_app), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
                                 // Drawn over the mark, so it takes no room (sizes: see widget_ic_hat).
-                                if (santaHat(LocalToday.current())) Image(painterResource(CoreR.drawable.widget_ic_hat), null, Modifier.size(24.dp * 66 / 62).offset(y = -(24.dp * 6 / 62)))
+                                if (santaHat(LocalNow.current().toLocalDate())) Image(painterResource(CoreR.drawable.widget_ic_hat), null, Modifier.size(24.dp * 66 / 62).offset(y = -(24.dp * 6 / 62)))
                             }
                         }
                     },
@@ -348,7 +356,11 @@ fun SettingsGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
     ListCard(content = content)
 }
 
-/** One row in a [SettingsGroup]. The whole row is the touch target. */
+/**
+ * One row in a [SettingsGroup]. The whole row is the touch target. [danger]: the title in
+ * red, for a step that removes something; [problem]: its value too, for a setting that is a
+ * mistake to fix ("never syncs").
+ */
 @Composable
 fun SettingRow(
     title: String,
@@ -356,8 +368,9 @@ fun SettingRow(
     icon: ImageVector? = null,
     trailing: @Composable (() -> Unit)? = null,
     danger: Boolean = false,
+    problem: Boolean = false,
     onClick: (() -> Unit)? = null,
-) = SettingRowLayout(title, value, icon, trailing, if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier, danger)
+) = SettingRowLayout(title, value, icon, trailing, if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier, danger || problem, problem)
 
 /**
  * A row with a switch. The row is the toggle, so accessibility services read
@@ -394,6 +407,7 @@ private fun SettingRowLayout(
     trailing: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
     danger: Boolean = false,
+    problem: Boolean = false,
 ) {
     val color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     ListItem(
@@ -402,7 +416,7 @@ private fun SettingRowLayout(
         leadingContent = icon?.let { { Icon(it, null, tint = if (danger) color else MaterialTheme.colorScheme.onSurfaceVariant) } },
         headlineContent = { Text(title, color = color) },
         // No line limit: hints are sentences, and a cut one can't be read anywhere else.
-        supportingContent = value?.let { { Text(it) } },
+        supportingContent = value?.let { { Text(it, color = if (problem) color else Color.Unspecified) } },
         trailingContent = trailing,
     )
 }

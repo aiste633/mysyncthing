@@ -436,7 +436,11 @@ func (b *forkBackup) preview(stat func(config.FolderConfiguration) (bool, bool))
 		p.Folders = append(p.Folders, previewFolder{f.ID, f.Label, f.Path, f.Type.String(), exists, marker})
 	}
 	if b.own != nil {
-		p.Source, p.Conditions, p.Proxy, p.NotImported = "own", b.own.Conditions, b.own.Proxy, []notImported{}
+		paired := map[string]bool{}
+		for _, d := range p.Devices {
+			paired[d.ID] = true
+		}
+		p.Source, p.Conditions, p.Proxy, p.NotImported = "own", b.own.Conditions.onlyFor(paired), b.own.Proxy, []notImported{}
 	} else {
 		p.Source = "fork"
 		p.Conditions, p.Proxy, p.NotImported = mapForkPrefs(b.prefs, b.cfg)
@@ -469,7 +473,22 @@ type runConditions struct {
 	// Kept while TimeSchedule is off. Left out when empty: the app reads a
 	// missing list as empty, but not null.
 	Windows []syncWindow `json:"windows,omitempty"`
+	// Devices' own windows by device ID (core/Settings.kt DeviceWindows); they
+	// narrow the global ones. Left out when empty, so a backup without them
+	// stays readable by app versions from before them.
+	DeviceWindows map[string]deviceWindows `json:"deviceWindows,omitempty"`
 }
+
+// deviceWindows are a device's own sync windows, kept while off.
+type deviceWindows struct {
+	On      bool         `json:"on,omitempty"`
+	Windows []syncWindow `json:"windows,omitempty"`
+}
+
+// maxDeviceWindows caps the devices with their own windows in a backup: far
+// more than anyone pairs, and it keeps a crafted one from growing the app's
+// settings without end.
+const maxDeviceWindows = 256
 
 // syncWindow is a time of day the app may sync in (core/Schedule.kt
 // SyncWindow): Start to End in minutes after midnight, by the phone's clock;
@@ -522,7 +541,75 @@ func (c runConditions) check() error {
 			return err
 		}
 	}
+	if len(c.DeviceWindows) > maxDeviceWindows {
+		return fmt.Errorf("own time windows for %d devices, at most %d", len(c.DeviceWindows), maxDeviceWindows)
+	}
+	for id, dw := range c.DeviceWindows {
+		// The app matches them by the core's own spelling of the ID.
+		if parsed, err := protocol.DeviceIDFromString(id); err != nil || parsed == protocol.EmptyDeviceID || parsed.String() != id {
+			return fmt.Errorf("own time windows for %q: not a device ID", id)
+		}
+		if err := dw.check(); err != nil {
+			return fmt.Errorf("own time windows of %s: %w", id, err)
+		}
+	}
 	return nil
+}
+
+// check refuses a device's windows the app could not store, as for the global ones.
+func (d deviceWindows) check() error {
+	switch {
+	case len(d.Windows) > maxSyncWindows:
+		return fmt.Errorf("%d time windows, at most %d", len(d.Windows), maxSyncWindows)
+	case d.On && len(d.Windows) == 0:
+		return errors.New("on without time windows")
+	}
+	for _, w := range d.Windows {
+		if err := w.check(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// normalized writes "none" one way: the JSON leaves out an empty list or map,
+// so what was read empty is nil, as it reads back.
+func (c runConditions) normalized() runConditions {
+	if len(c.Windows) == 0 {
+		c.Windows = nil
+	}
+	if len(c.DeviceWindows) == 0 {
+		c.DeviceWindows = nil
+		return c
+	}
+	all := make(map[string]deviceWindows, len(c.DeviceWindows))
+	for id, w := range c.DeviceWindows {
+		if len(w.Windows) == 0 {
+			w.Windows = nil
+		}
+		all[id] = w
+	}
+	c.DeviceWindows = all
+	return c
+}
+
+// onlyFor keeps the own windows of the devices in ids: a backup's windows
+// for a device it does not pair with would wait for one paired later.
+func (c runConditions) onlyFor(ids map[string]bool) runConditions {
+	if len(c.DeviceWindows) == 0 {
+		return c
+	}
+	kept := map[string]deviceWindows{}
+	for id, w := range c.DeviceWindows {
+		if ids[id] {
+			kept[id] = w
+		}
+	}
+	c.DeviceWindows = kept
+	if len(kept) == 0 {
+		c.DeviceWindows = nil
+	}
+	return c
 }
 
 // proxySettings is the app's proxy (core/Settings.kt ProxySettings).

@@ -96,10 +96,12 @@ private object Routes {
     const val EXPORT = "export"
     const val PROXY = "proxy"
     const val SCHEDULE = "schedule"
+    const val DEVICE_SCHEDULE = "device/{id}/schedule"
 
     fun folder(id: String) = "folder/${Uri.encode(id)}"
     fun ignores(id: String, first: Boolean = false) = "folder/${Uri.encode(id)}/ignores?first=$first"
     fun device(id: String) = "device/${Uri.encode(id)}"
+    fun deviceSchedule(id: String) = "device/${Uri.encode(id)}/schedule"
     fun deviceNeeds(id: String, folder: String) = "device/${Uri.encode(id)}/needs/${Uri.encode(folder)}"
     fun addDevice(id: String = "", name: String = "") = "add-device?id=${Uri.encode(id)}&name=${Uri.encode(name)}"
     fun addFolder(offer: String? = null, from: String? = null) =
@@ -243,7 +245,10 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 composable(Routes.DEVICE) { entry ->
                     val id = entry.arguments?.getString("id").orEmpty()
                     CoreGate(core) {
-                        DeviceScreen(snapshot, id, vm, onBack = { nav.popBackStack() }, onOpenNeeds = { nav.navigate(Routes.deviceNeeds(id, it)) })
+                        DeviceScreen(
+                            snapshot, id, vm, onBack = { nav.popBackStack() }, onOpenNeeds = { nav.navigate(Routes.deviceNeeds(id, it)) },
+                            onOpenSchedule = { nav.navigate(Routes.deviceSchedule(id)) },
+                        )
                     }
                 }
                 composable(Routes.DEVICE_NEEDS) { entry ->
@@ -313,7 +318,10 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 composable(Routes.FORK_IMPORT) { ImportScreen(onBack = { nav.popBackStack() }) }
                 composable(Routes.EXPORT) { ExportScreen(onBack = { nav.popBackStack() }) }
                 composable(Routes.PROXY) { ProxyScreen(vm, core, onBack = { nav.popBackStack() }) }
-                composable(Routes.SCHEDULE) { ScheduleScreen(vm, onBack = { nav.popBackStack() }) }
+                composable(Routes.SCHEDULE) { ScheduleScreen(vm, snapshot, onBack = { nav.popBackStack() }) }
+                composable(Routes.DEVICE_SCHEDULE) { entry ->
+                    CoreGate(core) { ScheduleScreen(vm, snapshot, entry.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }) }
+                }
                 composable(Routes.IGNORED) {
                     CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
                 }

@@ -21,6 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.decodeFromJsonElement
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 
 /** Everything the screens, the notification and the widget show, refreshed from REST on relevant events. */
 data class Snapshot(
@@ -248,7 +250,7 @@ fun summarize(
     }
     if (s.devices.isEmpty()) return result(SyncState.NeedsInput, text(R.string.status_no_devices))
     if (s.folders.isEmpty()) return result(SyncState.NeedsInput, text(R.string.status_no_folders))
-    if (s.devices.all { it.paused } || active.isEmpty()) return result(SyncState.Paused, text(R.string.status_paused))
+    if (s.devices.all { it.paused } || active.isEmpty()) return result(SyncState.Paused, pausedText(s, now))
     if (connected.isEmpty()) {
         val seen = s.devices.filter { !it.paused }.mapNotNull { s.lastSeen[it.deviceID] }.maxOrNull()
         val due = maxOf(seen ?: waitingSince, waitingSince) + NO_DEVICE_LIMIT
@@ -275,6 +277,16 @@ fun summarize(
         return result(SyncState.Syncing, text(R.string.status_syncing_percent, pct), pct)
     }
     return result(SyncState.UpToDate, text(R.string.status_up_to_date))
+}
+
+/**
+ * "Paused", or "Paused · next 22:00" when every device is paused and the first to sync again is one
+ * its own windows hold: the time the first of those, not paused by the user, syncs next.
+ */
+private fun pausedText(s: Snapshot, now: Instant): UiText {
+    val next = s.devices.filter { !s.pause.byUser(it) }.mapNotNull { s.pause.devices[it.deviceID]?.next }.minOrNull()
+        ?: return text(R.string.status_paused)
+    return nextText(R.string.status_paused_next, R.string.status_paused_next_day, next, LocalDateTime.ofInstant(now, ZoneId.systemDefault()))
 }
 
 private fun Snapshot.connectedNames() = devices.filter { connections[it.deviceID]?.connected == true }
