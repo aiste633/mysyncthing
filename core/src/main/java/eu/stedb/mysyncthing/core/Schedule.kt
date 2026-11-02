@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.serialization.Serializable
 import kotlin.coroutines.resume
 import java.time.DayOfWeek
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.LocalTime
@@ -143,14 +144,19 @@ fun scheduleClock(context: Context, windows: List<SyncWindow>): Flow<LocalDateTi
 }
 
 /**
- * Returns once the wall clock reaches [at], or when the phone next wakes after that: the
- * alarm never wakes it, as nobody looks at a sleeping phone's status. No permission needed.
+ * Returns once the wall clock reaches [at], at most [WALL_CLOCK_WINDOW] later, or when the phone
+ * next wakes after that: the alarm never wakes it, as nobody looks at a sleeping phone's status.
+ * A plain inexact alarm may come up to 75 % of the wait late (45 min of an hour, seen on the
+ * emulator); a window keeps it close without the exact-alarm permission.
  */
 suspend fun wallClockAt(context: Context, at: Instant) = suspendCancellableCoroutine { done ->
     val alarms = context.getSystemService(AlarmManager::class.java)
     val listener = AlarmManager.OnAlarmListener { done.resume(Unit) }
-    alarms.set(AlarmManager.RTC, at.toEpochMilli(), "mysyncthing:status", listener, null)
+    alarms.setWindow(AlarmManager.RTC, at.toEpochMilli(), WALL_CLOCK_WINDOW.toMillis(), "mysyncthing:status", listener, null)
     done.invokeOnCancellation { alarms.cancel(listener) }
 }
+
+/** The shortest window Android grants an inexact alarm (since Android 14): shorter ones are stretched to it. */
+val WALL_CLOCK_WINDOW: Duration = Duration.ofMinutes(10)
 
 private const val ACTION_SCHEDULE_TICK = "eu.stedb.mysyncthing.SCHEDULE_TICK"

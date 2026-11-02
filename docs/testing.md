@@ -69,7 +69,8 @@ resumes devices at random, also while everything is blocked, and checks that the
 show the user's own choice and that it holds when the block ends), the overall status while no
 device is connected (a property test: grey "Waiting for devices" until an hour after the last
 device that is not paused was seen, or after the start, then red; the status is summarized again
-at that hour by the wall clock, and a device that connects ends the wait), "Sync times" in amber
+at that hour by the wall clock, and a device that connects ends the wait; the alarm for it never wakes the
+phone and keeps a 10 min window, where a plain inexact alarm came 45 min late on the emulator), "Sync times" in amber
 exactly when the sync times are what pauses the devices (a property test against the run
 conditions), "last seen" in the phone's time zone, the
 notification and widget texts, the REST client's paths, version restores, the settings
