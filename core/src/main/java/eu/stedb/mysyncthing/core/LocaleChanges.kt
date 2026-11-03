@@ -1,8 +1,35 @@
 package eu.stedb.mysyncthing.core
 
+import android.annotation.SuppressLint
+import android.app.LocaleManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
+import android.os.LocaleList
+
+/**
+ * [this] in the language the app's screens show: its own one from Android's per-app language page,
+ * ahead of the phone's (as Android combines them for an activity), else the phone's.
+ *
+ * Needed for everything drawn outside the app: widget, notifications, channel names. Their context
+ * follows the process's configuration, and Android keeps the app's language there only while the
+ * process follows one of its activities: when the last one closes, it is reset to the phone's
+ * language (WindowProcessController.unregisterActivityConfigurationListener). So after the user
+ * left the app, the service drew the widget and its notification in the phone's language again.
+ */
+// AppBundleLocaleChanges: the app ships as whole APKs (F-Droid, GitHub), with every language in them.
+@SuppressLint("AppBundleLocaleChanges")
+fun Context.inAppLanguage(): Context {
+    val manager = getSystemService(LocaleManager::class.java)
+    val app = manager.applicationLocales
+    val phone = manager.systemLocales
+    val wanted = if (app.isEmpty) phone else LocaleList(*(app.toList() + phone.toList()).distinct().toTypedArray())
+    return if (resources.configuration.locales == wanted) this
+    else createConfigurationContext(Configuration().apply { setLocales(wanted) })
+}
+
+private fun LocaleList.toList() = List(size()) { get(it) }
 
 /**
  * The phone's or this app's language changed: what the app shows outside

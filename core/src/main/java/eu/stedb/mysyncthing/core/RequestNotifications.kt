@@ -52,7 +52,8 @@ object RequestNotifications {
     const val EXTRA_REVIEW_FOLDER = "eu.stedb.mysyncthing.REVIEW_FOLDER"
     const val EXTRA_REVIEW_DEVICE = "eu.stedb.mysyncthing.REVIEW_DEVICE"
 
-    fun createChannel(context: Context) {
+    fun createChannel(base: Context) {
+        val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
         OLD_CHANNEL_IDS.forEach(nm::deleteNotificationChannel)
         // High: a request waits on the user, and missed in the shade it blocks syncing for good.
@@ -64,7 +65,8 @@ object RequestNotifications {
     }
 
     /** Posts new requests (alerting once), and cancels those no longer pending; [repost] redraws shown ones too. */
-    fun update(context: Context, requests: List<Request>, repost: Boolean = false) {
+    fun update(base: Context, requests: List<Request>, repost: Boolean = false) {
+        val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
         val shown = nm.activeNotifications.filter { it.tag == TAG }.map { it.id }.toSet()
         val wanted = requests.associateBy { it.key.hashCode() }

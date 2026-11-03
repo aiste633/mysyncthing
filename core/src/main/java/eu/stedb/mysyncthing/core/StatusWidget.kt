@@ -60,8 +60,9 @@ class StatusWidget : AppWidgetProvider() {
             // The launcher picks the widest that fits: the app mark only where the text keeps its room.
             val hat = santaHat(today)
             val detail = detailFits(context.resources.displayMetrics)
+            val words = context.inAppLanguage()
             manager.updateAppWidget(
-                ids, RemoteViews(mapOf(NARROW to views(context, summary, mark = false, hat, detail), WITH_MARK to views(context, summary, mark = true, hat, detail))),
+                ids, RemoteViews(mapOf(NARROW to views(words, summary, mark = false, hat, detail), WITH_MARK to views(words, summary, mark = true, hat, detail))),
             )
             drawnWithDetail = detail
             scheduleHatChange(context, today)

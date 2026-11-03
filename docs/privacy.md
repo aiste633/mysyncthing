@@ -1,6 +1,6 @@
 # Privacy
 
-Last updated: 31 October 2026. Changes to this page are in the repository's history.
+Last updated: 2 November 2026. Changes to this page are in the repository's history.
 
 MySyncthing runs Syncthing on your phone. Syncthing copies folders directly between devices you
 pair yourself. There is no MySyncthing account and no MySyncthing server: the app's developer
@@ -29,7 +29,7 @@ All of this stays in the app's private storage, until you clear the app's data o
 | Device ID and its key pair (`cert.pem`, `key.pem`) | Identifies this phone to your other devices |
 | Syncthing's configuration: paired devices (names, IDs, addresses), folders (names, paths) | To sync what you set up |
 | Syncthing's database of file names, sizes, times and hashes | To know what changed |
-| App settings (run conditions, schedules, proxy) | To behave as you set it up |
+| App settings (run conditions, sync windows, each device's own sync windows, proxy) | To behave as you set it up |
 | Syncthing's log, in memory only | Shown in the web GUI's Logs view; gone when the app stops |
 
 The synced files themselves are in the folders you choose on shared storage.
@@ -44,8 +44,8 @@ so the new phone keeps the old one's identity; the database is left out and rebu
 transfer stays between the two phones. Afterwards stop Syncthing on the old phone (the app
 reminds you once): two phones with the same keys look like one device to your other devices.
 
-A backup you export (Settings › System › Export a backup) contains the configuration and the
-device keys. It is written where you choose, and is AES-256 encrypted if you set a password.
+A backup you export (Settings › System › Export a backup) contains the configuration, the
+device keys and the app settings (run conditions, sync windows, proxy). It is written where you choose, and is AES-256 encrypted if you set a password.
 Keep it safe: anyone with the file can act as this phone towards your devices.
 
 An imported backup (this app's or Syncthing-Fork's) never carries over consent to usage

@@ -54,6 +54,11 @@ this reason; a string in a translation that English no longer has still fails th
 
 On a change of language the notification channels are renamed, and the status
 notification, the core's notices and the widget are drawn again in the new language.
+They are always drawn in the app's language, read from Android's per-app setting each
+time: Android keeps the app's language in the configuration of the app's process only
+while one of its screens is open, and falls back to the phone's language once the last
+one closes, so the sync service alone would draw in the phone's language
+(`inAppLanguage()` in `core/.../LocaleChanges.kt`, `AppLanguageTest`).
 The web GUI has its own translations from upstream Syncthing: it takes the app's language
 unless one was chosen in the web GUI itself.
 
