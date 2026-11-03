@@ -22,7 +22,7 @@ uses anyone's real folders, devices or backups.
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
-| Deep monkey | About 12 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 1 ANR found and fixed; no app crash of its own |
+| Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 1 ANR found and fixed; no app crash of its own |
 | Memory soak | 10 h 21 min of syncing and GUI use, sampled every minute | No leak |
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
