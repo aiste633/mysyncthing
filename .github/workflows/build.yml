@@ -107,6 +107,15 @@ jobs:
           chmod +x go/build/e2e-peer
           scripts/e2e/run.py --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
             --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk --out build/e2e
+      # In the job log: the artifact is not always at hand. Tells an emulator that died (its own
+      # output, the kernel's OOM killer, memory) from a failing test.
+      - name: Emulator state after a failure
+        if: failure()
+        run: |
+          pgrep -a qemu-system || echo "the emulator process is gone"
+          free -m
+          sudo dmesg -T | grep -iE 'out of memory|oom|killed process|qemu|kvm' | tail -n 30 || true
+          tail -n 60 build/e2e/emulator.log || true
       - name: Logs
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
