@@ -350,7 +350,9 @@ Three setups at 120,000 events each (about 50 min), plus the end-to-end run with
 
 Left as they are (Android's own, no app code in the stack): on Android 15 a screenshot's "Capture more"
 with a rotation during it crashes the app's process in the framework's scroll capture; on Android 16
-the same crashes System UI. The monkey runs list both and do not fail on them.
+the same crashes System UI. The monkey runs list both and do not fail on them. Also left (seen in the
+walk after the runs): the QR scanner closes when the app is opened again from its icon, as the scanner
+library starts it that way; coming back through Recents keeps it open.
 
 ## Memory soak (2026-10-27)
 
