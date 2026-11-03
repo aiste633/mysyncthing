@@ -188,6 +188,7 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         monkey = (out / "monkey.txt").read_text(errors="replace")
         done = re.findall(r"Events injected: (\d+)", monkey)
         result["injected"] = int(done[-1]) if done else None
+        result["back"] = monkey.count("KEYCODE_BACK")
         result["crash"] = "// CRASH" in monkey
         result["anr"] = "// NOT RESPONDING" in monkey
         result["monkey_finished"] = "// Monkey finished" in monkey and not timed_out
@@ -230,9 +231,9 @@ def report(results: list[dict], a) -> str:
     api = sh("getprop ro.build.version.sdk")
     rows = [f"# Monkey run, API {api}, {time.strftime('%Y-%m-%d %H:%M')}", "",
             f"{a.events} events per run, throttle {a.throttle} ms.", "",
-            "| Setup | Seed | Result | Events | Minutes | StrictMode | Pin losses | Screen off |", "|---|---|---|---|---|---|---|---|"]
+            "| Setup | Seed | Result | Events | BACK | Minutes | StrictMode | Pin losses | Screen off |", "|---|---|---|---|---|---|---|---|---|"]
     for r in results:
-        rows.append(f"| {r['setup']} | {r['seed']} | {r['result']} | {r.get('injected')} | {r.get('minutes')} | "
+        rows.append(f"| {r['setup']} | {r['seed']} | {r['result']} | {r.get('injected')} | {r.get('back')} | {r.get('minutes')} | "
                     f"{sum(r.get('strictmode', {}).values())} | {len(r.get('pin_losses', []))} | {len(r.get('sleeps', []))} |")
     sm: Counter = Counter()
     for r in results:

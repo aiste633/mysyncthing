@@ -256,6 +256,8 @@ class Device:
             "always_finish_activities": sh("settings get global always_finish_activities"),
         }
         self.night = sh("cmd uimode night").rsplit(":", 1)[-1].strip()  # "Night mode: no"
+        # navigation_mode 0 is three-button already (the AOSP images): no overlay is touched then.
+        self.three_button = sh("settings get secure navigation_mode") == "0"
         self.nav = next((m.group(1) for m in re.finditer(r"\[x\] " + re.escape(NAVBAR) + r"(\w+)", sh("cmd overlay list"))), None)
 
     def keep_awake(self) -> None:
@@ -263,7 +265,7 @@ class Device:
         sh("settings put system screen_off_timeout 1800000")
         sh("locksettings set-disabled true", check=False)
         self.wake()
-        if self.nav != "threebutton":
+        if not self.three_button:
             sh(f"cmd overlay enable-exclusive --category {NAVBAR}threebutton")
 
     @staticmethod
@@ -289,8 +291,11 @@ class Device:
                 sh(f"settings delete {ns} {key}", check=False)
             else:
                 sh(f"settings put {ns} {key} {value}", check=False)
-        if self.nav and self.nav != "threebutton":
-            sh(f"cmd overlay enable-exclusive --category {NAVBAR}{self.nav}", check=False)
+        if not self.three_button:
+            if self.nav:
+                sh(f"cmd overlay enable-exclusive --category {NAVBAR}{self.nav}", check=False)
+            else:
+                sh(f"cmd overlay disable {NAVBAR}threebutton", check=False)
         sh("svc power stayon false", check=False)
 
 
