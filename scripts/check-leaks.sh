@@ -97,6 +97,7 @@ while IFS= read -r line; do
   done
   for n in $(matches "$lan_name"); do
     [ "$n" = jdk.internal ] && continue # the JDK's own packages, named in JVM flags
+    [ "$n" = com.android.internal ] && continue # Android's own packages (navigation bar overlays in scripts/e2e)
     report "$commit: local network name"
   done
   [ -z "$(matches "$unc")" ] || report "$commit: Windows network path"
