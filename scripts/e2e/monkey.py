@@ -25,8 +25,8 @@ emulators. On API 36 its log leaves out touch events (they are still sent; logca
 so there only the seed replays a run. The app is kept pinned by run.PinGuard: on API 36 the
 launcher's Overview button ignores screen pinning.
 
-A run ends at the first crash or ANR (the monkey stops there, so the seed and event count
-reproduce it). Collected per run: the monkey's log of every event, the whole logcat, the
+The monkey goes on past crashes and ANRs (run.MONKEY_MIX): other processes' are listed, the
+app's own fail the run; the seed and the event number in its log reproduce them. Collected per run: the monkey's log of every event, the whole logcat, the
 system's crash records (dropbox), and a summary: crashes, ANRs, native crashes, Go panics,
 StrictMode reports grouped by kind and first app frame, pin losses.
 
@@ -216,7 +216,9 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
     result["java_crash"] = bool(crashes)
     result["known_platform"] = known
     result["native_crash"], native_others = run.native_crashes(text)
-    result["other_processes"] = result.get("other_processes", []) + [f"native crash {n}" for n in native_others]
+    anrs, anr_others = run.logcat_anrs(text)
+    result["anr"] = result["anr"] or bool(anrs)
+    result["other_processes"] = result.get("other_processes", []) + [f"native crash {n}" for n in native_others] + [f"ANR {a}" for a in anr_others]
     result["go_panic"] = sorted({l.strip() for l in text.splitlines() if re.search(r"\b(panic: |fatal error: )", l)})[:20]
     result["strictmode"] = dict(strictmode(text).most_common())
     (out / "dropbox.txt").write_text("\n\n".join(result["dropbox"]))

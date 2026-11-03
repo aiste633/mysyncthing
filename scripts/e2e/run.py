@@ -48,8 +48,12 @@ V1, V2 = "version 1\n", "second version\n"  # E2eTest's V1 and V2
 # still fail it (monkey_problems, and the logcat checks). --ignore-native-crashes likewise: the
 # monitor ends the run at a new tombstone of ANY process (Monkey.java: mAbort = ... || !mIgnoreNativeCrashes;
 # most likely what ended one CI run on API 36 after 2.5 min with no crash line); the app's own native crashes fail it from logcat.
+# --ignore-timeouts likewise for ANRs: without it any process's ANR ends the run (one CI run on API 35
+# at event 10,325); the app's own ANRs fail it (monkey_problems, logcat_anrs).
+# The monkey writes its "// CRASH:" and "// NOT RESPONDING:" lines to stderr: read both streams.
 MONKEY_MIX = ["--pct-syskeys", "5", "--pct-appswitch", "2", "--pct-permission", "0", "--pct-flip", "0",
-              "--ignore-crashes", "--monitor-native-crashes", "--ignore-native-crashes", "-v", "-v", "-v"]
+              "--ignore-crashes", "--ignore-timeouts", "--monitor-native-crashes", "--ignore-native-crashes",
+              "-v", "-v", "-v"]
 # The monkey counts its throttle pauses as events too: 30,000 take about 13 min on the PC emulators.
 MONKEY = ["-s", "4242", "--throttle", "100", *MONKEY_MIX, "--pct-rotation", "2", "30000"]
 NAVBAR = "com.android.internal.systemui.navbar."
@@ -402,6 +406,20 @@ def native_crashes(logcat: str) -> tuple[bool, list[str]]:
     return APP in [n.split(":")[0] for n in names], sorted({n for n in names if n.split(":")[0] != APP})
 
 
+def logcat_anrs(logcat: str) -> tuple[list[str], list[str]]:
+    """ANRs in a logcat (ActivityManager's "ANR in" with the "Reason:" line after it): the app's,
+    and other processes', each as "process: reason"."""
+    ours: list[str] = []
+    others: list[str] = []
+    lines = logcat.splitlines()
+    for i, line in enumerate(lines):
+        if not (m := re.search(r"\bANR in (\S+)", line)):
+            continue
+        reason = next((l.split("Reason: ", 1)[1].strip() for l in lines[i + 1:i + 6] if "Reason: " in l), "?")
+        (ours if m.group(1).split(":")[0] == APP else others).append(f"{m.group(1)}: {reason}")
+    return ours, others
+
+
 def monkey_problems(text: str) -> tuple[list[str], list[str]]:
     """Crashes and ANRs in a monkey log: the app's own, and the rest: other processes' and the app
     process's known platform crashes (KNOWN_PLATFORM_CRASHES), which are Android's, not ours."""
@@ -474,17 +492,18 @@ def monkey(out: Path) -> None:
         guard = PinGuard()
         guard.start()
         try:
-            r = subprocess.run([ADB, "shell", "monkey", "-p", APP, *MONKEY], capture_output=True, text=True, timeout=3600)
+            r = subprocess.run([ADB, "shell", "monkey", "-p", APP, *MONKEY], stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT, text=True, timeout=3600)
         finally:
             guard.finish()
-        (out / "monkey.txt").write_text(r.stdout + r.stderr)
+        (out / "monkey.txt").write_text(r.stdout)
         log(f"monkey: pinned again {len(guard.pin_losses)} times {guard.pin_losses}, woken {len(guard.sleeps)} times")
         ours, others = monkey_problems(r.stdout)
         if others:
             log(f"monkey: other processes, not the app: {others}")
         if ours or "Monkey finished" not in r.stdout:
             # The end of its log in the job log too: CI's artifact is not always at hand.
-            tail = [line for line in (r.stdout + r.stderr).splitlines() if not line.startswith(":Sending")][-40:]
+            tail = [line for line in r.stdout.splitlines() if not line.startswith(":Sending")][-40:]
             log(f"monkey exited {r.returncode}; the end of its log:\n  " + "\n  ".join(tail))
             fail(f"monkey: {ours or 'aborted'} (see monkey.txt)")
         if not pinned() or not awake():
@@ -537,6 +556,11 @@ def main() -> None:
         fail(f"the app crashed: {crashes} (see logcat.txt)")
     if known:
         log(f"known platform crashes in the app's process (not failing): {known}")
+    ours, others = logcat_anrs(logcat)
+    if ours:
+        fail(f"the app did not respond (ANR): {ours} (see logcat.txt)")
+    if others:
+        log(f"ANRs of other processes (not failing): {others}")
     ours, others = native_crashes(logcat)
     if ours:
         fail("the app's process crashed natively (see logcat.txt: '>>> eu.stedb.mysyncthing <<<')")

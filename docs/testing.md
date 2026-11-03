@@ -155,7 +155,7 @@ real phone.
 | Launcher starts | Opened first by an intent other than the launcher's, then three times from the launcher: one copy of the main screen stays, not four |
 | Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze |
 
-The run also fails on any app crash in the log, and counts StrictMode reports. On the PC
+The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
 
 ### App updates
