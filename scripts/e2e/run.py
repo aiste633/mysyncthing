@@ -472,6 +472,9 @@ def monkey(out: Path) -> None:
         if others:
             log(f"monkey: other processes, not the app: {others}")
         if ours or "Monkey finished" not in r.stdout:
+            # The end of its log in the job log too: CI's artifact is not always at hand.
+            tail = [line for line in (r.stdout + r.stderr).splitlines() if not line.startswith(":Sending")][-40:]
+            log(f"monkey exited {r.returncode}; the end of its log:\n  " + "\n  ".join(tail))
             fail(f"monkey: {ours or 'aborted'} (see monkey.txt)")
         if not pinned() or not awake():
             fail("monkey: at the end the app was no longer pinned or the screen was off, so events may have gone elsewhere")
