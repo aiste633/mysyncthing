@@ -13,7 +13,8 @@ mode; BACK is then safe to send. A host thread pins it again if the pin is lost 
 Setups:
   plain     English, light, normal font; a little rotation
   de-big    German, dark, font 2.0 (the largest); a little rotation; the peer away for 35 min
-            from minute 3, so the Devices tab shows the grey wait and then the red state
+            from minute 3, so the Devices tab can go grey and then red (unless the monkey pauses
+            syncing itself, as it did in the first runs: the red state has its own tests)
   recreate  "Don't keep activities" on, much rotation; starts with the peer never syncing (sync
             times open now, its own windows later: E2eTest#monkeyNeverSyncs), so the "Never syncs"
             card, the sync window editors and "Save anyway" are close

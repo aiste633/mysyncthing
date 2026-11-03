@@ -1,7 +1,9 @@
 package eu.stedb.mysyncthing
 
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -27,6 +29,13 @@ class MainActivity : ComponentActivity() {
             return
         }
         enableEdgeToEdge()
+        // Android 15's scroll capture ("Capture more" on a screenshot) crashed the app twice in the deep
+        // monkey run (2026-11-03): the screen went away mid-capture, and the framework then called a
+        // callback it had already cleared (NullPointerException in ScrollCaptureConnection, no app code in
+        // the stack). Android 16 does not. So on 15 the app's screens take no part in long screenshots.
+        if (Build.VERSION.SDK_INT == Build.VERSION_CODES.VANILLA_ICE_CREAM) {
+            window.decorView.scrollCaptureHint = View.SCROLL_CAPTURE_HINT_EXCLUDE or View.SCROLL_CAPTURE_HINT_EXCLUDE_DESCENDANTS
+        }
         if (savedInstanceState == null) target.value = intent.launchTarget()
         setContent { App(target = target.value, onTargetShown = { target.value = null }) }
     }
