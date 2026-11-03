@@ -77,7 +77,7 @@ class SyncthingService : LifecycleService() {
                 delay(2_000)
             }
         }
-        startForeground(NOTIFICATION_ID, notification(getString(R.string.status_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        startForeground(NOTIFICATION_ID, notification(text(R.string.status_starting)), ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
 
@@ -238,7 +238,8 @@ class SyncthingService : LifecycleService() {
 
 
     /** [publicText] is for the lock screen: the state without device names. */
-    private fun notification(text: String, publicText: String = text): Notification {
+    private fun notification(text: UiText, publicText: UiText = text): Notification {
+        val context = inAppLanguage()
         val launch = packageManager.getLaunchIntentForPackage(packageName)
         val content = launch?.let { PendingIntent.getActivity(this, 0, it, PendingIntent.FLAG_IMMUTABLE) }
         val stop = PendingIntent.getService(
@@ -246,10 +247,10 @@ class SyncthingService : LifecycleService() {
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
-            .setContentTitle(getString(R.string.syncthing))
-            .setContentText(text)
+            .setContentTitle(context.getString(R.string.syncthing))
+            .setContentText(text.resolve(context))
             .setContentIntent(content)
-            .addAction(0, getString(R.string.action_stop), stop)
+            .addAction(0, context.getString(R.string.action_stop), stop)
             .setOngoing(true)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             // Its own group keeps it out of Android's automatic group of our other
@@ -260,8 +261,8 @@ class SyncthingService : LifecycleService() {
             .setPublicVersion(
                 NotificationCompat.Builder(this, CHANNEL_ID)
                     .setSmallIcon(android.R.drawable.stat_notify_sync)
-                    .setContentTitle(getString(R.string.syncthing))
-                    .setContentText(publicText)
+                    .setContentTitle(context.getString(R.string.syncthing))
+                    .setContentText(publicText.resolve(context))
                     .setGroup(SERVICE_GROUP)
                     .build()
             )
@@ -274,7 +275,7 @@ class SyncthingService : LifecycleService() {
     private fun updateNotification(text: UiText, publicText: UiText = text) {
         if (text to publicText == lastShown) return
         lastShown = text to publicText
-        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text.resolve(this), publicText.resolve(this)))
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification(text, publicText))
     }
 
     companion object {
@@ -316,7 +317,8 @@ class SyncthingService : LifecycleService() {
          * notification shows in the shade on every phone; it stays out of the
          * status bar. The user can hide it by turning the channel off.
          */
-        fun createChannel(context: Context) {
+        fun createChannel(base: Context) {
+            val context = base.inAppLanguage()
             val nm = context.getSystemService(NotificationManager::class.java)
             nm.createNotificationChannel(
                 NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_service), NotificationManager.IMPORTANCE_MIN).apply {

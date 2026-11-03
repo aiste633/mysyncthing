@@ -39,7 +39,8 @@ object ProblemNotifications {
     /** Notices already alerted for, so an unchanged or shrinking list updates silently. */
     private var alerted = emptySet<SystemError>()
 
-    fun createChannel(context: Context) {
+    fun createChannel(base: Context) {
+        val context = base.inAppLanguage()
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(
             NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_problems), NotificationManager.IMPORTANCE_HIGH).apply {
                 description = context.getString(R.string.channel_problems_description)
@@ -47,7 +48,8 @@ object ProblemNotifications {
         )
     }
 
-    fun update(context: Context, errors: List<SystemError>) {
+    fun update(base: Context, errors: List<SystemError>) {
+        val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
         if (errors.isEmpty()) {
             nm.cancel(NOTIFICATION_ID)
@@ -89,7 +91,8 @@ object ProblemNotifications {
      * Syncing stopped because All files access is off; tapping opens the app,
      * whose setup checklist asks for it again. Cleared once the service starts with it.
      */
-    fun noFileAccess(context: Context, show: Boolean) {
+    fun noFileAccess(base: Context, show: Boolean) {
+        val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
         if (!show) {
             nm.cancel(NO_ACCESS_ID)
@@ -118,7 +121,8 @@ object ProblemNotifications {
      * One notification per folder in error, gone once the folder recovers. Only
      * a new one alerts; read from the shade, so this holds across process restarts.
      */
-    fun updateFolders(context: Context, problems: List<FolderProblem>) {
+    fun updateFolders(base: Context, problems: List<FolderProblem>) {
+        val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
         val shown = nm.activeNotifications.filter { it.tag == FOLDER_TAG }.map { it.id }.toSet()
         val wanted = problems.associateBy { it.id.hashCode() }
