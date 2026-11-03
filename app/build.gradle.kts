@@ -95,6 +95,8 @@ dependencies {
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.androidx.test.junit)
     testImplementation(libs.robolectric)
+    // AppLanguageTest starts SyncthingService (a LifecycleService), already in the app through :core.
+    testImplementation(libs.androidx.lifecycle.service)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
