@@ -215,7 +215,8 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
     crashes, known = run.logcat_app_crashes(text)
     result["java_crash"] = bool(crashes)
     result["known_platform"] = known
-    result["native_crash"] = f">>> {APP} <<<" in text
+    result["native_crash"], native_others = run.native_crashes(text)
+    result["other_processes"] = result.get("other_processes", []) + [f"native crash {n}" for n in native_others]
     result["go_panic"] = sorted({l.strip() for l in text.splitlines() if re.search(r"\b(panic: |fatal error: )", l)})[:20]
     result["strictmode"] = dict(strictmode(text).most_common())
     (out / "dropbox.txt").write_text("\n\n".join(result["dropbox"]))

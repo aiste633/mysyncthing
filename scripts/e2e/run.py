@@ -45,9 +45,11 @@ V1, V2 = "version 1\n", "second version\n"  # E2eTest's V1 and V2
 # again. permission 0: runtime permissions stay as installed (-g). Rotation per run.
 # --ignore-crashes: a crash of another process does not end the run (a monkey screenshot key once
 # crashed System UI's scroll capture over a German, font 2.0 screen, API 36); the app's own crashes
-# still fail it (monkey_problems, and the logcat checks).
+# still fail it (monkey_problems, and the logcat checks). --ignore-native-crashes likewise: the
+# monitor ends the run at a new tombstone of ANY process (Monkey.java: mAbort = ... || !mIgnoreNativeCrashes;
+# most likely what ended one CI run on API 36 after 2.5 min with no crash line); the app's own native crashes fail it from logcat.
 MONKEY_MIX = ["--pct-syskeys", "5", "--pct-appswitch", "2", "--pct-permission", "0", "--pct-flip", "0",
-              "--ignore-crashes", "--monitor-native-crashes", "-v", "-v", "-v"]
+              "--ignore-crashes", "--monitor-native-crashes", "--ignore-native-crashes", "-v", "-v", "-v"]
 # The monkey counts its throttle pauses as events too: 30,000 take about 13 min on the PC emulators.
 MONKEY = ["-s", "4242", "--throttle", "100", *MONKEY_MIX, "--pct-rotation", "2", "30000"]
 NAVBAR = "com.android.internal.systemui.navbar."
@@ -393,6 +395,13 @@ def logcat_app_crashes(logcat: str) -> tuple[list[str], list[str]]:
     return ours, known
 
 
+def native_crashes(logcat: str) -> tuple[bool, list[str]]:
+    """Native crashes in a logcat (the tombstone's ">>> process <<<" line): whether the app's process
+    had one (a Go panic in the core ends that way too), and the other processes that had one."""
+    names = re.findall(r">>> (\S+) <<<", logcat)
+    return APP in [n.split(":")[0] for n in names], sorted({n for n in names if n.split(":")[0] != APP})
+
+
 def monkey_problems(text: str) -> tuple[list[str], list[str]]:
     """Crashes and ANRs in a monkey log: the app's own, and the rest: other processes' and the app
     process's known platform crashes (KNOWN_PLATFORM_CRASHES), which are Android's, not ours."""
@@ -416,6 +425,8 @@ def monkey_problems(text: str) -> tuple[list[str], list[str]]:
             others.append(f"{what} (known: {known})")
         else:
             ours.append(what)
+    # Any process's new tombstone; whose it was is read from logcat (native_crashes).
+    others += ["new native crash (whose: see the logcat check)"] * text.count("** New native crash detected.")
     return ours, others
 
 
@@ -526,6 +537,11 @@ def main() -> None:
         fail(f"the app crashed: {crashes} (see logcat.txt)")
     if known:
         log(f"known platform crashes in the app's process (not failing): {known}")
+    ours, others = native_crashes(logcat)
+    if ours:
+        fail("the app's process crashed natively (see logcat.txt: '>>> eu.stedb.mysyncthing <<<')")
+    if others:
+        log(f"native crashes of other processes (not failing): {others}")
     log(f"StrictMode reports in logcat: {logcat.count('StrictMode policy violation')}")
     if failures:
         log(f"{len(failures)} failed:\n  " + "\n  ".join(failures))
