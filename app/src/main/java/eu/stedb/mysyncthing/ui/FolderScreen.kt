@@ -285,7 +285,7 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
     val units = (listOf("%", "MB", "GB") + initial.unit).distinct()
     // StatFs reads the disk: off the main thread (StrictMode, monkey run 2026-11-03: about 50 ms).
     val free by produceState<Pair<Long, Long>?>(null, path) {
-        value = withContext(Dispatchers.IO) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
+        this.value = withContext(Dispatchers.IO) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
     }
     val error = amountError(value, unit)?.asString()
     AlertDialog(
