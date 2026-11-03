@@ -6,6 +6,7 @@
 <li>Notifiche per nuovi dispositivi e cartelle condivise, con Esamina e Ignora</li>
 <li>Funziona tutto il giorno come servizio in primo piano, senza il limite di 6 ore dei servizi di sincronizzazione dati, e si avvia all'accensione</li>
 <li>Condizioni di sincronizzazione: Wi-Fi a consumo, dati mobili e roaming attivabili uno per uno, solo in carica o solo a batteria, pausa con il risparmio energetico, solo in orari scelti della settimana</li>
+<li>Metti in pausa singoli dispositivi dalla loro scheda, dai a un dispositivo i suoi orari di sincronizzazione (per esempio il NAS solo di notte) e vedi quando ogni dispositivo si è connesso l'ultima volta</li>
 <li>Proxy SOCKS5 o HTTP, per esempio Tor con Orbot</li>
 <li>Passaggio facile da Syncthing-Fork: importa il suo backup, anche crittografato; esporta la tua configurazione, facoltativamente crittografata con AES-256</li>
 <li>L'interfaccia web di Syncthing è integrata per le impostazioni avanzate</li>
