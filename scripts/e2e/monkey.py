@@ -114,10 +114,11 @@ def device_time() -> str:
 
 
 def dropbox_since(start: str) -> list[str]:
-    """The system's crash and ANR records for the app, made at or after [start] (device time)."""
+    """The system's crash and ANR records for the app, made at or after [start] (device time); not
+    the known platform crashes (run.KNOWN_PLATFORM_CRASHES), which the logcat check lists."""
     text = adb("shell", "dumpsys", "dropbox", "--print", *DROPBOX_TAGS, check=False, timeout=300)
     entries = [e.strip() for e in re.split(r"^=+$", text, flags=re.M) if e.strip()]
-    return [e for e in entries if e[:19] >= start and APP in e]
+    return [e for e in entries if e[:19] >= start and APP in e and not run.known_platform_crash(e)]
 
 
 def strictmode(logcat: str) -> Counter:
@@ -211,7 +212,9 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
             adb(*args, check=False)
 
     text = (out / "logcat.txt").read_text(errors="replace")
-    result["java_crash"] = f"Process: {APP}, PID" in text
+    crashes, known = run.logcat_app_crashes(text)
+    result["java_crash"] = bool(crashes)
+    result["known_platform"] = known
     result["native_crash"] = f">>> {APP} <<<" in text
     result["go_panic"] = sorted({l.strip() for l in text.splitlines() if re.search(r"\b(panic: |fatal error: )", l)})[:20]
     result["strictmode"] = dict(strictmode(text).most_common())
@@ -243,9 +246,9 @@ def report(results: list[dict], a) -> str:
         sm.update(r.get("strictmode", {}))
     if sm:
         rows += ["", "## StrictMode, all runs", ""] + [f"- {n} x {k}" for k, n in sm.most_common()]
-    others = [f"{r['setup']} {r['seed']}: {o}" for r in results for o in r.get("other_processes", [])]
+    others = [f"{r['setup']} {r['seed']}: {o}" for r in results for o in r.get("other_processes", []) + r.get("known_platform", [])]
     if others:
-        rows += ["", "## Other processes' crashes and ANRs (Android's, not the app)", ""] + [f"- {o}" for o in others]
+        rows += ["", "## Android's crashes and ANRs, not the app's (other processes, known platform crashes)", ""] + [f"- {o}" for o in others]
     panics = sorted({p for r in results for p in r.get("go_panic", [])})
     if panics:
         rows += ["", "## Go panic lines", ""] + [f"- `{p}`" for p in panics]

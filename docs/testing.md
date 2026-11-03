@@ -22,6 +22,7 @@ uses anyone's real folders, devices or backups.
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
+| Deep monkey | About 12 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 1 ANR found and fixed; no app crash of its own |
 | Memory soak | 10 h 21 min of syncing and GUI use, sampled every minute | No leak |
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
@@ -327,6 +328,29 @@ fails. That is left to the Syncthing project.
 The fixes were checked again on the emulator before they were merged; that check found three
 more points (a deliberate Stop undone by a rotation, a raw core message, a slow read at boot),
 which were also fixed first.
+
+## Deep monkey (2026-11-03)
+
+`scripts/e2e/monkey.py` on the PC emulators, Android 16 and 15. Each run starts from a fresh install
+paired with the e2e peer, with a second folder offered. The peer changes a file every 20 s and drops
+the phone every 5 min. The app is pinned, so BACK can be sent and no tap reaches quick settings.
+Three setups at 120,000 events each (about 50 min), plus the end-to-end run with its 30,000 events:
+
+| Setup | What it adds |
+|---|---|
+| plain | English, light, normal font |
+| de-big | German, dark, the largest font (2.0), the peer away for 35 min |
+| recreate | "Don't keep activities", much rotation, the peer starting on "Never syncs" |
+
+| Found | Fixed |
+|---|---|
+| Opened by an intent other than the launcher's, every later launcher start added a copy of the main screen. The monkey stacked 121 copies and then froze the app (ANR) | A copy on top steps aside; the end-to-end run checks that one stays |
+| The Keep free dialog read the disk on the main thread (StrictMode, about 50 ms) | Read in the background |
+| On Android 16 the launcher's Overview button ignores screen pinning, so a tap could leave the app | The tests pin the app again within 2 s |
+
+Left as they are (Android's own, no app code in the stack): on Android 15 a screenshot's "Capture more"
+with a rotation during it crashes the app's process in the framework's scroll capture; on Android 16
+the same crashes System UI. The monkey runs list both and do not fail on them.
 
 ## Memory soak (2026-10-27)
 

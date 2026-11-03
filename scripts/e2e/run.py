@@ -351,12 +351,71 @@ def pin() -> bool:
     return eventually("app pinned", 15, pinned)
 
 
+# Crashes in the app's process that are Android's own, left as they are by the user's decision: a
+# monkey run reports them, but they do not fail it. Matched on the crash's stack in the monkey log,
+# and only when no frame of the app's own code is in it.
+KNOWN_PLATFORM_CRASHES = {
+    # Android 15: a screenshot's "Capture more" still running when the screen goes away (rotation);
+    # the framework then calls the scroll capture callback it already cleared. User 2026-11-03: leave it.
+    "android.view.ScrollCaptureConnection": "Android 15 scroll capture race",
+}
+
+
+def known_platform_crash(trace: str) -> str | None:
+    """Why [trace] (a crash's stack) is a known platform crash, or None: also None when any frame of
+    the app's own code is in it."""
+    if f"at {APP}." in trace:
+        return None
+    return next((why for sig, why in KNOWN_PLATFORM_CRASHES.items() if sig in trace), None)
+
+
+def logcat_app_crashes(logcat: str) -> tuple[list[str], list[str]]:
+    """The app's Java crashes in a logcat (AndroidRuntime's FATAL EXCEPTION blocks): its own, by their
+    first line, and the known platform ones, by why they are known."""
+    blocks: list[list[str]] = []
+    for line in logcat.splitlines():
+        if "AndroidRuntime" not in line:
+            continue
+        if "FATAL EXCEPTION" in line:
+            blocks.append([])
+        elif blocks:
+            blocks[-1].append(line)
+    ours: list[str] = []
+    known: list[str] = []
+    for b in blocks:
+        trace = "\n".join(b)
+        if f"Process: {APP}, PID" not in trace:
+            continue
+        if why := known_platform_crash(trace):
+            known.append(why)
+        else:
+            ours.append(b[1].split(": ", 1)[-1] if len(b) > 1 else "?")
+    return ours, known
+
+
 def monkey_problems(text: str) -> tuple[list[str], list[str]]:
-    """Crashes and ANRs in a monkey log: the app's own, and other processes' (Android's, not ours)."""
+    """Crashes and ANRs in a monkey log: the app's own, and the rest: other processes' and the app
+    process's known platform crashes (KNOWN_PLATFORM_CRASHES), which are Android's, not ours."""
     ours: list[str] = []
     others: list[str] = []
-    for m in re.finditer(r"// (CRASH|NOT RESPONDING): (\S+)", text):
-        (ours if m.group(2).split(":")[0] == APP else others).append(f"{m.group(1)} {m.group(2)}")
+    lines = text.splitlines()
+    for i, line in enumerate(lines):
+        if not (m := re.match(r"// (CRASH|NOT RESPONDING): (\S+)", line)):
+            continue
+        what = f"{m.group(1)} {m.group(2)}"
+        if m.group(2).split(":")[0] != APP:
+            others.append(what)
+            continue
+        block = []
+        for later in lines[i + 1:]:
+            if not later.startswith("//") or later.startswith(("// CRASH:", "// NOT RESPONDING:")):
+                break
+            block.append(later)
+        known = known_platform_crash("\n".join(block))
+        if known and m.group(1) == "CRASH":
+            others.append(f"{what} (known: {known})")
+        else:
+            ours.append(what)
     return ours, others
 
 
@@ -459,8 +518,11 @@ def main() -> None:
             adb(*args, check=False)
 
     logcat = (a.out / "logcat.txt").read_text(errors="replace")
-    if f"Process: {APP}, PID" in logcat:
-        fail("the app crashed (see logcat.txt)")
+    crashes, known = logcat_app_crashes(logcat)
+    if crashes:
+        fail(f"the app crashed: {crashes} (see logcat.txt)")
+    if known:
+        log(f"known platform crashes in the app's process (not failing): {known}")
     log(f"StrictMode reports in logcat: {logcat.count('StrictMode policy violation')}")
     if failures:
         log(f"{len(failures)} failed:\n  " + "\n  ".join(failures))
