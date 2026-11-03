@@ -18,6 +18,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // A launcher start whose intent differs from the one that opened the task (another app, or
+        // `am start -n`) gets a new copy on top of the task instead of bringing it back, each copy with
+        // its own screens in memory: the monkey stacked 121 and ended in an ANR (2026-11-03). Such a
+        // copy steps aside, and the copy below shows again.
+        if (!isTaskRoot && intent.action == Intent.ACTION_MAIN && intent.hasCategory(Intent.CATEGORY_LAUNCHER) && intent.launchTarget() == null) {
+            finish()
+            return
+        }
         enableEdgeToEdge()
         if (savedInstanceState == null) target.value = intent.launchTarget()
         setContent { App(target = target.value, onTargetShown = { target.value = null }) }

@@ -207,8 +207,29 @@ def app_pid() -> str:
     return sh(f"pidof {APP}", check=False)
 
 
+LAUNCHER_START = f"am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -f 0x10200000 -n {APP}/.MainActivity"
+
+
 def open_app() -> None:
-    sh(f"am start -W -n {APP}/.MainActivity")
+    """As the launcher does (new task, reset if needed)."""
+    sh(LAUNCHER_START)
+
+
+def main_activities() -> int:
+    return sum(1 for line in sh("dumpsys activity activities").splitlines() if "Hist" in line and f"{APP}/.MainActivity" in line)
+
+
+def launcher_starts() -> None:
+    """Opened first by an intent that is not the launcher's, then three times from the launcher: one
+    MainActivity stays, not four (each copy kept its own screens; the monkey stacked 121, then an ANR)."""
+    log("launcher starts")
+    sh(f"am start -W -f 0x10008000 -n {APP}/.MainActivity")  # new task, cleared: a root that is not the launcher's
+    for _ in range(3):
+        sh("input keyevent KEYCODE_HOME")
+        sh(LAUNCHER_START)
+    time.sleep(3)
+    if (n := main_activities()) != 1:
+        fail(f"launcher starts: {n} MainActivity copies in the task, expected 1")
 
 
 def process_death(peer: Peer, phone: str) -> None:
@@ -413,6 +434,7 @@ def main() -> None:
             phase("textDialogsKeepTypedText", peer, a.out)
             process_death(peer, phone)
             storage_revoked(peer, phone)
+            launcher_starts()
             monkey(a.out)
     finally:
         peer.stop()
