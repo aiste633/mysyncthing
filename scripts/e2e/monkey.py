@@ -187,8 +187,10 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         done = re.findall(r"Events injected: (\d+)", monkey)
         result["injected"] = int(done[-1]) if done else None
         result["back"] = monkey.count("KEYCODE_BACK")
-        result["crash"] = "// CRASH" in monkey
-        result["anr"] = "// NOT RESPONDING" in monkey
+        ours, others = run.monkey_problems(monkey)
+        result["crash"] = any(o.startswith("CRASH") for o in ours)
+        result["anr"] = any(o.startswith("NOT RESPONDING") for o in ours)
+        result["other_processes"] = others
         result["monkey_finished"] = "// Monkey finished" in monkey and not timed_out
         result["dropbox"] = dropbox_since(start)
         guard.finish()
@@ -241,6 +243,9 @@ def report(results: list[dict], a) -> str:
         sm.update(r.get("strictmode", {}))
     if sm:
         rows += ["", "## StrictMode, all runs", ""] + [f"- {n} x {k}" for k, n in sm.most_common()]
+    others = [f"{r['setup']} {r['seed']}: {o}" for r in results for o in r.get("other_processes", [])]
+    if others:
+        rows += ["", "## Other processes' crashes and ANRs (Android's, not the app)", ""] + [f"- {o}" for o in others]
     panics = sorted({p for r in results for p in r.get("go_panic", [])})
     if panics:
         rows += ["", "## Go panic lines", ""] + [f"- `{p}`" for p in panics]

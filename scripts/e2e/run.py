@@ -43,8 +43,11 @@ V1, V2 = "version 1\n", "second version\n"  # E2eTest's V1 and V2
 # Monkey event mix. Not set: touch, motion, trackball, majornav and anyevent keep their defaults.
 # syskeys: BACK (and HOME, volume, CALL), harmless while pinned. appswitch: starts MainActivity
 # again. permission 0: runtime permissions stay as installed (-g). Rotation per run.
+# --ignore-crashes: a crash of another process does not end the run (a monkey screenshot key once
+# crashed System UI's scroll capture over a German, font 2.0 screen, API 36); the app's own crashes
+# still fail it (monkey_problems, and the logcat checks).
 MONKEY_MIX = ["--pct-syskeys", "5", "--pct-appswitch", "2", "--pct-permission", "0", "--pct-flip", "0",
-              "--monitor-native-crashes", "-v", "-v", "-v"]
+              "--ignore-crashes", "--monitor-native-crashes", "-v", "-v", "-v"]
 # The monkey counts its throttle pauses as events too: 30,000 take about 13 min on the PC emulators.
 MONKEY = ["-s", "4242", "--throttle", "100", *MONKEY_MIX, "--pct-rotation", "2", "30000"]
 NAVBAR = "com.android.internal.systemui.navbar."
@@ -348,6 +351,15 @@ def pin() -> bool:
     return eventually("app pinned", 15, pinned)
 
 
+def monkey_problems(text: str) -> tuple[list[str], list[str]]:
+    """Crashes and ANRs in a monkey log: the app's own, and other processes' (Android's, not ours)."""
+    ours: list[str] = []
+    others: list[str] = []
+    for m in re.finditer(r"// (CRASH|NOT RESPONDING): (\S+)", text):
+        (ours if m.group(2).split(":")[0] == APP else others).append(f"{m.group(1)} {m.group(2)}")
+    return ours, others
+
+
 class PinGuard(threading.Thread):
     """Every 2 s: wakes the screen and pins the app again if either was lost, and records when.
     On API 36 the launcher draws the three-button bar, and its Overview button ignores screen
@@ -397,8 +409,11 @@ def monkey(out: Path) -> None:
             guard.finish()
         (out / "monkey.txt").write_text(r.stdout + r.stderr)
         log(f"monkey: pinned again {len(guard.pin_losses)} times {guard.pin_losses}, woken {len(guard.sleeps)} times")
-        if "// CRASH" in r.stdout or "// NOT RESPONDING" in r.stdout or "Monkey finished" not in r.stdout:
-            fail("monkey: crash, ANR or aborted (see monkey.txt)")
+        ours, others = monkey_problems(r.stdout)
+        if others:
+            log(f"monkey: other processes, not the app: {others}")
+        if ours or "Monkey finished" not in r.stdout:
+            fail(f"monkey: {ours or 'aborted'} (see monkey.txt)")
         if not pinned() or not awake():
             fail("monkey: at the end the app was no longer pinned or the screen was off, so events may have gone elsewhere")
     finally:
