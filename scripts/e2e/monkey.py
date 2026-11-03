@@ -20,6 +20,11 @@ Setups:
 
 Not reachable by the monkey: the backup import preview (the file picker is another app).
 
+The monkey counts its throttle pauses as events: 120,000 events take about 50 min on the PC
+emulators. On API 36 its log leaves out touch events (they are still sent; logcat shows them),
+so there only the seed replays a run. The app is kept pinned by run.PinGuard: on API 36 the
+launcher's Overview button ignores screen pinning.
+
 A run ends at the first crash or ANR (the monkey stops there, so the seed and event count
 reproduce it). Collected per run: the monkey's log of every event, the whole logcat, the
 system's crash records (dropbox), and a summary: crashes, ANRs, native crashes, Go panics,
@@ -31,7 +36,7 @@ restores at the end (the app is left uninstalled).
   scripts/e2e/monkey.py --peer go/build/e2e-peer \\
       --apk app/build/outputs/apk/debug/app-debug.apk \\
       --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \\
-      --setups plain,de-big,recreate --seeds 1101,1102 --events 20000 --out build/monkey
+      --setups plain,de-big,recreate --seeds 1101 --events 120000 --out build/monkey
 """
 import argparse
 import json
@@ -47,7 +52,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run  # noqa: E402  (scripts/e2e/run.py: adb, Peer, prepare, phase)
-from run import ADB, APP, MONKEY_MIX, Device, adb, awake, log, pin, pinned, sh  # noqa: E402
+from run import ADB, APP, MONKEY_MIX, Device, adb, log, pin, sh  # noqa: E402
 
 SETUPS = {
     "plain": {"rotation": "2"},
@@ -60,16 +65,13 @@ DROPBOX_TAGS = ["data_app_crash", "data_app_anr", "data_app_native_crash", "data
 class Churn(threading.Thread):
     """During the run: the peer changes a file every 20 s and drops the phone for 30 s every 5 min.
     With [away_min], the peer stays away that long from minute 3 on, so the Devices tab goes from
-    grey "Waiting for devices" to red after 30 min. The screen is woken and the app pinned again
-    whenever either is lost (both logged)."""
+    grey "Waiting for devices" to red after 30 min."""
 
     def __init__(self, peer: "run.Peer", phone: str, out: Path, away_min: int = 0) -> None:
         super().__init__(daemon=True)
         self.peer, self.phone, self.out = peer, phone, out
         self.away = range(9, 9 + away_min * 3) if away_min else range(0)  # in 20 s ticks
         self.stop = threading.Event()
-        self.pin_losses: list[str] = []
-        self.sleeps: list[str] = []
 
     def run(self) -> None:
         tick = 0
@@ -84,12 +86,6 @@ class Churn(threading.Thread):
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": True})
                 elif tick % 15 == 2:
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": False})
-                if not awake():
-                    self.sleeps.append(time.strftime("%H:%M:%S"))
-                    run.Device.wake()
-                if not pinned():
-                    self.pin_losses.append(time.strftime("%H:%M:%S"))
-                    pin()
             except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as e:
                 log(f"churn: {e}")
 
@@ -156,7 +152,7 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
     adb("logcat", "-c", check=False)
     logcat_file = (out / "logcat.txt").open("w")
     logcat = subprocess.Popen([ADB, "logcat", "-v", "threadtime"], stdout=logcat_file, stderr=subprocess.STDOUT)
-    churn = None
+    churn = guard = None
     try:
         peer.start()
         if not run.phase("pairAndSync", peer, out):
@@ -173,6 +169,8 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
             return result
         churn = Churn(peer, phone, out, setup.get("away_min", 0))
         churn.start()
+        guard = run.PinGuard()
+        guard.start()
         start = device_time()
         began = time.monotonic()
         cmd = [ADB, "shell", "monkey", "-p", APP, "-s", str(seed), "--throttle", str(a.throttle),
@@ -180,7 +178,7 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         log(f"{name} seed {seed}: {' '.join(cmd[2:])}")
         with (out / "monkey.txt").open("w") as f:
             try:
-                r = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, timeout=a.events * (a.throttle + 400) // 1000 + 600)
+                subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT, timeout=a.events * (a.throttle + 400) // 1000 + 600)
                 timed_out = False
             except subprocess.TimeoutExpired:
                 timed_out = True
@@ -193,9 +191,12 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         result["anr"] = "// NOT RESPONDING" in monkey
         result["monkey_finished"] = "// Monkey finished" in monkey and not timed_out
         result["dropbox"] = dropbox_since(start)
-        result["pin_losses"] = churn.pin_losses
-        result["sleeps"] = churn.sleeps
+        guard.finish()
+        result["pin_losses"] = guard.pin_losses
+        result["sleeps"] = guard.sleeps
     finally:
+        if guard:
+            guard.finish()
         if churn:
             churn.finish()
         peer.stop()
@@ -253,7 +254,7 @@ def main() -> None:
     ap.add_argument("--test-apk", type=Path, required=True)
     ap.add_argument("--setups", default=",".join(SETUPS))
     ap.add_argument("--seeds", default="1101")
-    ap.add_argument("--events", type=int, default=20000)
+    ap.add_argument("--events", type=int, default=120000)
     ap.add_argument("--throttle", type=int, default=100)
     ap.add_argument("--out", type=Path, default=Path("build/monkey"))
     a = ap.parse_args()

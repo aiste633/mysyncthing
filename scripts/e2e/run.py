@@ -24,6 +24,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -44,7 +45,8 @@ V1, V2 = "version 1\n", "second version\n"  # E2eTest's V1 and V2
 # again. permission 0: runtime permissions stay as installed (-g). Rotation per run.
 MONKEY_MIX = ["--pct-syskeys", "5", "--pct-appswitch", "2", "--pct-permission", "0", "--pct-flip", "0",
               "--monitor-native-crashes", "-v", "-v", "-v"]
-MONKEY = ["-s", "4242", "--throttle", "100", *MONKEY_MIX, "--pct-rotation", "2", "10000"]
+# The monkey counts its throttle pauses as events too: 30,000 take about 13 min on the PC emulators.
+MONKEY = ["-s", "4242", "--throttle", "100", *MONKEY_MIX, "--pct-rotation", "2", "30000"]
 NAVBAR = "com.android.internal.systemui.navbar."
 
 failures: list[str] = []
@@ -148,6 +150,9 @@ def require_emulator() -> None:
 
 
 def prepare(apk: Path, test_apk: Path) -> None:
+    # The phases need the screen on and unlocked (an earlier monkey.py run lets it sleep).
+    sh("svc power stayon true")
+    Device.wake()
     for pkg in (APP, f"{APP}.test"):
         adb("uninstall", pkg, check=False)
     sh(f"rm -rf {PHONE_DIR}", check=False)
@@ -322,6 +327,36 @@ def pin() -> bool:
     return eventually("app pinned", 15, pinned)
 
 
+class PinGuard(threading.Thread):
+    """Every 2 s: wakes the screen and pins the app again if either was lost, and records when.
+    On API 36 the launcher draws the three-button bar, and its Overview button ignores screen
+    pinning: a monkey tap there sends the app's task to the back and later events to other apps
+    (seed 4242, PC 2026-11-03). That is the platform's, not the app's; the guard keeps the run in
+    the app."""
+
+    def __init__(self) -> None:
+        super().__init__(daemon=True)
+        self.stop = threading.Event()
+        self.pin_losses: list[str] = []
+        self.sleeps: list[str] = []
+
+    def run(self) -> None:
+        while not self.stop.wait(2):
+            try:
+                if not awake():
+                    self.sleeps.append(time.strftime("%H:%M:%S"))
+                    Device.wake()
+                if not pinned():
+                    self.pin_losses.append(time.strftime("%H:%M:%S"))
+                    pin()
+            except (OSError, RuntimeError, subprocess.TimeoutExpired) as e:
+                log(f"pin guard: {e}")
+
+    def finish(self) -> None:
+        self.stop.set()
+        self.join(timeout=60)
+
+
 def monkey(out: Path) -> None:
     """Random events with a fixed seed. The app is pinned (am task lock, three-button navigation), so
     BACK can be sent and no tap reaches the notification shade or quick settings."""
@@ -333,8 +368,14 @@ def monkey(out: Path) -> None:
         if not pin():
             fail("monkey: the app could not be pinned")
             return
-        r = subprocess.run([ADB, "shell", "monkey", "-p", APP, *MONKEY], capture_output=True, text=True, timeout=3600)
+        guard = PinGuard()
+        guard.start()
+        try:
+            r = subprocess.run([ADB, "shell", "monkey", "-p", APP, *MONKEY], capture_output=True, text=True, timeout=3600)
+        finally:
+            guard.finish()
         (out / "monkey.txt").write_text(r.stdout + r.stderr)
+        log(f"monkey: pinned again {len(guard.pin_losses)} times {guard.pin_losses}, woken {len(guard.sleeps)} times")
         if "// CRASH" in r.stdout or "// NOT RESPONDING" in r.stdout or "Monkey finished" not in r.stdout:
             fail("monkey: crash, ANR or aborted (see monkey.txt)")
         if not pinned() or not awake():

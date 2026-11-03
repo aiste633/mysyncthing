@@ -151,7 +151,7 @@ real phone.
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
-| Monkey | 10,000 random events with a fixed seed, BACK and rotation included, the app pinned so no tap leaves it: no crash, no freeze, and at the end the app is still pinned with the screen on |
+| Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze |
 
 The run also fails on any app crash in the log, and counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
