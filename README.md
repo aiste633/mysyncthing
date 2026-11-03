@@ -8,7 +8,7 @@ MySyncthing is vibecoded: an AI coding assistant (Claude) wrote nearly all of it
 
 See your sync status at a glance, without opening the app. The widget is a single row like a search bar, and you can stretch it sideways. It shows whether everything is up to date, syncing (with progress), paused or needs your attention, and which devices are connected, or when one last was. Its button pauses and resumes syncing, and a tap opens the app. Colours and icons follow your wallpaper and dark mode.
 
-<p align="center"><img src="docs/images/widget.png" width="400" alt="The widget in four states: up to date, syncing at 71 %, no network, and paused"></p>
+<p align="center"><img src="docs/images/widget.png" width="400" alt="The widget in four states: up to date, syncing at 43 %, no network, and paused"></p>
 
 ## Features
 
@@ -71,7 +71,7 @@ What each test covers, with its numbers: [testing and hardening](docs/testing.md
 <p align="center">
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1-folders.png" width="240" alt="Folders: each folder is a card with its path, size, devices and status">
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2-folder.png" width="240" alt="A folder's own screen with its status, sharing and settings">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3-devices.png" width="240" alt="Devices: this device with its ID, and the other devices with their connection and status">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3-devices.png" width="240" alt="Devices: this device with its ID, the All devices row with Pause syncing and Sync windows, and the other devices with their status, a pause button and when they were last seen">
 </p>
 <p align="center">
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4-restore.png" width="240" alt="Restoring an older version of a file">
