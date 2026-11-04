@@ -1,6 +1,8 @@
 package eu.stedb.mysyncthing.core
 
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -268,13 +270,16 @@ class RestClient(address: String, private val apiKey: String) {
         return json.decodeFromString(body)
     }
 
-    /** Returns the response body; most callers ignore it. */
+    /**
+     * Returns the response body; most callers ignore it. A write always runs to its end, as before
+     * [call] became cancellable: one cut off halfway (a screen closed or turned) may or may not apply.
+     */
     private suspend fun send(
         method: String, path: String, body: JsonObject? = null, query: List<Pair<String, String>> = emptyList(), id: String? = null,
     ): String {
         val rb: RequestBody? = body?.toString()?.toRequestBody(JSON)
             ?: if (method == "POST") ByteArray(0).toRequestBody(null) else null
-        return call(request(path, query, id).method(method, rb).build())
+        return withContext(NonCancellable) { call(request(path, query, id).method(method, rb).build()) }
     }
 
     internal fun request(path: String, query: List<Pair<String, String>>, id: String? = null): Request.Builder {
@@ -288,6 +293,7 @@ class RestClient(address: String, private val apiKey: String) {
     /**
      * Cancelling the caller cancels the call: a stop cancels the event long-poll at once instead of
      * waiting up to 60 s for it (a blocking execute() ignores cancellation, and Stop did nothing meanwhile).
+     * Reads only: [send] keeps writes from being cancelled.
      */
     private suspend fun call(req: Request): String = suspendCancellableCoroutine { cont ->
         val call = http.newCall(req)

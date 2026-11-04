@@ -2,10 +2,13 @@ package eu.stedb.mysyncthing.core
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.net.InetAddress
@@ -30,6 +33,26 @@ class RestClientCancelTest {
                 val input = conn.getInputStream()
                 val closed = withContext(Dispatchers.IO) { generateSequence { input.read() }.first { it == -1 } }
                 assertEquals("the connection is closed", -1, closed)
+            }
+        }
+    }
+
+    /** A write cut off halfway may or may not apply; a cancelled one runs to its end. */
+    @Test
+    fun aCancelledWriteRunsToItsEnd() = runBlocking {
+        ServerSocket(0, 1, InetAddress.getLoopbackAddress()).use { server ->
+            val client = RestClient("127.0.0.1:${server.localPort}", "k")
+            val write = launch(Dispatchers.Default) { runCatching { client.restart() } }
+            withContext(Dispatchers.IO) { server.accept() }.use { conn ->
+                write.cancel()
+                delay(300)
+                assertFalse("the write ended before its answer", write.isCompleted)
+                withContext(Dispatchers.IO) {
+                    val request = conn.getInputStream().bufferedReader()
+                    while (request.readLine().isNotEmpty()) Unit
+                    conn.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
+                }
+                withTimeout(2_000) { write.join() }
             }
         }
     }
