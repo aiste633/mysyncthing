@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
-"""Repeats the CI monkey's ANR of 2026-11-03 (API 35) on an emulator: the rename dialog open with
-the keyboard up, two rotations within a second, and after the relaunch no window had input focus
-("Application does not have a focused window") while the app's main thread was idle.
+"""Repeats the CI monkey's ANR on API 35 (2026-11-03 and 2026-11-04) on an emulator: a dialog with a
+text field open, the keyboard up and the cursor handle shown (a tap in the field), then one rotation.
+After the relaunch the window manager named the app's new dialog window as focused, but input never
+got it ("pending focus request"; "Application does not have a focused window") for 4.5 min, while the
+app's main thread was idle. In the 2026-11-04 run the monkey had also sent the launcher's intent
+(an app switch) just before the tap.
 
 Fresh install and pairing with the e2e peer (the folder to rename), then driven from here, with no
-instrumentation in the app's process: an instrumented version kept every relaunched activity (184,
-then out of memory) where the app alone keeps none. Per gap and round: the field tapped so the
-keyboard is up, rotated 90 degrees and back [gap] ms later, a key sent as the monkey's was, and the
-window manager must name a focused window of the app within 4 s (an input ANR comes after 5 s).
-On a loss: window and input dumps and the main thread's stack (SIGQUIT via run-as, into /data/anr).
+instrumentation in the app's process (an instrumented version kept every relaunched activity). Per
+round: the field tapped until the keyboard is up, every second round the launcher's intent first,
+one rotation (portrait and landscape in turn), a key sent as the monkey's was, and the input
+dispatcher must have a focused window of the app within 4 s (an input ANR comes after 5 s).
+On a loss: input, window and view dumps and the main thread's stack (SIGQUIT via run-as, into /data/anr).
 
 Writes to --out: summary lines, each loss's dumps, the whole logcat and /data/anr. Runs only on an
 emulator; settings restored, the app left uninstalled.
@@ -71,7 +74,7 @@ def focus_field() -> bool:
 def focused(timeout: float) -> bool:
     end = time.time() + timeout
     while time.time() < end:
-        if APP in run.focus_line():
+        if APP in run.input_focus():
             return True
         time.sleep(0.25)
     return False
@@ -82,8 +85,7 @@ def main() -> None:
     ap.add_argument("--peer", type=Path, required=True)
     ap.add_argument("--apk", type=Path, required=True)
     ap.add_argument("--test-apk", type=Path, required=True)
-    ap.add_argument("--loops", type=int, default=50, help="rounds per gap")
-    ap.add_argument("--gaps", default="300,500,700,1000", help="ms between the two rotations")
+    ap.add_argument("--rounds", type=int, default=100, help="one rotation each")
     ap.add_argument("--out", type=Path, default=Path("build/focus-repro"))
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
@@ -105,32 +107,29 @@ def main() -> None:
         run.open_app()
         tap_label(run.LABEL)
         tap_label(NAME)
-        stuck = False
-        for gap in (int(g) for g in a.gaps.split(",")):
-            no_keyboard = 0
-            for i in range(1, a.loops + 1):
-                if not keyboard_up() and not focus_field():
-                    no_keyboard += 1
-                sh("settings put system user_rotation 1")
-                time.sleep(gap / 1000)
-                sh("settings put system user_rotation 0")
-                sh("input keyevent KEYCODE_DPAD_DOWN", check=False)  # an input waiting for focus, as the monkey's key was
-                if focused(4):
-                    continue
-                losses += 1
-                pid = run.app_pid()
-                sh(f"run-as {APP} kill -3 {pid}", check=False)
-                (a.out / f"focus-loss-{losses}.txt").write_text(
-                    f"gap {gap} ms, round {i}, pid {pid}\n{run.focus_line()}\n\n"
-                    + "\n\n".join(sh(c, check=False) for c in ("dumpsys window displays", "dumpsys window windows", "dumpsys input")))
-                summary.append(f"gap {gap} ms: focus lost in round {i}")
-                if not focused(15):
-                    summary.append(f"gap {gap} ms: still no focus 15 s later; stopped")
-                    stuck = True
-                    break
-            summary.append(f"gap {gap} ms: {a.loops if not stuck else i} rounds, keyboard not up before {no_keyboard} of them")
-            if stuck:
+        for i in range(1, a.rounds + 1):
+            if i % 2 == 0:
+                sh(run.LAUNCHER_START)  # the monkey's app switch: the launcher's intent, task to front
+            if not focus_field():
+                summary.append(f"round {i}: keyboard not up")
+            time.sleep(0.5)  # the cursor handle (a popup window) shows after the tap
+            sh(f"settings put system user_rotation {i % 2}")
+            sh("input keyevent KEYCODE_DPAD_DOWN", check=False)  # an input waiting for focus, as the monkey's key was
+            time.sleep(2)  # relaunched by then: the old activity's focus does not count
+            if focused(4):
+                continue
+            losses += 1
+            pid = run.app_pid()
+            sh(f"run-as {APP} kill -3 {pid}", check=False)
+            inputs = sh("dumpsys input", check=False)
+            (a.out / f"focus-loss-{losses}.txt").write_text(
+                f"round {i}, rotation {i % 2}, pid {pid}\n{run.focus_line()}\n{run.input_focus(inputs)}\n\n" + inputs + "\n\n"
+                + "\n\n".join(sh(c, check=False) for c in ("dumpsys window displays", "dumpsys window windows", "dumpsys activity top")))
+            summary.append(f"round {i}: no input focus 4 s after the rotation")
+            if not focused(15):
+                summary.append(f"round {i}: still none 15 s later; stopped")
                 break
+        summary.append(f"{i} rounds")
     finally:
         peer.stop()
         dev.restore()

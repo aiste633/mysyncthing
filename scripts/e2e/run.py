@@ -471,6 +471,17 @@ def focus_line() -> str:
     return "no mCurrentFocus line"
 
 
+def input_focus(inputs: str | None = None) -> str:
+    """The input dispatcher's focused window ("FocusedWindows: <none>" if none). It can differ from
+    mCurrentFocus: in CI's API 35 freeze the window manager named the app's dialog while input never got
+    it ("pending focus request"), so every key waited 5 s and then was dropped."""
+    lines = (inputs if inputs is not None else sh("dumpsys input", check=False)).splitlines()
+    for i, l in enumerate(lines):
+        if "FocusedWindows:" in l:
+            return l.strip() if "<none>" in l or i + 1 == len(lines) else lines[i + 1].strip()
+    return "no FocusedWindows line"
+
+
 def pull_anr_traces(dst: Path) -> None:
     """/data/anr (the system's ANR dumps and SIGQUIT stacks) into [dst]; needs adb root (emulator images)."""
     adb("root", check=False)
@@ -514,16 +525,20 @@ class PinGuard(threading.Thread):
                 log(f"pin guard: {e}")
 
     def watch_focus(self) -> None:
+        """No focused window for the window manager or for input (see input_focus)."""
         line = focus_line()
-        self.unfocused = self.unfocused + 1 if line.endswith("=null") else 0
+        inputs = sh("dumpsys input", check=False)
+        lost = line.endswith("=null") or "<none>" in input_focus(inputs)
+        self.unfocused = self.unfocused + 1 if lost else 0
         if self.unfocused != 2 or len(self.focus_losses) >= 3:
             return
         self.focus_losses.append(time.strftime("%H:%M:%S"))
         pid = app_pid()
         sh(f"run-as {APP} kill -3 {pid}", check=False)  # the main thread's stack, into /data/anr
+        # "activity top" holds the app's view hierarchy per window: which dialog or popup it was.
         (self.out / f"focus-loss-{len(self.focus_losses)}.txt").write_text(
-            f"{time.strftime('%H:%M:%S')} pid {pid}\n{line}\n\n"
-            + "\n\n".join(sh(c, check=False) for c in ("dumpsys window displays", "dumpsys window windows", "dumpsys input")))
+            f"{time.strftime('%H:%M:%S')} pid {pid}\n{line}\n\n" + inputs + "\n\n"
+            + "\n\n".join(sh(c, check=False) for c in ("dumpsys window displays", "dumpsys window windows", "dumpsys activity top")))
 
     def finish(self) -> None:
         self.stop.set()
