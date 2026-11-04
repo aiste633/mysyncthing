@@ -7,3 +7,4 @@ local.properties
 captures/
 /go/build/
 /release/
+__pycache__/

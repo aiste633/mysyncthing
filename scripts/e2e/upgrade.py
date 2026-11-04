@@ -329,7 +329,7 @@ def to_background() -> None:
     broadcasts: opened and left as a person would, it is a normal app in the background again.
     """
     run.open_app()
-    sh("input keyevent KEYCODE_HOME")
+    run.go_home()
 
 
 def syncing_in_background(peer: Peer, phone: str, what: str) -> bool:

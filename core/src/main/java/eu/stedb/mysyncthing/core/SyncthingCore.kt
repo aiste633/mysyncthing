@@ -2,9 +2,12 @@ package eu.stedb.mysyncthing.core
 
 import android.os.Environment
 import eu.stedb.mysyncthing.stbridge.Stbridge
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -93,6 +96,13 @@ object SyncthingCore {
         Stbridge.stop()
         _state.value = CoreState.Stopped
     }
+
+    /** [stop] without waiting for it, for when no one can wait (SyncthingService.onDestroy). */
+    internal fun stopInBackground() {
+        background.launch { stop() }
+    }
+
+    private val background = CoroutineScope(SupervisorJob())
 
     /** Called when the core exited on its own (e.g. fatal error). */
     internal fun checkAlive() {

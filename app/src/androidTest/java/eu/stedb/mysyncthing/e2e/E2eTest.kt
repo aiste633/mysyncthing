@@ -2,6 +2,8 @@ package eu.stedb.mysyncthing.e2e
 
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Handler
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -39,6 +41,7 @@ import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
+import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.resolve
 import eu.stedb.mysyncthing.ui.lastSeenText
 import kotlinx.coroutines.flow.first
@@ -54,6 +57,8 @@ import java.io.File
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import eu.stedb.mysyncthing.core.R as CoreR
 
 /**
@@ -362,6 +367,28 @@ class E2eTest {
         eventually("peer connected again", 120_000) { peer.connected(me) }
     }
 
+    /**
+     * Not part of the e2e run: scripts/e2e/monkey.py's "recreate" setup starts from here. Sync
+     * times on and open now, the peer's own windows only later, so it never syncs: the monkey
+     * starts on the "Never syncs" card, with the device and global editors (and the global
+     * editor's "Save anyway" dialog) one tap away. Left set on purpose.
+     */
+    @Test
+    fun monkeyNeverSyncs() {
+        val me = phoneId()
+        eventually("peer connected", 90_000) { peer.connected(me) }
+        val now = minuteOfDay(LocalDateTime.now())
+        fun window(from: Int, to: Int) = SyncWindow(Math.floorMod(now + from, MINUTES_PER_DAY), Math.floorMod(now + to, MINUTES_PER_DAY), (1..7).toSet())
+        runBlocking {
+            check(Settings(app).update {
+                it.copy(timeSchedule = true, windows = listOf(window(-60, 600)))
+                    .withDeviceWindows(peer.id, DeviceWindows(true, listOf(window(660, 720))))
+            })
+        }
+        eventually("peer disconnected: never syncs", 60_000) { !peer.connected(me) }
+        assertTrue("not judged never ${pauseState()}", SyncStatus.snapshot.value.pause.devices[peer.id]?.never == true)
+    }
+
     private fun pauseAll(paused: Boolean) = runBlocking { check(Settings(app).update { it.copy(pausedByUser = paused) }) }
 
     private fun recorded(): Set<String>? = runBlocking { Settings(app).conditionPause() }
@@ -505,6 +532,49 @@ class E2eTest {
     }
 
     /** Activity objects alive in the app's process, as `dumpsys meminfo` counts them. */
+    /**
+     * The user's stop, and a start right after one. The core takes seconds to shut down on a slow
+     * emulator; that runs off the main thread (CI monkey, API 36: the stop ran on it and froze the app
+     * past 5 s, an ANR), and a start that comes during a stop starts the core again once the stop is
+     * done (it used to be lost: the stop ended the service after it).
+     */
+    @Test
+    fun stopAndStart() {
+        val me = phoneId()
+        eventually("peer connected", 90_000) { peer.connected(me) }
+        val main = Handler(Looper.getMainLooper())
+        var worst = 0L
+        val stopAt = System.currentTimeMillis()
+        SyncthingService.stopByUser(app)
+        val end = stopAt + 30_000
+        while (SyncthingCore.state.value !is CoreState.Stopped && System.currentTimeMillis() < end) {
+            val asked = System.nanoTime()
+            val answered = CountDownLatch(1)
+            main.post { answered.countDown() }
+            assertTrue("the main thread did not answer within 5 s during the stop", answered.await(5, TimeUnit.SECONDS))
+            worst = maxOf(worst, (System.nanoTime() - asked) / 1_000_000)
+            Thread.sleep(20)
+        }
+        val took = System.currentTimeMillis() - stopAt
+        assertTrue("core stopped", SyncthingCore.state.value is CoreState.Stopped)
+        assertTrue("the main thread waited $worst ms during the stop", worst < MAIN_THREAD_MAX_MS)
+        // The core's own shutdown takes up to 10 s; the stop must not also wait for the event long-poll (60 s).
+        assertTrue("the stop took $took ms", took < STOP_MAX_MS)
+
+        SyncthingService.start(app)
+        eventually("core running again", 60_000) { SyncthingCore.state.value is CoreState.Running }
+        eventually("peer connected again", 120_000) { peer.connected(me) }
+        val before = SyncthingCore.state.value
+        SyncthingService.stopByUser(app)
+        SyncthingService.start(app)
+        // A new run, not the old one still shutting down.
+        eventually("core running after a start that came during a stop", 60_000) {
+            SyncthingCore.state.value.let { it is CoreState.Running && it !== before }
+        }
+        eventually("peer connected after it", 120_000) { peer.connected(me) }
+        assertFalse("still stopped by the user", runBlocking { Settings(app).stoppedByUser.first() })
+    }
+
     private fun activities(): Int? =
         Regex("Activities:\\s+(\\d+)").find(shell("dumpsys meminfo ${app.packageName}"))?.groupValues?.get(1)?.toInt()
 
@@ -513,6 +583,10 @@ class E2eTest {
         const val EMULATOR_WIFI = "AndroidWifi"
         const val FOLDER = "e2e"
         const val FOLDER_LABEL = "E2E"
+        /** Frames, GC and a slow CI emulator stay well under it; a core stop on the main thread took seconds. */
+        const val MAIN_THREAD_MAX_MS = 1_000L
+        /** The core shuts down within 10 s (upstream's close timeout); waiting for the event long-poll could add 60 s. */
+        const val STOP_MAX_MS = 20_000L
         const val PEER_NAME = "e2e-peer"
         const val SEEDS = 20
         const val VERSIONED = "versioned.txt"

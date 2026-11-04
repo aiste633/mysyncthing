@@ -115,7 +115,7 @@ fun rememberNotificationRequest(state: PermissionState): () -> Unit {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         state.refresh()
         // A notification posted while denied stays hidden until it is posted again.
-        if (granted) SyncthingService.refreshNotification(context)
+        if (granted) SyncthingService.refreshNotification()
         // No rationale before or after a refusal: Android did not show its prompt,
         // because it was refused twice before. Only the app's notification settings can grant it now.
         else if (!rationaleBefore && !rationale()) context.startActivity(

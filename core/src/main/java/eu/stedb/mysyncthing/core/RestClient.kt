@@ -1,6 +1,7 @@
 package eu.stedb.mysyncthing.core
 
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -13,15 +14,20 @@ import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 import kotlinx.serialization.json.addJsonObject
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Dispatcher
 import okhttp3.HttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import java.io.IOException
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resumeWithException
 
 class ApiException(val code: Int, message: String) : IOException("HTTP $code: $message")
 
@@ -32,6 +38,8 @@ class RestClient(address: String, private val apiKey: String) {
 
     private val http = OkHttpClient.Builder()
         .readTimeout(90, TimeUnit.SECONDS) // event long-poll uses 60 s
+        // All calls go to one host (loopback): OkHttp's default of 5 at a time would queue them behind long-polls.
+        .dispatcher(Dispatcher().apply { maxRequests = 64; maxRequestsPerHost = 64 })
         .build()
 
     val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
@@ -262,13 +270,16 @@ class RestClient(address: String, private val apiKey: String) {
         return json.decodeFromString(body)
     }
 
-    /** Returns the response body; most callers ignore it. */
+    /**
+     * Returns the response body; most callers ignore it. A write always runs to its end, as before
+     * [call] became cancellable: one cut off halfway (a screen closed or turned) may or may not apply.
+     */
     private suspend fun send(
         method: String, path: String, body: JsonObject? = null, query: List<Pair<String, String>> = emptyList(), id: String? = null,
     ): String {
         val rb: RequestBody? = body?.toString()?.toRequestBody(JSON)
             ?: if (method == "POST") ByteArray(0).toRequestBody(null) else null
-        return call(request(path, query, id).method(method, rb).build())
+        return withContext(NonCancellable) { call(request(path, query, id).method(method, rb).build()) }
     }
 
     internal fun request(path: String, query: List<Pair<String, String>>, id: String? = null): Request.Builder {
@@ -279,12 +290,25 @@ class RestClient(address: String, private val apiKey: String) {
         return Request.Builder().url(url).header("X-API-Key", apiKey)
     }
 
-    private suspend fun call(req: Request): String = withContext(Dispatchers.IO) {
-        http.newCall(req).execute().use { resp ->
-            val text = resp.body.string()
-            if (!resp.isSuccessful) throw ApiException(resp.code, text.take(200))
-            text
-        }
+    /**
+     * Cancelling the caller cancels the call: a stop cancels the event long-poll at once instead of
+     * waiting up to 60 s for it (a blocking execute() ignores cancellation, and Stop did nothing meanwhile).
+     * Reads only: [send] keeps writes from being cancelled.
+     */
+    private suspend fun call(req: Request): String = suspendCancellableCoroutine { cont ->
+        val call = http.newCall(req)
+        cont.invokeOnCancellation { call.cancel() }
+        call.enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) = cont.resumeWithException(e)
+
+            override fun onResponse(call: Call, response: Response) = cont.resumeWith(runCatching {
+                response.use {
+                    val text = it.body.string()
+                    if (!it.isSuccessful) throw ApiException(it.code, text.take(200))
+                    text
+                }
+            })
+        })
     }
 
     private companion object {

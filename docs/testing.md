@@ -22,6 +22,7 @@ uses anyone's real folders, devices or backups.
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
+| Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 2 ANRs found and fixed; no app crash of its own |
 | Memory soak | 10 h 21 min of syncing and GUI use, sampled every minute | No leak |
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
@@ -149,11 +150,13 @@ real phone.
 | Own sync windows | The peer's own windows closed now: the peer loses the phone, the core holds it, the card names the next opening and its pause button rests, the device's screen says why; turned off in its editor (Save), the peer comes back and the hold is released. Own windows that miss the global ones: the peer stays away and the card says "Never syncs". The windows are set around the phone's clock, so no alarm is waited for |
 | Typed text | Text typed in a rename dialog and in list dialogs (Settings, device defaults) survives the screen being recreated. Checked at once, with no wait: dialogs on values read from Syncthing are there on the recreated screen's first frame, and Settings keeps its scroll position. Afterwards only one copy of the screen stays in memory |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
+| Stop and start | The user's stop: the main thread answers within 1 s throughout (the core's shutdown runs in the background), the stop ends within 20 s (it does not wait for the 60 s event long-poll), the peer loses the phone; started again, it comes back. A start right after a stop starts the core once the stop is done |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
-| Monkey | 2,500 random events with a fixed seed: no crash, no freeze |
+| Launcher starts | Opened first by an intent other than the launcher's, then three times from the launcher: one copy of the main screen stays, not four |
+| Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze |
 
-The run also fails on any app crash in the log, and counts StrictMode reports. On the PC
+The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
 
 ### App updates
@@ -326,6 +329,38 @@ fails. That is left to the Syncthing project.
 The fixes were checked again on the emulator before they were merged; that check found three
 more points (a deliberate Stop undone by a rotation, a raw core message, a slow read at boot),
 which were also fixed first.
+
+## Deep monkey (2026-11-03)
+
+`scripts/e2e/monkey.py` on the PC emulators, Android 16 and 15. Each run starts from a fresh install
+paired with the e2e peer, with a second folder offered. The peer changes a file every 20 s and drops
+the phone every 5 min. The app is pinned, so BACK can be sent and no tap reaches quick settings.
+Three setups at 120,000 events each (about 50 min), plus the end-to-end run with its 30,000 events:
+
+| Setup | What it adds |
+|---|---|
+| plain | English, light, normal font |
+| de-big | German, dark, the largest font (2.0), the peer away for 35 min |
+| recreate | "Don't keep activities", much rotation, the peer starting on "Never syncs" |
+
+| Found | Fixed |
+|---|---|
+| Opened by an intent other than the launcher's, every later launcher start added a copy of the main screen. The monkey stacked 121 copies and then froze the app (ANR) | A copy on top steps aside; the end-to-end run checks that one stays |
+| The Keep free dialog read the disk on the main thread (StrictMode, about 50 ms) | Read in the background |
+| On Android 16 the launcher's Overview button ignores screen pinning, so a tap could leave the app | The tests pin the app again within 2 s |
+| The user's Stop waited on the main thread for the core to shut down; on a slow emulator that froze the app for over 5 s (ANR, CI on Android 16). A Start tapped during a stop was lost | The core stops in the background while the service keeps the process alive; starts and stops run one after the other. The end-to-end run checks both |
+| (Found in the check of that fix) Stop could do nothing for up to 60 s on an idle phone: it waited for the app's open request for core events, which could not be cancelled. A backup import could time out on the same wait | Requests that only read are cancelled at once (writes still finish); Stop starts in under 0.1 s. Tested in unit tests and on both emulators |
+
+Left as they are (Android's own, no app code in the stack): on Android 15 a screenshot's "Capture more"
+with a rotation during it crashes the app's process in the framework's scroll capture; on Android 16
+the same crashes System UI. The monkey runs list both and do not fail on them. Also left (seen in the
+walk after the runs): the QR scanner closes when the app is opened again from its icon, as the scanner
+library starts it that way; coming back through Recents keeps it open.
+
+Still open ([#68](https://github.com/aiste633/mysyncthing/issues/68)): on CI's Android 15 emulator, now and then a rotation with a
+text dialog, the keyboard and the cursor handle up leaves the new dialog window without input focus, so the
+monkey's keys time out (an ANR, while the app itself is idle). It did not happen in 100 tries on the PC
+emulator; the CI run now saves the window and input state when it happens.
 
 ## Memory soak (2026-10-27)
 
