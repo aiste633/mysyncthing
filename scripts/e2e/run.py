@@ -223,6 +223,14 @@ def app_pid() -> str:
 LAUNCHER_START = f"am start -W -a android.intent.action.MAIN -c android.intent.category.LAUNCHER -f 0x10200000 -n {APP}/.MainActivity"
 
 
+def go_home() -> None:
+    """HOME, and back only once a window other than the app's has focus: `input` returns before the
+    system handles the key, and a start sent meanwhile is undone by it (CI, API 35: the launcher
+    start's `am start -W` then waited for the app to be drawn, which never came)."""
+    sh("input keyevent KEYCODE_HOME")
+    eventually("another window focused after HOME", 10, lambda: (f := focus_line()).startswith("mCurrentFocus=Window{") and APP not in f)
+
+
 def open_app() -> None:
     """As the launcher does (new task, reset if needed)."""
     sh(LAUNCHER_START)
@@ -238,7 +246,7 @@ def launcher_starts() -> None:
     log("launcher starts")
     sh(f"am start -W -f 0x10008000 -n {APP}/.MainActivity")  # new task, cleared: a root that is not the launcher's
     for _ in range(3):
-        sh("input keyevent KEYCODE_HOME")
+        go_home()
         sh(LAUNCHER_START)
     time.sleep(3)
     if (n := main_activities()) != 1:
@@ -253,7 +261,7 @@ def process_death(peer: Peer, phone: str) -> None:
     open_app()
     if not eventually("phone connected before the kill", 90, lambda: peer.connected(phone, since=opened)):
         return
-    sh("input keyevent KEYCODE_HOME")
+    go_home()
     pid = app_pid()
     killed = time.time()
     sh(f"run-as {APP} kill -9 {pid}")
