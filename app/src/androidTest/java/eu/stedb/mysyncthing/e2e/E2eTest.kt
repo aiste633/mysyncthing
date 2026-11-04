@@ -544,8 +544,9 @@ class E2eTest {
         eventually("peer connected", 90_000) { peer.connected(me) }
         val main = Handler(Looper.getMainLooper())
         var worst = 0L
+        val stopAt = System.currentTimeMillis()
         SyncthingService.stopByUser(app)
-        val end = System.currentTimeMillis() + 30_000
+        val end = stopAt + 30_000
         while (SyncthingCore.state.value !is CoreState.Stopped && System.currentTimeMillis() < end) {
             val asked = System.nanoTime()
             val answered = CountDownLatch(1)
@@ -554,16 +555,22 @@ class E2eTest {
             worst = maxOf(worst, (System.nanoTime() - asked) / 1_000_000)
             Thread.sleep(20)
         }
+        val took = System.currentTimeMillis() - stopAt
         assertTrue("core stopped", SyncthingCore.state.value is CoreState.Stopped)
         assertTrue("the main thread waited $worst ms during the stop", worst < MAIN_THREAD_MAX_MS)
+        // The core's own shutdown takes up to 10 s; the stop must not also wait for the event long-poll (60 s).
+        assertTrue("the stop took $took ms", took < STOP_MAX_MS)
 
         SyncthingService.start(app)
         eventually("core running again", 60_000) { SyncthingCore.state.value is CoreState.Running }
         eventually("peer connected again", 120_000) { peer.connected(me) }
+        val before = SyncthingCore.state.value
         SyncthingService.stopByUser(app)
         SyncthingService.start(app)
-        Thread.sleep(5_000) // the stop is done by now, and the start after it
-        eventually("core running after a start that came during a stop", 60_000) { SyncthingCore.state.value is CoreState.Running }
+        // A new run, not the old one still shutting down.
+        eventually("core running after a start that came during a stop", 60_000) {
+            SyncthingCore.state.value.let { it is CoreState.Running && it !== before }
+        }
         eventually("peer connected after it", 120_000) { peer.connected(me) }
         assertFalse("still stopped by the user", runBlocking { Settings(app).stoppedByUser.first() })
     }
@@ -578,6 +585,8 @@ class E2eTest {
         const val FOLDER_LABEL = "E2E"
         /** Frames, GC and a slow CI emulator stay well under it; a core stop on the main thread took seconds. */
         const val MAIN_THREAD_MAX_MS = 1_000L
+        /** The core shuts down within 10 s (upstream's close timeout); waiting for the event long-poll could add 60 s. */
+        const val STOP_MAX_MS = 20_000L
         const val PEER_NAME = "e2e-peer"
         const val SEEDS = 20
         const val VERSIONED = "versioned.txt"
