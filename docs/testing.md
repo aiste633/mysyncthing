@@ -22,7 +22,7 @@ uses anyone's real folders, devices or backups.
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
-| Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 1 ANR found and fixed; no app crash of its own |
+| Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 2 ANRs found and fixed; no app crash of its own |
 | Memory soak | 10 h 21 min of syncing and GUI use, sampled every minute | No leak |
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
@@ -150,6 +150,7 @@ real phone.
 | Own sync windows | The peer's own windows closed now: the peer loses the phone, the core holds it, the card names the next opening and its pause button rests, the device's screen says why; turned off in its editor (Save), the peer comes back and the hold is released. Own windows that miss the global ones: the peer stays away and the card says "Never syncs". The windows are set around the phone's clock, so no alarm is waited for |
 | Typed text | Text typed in a rename dialog and in list dialogs (Settings, device defaults) survives the screen being recreated. Checked at once, with no wait: dialogs on values read from Syncthing are there on the recreated screen's first frame, and Settings keeps its scroll position. Afterwards only one copy of the screen stays in memory |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
+| Stop and start | The user's stop: the main thread answers within 1 s throughout (the core's shutdown runs in the background), the peer loses the phone; started again, it comes back. A start right after a stop starts the core once the stop is done |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
 | Launcher starts | Opened first by an intent other than the launcher's, then three times from the launcher: one copy of the main screen stays, not four |
@@ -347,6 +348,7 @@ Three setups at 120,000 events each (about 50 min), plus the end-to-end run with
 | Opened by an intent other than the launcher's, every later launcher start added a copy of the main screen. The monkey stacked 121 copies and then froze the app (ANR) | A copy on top steps aside; the end-to-end run checks that one stays |
 | The Keep free dialog read the disk on the main thread (StrictMode, about 50 ms) | Read in the background |
 | On Android 16 the launcher's Overview button ignores screen pinning, so a tap could leave the app | The tests pin the app again within 2 s |
+| The user's Stop waited on the main thread for the core to shut down; on a slow emulator that froze the app for over 5 s (ANR, CI on Android 16). A Start tapped during a stop was lost | The core stops in the background while the service keeps the process alive; starts and stops run one after the other. The end-to-end run checks both |
 
 Left as they are (Android's own, no app code in the stack): on Android 15 a screenshot's "Capture more"
 with a rotation during it crashes the app's process in the framework's scroll capture; on Android 16

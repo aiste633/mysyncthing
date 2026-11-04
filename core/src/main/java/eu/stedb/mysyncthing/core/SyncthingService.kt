@@ -17,6 +17,8 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,7 +32,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.time.Instant
@@ -53,6 +54,7 @@ class SyncthingService : LifecycleService() {
     override fun onCreate() {
         super.onCreate()
         settings = Settings(this)
+        lifecycleScope.launch { for (command in commands) command() }
         createChannel(this)
         RequestNotifications.createChannel(this)
         ProblemNotifications.createChannel(this)
@@ -84,24 +86,26 @@ class SyncthingService : LifecycleService() {
     /** The core's run: started by [onStartCommand], over once the core failed (a later start tries again). */
     private var run: Job? = null
 
+    /**
+     * Starts and stops, one after the other in the order they came: a stop takes seconds (the core
+     * shuts down), and a start that comes meanwhile must not find the old run still active and do nothing.
+     */
+    private val commands = Channel<suspend () -> Unit>(Channel.UNLIMITED)
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         super.onStartCommand(intent, flags, startId)
         when (intent?.action) {
             ACTION_STOP -> {
                 // Recorded first, so opening the app (or turning the phone) doesn't start it again.
                 SyncthingCore.setStoppedByUser(true)
-                lifecycleScope.launch {
-                    settings.setStoppedByUser(true)
-                    stopSelf()
-                }
+                shutDown(startId) { settings.setStoppedByUser(true) }
             }
+            ACTION_SHUTDOWN -> shutDown(startId) {}
             ACTION_REFRESH -> lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
             // A start (the user, the app opening, boot, a sticky restart) runs the core unless it already runs.
-            else -> {
-                lifecycleScope.launch {
-                    settings.setStoppedByUser(false)
-                    settings.setStartedThisBoot()
-                }
+            else -> commands.trySend {
+                settings.setStoppedByUser(false)
+                settings.setStartedThisBoot()
                 if (run?.isActive != true) run = lifecycleScope.launch { runCore() }
             }
         }
@@ -200,9 +204,26 @@ class SyncthingService : LifecycleService() {
         ProblemNotifications.updateFolders(this, emptyList())
     }
 
+    /**
+     * Stops the core, then the service: off the main thread, as the core may take seconds to shut
+     * down (CI, API 36: the stop ran on the main thread in onDestroy and froze the app past 5 s, an
+     * ANR). The foreground service keeps the process alive until the core has flushed its database.
+     * A start that came after it runs once it is done, and stopSelf([startId]) then leaves the
+     * service running.
+     */
+    private fun shutDown(startId: Int, first: suspend () -> Unit) {
+        commands.trySend {
+            first()
+            run?.cancelAndJoin() // no "stopped with an error" from the run's end
+            SyncthingCore.stop()
+            stopSelf(startId)
+        }
+    }
+
     override fun onDestroy() {
-        // Let the core flush its database before the process may be killed.
-        runBlocking { SyncthingCore.stop() }
+        // Only through shutDown() is the core already stopped; if not (a destroy no command asked for), it is
+        // stopped without blocking the main thread, which only risks the flush the process may not outlive.
+        if (SyncthingCore.state.value !is CoreState.Stopped) SyncthingCore.stopInBackground()
         Summary(SyncState.Stopped, text(if (Environment.isExternalStorageManager()) R.string.status_stopped else R.string.status_stopped_no_access)).let {
             SyncStatus.publish(it)
             StatusWidget.render(this, it) // the collector above is already cancelled
@@ -283,6 +304,7 @@ class SyncthingService : LifecycleService() {
         private const val NOTIFICATION_ID = 1
         private const val SERVICE_GROUP = "service"
         private const val ACTION_STOP = "eu.stedb.mysyncthing.STOP"
+        private const val ACTION_SHUTDOWN = "eu.stedb.mysyncthing.SHUTDOWN"
         private const val ACTION_REFRESH = "eu.stedb.mysyncthing.REFRESH_NOTIFICATION"
 
         /**
@@ -309,7 +331,7 @@ class SyncthingService : LifecycleService() {
 
         /** Not the user's stop (an import replacing the setup): the app may start it again. */
         fun stop(context: Context) {
-            context.stopService(Intent(context, SyncthingService::class.java))
+            context.startService(Intent(context, SyncthingService::class.java).setAction(ACTION_SHUTDOWN))
         }
 
         /**

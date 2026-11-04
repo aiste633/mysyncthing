@@ -578,6 +578,7 @@ def main() -> None:
             phase("devicesTab", peer, a.out)
             phase("deviceWindows", peer, a.out)
             phase("textDialogsKeepTypedText", peer, a.out)
+            phase("stopAndStart", peer, a.out)
             process_death(peer, phone)
             storage_revoked(peer, phone)
             launcher_starts()
