@@ -1,7 +1,9 @@
 package eu.stedb.mysyncthing.e2e
 
+import android.app.UiAutomation
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Looper
 import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
 import androidx.compose.ui.test.SemanticsNodeInteraction
@@ -527,6 +529,59 @@ class E2eTest {
     }
 
     /** Activity objects alive in the app's process, as `dumpsys meminfo` counts them. */
+    /**
+     * The CI monkey's ANR on API 35 (2026-11-03): the rename dialog open with the keyboard up, two
+     * rotations 0.7 s apart, and after the relaunch the dialog's new window never got input focus
+     * ("Application does not have a focused window") while the main thread was idle. This repeats
+     * that: per gap (ms, "gaps"), "loops" times 90 degrees and back, then the window manager must
+     * name a focused window again within 4 s (an input ANR comes after 5 s). Each loss is written,
+     * with both window dumps and the main thread's stack, to the app's external files
+     * (focus-loss-N.txt). Only scripts/e2e/focus_repro.py runs it.
+     */
+    @Test
+    fun dialogQuickRotations() {
+        val loops = args.getString("loops")?.toInt() ?: 25
+        val gaps = (args.getString("gaps") ?: "300,500,700,1000").split(",").map { it.trim().toLong() }
+        tap(FOLDER_LABEL)
+        tap(str(R.string.name))
+        rule.waitForIdle()
+        val ui = InstrumentationRegistry.getInstrumentation().uiAutomation
+        val losses = mutableListOf<String>()
+        try {
+            rounds@ for (gap in gaps) for (round in 0 until loops) {
+                ui.setRotation(UiAutomation.ROTATION_FREEZE_90)
+                Thread.sleep(gap)
+                ui.setRotation(UiAutomation.ROTATION_FREEZE_0)
+                if (!focusBack(4_000)) {
+                    val n = losses.size + 1
+                    losses += "gap $gap ms, round ${round + 1}: ${focusLine()}"
+                    File(app.getExternalFilesDir(null), "focus-loss-$n.txt").writeText(
+                        "gap $gap ms, round ${round + 1}\n\nmain thread:\n" +
+                            Looper.getMainLooper().thread.stackTrace.joinToString("\n") { "  at $it" } +
+                            "\n\n" + shell("dumpsys window windows") + "\n\n" + shell("dumpsys input"),
+                    )
+                    // A focus that stays lost makes later rounds meaningless: stop there.
+                    if (!focusBack(15_000)) break@rounds
+                }
+            }
+        } finally {
+            ui.setRotation(UiAutomation.ROTATION_UNFREEZE)
+        }
+        assertTrue("${losses.size} focus losses: $losses", losses.isEmpty())
+    }
+
+    private fun focusLine() = shell("dumpsys window windows").lineSequence().firstOrNull { "mCurrentFocus=" in it }?.trim() ?: "no mCurrentFocus line"
+
+    private fun focusBack(timeoutMs: Long): Boolean {
+        val end = System.currentTimeMillis() + timeoutMs
+        while (System.currentTimeMillis() < end) {
+            val line = focusLine()
+            if ("mCurrentFocus=" in line && !line.endsWith("=null")) return true
+            Thread.sleep(250)
+        }
+        return false
+    }
+
     private fun activities(): Int? =
         Regex("Activities:\\s+(\\d+)").find(shell("dumpsys meminfo ${app.packageName}"))?.groupValues?.get(1)?.toInt()
 
