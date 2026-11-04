@@ -558,7 +558,7 @@ class E2eTest {
                     File(app.getExternalFilesDir(null), "focus-loss-$n.txt").writeText(
                         "gap $gap ms, round ${round + 1}\n\nmain thread:\n" +
                             Looper.getMainLooper().thread.stackTrace.joinToString("\n") { "  at $it" } +
-                            "\n\n" + shell("dumpsys window windows") + "\n\n" + shell("dumpsys input"),
+                            "\n\n" + shell("dumpsys window displays") + "\n\n" + shell("dumpsys window windows") + "\n\n" + shell("dumpsys input"),
                     )
                     // A focus that stays lost makes later rounds meaningless: stop there.
                     if (!focusBack(15_000)) break@rounds
@@ -570,7 +570,10 @@ class E2eTest {
         assertTrue("${losses.size} focus losses: $losses", losses.isEmpty())
     }
 
-    private fun focusLine() = shell("dumpsys window windows").lineSequence().firstOrNull { "mCurrentFocus=" in it }?.trim() ?: "no mCurrentFocus line"
+    /** The window manager's focused window. API 35 prints it under "displays", not "windows"; the whole dump as a fallback. */
+    private fun focusLine() = sequenceOf("dumpsys window displays", "dumpsys window")
+        .firstNotNullOfOrNull { cmd -> shell(cmd).lineSequence().firstOrNull { "mCurrentFocus=" in it }?.trim() }
+        ?: "no mCurrentFocus line"
 
     private fun focusBack(timeoutMs: Long): Boolean {
         val end = System.currentTimeMillis() + timeoutMs
