@@ -49,7 +49,7 @@ class RestClientCancelTest {
                 assertFalse("the write ended before its answer", write.isCompleted)
                 withContext(Dispatchers.IO) {
                     val request = conn.getInputStream().bufferedReader()
-                    while (request.readLine().isNotEmpty()) Unit
+                    generateSequence { request.readLine() }.first { it.isEmpty() } // the headers; a POST without a body
                     conn.getOutputStream().write("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n".toByteArray())
                 }
                 withTimeout(2_000) { write.join() }
