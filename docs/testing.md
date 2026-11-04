@@ -349,12 +349,18 @@ Three setups at 120,000 events each (about 50 min), plus the end-to-end run with
 | The Keep free dialog read the disk on the main thread (StrictMode, about 50 ms) | Read in the background |
 | On Android 16 the launcher's Overview button ignores screen pinning, so a tap could leave the app | The tests pin the app again within 2 s |
 | The user's Stop waited on the main thread for the core to shut down; on a slow emulator that froze the app for over 5 s (ANR, CI on Android 16). A Start tapped during a stop was lost | The core stops in the background while the service keeps the process alive; starts and stops run one after the other. The end-to-end run checks both |
+| (Found in the check of that fix) Stop could do nothing for up to 60 s on an idle phone: it waited for the app's open request for core events, which could not be cancelled. A backup import could time out on the same wait | Requests that only read are cancelled at once (writes still finish); Stop starts in under 0.1 s. Tested in unit tests and on both emulators |
 
 Left as they are (Android's own, no app code in the stack): on Android 15 a screenshot's "Capture more"
 with a rotation during it crashes the app's process in the framework's scroll capture; on Android 16
 the same crashes System UI. The monkey runs list both and do not fail on them. Also left (seen in the
 walk after the runs): the QR scanner closes when the app is opened again from its icon, as the scanner
 library starts it that way; coming back through Recents keeps it open.
+
+Still open ([#68](https://github.com/aiste633/mysyncthing/issues/68)): on CI's Android 15 emulator, now and then a rotation with a
+text dialog, the keyboard and the cursor handle up leaves the new dialog window without input focus, so the
+monkey's keys time out (an ANR, while the app itself is idle). It did not happen in 100 tries on the PC
+emulator; the CI run now saves the window and input state when it happens.
 
 ## Memory soak (2026-10-27)
 
