@@ -16,14 +16,13 @@ emulator; settings restored, the app left uninstalled.
 import argparse
 import re
 import shutil
-import subprocess
 import tempfile
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import run
-from run import ADB, APP, adb, log, sh
+from run import APP, adb, log, sh
 
 NAME = "Name"  # R.string.name
 
@@ -69,17 +68,10 @@ def focus_field() -> bool:
     return False
 
 
-def focus_line() -> str:
-    for cmd in ("dumpsys window displays", "dumpsys window"):
-        if line := next((l.strip() for l in sh(cmd, check=False).splitlines() if "mCurrentFocus=" in l), None):
-            return line
-    return "no mCurrentFocus line"
-
-
 def focused(timeout: float) -> bool:
     end = time.time() + timeout
     while time.time() < end:
-        if APP in focus_line():
+        if APP in run.focus_line():
             return True
         time.sleep(0.25)
     return False
@@ -129,7 +121,7 @@ def main() -> None:
                 pid = run.app_pid()
                 sh(f"run-as {APP} kill -3 {pid}", check=False)
                 (a.out / f"focus-loss-{losses}.txt").write_text(
-                    f"gap {gap} ms, round {i}, pid {pid}\n{focus_line()}\n\n"
+                    f"gap {gap} ms, round {i}, pid {pid}\n{run.focus_line()}\n\n"
                     + "\n\n".join(sh(c, check=False) for c in ("dumpsys window displays", "dumpsys window windows", "dumpsys input")))
                 summary.append(f"gap {gap} ms: focus lost in round {i}")
                 if not focused(15):
@@ -143,12 +135,7 @@ def main() -> None:
         peer.stop()
         dev.restore()
         (a.out / "logcat.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
-        adb("root", check=False)
-        adb("wait-for-device", check=False)
-        (a.out / "anr").mkdir(exist_ok=True)
-        subprocess.run([ADB, "pull", "/data/anr/.", str(a.out / "anr")], capture_output=True, text=True)
-        adb("unroot", check=False)
-        adb("wait-for-device", check=False)
+        run.pull_anr_traces(a.out / "anr")
         for pkg in (APP, f"{APP}.test"):
             adb("uninstall", pkg, check=False)
         shutil.rmtree(home, ignore_errors=True)

@@ -407,13 +407,13 @@ def native_crashes(logcat: str) -> tuple[bool, list[str]]:
 
 
 def logcat_anrs(logcat: str) -> tuple[list[str], list[str]]:
-    """ANRs in a logcat (ActivityManager's "ANR in" with the "Reason:" line after it): the app's,
-    and other processes', each as "process: reason"."""
+    """ANRs in a logcat (ActivityManager's "ANR in" with the "Reason:" line after it; WindowManager
+    and the monkey repeat it in their own words): the app's, and other processes', each as "process: reason"."""
     ours: list[str] = []
     others: list[str] = []
     lines = logcat.splitlines()
     for i, line in enumerate(lines):
-        if not (m := re.search(r"\bANR in (\S+)", line)):
+        if not (m := re.search(r"ActivityManager: ANR in (\S+)", line)):
             continue
         reason = next((l.split("Reason: ", 1)[1].strip() for l in lines[i + 1:i + 6] if "Reason: " in l), "?")
         (ours if m.group(1).split(":")[0] == APP else others).append(f"{m.group(1)}: {reason}")
@@ -448,6 +448,24 @@ def monkey_problems(text: str) -> tuple[list[str], list[str]]:
     return ours, others
 
 
+def focus_line() -> str:
+    """The window manager's focused window (API 35 prints it under "displays", not "windows")."""
+    for cmd in ("dumpsys window displays", "dumpsys window"):
+        if line := next((l.strip() for l in sh(cmd, check=False).splitlines() if "mCurrentFocus=" in l), None):
+            return line
+    return "no mCurrentFocus line"
+
+
+def pull_anr_traces(dst: Path) -> None:
+    """/data/anr (the system's ANR dumps and SIGQUIT stacks) into [dst]; needs adb root (emulator images)."""
+    adb("root", check=False)
+    adb("wait-for-device", check=False, timeout=60)
+    dst.mkdir(parents=True, exist_ok=True)
+    subprocess.run([ADB, "pull", "/data/anr/.", str(dst)], capture_output=True, text=True, timeout=120)
+    adb("unroot", check=False)
+    adb("wait-for-device", check=False, timeout=60)
+
+
 class PinGuard(threading.Thread):
     """Every 2 s: wakes the screen and pins the app again if either was lost, and records when.
     On API 36 the launcher draws the three-button bar, and its Overview button ignores screen
@@ -455,11 +473,16 @@ class PinGuard(threading.Thread):
     (seed 4242, PC 2026-11-03). That is the platform's, not the app's; the guard keeps the run in
     the app."""
 
-    def __init__(self) -> None:
+    def __init__(self, out: Path | None = None) -> None:
         super().__init__(daemon=True)
         self.stop = threading.Event()
         self.pin_losses: list[str] = []
         self.sleeps: list[str] = []
+        # With [out]: the window manager's state whenever no window has had focus for about 4 s
+        # (an input ANR comes at 5 s): "Application does not have a focused window" on API 35.
+        self.out = out
+        self.unfocused = 0
+        self.focus_losses: list[str] = []
 
     def run(self) -> None:
         while not self.stop.wait(2):
@@ -470,8 +493,22 @@ class PinGuard(threading.Thread):
                 if not pinned():
                     self.pin_losses.append(time.strftime("%H:%M:%S"))
                     pin()
+                if self.out is not None:
+                    self.watch_focus()
             except (OSError, RuntimeError, subprocess.TimeoutExpired) as e:
                 log(f"pin guard: {e}")
+
+    def watch_focus(self) -> None:
+        line = focus_line()
+        self.unfocused = self.unfocused + 1 if line.endswith("=null") else 0
+        if self.unfocused != 2 or len(self.focus_losses) >= 3:
+            return
+        self.focus_losses.append(time.strftime("%H:%M:%S"))
+        pid = app_pid()
+        sh(f"run-as {APP} kill -3 {pid}", check=False)  # the main thread's stack, into /data/anr
+        (self.out / f"focus-loss-{len(self.focus_losses)}.txt").write_text(
+            f"{time.strftime('%H:%M:%S')} pid {pid}\n{line}\n\n"
+            + "\n\n".join(sh(c, check=False) for c in ("dumpsys window displays", "dumpsys window windows", "dumpsys input")))
 
     def finish(self) -> None:
         self.stop.set()
@@ -489,7 +526,7 @@ def monkey(out: Path) -> None:
         if not pin():
             fail("monkey: the app could not be pinned")
             return
-        guard = PinGuard()
+        guard = PinGuard(out)
         guard.start()
         try:
             r = subprocess.run([ADB, "shell", "monkey", "-p", APP, *MONKEY], stdout=subprocess.PIPE,
@@ -498,6 +535,8 @@ def monkey(out: Path) -> None:
             guard.finish()
         (out / "monkey.txt").write_text(r.stdout)
         log(f"monkey: pinned again {len(guard.pin_losses)} times {guard.pin_losses}, woken {len(guard.sleeps)} times")
+        if guard.focus_losses:
+            log(f"monkey: no focused window for 4 s at {guard.focus_losses} (see focus-loss-*.txt)")
         ours, others = monkey_problems(r.stdout)
         if others:
             log(f"monkey: other processes, not the app: {others}")
@@ -558,7 +597,8 @@ def main() -> None:
         log(f"known platform crashes in the app's process (not failing): {known}")
     ours, others = logcat_anrs(logcat)
     if ours:
-        fail(f"the app did not respond (ANR): {ours} (see logcat.txt)")
+        fail(f"the app did not respond (ANR): {ours} (see logcat.txt, anr/)")
+        pull_anr_traces(a.out / "anr")
     if others:
         log(f"ANRs of other processes (not failing): {others}")
     ours, others = native_crashes(logcat)
