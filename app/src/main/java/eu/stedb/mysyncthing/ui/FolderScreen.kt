@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -51,6 +52,8 @@ import eu.stedb.mysyncthing.core.FolderStats
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.problemText
 import eu.stedb.mysyncthing.core.text
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 private enum class FolderDialog { Name, Group, Type, Rescan, Order, DiskFree, Revert, Override, Remove }
 
@@ -280,7 +283,10 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
     var value by rememberSaveable { mutableStateOf(fieldNumber(initial.value, locale)) }
     var unit by rememberSaveable { mutableStateOf(initial.unit) }
     val units = (listOf("%", "MB", "GB") + initial.unit).distinct()
-    val free = remember(path) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
+    // StatFs reads the disk: off the main thread (StrictMode, monkey run 2026-11-03: about 50 ms).
+    val free by produceState<Pair<Long, Long>?>(null, path) {
+        this.value = withContext(Dispatchers.IO) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
+    }
     val error = amountError(value, unit)?.asString()
     AlertDialog(
         onDismissRequest = onDismiss,
