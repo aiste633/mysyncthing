@@ -28,6 +28,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime
 from pathlib import Path
 
 APP = "eu.stedb.mysyncthing"
@@ -141,8 +142,11 @@ class Peer:
     def scan(self) -> None:
         self.call("POST", f"rest/db/scan?folder={FOLDER}")
 
-    def connected(self, device: str) -> bool:
-        return bool(self.call("GET", "rest/system/connections")["connections"].get(device, {}).get("connected"))
+    def connected(self, device: str, since: float = 0) -> bool:
+        """Connected now; with [since] (epoch seconds), by a connection made at or after it, not one still
+        open from before (the peer notices a killed app's connection closing only after a moment)."""
+        c = self.call("GET", "rest/system/connections")["connections"].get(device, {})
+        return bool(c.get("connected")) and (not since or datetime.fromisoformat(c["startedAt"]).timestamp() >= int(since))
 
     def stop(self) -> None:
         if self.proc and self.proc.poll() is None:
@@ -244,15 +248,18 @@ def launcher_starts() -> None:
 def process_death(peer: Peer, phone: str) -> None:
     """Killed in the background, the service comes back by itself (START_STICKY) and syncs again."""
     log("process death")
+    # The phase before ended its process: only a connection from this start shows the service runs (sticky).
+    opened = time.time()
     open_app()
-    if not eventually("phone connected before the kill", 90, lambda: peer.connected(phone)):
+    if not eventually("phone connected before the kill", 90, lambda: peer.connected(phone, since=opened)):
         return
     sh("input keyevent KEYCODE_HOME")
     pid = app_pid()
+    killed = time.time()
     sh(f"run-as {APP} kill -9 {pid}")
     if not eventually("service restarted after the kill", 120, lambda: app_pid() not in ("", pid)):
         return
-    if not eventually("phone reconnected after the kill", 120, lambda: peer.connected(phone)):
+    if not eventually("phone reconnected after the kill", 120, lambda: peer.connected(phone, since=killed)):
         return
     (peer.folder / "after-kill.txt").write_text("written on the peer after the kill\n")
     peer.scan()

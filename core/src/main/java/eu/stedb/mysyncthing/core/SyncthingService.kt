@@ -18,9 +18,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -55,6 +57,9 @@ class SyncthingService : LifecycleService() {
         super.onCreate()
         settings = Settings(this)
         lifecycleScope.launch { for (command in commands) command() }
+        lifecycleScope.launch {
+            refreshes.collect { lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) } }
+        }
         createChannel(this)
         RequestNotifications.createChannel(this)
         ProblemNotifications.createChannel(this)
@@ -101,7 +106,6 @@ class SyncthingService : LifecycleService() {
                 shutDown(startId) { settings.setStoppedByUser(true) }
             }
             ACTION_SHUTDOWN -> shutDown(startId) {}
-            ACTION_REFRESH -> lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) }
             // A start (the user, the app opening, boot, a sticky restart) runs the core unless it already runs.
             else -> commands.trySend {
                 settings.setStoppedByUser(false)
@@ -214,7 +218,7 @@ class SyncthingService : LifecycleService() {
     private fun shutDown(startId: Int, first: suspend () -> Unit) {
         commands.trySend {
             first()
-            run?.cancelAndJoin() // no "stopped with an error" from the run's end
+            run?.cancelAndJoin() // no "stopped with an error" from the run's end; its calls to the core end at once
             SyncthingCore.stop()
             stopSelf(startId)
         }
@@ -305,7 +309,12 @@ class SyncthingService : LifecycleService() {
         private const val SERVICE_GROUP = "service"
         private const val ACTION_STOP = "eu.stedb.mysyncthing.STOP"
         private const val ACTION_SHUTDOWN = "eu.stedb.mysyncthing.SHUTDOWN"
-        private const val ACTION_REFRESH = "eu.stedb.mysyncthing.REFRESH_NOTIFICATION"
+
+        /**
+         * Not a service command: every command is a start or a stop, so a stop's stopSelf(startId) is
+         * undone only by a start that came after it (a refresh during a stop kept the service with no core).
+         */
+        private val refreshes = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
         /**
          * Starts the service, and the core unless it runs; also after it failed.
@@ -331,6 +340,7 @@ class SyncthingService : LifecycleService() {
 
         /** Not the user's stop (an import replacing the setup): the app may start it again. */
         fun stop(context: Context) {
+            if (SyncthingCore.state.value is CoreState.Stopped) return // no service to start only to stop it
             context.startService(Intent(context, SyncthingService::class.java).setAction(ACTION_SHUTDOWN))
         }
 
@@ -350,9 +360,8 @@ class SyncthingService : LifecycleService() {
         }
 
         /** Re-posts the notification, e.g. after the user allowed notifications while the service ran. */
-        fun refreshNotification(context: Context) {
-            if (SyncthingCore.state.value == CoreState.Stopped) return
-            context.startService(Intent(context, SyncthingService::class.java).setAction(ACTION_REFRESH))
+        fun refreshNotification() {
+            refreshes.tryEmit(Unit) // no service, no notification: nothing to redraw
         }
     }
 }
