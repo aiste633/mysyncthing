@@ -5,11 +5,13 @@ package stbridge
 
 import (
 	"cmp"
+	"fmt"
 	"net/netip"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"unicode"
 	"unicode/utf8"
 
@@ -243,7 +245,24 @@ func cleanText(s string) string {
 // --- Folder paths: ui/Validation.kt folderPath and folderPathError, pinned to
 // the same cases by testdata/validation-contract.json.
 
-const internalStorage = "/storage/emulated/0"
+// internalStorage is internal shared storage of the Android user the app
+// runs as: /storage/emulated/0 for the phone's owner, another number in a work
+// profile, Private Space or a cloned app. The app sets it (SetInternalStorage).
+var internalStorage atomic.Value
+
+func init() { internalStorage.Store("/storage/emulated/0") }
+
+var internalStoragePattern = regexp.MustCompile(`^/storage/emulated/[0-9]+$`)
+
+// SetInternalStorage tells the import where /sdcard leads for this Android
+// user (Environment.getExternalStorageDirectory). Anything else is refused.
+func SetInternalStorage(path string) error {
+	if !internalStoragePattern.MatchString(path) {
+		return fmt.Errorf("not internal storage: %q", path)
+	}
+	internalStorage.Store(path)
+	return nil
+}
 
 // sharedStorage is where folders may be: shared storage and SD cards. Tests
 // that start the core point it at a temporary directory.
@@ -260,6 +279,7 @@ const (
 	errPathParts    = pathError("folder path has empty, . or .. parts")
 	errPathStorage  = pathError("folder path is not in shared storage or on an SD card")
 	errPathOverlap  = pathError("folder path is the same as, inside or around another folder")
+	errPathApps     = pathError("folder path is in Android/data or Android/obb, which Android keeps for apps")
 )
 
 // folderPath is a path as the app saves it: trimmed, without a trailing "/",
@@ -268,10 +288,25 @@ func folderPath(path string) string {
 	p := strings.TrimRight(strings.TrimSpace(path), "/")
 	for _, alias := range []string{"/sdcard", "/storage/self/primary"} {
 		if p == alias || strings.HasPrefix(p, alias+"/") {
-			return internalStorage + strings.TrimPrefix(p, alias)
+			return internalStorage.Load().(string) + strings.TrimPrefix(p, alias)
 		}
 	}
 	return p
+}
+
+// isAppPrivate: Android/data and Android/obb (and below) on any storage, for
+// any Android user. Android keeps them for apps even with All files access,
+// so the core could not write there. Case is ignored, as internal storage does.
+func isAppPrivate(p string) bool {
+	parts := strings.Split(p, "/")
+	if len(parts) < 4 || parts[0] != "" || parts[1] != "storage" {
+		return false
+	}
+	rest := parts[3:]
+	if parts[2] == "emulated" {
+		rest = parts[4:]
+	}
+	return len(rest) >= 2 && strings.EqualFold(rest[0], "Android") && (strings.EqualFold(rest[1], "data") || strings.EqualFold(rest[1], "obb"))
 }
 
 // folderPathError checks p, as folderPath returns it, against the paths of
@@ -289,6 +324,8 @@ func folderPathError(p string, others []string) error {
 		return errPathParts
 	case !inside(p, sharedStorage) || p == sharedStorage || p == sharedStorage+"/emulated":
 		return errPathStorage
+	case isAppPrivate(p):
+		return errPathApps
 	}
 	for _, o := range others {
 		if o = folderPath(o); inside(p, o) || inside(o, p) {

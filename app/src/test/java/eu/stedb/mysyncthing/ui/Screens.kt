@@ -1,6 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.ui.Fixtures.core
@@ -25,7 +26,15 @@ val screens = listOf(
     ScreenCase("folder-syncing") { FolderScreen(snapshot, "docs", it, {}, {}, {}, {}, {}, {}) },
     ScreenCase("folder-error") { FolderScreen(snapshot, "music", it, {}, {}, {}, {}, {}, {}) },
     ScreenCase("folder-accept") {
-        FolderEditScreen(snapshot, draftFor(snapshot, "holiday", Fixtures.laptop, Folder()), Fixtures.laptop, pathBase(Folder()), onBack = {}, onSave = {})
+        CompositionLocalProvider(LocalDisk provides fixtureDisk()) {
+            FolderEditScreen(snapshot, draftFor(snapshot, "holiday", Fixtures.laptop, Folder()), Fixtures.laptop, pathBase(Folder()), onBack = {}, onSave = {})
+        }
+    },
+    ScreenCase("browse-top") {
+        CompositionLocalProvider(LocalDisk provides fixtureDisk()) { FolderBrowser(internalStorage, pathBase(Folder()), snapshot.folders, onBack = {}, onPick = {}) }
+    },
+    ScreenCase("browse-dcim") {
+        CompositionLocalProvider(LocalDisk provides fixtureDisk()) { FolderBrowser("$internalStorage/DCIM", pathBase(Folder()), snapshot.folders, onBack = {}, onPick = {}) }
     },
     ScreenCase("devices") { DevicesScreen(snapshot, summary, it, onOpen = {}, onOpenThisPhone = {}, onOpenSchedule = {}, onAdd = { _, _ -> }) },
     ScreenCase("devices-blocked") {

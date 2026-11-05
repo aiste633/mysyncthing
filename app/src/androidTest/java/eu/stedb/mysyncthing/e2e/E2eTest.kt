@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing.e2e
 
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
@@ -500,6 +501,36 @@ class E2eTest {
     }
 
     /**
+     * The app's own folder browser on a real storage: Download, which Android's picker
+     * refuses, a new folder in it, and the folder the core then syncs. Removed again after.
+     */
+    @Test
+    fun browseFolder() {
+        val storage = Environment.getExternalStorageDirectory().path
+        val dir = File("$storage/${Environment.DIRECTORY_DOWNLOADS}/$BROWSED")
+        dir.deleteRecursively()
+        phoneId()
+        tap(str(R.string.folders_add))
+        tap(str(R.string.folder_browse))
+        tap(str(R.string.internal_storage))
+        tap(Environment.DIRECTORY_DOWNLOADS)
+        tap(str(R.string.browse_new_folder))
+        field(str(R.string.name)).performTextInput(BROWSED)
+        tap(str(R.string.action_save))
+        eventually("$BROWSED made in Download", 10_000) { dir.isDirectory }
+        rule.waitUntil(10_000) { rule.onAllNodes(hasTestTag("browseUse") and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasTestTag("browseUse")).performClick()
+        // Back in the form, named after the folder; the same name stays on the top bar's Save.
+        field(str(R.string.name)).assert(hasText(BROWSED))
+        tap(str(R.string.action_save))
+        eventually("folder at ${dir.path} in the core", 30_000) { SyncStatus.snapshot.value.folders.any { it.path == dir.path } }
+        val id = SyncStatus.snapshot.value.folders.first { it.path == dir.path }.id
+        runBlocking { (SyncthingCore.state.value as CoreState.Running).client.removeFolder(id) }
+        eventually("browsed folder removed", 30_000) { SyncStatus.snapshot.value.folders.none { it.id == id } }
+        dir.deleteRecursively()
+    }
+
+    /**
      * scripts/e2e/upgrade.py installed this build over the last release, which ran its own
      * [pairAndSync]: the setup, the identity, the peer and the folder are still there, the
      * database too (no "moved from another phone"), and files sync both ways.
@@ -627,5 +658,6 @@ class E2eTest {
         const val V1 = "version 1\n"
         const val V2 = "second version\n"
         const val IDLE_FRAMES = 30
+        const val BROWSED = "mysyncthing-test-browse"
     }
 }

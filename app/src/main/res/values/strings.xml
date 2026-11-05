@@ -509,10 +509,44 @@
     <string name="folder_offered_by">Offered by %1$s</string>
     <string name="folder">Folder</string>
     <string name="folder_path">Folder on this phone</string>
-    <string name="folder_path_required">Required. Full path, or choose one</string>
     <string name="folder_path_suggested">Suggested. It is created if missing.</string>
-    <string name="folder_path_hint">Full path, or choose one</string>
-    <string name="folder_choose">Choose folder</string>
+    <string name="folder_path_needed">Required. Pick one below, or Browse</string>
+    <string name="folder_path_created">It is created if missing.</string>
+    <!-- Add folder: no folder on the phone chosen yet -->
+    <string name="folder_path_none">None chosen yet</string>
+    <!-- Button: opens the app's own folder browser -->
+    <string name="folder_browse">Browse</string>
+    <!-- Add folder: one-tap choices of usual folders (Camera, Download…) -->
+    <string name="folder_quick_picks">Quick picks</string>
+    <!-- %1$s: a folder name, e.g. Camera; it is already synced -->
+    <string name="folder_pick_synced">%1$s, synced</string>
+    <string name="browse_title">Choose folder</string>
+    <!-- %1$s: free space with its unit, e.g. 92.4 GB -->
+    <string name="browse_free">%1$s free</string>
+    <string name="browse_new_folder">New folder</string>
+    <string name="browse_type_path">Type a path</string>
+    <string name="browse_show_hidden">Show hidden folders</string>
+    <string name="browse_empty">No folders here</string>
+    <string name="browse_unreadable">This folder can\'t be opened</string>
+    <string name="browse_sync_this">Sync this folder</string>
+    <string name="browse_use">Use this folder</string>
+    <string name="browse_make_failed">Couldn\'t create the folder</string>
+    <!-- %1$s: the name of the synced folder -->
+    <string name="browse_synced_as">Synced as \"%1$s\"</string>
+    <string name="browse_synced_already">Already synced as \"%1$s\"</string>
+    <string name="browse_inside_synced">Inside the synced folder \"%1$s\"</string>
+    <string name="browse_holds_synced">Holds the synced folder \"%1$s\"</string>
+    <!-- Android/data and Android/obb: closed to other apps even with All files access -->
+    <string name="error_path_app_private">Android keeps this folder for apps</string>
+    <string name="error_name_long">At most 255 bytes</string>
+    <!-- %1$s: the characters FAT file systems refuse, e.g. \ : * ? " < > | -->
+    <string name="error_name_removable">Not on an SD card or USB stick: %1$s, or a . at the end</string>
+    <string name="error_name_taken">A folder with this name is already here</string>
+    <!-- Browser row: a directory holding synced folders. %1$s: their number -->
+    <plurals name="browse_synced_inside">
+        <item quantity="one">%1$s synced folder inside</item>
+        <item quantity="other">%1$s synced folders inside</item>
+    </plurals>
     <string name="folder_id">Folder ID</string>
     <string name="folder_id_hint">Must be the same on every device sharing this folder</string>
     <string name="share_with">Share with</string>

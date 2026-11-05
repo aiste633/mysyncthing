@@ -1,12 +1,17 @@
 package eu.stedb.mysyncthing.ui
 
 import android.view.WindowManager
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
@@ -68,13 +73,65 @@ class FormsTest : ScreenTest() {
         assertTrue(left)
     }
 
+    private val root = internalStorage
+
+    private fun folderForm(disk: MapDisk, offer: String? = "holiday", onSave: (FolderDraft) -> Unit = {}) = show {
+        CompositionLocalProvider(LocalDisk provides disk) {
+            val from = offer?.let { Fixtures.laptop }
+            FolderEditScreen(snapshot, draftFor(snapshot, offer, from, Folder()), from, pathBase(Folder()), onBack = {}, onSave = onSave)
+        }
+    }
+
+    private val pathRow get() = compose.onNodeWithTag("folderPath")
+
     @Test
     fun acceptedFolderGetsASuggestedPathInSharedStorage() {
-        show { FolderEditScreen(snapshot, draftFor(snapshot, "holiday", Fixtures.laptop, Folder()), Fixtures.laptop, pathBase(Folder()), onBack = {}, onSave = {}) }
-        field(str(R.string.folder_path)).assert(hasText("/storage/emulated/0/Syncthing/Holiday 2026"))
-        field(str(R.string.folder_path)).performTextReplacement("/data/data/eu.stedb.mysyncthing/files")
-        compose.onNodeWithText(str(R.string.error_path_storage)).assertExists()
+        var saved: FolderDraft? = null
+        folderForm(fixtureDisk()) { saved = it }
+        pathRow.assert(hasText("Syncthing/Holiday 2026", substring = true))
+        compose.onNodeWithText(str(R.string.folder_path_suggested)).assertExists()
+        // Documents is synced already, and DCIM holds Photos: neither can be chosen.
+        compose.onNodeWithText(str(R.string.folder_pick_synced, "Documents")).assertIsNotEnabled()
+        compose.onNodeWithText("Download").performClick()
+        pathRow.assert(hasText("Download", substring = true))
+        compose.onNodeWithText(str(R.string.folder_path_created)).assertExists()
+        save.assertIsEnabled().performClick()
+        assertEquals("$root/Download", saved?.path)
+        assertEquals("Holiday 2026", saved?.label)
+    }
+
+    /** New folder is a dialog with a text field, which Robolectric does not get idle with: the e2e test (browseFolder) and the PC walk cover it. */
+    @Test
+    fun browserPicksDownload() {
+        var saved: FolderDraft? = null
+        folderForm(fixtureDisk(), offer = null) { saved = it }
+        compose.onNodeWithText(str(R.string.folder_path_needed)).assertExists()
         save.assertIsNotEnabled()
+        compose.onNodeWithTag("browse").performClick()
+        // Opens in Syncthing/; the top of internal storage is one tap away.
+        compose.onNodeWithTag("browseUse").assertIsEnabled()
+        compose.onAllNodesWithText(str(R.string.internal_storage)).onFirst().performClick()
+        compose.onNodeWithText("Download").performClick()
+        compose.onNodeWithTag("browseUse").assertIsEnabled().performClick()
+        pathRow.assert(hasText("Download", substring = true))
+        field(str(R.string.name)).assert(hasText("Download"))
+        save.assertIsEnabled().performClick()
+        assertEquals("$root/Download", saved?.path)
+    }
+
+    @Test
+    fun browserRefusesAroundASyncedFolderAndAndroidData() {
+        var picked: String? = null
+        show { CompositionLocalProvider(LocalDisk provides fixtureDisk()) { FolderBrowser("$root/DCIM", "$root/Syncthing", snapshot.folders, onBack = {}) { picked = it } } }
+        compose.onNodeWithText(str(R.string.browse_holds_synced, "Photos")).assertExists()
+        compose.onNodeWithText(str(R.string.browse_synced_as, "Photos")).assertExists()
+        compose.onNodeWithTag("browseUse").assertIsNotEnabled()
+        compose.onAllNodesWithText(str(R.string.internal_storage)).onFirst().performClick()
+        compose.onNodeWithText("Android").performClick()
+        compose.onNodeWithText("data").assertHasNoClickAction()
+        compose.onNodeWithText("media").performClick()
+        compose.onNodeWithTag("browseUse").assertIsEnabled().performClick()
+        assertEquals("$root/Android/media", picked)
     }
 
     @Test

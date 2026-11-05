@@ -73,8 +73,18 @@ object ForkImport {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    /**
+     * Where /sdcard in a backup leads: /storage/emulated/0 only for the phone's owner, another
+     * number in a work profile, Private Space or a cloned app. The bridge refuses anything
+     * that isn't internal storage, and then keeps the owner's.
+     */
+    private fun knowStorage() {
+        runCatching { Stbridge.setInternalStorage(Environment.getExternalStorageDirectory().path) }
+    }
+
     suspend fun inspect(resolver: ContentResolver, uri: Uri, password: String): ForkInspection = withContext(Dispatchers.IO) {
         try {
+            knowStorage()
             val preview = withFd(resolver, uri, R.string.import_cannot_open) { fd -> Stbridge.inspectForkBackup(fd.toLong(), password) }
             ForkInspection.Ok(json.decodeFromString<ForkPreview>(preview))
         } catch (e: Exception) {
@@ -113,6 +123,7 @@ object ForkImport {
                 val home = File(context.filesDir, "syncthing")
                 try {
                     // Deleted or moved since the preview: Android takes the read grant with it.
+                    knowStorage()
                     withFd(context.contentResolver, uri, R.string.import_cannot_read_again) { fd ->
                         Stbridge.importForkBackup(fd.toLong(), password, home.absolutePath, keepIdentity, preview.digest)
                     }

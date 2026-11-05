@@ -3,13 +3,9 @@
 package eu.stedb.mysyncthing.ui
 
 import android.animation.ValueAnimator
-import android.net.Uri
-import android.provider.DocumentsContract
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -583,29 +579,6 @@ fun ConfirmDialog(title: String, text: String, confirm: String, onDismiss: () ->
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
-
-/**
- * Folder picker returning a POSIX path. With All files access the core uses
- * paths directly, so the SAF tree URI is only used to name the directory.
- */
-@Composable
-fun rememberFolderPicker(onPath: (String) -> Unit): () -> Unit {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        uri?.let(::treeUriToPath)?.let(onPath)
-    }
-    return { launcher.launch(null) }
-}
-
-fun treeUriToPath(uri: Uri): String? {
-    if (uri.authority != "com.android.externalstorage.documents") return null
-    val docId = DocumentsContract.getTreeDocumentId(uri)
-    val volume = docId.substringBefore(':')
-    val rel = docId.substringAfter(':', "")
-    val root = if (volume == "primary") INTERNAL_STORAGE else "/storage/$volume"
-    return if (rel.isEmpty()) root else "$root/$rel"
-}
-
-const val INTERNAL_STORAGE = "/storage/emulated/0"
 
 /** Heading over a group of cards on a tab (folder or device groups). */
 @Composable

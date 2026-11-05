@@ -609,6 +609,7 @@ def main() -> None:
             phase("deviceWindows", peer, a.out)
             phase("textDialogsKeepTypedText", peer, a.out)
             phase("recentChanges", peer, a.out)
+            phase("browseFolder", peer, a.out)
             phase("stopAndStart", peer, a.out)
             process_death(peer, phone)
             storage_revoked(peer, phone)
