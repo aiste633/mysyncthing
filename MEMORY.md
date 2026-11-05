@@ -7,7 +7,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - minSdk 35, target/compileSdk 36. No wider reach wanted.
 - Kotlin + Jetpack Compose. Modules `:app`, `:core`, plus `go/`.
 - Core: in-process via `gomobile bind` of `go/bridge` (Go package `stbridge`, Java package `eu.stedb.mysyncthing.stbridge`). Not the exec'd-binary approach.
-- Kotlin controls the core only through the REST API on a random loopback port. Credentials (API key, GUI user/password) are generated once and kept in DataStore.
+- Kotlin controls the core only through the REST API on a random loopback port. Credentials (API key, GUI user/password) are new at every core start (`Credentials.random()`) and kept only in memory (`CoreState.Running`); restarts in place keep them. The DataStore keys of versions up to 0.2.0 are removed at start (`Settings.forgetStoredLogin`).
 - FGS type `specialUse` (dataSync has a 6 h/day cap on API 35+ and cannot start at boot).
 - Storage: `MANAGE_EXTERNAL_STORAGE`. The folder picker (SAF tree URI) is converted to a POSIX path.
 - Run conditions pause all devices via REST and remember which ones the user had paused, so a resume does not undo the user's choice.
@@ -72,7 +72,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Real phone rules: another Syncthing app may be installed and stopped there; never touch it, keep it stopped while testing (same default ports). Check the foreground app before any tap.
 
 ## Security audit (2026-10-25)
-- Web GUI login: 64 random characters for user and password (`Settings.credentials()`, earlier short ones are replaced). `go/bridge` subscribes `guiGuard`, which refuses any config change to the GUI login or access settings (e.g. from the web GUI's settings); `TestGUILoginLocked` covers it. The WebView hides Log Out, which would reload into the login page.
+- Web GUI login: 64 random characters for user and password, new at every `Stbridge.start`. The bridge ends earlier web GUI sessions at start (`endSessions` deletes lib/api's `misc/sessions`; recheck the key when bumping Syncthing, `TestLoginNewEveryStart` catches it) and saves config.xml only when it would leave the GUI open or is fresh; a new login alone reaches disk with the core's own save (5 s later, failure only logged). `go/bridge` subscribes `guiGuard`, which refuses any config change to the GUI login or access settings (e.g. from the web GUI's settings); `TestGUILoginLocked` covers it. The WebView hides Log Out, which would reload into the login page.
 - WebView: Google usage metrics and Safe Browsing off (manifest meta-data); it only loads loopback. Injected CSS (`HIDE_APP_MANAGED` in `WebGuiScreen.kt`) hides Log Out, Shut Down, the API key and the GUI login/address/HTTPS/LDAP settings; recheck its selectors when bumping Syncthing.
 - Restart from the web GUI (or a database reset) restarts the core in place in `go/bridge` (`watch`): same address, `IsRunning` stays true. `SyncStatus.follow` resets its event cursor after an error, because a restarted core counts events from 1.
 - Phone migration (`res/xml/data_extraction_rules.xml`): device transfer carries config.xml, cert/key and the DataStore, never the database (a stale database plus a partial file copy would spread deletions). Cloud backup stays off. The service flags "config but no `index-v2`" as moved, and the app shows a one-time note to stop Syncthing on the old phone.
@@ -108,7 +108,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Add folder type is an inline radio list with hints. Numbers keep a space before % (SI style, user confirmed).
 
 ## Stress-test fixes (2026-10-27)
-- Every `Settings` write goes through `write()`, which returns false on an IOException (DataStore's ENOSPC when the storage is full) instead of throwing from a launched coroutine; the app shows `NOT_SAVED`. Only `credentials()` throws, and that ends in a failed core start. New writes must use `write()`.
+- Every `Settings` write goes through `write()`, which returns false on an IOException (DataStore's ENOSPC when the storage is full) instead of throwing from a launched coroutine; the app shows `NOT_SAVED`. New writes must use `write()`.
 - The core runs from `SyncthingService.onStartCommand` (a `run` Job), not onCreate: any plain start retries a failed one; a run ends when the core fails, and `failed()` clears the notices of a core that no longer runs. Notice collectors map an unloaded snapshot to null so a new run posts them again.
 - The app asks for a start on every ON_START (`startUnlessStopped`). A Stop by the user (Settings or the notification, `stopByUser` / ACTION_STOP) is stored with `Settings.Global.BOOT_COUNT` and holds until an explicit Start or the next real boot. Android 15+ sends a package-targeted BOOT_COMPLETED when an app leaves the stopped state (first start after a force-stop or an install), so that broadcast is no proof of a boot. `SyncthingCore.stoppedByUser` mirrors the Stop for `CoreGate` (stopped screen only after a user's Stop, else the Starting spinner).
 - `BootReceiver` reads settings under `goAsync` on an IO thread (a `runBlocking` read on the main thread caused an ANR).

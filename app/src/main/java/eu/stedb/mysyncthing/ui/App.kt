@@ -28,6 +28,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -326,7 +327,9 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
                 }
                 composable(Routes.WEB_GUI) {
-                    (core as? CoreState.Running)?.let { WebGuiScreen(it, onClose = { nav.popBackStack() }) }
+                    // Each start brings a new address and login, which the WebView takes when it is made:
+                    // a new run gets a new WebView, even if the state skipped from one run straight to the next.
+                    (core as? CoreState.Running)?.let { key(it) { WebGuiScreen(it, onClose = { nav.popBackStack() }) } }
                 }
             }
         }

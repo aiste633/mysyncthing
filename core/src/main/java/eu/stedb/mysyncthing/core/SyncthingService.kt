@@ -138,7 +138,8 @@ class SyncthingService : LifecycleService() {
             val fresh = settings.takeFreshDatabaseExpected()
             val moved = !fresh && withContext(Dispatchers.IO) { File(home, "config.xml").exists() && !File(home, "index-v2").exists() }
             if (moved) settings.setMovedFromOtherPhone(true)
-            SyncthingCore.start(home, settings::credentials, settings.proxy.first())
+            settings.forgetStoredLogin()
+            SyncthingCore.start(home, settings.proxy.first())
         }
         val running = SyncthingCore.state.first { it !is CoreState.Starting }
         if (running !is CoreState.Running) return failed(running, R.string.status_failed_to_start)

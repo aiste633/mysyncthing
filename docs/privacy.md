@@ -117,6 +117,7 @@ example Tor with Orbot. The proxy's operator sees the connections the proxy carr
 ## The web GUI and links
 
 Syncthing's web GUI runs on the phone, locked with a random password that only the app knows.
+The password is new every time Syncthing starts and is never stored by the app.
 The built-in view loads nothing from the internet. Links to websites open in your browser, under
 that browser's own privacy terms.
 

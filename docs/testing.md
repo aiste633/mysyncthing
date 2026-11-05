@@ -244,7 +244,8 @@ fixed:
 
 - Android's phone-to-phone transfer is limited to the configuration, keys and app settings;
   the database is left out, and cloud backup is off (see [privacy](privacy.md)).
-- The web GUI login, 64 random characters, is locked: the core refuses any change to it.
+- The web GUI login, 64 random characters, is new at every core start and locked: the core refuses any
+  change to it, and the previous login, API key and web GUI sessions stop working (`TestLoginNewEveryStart`).
 - A screen opened from a notification only opens for a request that is really pending.
 - The built-in web view sends no usage metrics and no Safe Browsing checks.
 - Request notifications show no addresses, and lock-screen notifications no names.

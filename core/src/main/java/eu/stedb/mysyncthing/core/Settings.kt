@@ -26,10 +26,24 @@ import java.util.Base64
 private val Context.dataStore by preferencesDataStore("settings")
 
 /**
- * Secrets shared between the app and the core. Generated once, kept in app-private storage.
- * Only the app knows the GUI login; the bridge refuses any change to it.
+ * Secrets shared between the app and the core. New at every core start and kept only in
+ * memory, so a login that got out ends with the next start. Only the app knows the GUI
+ * login; the bridge refuses any change to it.
  */
-data class Credentials(val apiKey: String, val guiUser: String, val guiPassword: String)
+data class Credentials(val apiKey: String, val guiUser: String, val guiPassword: String) {
+    internal companion object {
+        /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */
+        const val TOKEN_CHARS = 64
+
+        fun random() = Credentials(randomToken(), randomToken(), randomToken())
+
+        /** [TOKEN_CHARS] characters of A-Z, a-z, 0-9, - and _ from 48 random bytes, as the bridge wants them (go/bridge token). */
+        fun randomToken(): String {
+            val b = ByteArray(TOKEN_CHARS * 3 / 4).also { SecureRandom().nextBytes(it) }
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(b)
+        }
+    }
+}
 
 /** Which power source the core may sync on. */
 @Serializable
@@ -125,7 +139,7 @@ class Settings internal constructor(
         android.provider.Settings.Global.getInt(context.contentResolver, android.provider.Settings.Global.BOOT_COUNT, -1)
     })
 
-    /** Every write but [credentials]'s goes through here. */
+    /** Every write goes through here. */
     private suspend fun write(block: (MutablePreferences) -> Unit): Boolean = try {
         store.edit(block)
         true
@@ -134,20 +148,15 @@ class Settings internal constructor(
     }
 
     /**
-     * Throws [IOException] when new credentials can't be stored: the core must
-     * not start with a login the next start would not know.
+     * Removes the login that versions up to 0.2.0 kept here; the login is now new at every start
+     * ([Credentials.random]). Writes only when one is there; false when it couldn't be removed,
+     * which doesn't matter for the start: the core no longer accepts it.
      */
-    suspend fun credentials(): Credentials {
+    suspend fun forgetStoredLogin(): Boolean {
+        val legacy = listOf(API_KEY, GUI_USER, GUI_PASSWORD)
         val prefs = store.data.first()
-        prefs.credentials()?.takeIf { it.guiPassword.length >= TOKEN_CHARS }?.let { return it }
-        // Also replaces the short GUI login of earlier versions; the bridge applies it at start.
-        val created = Credentials(prefs[API_KEY] ?: randomToken(), randomToken(), randomToken())
-        store.edit {
-            it[API_KEY] = created.apiKey
-            it[GUI_USER] = created.guiUser
-            it[GUI_PASSWORD] = created.guiPassword
-        }
-        return created
+        if (legacy.none { it in prefs }) return true
+        return write { p -> legacy.forEach { p.remove(it) } }
     }
 
     val runConditions: Flow<RunConditions> = store.data.map { it.runConditions() }
@@ -271,14 +280,8 @@ class Settings internal constructor(
         return ConditionHolds(this[CONDITION_HELD], userPaused)
     }
 
-    private fun Preferences.credentials(): Credentials? {
-        val key = this[API_KEY] ?: return null
-        val user = this[GUI_USER] ?: return null
-        val password = this[GUI_PASSWORD] ?: return null
-        return Credentials(key, user, password)
-    }
-
     internal companion object {
+        // The login of versions up to 0.2.0; only removed now (forgetStoredLogin).
         val API_KEY = stringPreferencesKey("api_key")
         val GUI_USER = stringPreferencesKey("gui_user")
         val GUI_PASSWORD = stringPreferencesKey("gui_password")
@@ -309,14 +312,6 @@ class Settings internal constructor(
         val DEVICE_WINDOWS = stringPreferencesKey("device_sync_windows")
 
         val json = Json { ignoreUnknownKeys = true }
-
-        /** 64 characters; bcrypt, which hashes the GUI password, reads at most 72 bytes. */
-        const val TOKEN_CHARS = 64
-
-        fun randomToken(): String {
-            val b = ByteArray(TOKEN_CHARS * 3 / 4).also { SecureRandom().nextBytes(it) }
-            return Base64.getUrlEncoder().withoutPadding().encodeToString(b)
-        }
     }
 }
 
