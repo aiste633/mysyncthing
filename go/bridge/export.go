@@ -272,11 +272,28 @@ func writeZipEntry(z *zip.Writer, name string, data []byte, password string, mod
 		CompressedSize64:   uint64(len(raw)),
 		UncompressedSize64: uint64(len(data)),
 	}
-	fh.SetModTime(modified) //nolint:staticcheck // CreateRaw, unlike CreateHeader, takes only the MS-DOS time
+	setModified(fh, modified)
 	w, err := z.CreateRaw(fh)
 	if err != nil {
 		return err
 	}
 	_, err = w.Write(raw)
 	return err
+}
+
+// setModified stamps fh as CreateHeader would, which CreateRaw does not: the
+// MS-DOS time as the wall clock in modified's zone, plus the extended
+// timestamp (0x5455) with the exact instant. SetModTime would write the
+// MS-DOS time in UTC instead, so the encrypted entries of a backup would
+// show other times than the plain ones.
+func setModified(fh *zip.FileHeader, modified time.Time) {
+	fh.Modified = modified
+	fh.ModifiedDate = uint16(modified.Day() + int(modified.Month())<<5 + (modified.Year()-1980)<<9)
+	fh.ModifiedTime = uint16(modified.Second()/2 + modified.Minute()<<5 + modified.Hour()<<11)
+	ext := make([]byte, 9)
+	binary.LittleEndian.PutUint16(ext, 0x5455)
+	binary.LittleEndian.PutUint16(ext[2:], 5)
+	ext[4] = 1 // modification time present
+	binary.LittleEndian.PutUint32(ext[5:], uint32(modified.Unix()))
+	fh.Extra = append(fh.Extra, ext...)
 }

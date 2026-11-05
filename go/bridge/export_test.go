@@ -151,6 +151,30 @@ func TestExportRoundTrip(t *testing.T) {
 	}
 }
 
+// Every entry carries the same time in both zip formats: the MS-DOS fields
+// as the phone's wall clock (what unzip and file managers show) and the
+// exact instant in the extended timestamp.
+func TestExportEntryTimes(t *testing.T) {
+	home, _ := exportHome(t)
+	at := time.Date(2026, 11, 5, 18, 30, 4, 0, time.FixedZone("CET", 3600))
+	for _, c := range []struct{ format, password string }{{ExportPlain, ""}, {ExportCompatible, "correct horse battery"}} {
+		var buf bytes.Buffer
+		if err := writeBackup(&buf, home, c.format, c.password, settingsJSON(t, someSettings), at); err != nil {
+			t.Fatal(err)
+		}
+		z, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, f := range z.File {
+			wall := f.ModTime() //nolint:staticcheck // the MS-DOS fields themselves are under test
+			if wall.Hour() != 18 || wall.Minute() != 30 || wall.Second() != 4 || !f.Modified.Equal(at) {
+				t.Errorf("%s %s: MS-DOS time %v, modified %v, want 18:30:04 wall clock and %v", c.format, f.Name, wall, f.Modified, at)
+			}
+		}
+	}
+}
+
 func TestExportRefuses(t *testing.T) {
 	home, _ := exportHome(t)
 	good := settingsJSON(t, someSettings)
