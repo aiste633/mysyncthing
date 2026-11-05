@@ -38,6 +38,8 @@ ipv4='\b([0-9]{1,3}\.){3}[0-9]{1,3}\b'
 ipv6='\b([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b|\b([0-9a-fA-F]{1,4}:)+:([0-9a-fA-F]{1,4}(:[0-9a-fA-F]{1,4})*)?'
 home='(/home/|/Users/|/root/|[A-Za-z]:\\Users\\)[A-Za-z0-9._-]+'
 device_id='\b([A-Z2-7]{7}-){7}[A-Z2-7]{7}\b'
+# The one fake ID tests may use (the unit tests' "laptop"); no real device has it. Any other ID fails.
+allowed_device_id='^EUYDWRS-RLRTXET-7MISOPK-TNF7ZLL-K6B27WA-EGBOIRY-NHBBU4W-LEN55AT$'
 email='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 url_host='\b[a-zA-Z][a-zA-Z0-9+.-]*://[^/ "'"'"'<>()`]+'
 host_port='\b[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)*:[0-9]{2,5}\b'
@@ -77,7 +79,9 @@ while IFS= read -r line; do
     [[ "$ip" =~ $allowed_ip ]] || report "$commit: IP address (${#ip} characters)"
   done
   [ -z "$(matches "$home")" ] || report "$commit: home path"
-  [ -z "$(matches "$device_id")" ] || report "$commit: Syncthing device ID"
+  for id in $(matches "$device_id"); do
+    [[ "$id" =~ $allowed_device_id ]] || report "$commit: Syncthing device ID"
+  done
   for e in $(matches "$email"); do
     [[ "$e" =~ $allowed_email ]] || report "$commit: e-mail address …@${e#*@}"
   done
