@@ -713,7 +713,6 @@
     <string name="device_share_folders">Share folders</string>
 
     <!-- Recent changes screen -->
-    <string name="all_folders">All folders</string>
     <string name="recent_none">No changes since Syncthing started.</string>
     <plurals name="recent_note">
         <item quantity="one">Syncthing keeps its latest %1$s change in memory until it restarts.</item>

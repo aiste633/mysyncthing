@@ -54,10 +54,11 @@ type params struct {
 
 // Start launches Syncthing with its config and database under homeDir and
 // returns once the REST API is ready. The GUI/REST listener is bound to a
-// free loopback port (see GuiAddress). apiKey is accepted in addition to the
-// one in config. guiUser/guiPassword protect the web GUI, since other apps
-// on the device can reach loopback; only the app knows them, and config
-// changes that touch them are refused (see guiGuard).
+// free loopback port (see GuiAddress). apiKey, guiUser and guiPassword are
+// the login for this run, new at every Start: they protect the REST API and
+// web GUI, since other apps on the device can reach loopback; only the app
+// knows them, and config changes that touch them are refused (see guiGuard).
+// Every earlier login stops working, the web GUI sessions it opened too.
 func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 	mu.Lock()
 	defer mu.Unlock()
@@ -69,11 +70,12 @@ func Start(homeDir, apiKey, guiUser, guiPassword string) error {
 	if err != nil {
 		return err
 	}
-	return startLocked(params{homeDir, apiKey, guiUser, guiPassword, addr})
+	return startLocked(params{homeDir, apiKey, guiUser, guiPassword, addr}, true)
 }
 
-// startLocked starts the core; the caller holds mu.
-func startLocked(p params) error {
+// startLocked starts the core; the caller holds mu. newLogin is false for a
+// restart in place, which keeps the run's login and its web GUI sessions.
+func startLocked(p params, newLogin bool) error {
 	ctx, cncl := context.WithCancel(context.Background())
 	early := suture.New("early", svcutil.SpecWithDebugLogger())
 	earlyDone := early.ServeBackground(ctx)
@@ -93,6 +95,9 @@ func startLocked(p params) error {
 	if err != nil {
 		cncl()
 		return fmt.Errorf("database: %w", err)
+	}
+	if newLogin {
+		endSessions(sdb)
 	}
 
 	a, err := syncthing.New(cfg, sdb, evLogger, cert, syncthing.Options{
@@ -150,16 +155,34 @@ func prepare(early *suture.Supervisor, p params) (tls.Certificate, config.Wrappe
 	evLogger := events.NewLogger()
 	early.Add(evLogger)
 
-	cfg, err := syncthing.LoadConfigAtStartup(locations.Get(locations.ConfigFile), cert, evLogger, false, false)
+	cfgFile := locations.Get(locations.ConfigFile)
+	_, statErr := os.Stat(cfgFile)
+	fresh := errors.Is(statErr, fs.ErrNotExist) // LoadConfigAtStartup generates it
+	cfg, err := syncthing.LoadConfigAtStartup(cfgFile, cert, evLogger, false, false)
 	if err != nil {
 		return tls.Certificate{}, nil, nil, fmt.Errorf("config: %w", err)
 	}
 	early.Add(cfg)
-	if err := applyAndroidDefaults(cfg, p.apiKey, p.guiUser, p.guiPassword); err != nil {
+	if err := applyAndroidDefaults(cfg, fresh, p.apiKey, p.guiUser, p.guiPassword); err != nil {
 		return tls.Certificate{}, nil, nil, fmt.Errorf("config defaults: %w", err)
 	}
 	cfg.Subscribe(guiGuard{})
 	return cert, cfg, evLogger, nil
+}
+
+// sessionsKey is where lib/api keeps the web GUI's sessions (tokenmanager.go:
+// "sessions" in the misc namespace), so that they outlive a restart.
+const sessionsKey = "misc/sessions"
+
+// endSessions ends the web GUI sessions of earlier runs: a session cookie
+// would otherwise stay valid for days after the login that opened it is gone.
+// The app's WebView logs in again with the new login. Best effort: a session
+// can only come from the app's own WebView, and a failure here must not stop
+// a start.
+func endSessions(kv interface{ DeleteKV(key string) error }) {
+	if err := kv.DeleteKV(sessionsKey); err != nil {
+		slog.Warn("Could not end earlier web GUI sessions", "error", err)
+	}
 }
 
 // token is what the app's credentials look like (Settings.randomToken): safe
@@ -201,7 +224,7 @@ func watch(a *syncthing.App, p params) {
 	<-done
 	switch status {
 	case svcutil.ExitRestart:
-		if err := startLocked(p); err != nil {
+		if err := startLocked(p, false); err != nil {
 			exitErr = fmt.Errorf("restart: %w", err)
 		}
 	case svcutil.ExitError:
@@ -260,23 +283,34 @@ func Version() string {
 	return build.Version
 }
 
-// applyAndroidDefaults enforces settings the app relies on. The core accepts
-// the config's API key next to STGUIAPIKEY, so the config gets the app's key
-// too: a key from elsewhere (an imported config) must not stay valid.
-func applyAndroidDefaults(cfg config.Wrapper, apiKey, user, password string) error {
+// phoneConnections is what a new config gives new devices: one connection
+// instead of upstream's 3. Either side asking for 1 makes the link use 1
+// (lib/connections/service.go), which spares a phone's battery and radio.
+const phoneConnections = 1
+
+// applyAndroidDefaults enforces settings the app relies on. The app brings a
+// new login (user, password, API key) to every start, so it always replaces
+// the config's: the old one, an imported one included, stops working. The core
+// accepts the config's API key next to STGUIAPIKEY, so the config gets the
+// app's key too. A fresh config (first start) also gets the phone's defaults
+// for new devices; an existing or imported one keeps whatever it has.
+//
+// config.xml is saved here, and a failed save stops the start, when it is
+// fresh or when what it holds would leave the GUI open (other access settings,
+// or no login at all, as after an import). A new login alone is left to the
+// core's own save a few seconds later, which only logs a failure: the running
+// core takes only the new login, and the next start replaces the one on disk.
+func applyAndroidDefaults(cfg config.Wrapper, fresh bool, apiKey, user, password string) error {
 	gui := cfg.GUI()
-	needPassword := gui.User != user || gui.CompareHashedPassword(password) != nil
-	if !needPassword && gui.APIKey == apiKey && lockOf(gui) == lockOf(locked(gui)) && !cfg.Options().StartBrowser {
-		return nil
-	}
+	save := fresh || lockOf(gui) != lockOf(locked(gui)) || !gui.IsAuthEnabled() || cfg.Options().StartBrowser
 	var hashErr error
 	w, err := cfg.Modify(func(c *config.Configuration) {
 		c.GUI = locked(c.GUI)
-		c.GUI.APIKey = apiKey
+		c.GUI.User, c.GUI.APIKey = user, apiKey
+		hashErr = c.GUI.SetPassword(password)
 		c.Options.StartBrowser = false
-		if needPassword {
-			c.GUI.User = user
-			hashErr = c.GUI.SetPassword(password)
+		if fresh {
+			c.Defaults.Device.RawNumConnections = phoneConnections
 		}
 	})
 	if err != nil {
@@ -287,8 +321,9 @@ func applyAndroidDefaults(cfg config.Wrapper, apiKey, user, password string) err
 		// Unreachable with a valid token; fail closed rather than run with the old login.
 		return fmt.Errorf("GUI password: %w", hashErr)
 	}
-	// Modify only changes the running config; saving keeps config.xml locked
-	// too, and spares the next start a bcrypt hash.
+	if !save {
+		return nil
+	}
 	return cfg.Save()
 }
 

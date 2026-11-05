@@ -109,12 +109,15 @@ func FuzzPrepare(f *testing.F) {
 		if id := protocol.NewDeviceID(c.Certificate[0]); cfg.MyID() != id {
 			t.Fatalf("config ID %v, certificate ID %v", cfg.MyID(), id)
 		}
-		// What is on disk starts the next run the same way.
+		// What is on disk never leaves the GUI open, whichever login it holds
+		// (the next start brings a new one anyway).
 		saved, _, err := config.Load(filepath.Join(home, "config.xml"), cfg.MyID(), events.NoopLogger)
 		if err != nil {
 			t.Fatalf("saved config unreadable: %v", err)
 		}
-		requireLocked(t, saved.RawCopy().GUI, user, password)
+		if g := saved.RawCopy().GUI; lockOf(g) != lockOf(locked(g)) || !g.IsAuthEnabled() || saved.Options().StartBrowser {
+			t.Fatalf("config.xml leaves the GUI open: %+v", lockOf(g))
+		}
 	})
 }
 

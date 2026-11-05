@@ -53,7 +53,12 @@ RO_DIR, ENC_DIR = "/sdcard/Syncthing/UpgradeRO", "/sdcard/Syncthing/UpgradeEnc"
 MAY_CHANGE = {
     "/version": "the config's format version: a newer core migrates it",
     "/gui/address": "a loopback port picked at every start (go/bridge)",
+    "/gui/apiKey": "a new login at every start (go/bridge Start)",
+    "/gui/user": "a new login at every start (go/bridge Start)",
+    "/gui/password": "a new login at every start (go/bridge Start)",
 }
+# The stored login of 0.2.0 and older: the app removes it at start and keeps the login in memory only.
+GONE_SETTINGS = ("api_key", "gui_user", "gui_password")
 SECRET = re.compile(r"api_?key|password|user", re.IGNORECASE)
 
 
@@ -113,7 +118,18 @@ class PhoneCore:
     def __init__(self) -> None:
         self.key = ""
 
-    def connect(self) -> None:
+    def connect(self, timeout: float = 60) -> None:
+        """The key is new at every start and reaches config.xml with the core's own save a few seconds later."""
+        end = time.monotonic() + timeout
+        while True:
+            try:
+                return self.try_connect()
+            except (OSError, RuntimeError, ValueError):
+                if time.monotonic() > end:
+                    raise
+                time.sleep(2)
+
+    def try_connect(self) -> None:
         self.key = ET.fromstring(private("files/syncthing/config.xml")).findtext("gui/apikey") or ""
         uid = sh(f"run-as {APP} id -u")
         ports = set()
@@ -250,6 +266,10 @@ def compare(before: dict, after: dict, names: dict[str, str]) -> None:
     for what in ("identity", "database"):
         if after[what] != before[what]:
             fail(f"{what} changed in the update")
+    for name in GONE_SETTINGS:
+        if name in after["settings"]:
+            fail(f"settings {name} still stored after the update")
+    before = {**before, "settings": {k: v for k, v in before["settings"].items() if k not in GONE_SETTINGS}}
     for what in ("config", "ignores", "settings"):
         # A newer core or app may add settings; none of the old ones may go or change.
         for path, old, new in changed(before[what], after[what]):

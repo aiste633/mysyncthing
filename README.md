@@ -14,7 +14,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 
 ### Syncing
 
-- Folders and devices as clear cards with colour and icon status. Pair devices by QR code or device ID.
+- Folders and devices as clear cards with colour and icon status. Each folder card has a button for that folder's recent changes. Pair devices by QR code or device ID.
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning; restore older versions of a file.
 - Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver; only at set times of the week (for example 22:00–07:00 on weekdays).
 - Pause single devices from their card. Each card says why a device is paused (by you, or for example on mobile data), and a device you paused stays paused when the run conditions allow syncing again.
@@ -38,6 +38,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 
 - When idle, the app writes about 0.02–0.14 MB an hour to flash; it keeps no log files. Writes come from syncing itself.
 - The run conditions and sync windows let it sync only when it suits you: on Wi-Fi, while charging, at night, and each device at its own times.
+- New devices use one connection instead of Syncthing's usual three, which is plenty for a phone; each device can still be set to more.
 
 ### Privacy
 
@@ -89,7 +90,7 @@ What each test covers, with its numbers: [testing and hardening](docs/testing.md
 | `go/syncthing/` | Upstream Syncthing, git submodule pinned to a release tag |
 | `go/patches/` | Our fixes to upstream Syncthing, applied to the submodule by `go/patch.sh` at build time |
 
-The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, authenticated with a per-install API key. The web GUI is protected by a random 64-character user and password that only the app knows, because other apps can reach loopback; the core refuses any change to them.
+The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, authenticated with an API key. The web GUI is protected by a random 64-character user and password that only the app knows, because other apps can reach loopback; the core refuses any change to them. The API key, user and password are new at every core start and kept only in memory; the old ones and the web GUI sessions they opened stop working.
 
 ## Build
 
