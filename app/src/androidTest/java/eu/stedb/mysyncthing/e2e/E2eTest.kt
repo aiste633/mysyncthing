@@ -592,6 +592,17 @@ class E2eTest {
         }
         eventually("peer connected after it", 120_000) { peer.connected(me) }
         assertFalse("still stopped by the user", runBlocking { Settings(app).stoppedByUser.first() })
+
+        // A Stop with the web GUI open: its screen says Syncthing is stopped and offers Start (it was blank).
+        tap(str(R.string.tab_settings))
+        tap(str(R.string.settings_web_gui))
+        SyncthingService.stopByUser(app)
+        eventually("core stopped with the web GUI open", 30_000) { SyncthingCore.state.value is CoreState.Stopped }
+        rule.waitUntil(20_000) { rule.onAllNodes(hasText(str(R.string.core_stopped))).fetchSemanticsNodes().isNotEmpty() }
+        tap(str(R.string.action_start))
+        eventually("core running after Start on the web GUI screen", 60_000) { SyncthingCore.state.value is CoreState.Running }
+        rule.waitUntil(20_000) { rule.onAllNodes(hasText(str(R.string.core_stopped))).fetchSemanticsNodes().isEmpty() }
+        eventually("peer connected after that start", 120_000) { peer.connected(me) }
     }
 
     private fun activities(): Int? =

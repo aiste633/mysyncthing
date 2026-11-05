@@ -329,7 +329,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 composable(Routes.WEB_GUI) {
                     // Each start brings a new address and login, which the WebView takes when it is made:
                     // a new run gets a new WebView, even if the state skipped from one run straight to the next.
-                    (core as? CoreState.Running)?.let { key(it) { WebGuiScreen(it, onClose = { nav.popBackStack() }) } }
+                    // While the core is not running it shows the same stopped / starting screen as every other screen, not a blank page.
+                    CoreGate(core) { (core as? CoreState.Running)?.let { key(it) { WebGuiScreen(it, onClose = { nav.popBackStack() }) } } }
                 }
             }
         }
