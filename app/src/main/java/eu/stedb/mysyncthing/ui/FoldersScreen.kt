@@ -23,6 +23,8 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -37,8 +39,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Folder
@@ -141,6 +148,10 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                 Spacer(Modifier.width(4.dp))
                 Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
             }
+            // Conflict copies don't stop syncing, so the status stays; they show in amber at the end of
+            // the details, and as a count on the button to Recent changes, which lists them.
+            val conflicts = s.conflicts[f.id]?.size ?: 0
+            val busy = AppColors.busy
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
@@ -152,11 +163,30 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                         folderTypeLabel(f.type).takeIf { f.type != "sendreceive" }?.asString(),
                         if (shared == 0) stringResource(R.string.folder_card_not_shared) else pluralStringResource(R.plurals.folder_card_shared, shared, shared),
                     )
-                    Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    val conflictText = if (conflicts > 0) pluralStringResource(CoreR.plurals.conflicts, conflicts, conflicts) else null
+                    Text(
+                        buildAnnotatedString {
+                            append(details.joinToString(" · "))
+                            conflictText?.let {
+                                append(" · ")
+                                withStyle(SpanStyle(color = busy, fontWeight = FontWeight.Medium)) { append(it) }
+                            }
+                        },
+                        style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
                 // The 48 dp touch target overlaps the card's padding, so the icon lines up with the status text above.
                 IconButton(onClick = onRecent, modifier = Modifier.offset(x = 12.dp).testTag("recent-${f.id}")) {
-                    Icon(Icons.Default.History, stringResource(R.string.recent_changes))
+                    BadgedBox(
+                        badge = {
+                            if (conflicts > 0) {
+                                // The details line says it in words; a screen reader needn't hear the number twice.
+                                Badge(Modifier.clearAndSetSemantics {}, containerColor = busy, contentColor = MaterialTheme.colorScheme.surface) {
+                                    Text(grouped(conflicts))
+                                }
+                            }
+                        },
+                    ) { Icon(Icons.Default.History, stringResource(R.string.recent_changes)) }
                 }
             }
             status.progress?.let {

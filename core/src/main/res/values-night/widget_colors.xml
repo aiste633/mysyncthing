@@ -4,4 +4,6 @@
     <color name="widget_text_secondary">@android:color/system_neutral2_200</color>
     <color name="widget_button">@android:color/system_accent1_700</color>
     <color name="widget_button_icon">@android:color/system_accent1_100</color>
+    <!-- The app's amber ("needs a look"), as on the folder card -->
+    <color name="widget_conflicts">#FFFDD663</color>
 </resources>

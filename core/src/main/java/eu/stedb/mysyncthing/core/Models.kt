@@ -85,6 +85,10 @@ data class Options(
     val globalAnnounceServers: List<String> = listOf("default"),
 )
 
+/** The data of a LocalIndexUpdated event: files the core scanned or pulled into this phone's index. */
+@Serializable
+data class IndexUpdate(val folder: String = "", val filenames: List<String> = emptyList())
+
 /** The data of a LocalChangeDetected or RemoteChangeDetected event. */
 @Serializable
 data class DiskChange(

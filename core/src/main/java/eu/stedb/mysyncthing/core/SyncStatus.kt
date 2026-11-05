@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing.core
 
 import android.os.SystemClock
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -43,6 +44,8 @@ data class Snapshot(
     val pause: DevicePause = DevicePause(),
     /** When each device was last connected; missing for one never connected. */
     val lastSeen: Map<String, Instant> = emptyMap(),
+    /** Conflict copies on this phone by folder ID, as sorted paths in the folder; only folders that have some. */
+    val conflicts: Map<String, List<String>> = emptyMap(),
 )
 
 /**
@@ -80,17 +83,35 @@ object SyncStatus {
      * Notices have no event, so they are read again whenever the long-poll returns
      * and [ERRORS_EVERY_MS] have passed: no extra wake-ups. When nothing else
      * happens a new notice thus shows within about a minute, the poll's timeout.
+     * Conflict copies are tracked on an IO thread ([ConflictTracker]), fed by each refresh's
+     * folders and the core's index updates.
      */
     internal suspend fun follow(client: RestClient) {
         var since = 0L
         var errorsAt = SystemClock.elapsedRealtime()
         val refresh = Channel<Unit>(Channel.CONFLATED)
+        val conflictWork = Channel<ConflictWork>(Channel.UNLIMITED)
         try {
             coroutineScope {
                 launch {
                     for (r in refresh) {
-                        runCatching { load(client) }.onSuccess { fresh -> _snapshot.update { fresh.copy(pause = it.pause) } }
+                        runCatching { load(client) }.onSuccess { fresh ->
+                            _snapshot.update { fresh.copy(pause = it.pause, conflicts = it.conflicts) }
+                            conflictWork.trySend(ConflictWork.Folders(fresh.folders))
+                        }
                         delay(1_000)
+                    }
+                }
+                launch(Dispatchers.IO) {
+                    val tracker = ConflictTracker()
+                    for (work in conflictWork) {
+                        when (work) {
+                            is ConflictWork.Folders -> tracker.folders(work.folders)
+                            is ConflictWork.Changed -> tracker.changed(work.folder, work.names)
+                            ConflictWork.Forget -> tracker.forget()
+                        }
+                        val now = tracker.current()
+                        _snapshot.update { if (it.loaded && it.conflicts != now) it.copy(conflicts = now) else it }
                     }
                 }
                 refresh.trySend(Unit)
@@ -99,6 +120,11 @@ object SyncStatus {
                         val events = client.events(since)
                         if (events.isNotEmpty()) since = events.last().id
                         if (events.any { it.type in REFRESH_EVENTS }) refresh.trySend(Unit)
+                        for (e in events) {
+                            if (e.type != "LocalIndexUpdated") continue
+                            val u = runCatching { client.json.decodeFromJsonElement<IndexUpdate>(e.data!!) }.getOrNull() ?: continue
+                            if (u.filenames.any(::isConflictCopy)) conflictWork.trySend(ConflictWork.Changed(u.folder, u.filenames))
+                        }
                         events.lastOrNull { it.type == "DownloadProgress" }?.let { e ->
                             runCatching { _downloads.value = client.json.decodeFromJsonElement(e.data!!) }
                         }
@@ -115,6 +141,7 @@ object SyncStatus {
                         delay(5_000)
                         // After a restart in place (web GUI) the core counts events from 1 again.
                         since = 0
+                        conflictWork.trySend(ConflictWork.Forget)
                         refresh.trySend(Unit)
                     }
                 }
@@ -126,6 +153,12 @@ object SyncStatus {
     }
 
     private const val ERRORS_EVERY_MS = 30_000L
+
+    private sealed interface ConflictWork {
+        data class Folders(val folders: List<Folder>) : ConflictWork
+        data class Changed(val folder: String, val names: List<String>) : ConflictWork
+        data object Forget : ConflictWork
+    }
 
     private suspend fun load(c: RestClient): Snapshot = coroutineScope {
         val myId = async { c.status().myID }
@@ -172,7 +205,8 @@ val NO_DEVICE_LIMIT: Duration = Duration.ofMinutes(30)
  * names of connected devices; [progress] is 0..100 while syncing.
  * [publicText] is [text] without folder names, for the lock screen.
  * While no device is connected, [lastSeen] is when one last was, and
- * [recheckAt] when the wait becomes a problem.
+ * [recheckAt] when the wait becomes a problem. [conflicts] counts the conflict
+ * copies on this phone while the core runs; they don't change the state.
  */
 data class Summary(
     val state: SyncState,
@@ -182,6 +216,7 @@ data class Summary(
     val publicText: UiText = text,
     val lastSeen: Instant? = null,
     val recheckAt: Instant? = null,
+    val conflicts: Int = 0,
 )
 
 private val SYNCING_STATES = setOf("syncing", "sync-preparing")
@@ -202,7 +237,11 @@ fun summarize(
     online: Boolean,
     now: Instant = Instant.now(),
     waitingSince: Instant = now,
-): Summary {
+): Summary = state(core, s, blockedBy, online, now, waitingSince).let { summary ->
+    if (core is CoreState.Running) summary.copy(conflicts = s.conflicts.values.sumOf { it.size }) else summary
+}
+
+private fun state(core: CoreState, s: Snapshot, blockedBy: UiText?, online: Boolean, now: Instant, waitingSince: Instant): Summary {
     when (core) {
         is CoreState.Failed -> return Summary(SyncState.Problem, text(R.string.status_stopped_error))
         CoreState.Stopped -> return Summary(SyncState.Stopped, text(R.string.status_stopped))

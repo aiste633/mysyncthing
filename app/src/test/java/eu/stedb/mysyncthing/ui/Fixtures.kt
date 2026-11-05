@@ -103,6 +103,14 @@ object Fixtures {
 
     val summary = summarize(core, snapshot, blockedBy = null, online = true)
 
+    /** Two conflict copies in Documents, one of them in a subfolder. */
+    val withConflicts = snapshot.copy(
+        conflicts = mapOf(
+            "docs" to listOf("budget.sync-conflict-20251003-184200-EUYDWRS.ods", "work/notes.sync-conflict-20251001-091200-EUYDWRS.md"),
+        ),
+    )
+    val conflictsSummary = summarize(core, withConflicts, blockedBy = null, online = true)
+
     /** On mobile data with syncing off there: every device paused, the tablet also by the user. */
     private val mobileData = text(CoreR.string.pause_reason_mobile_data)
     val blocked = snapshot.copy(

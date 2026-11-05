@@ -613,6 +613,12 @@ def main() -> None:
             peer.scan()
             if phase("restoreVersion", peer, a.out):
                 eventually("old versioned.txt on the peer's disk", 60, lambda: (peer.folder / "versioned.txt").read_text() == V1)
+            # Both sides change conflict.txt while apart: the peer now, the phone in the phase.
+            peer.call("POST", f"rest/system/pause?device={phone}")
+            eventually("peer apart from the phone", 60, lambda: not peer.connected(phone))
+            (peer.folder / "conflict.txt").write_text("written on the peer\n")
+            peer.scan()
+            phase("conflicts", peer, a.out)
             phase("runConditions", peer, a.out)
             phase("devicePause", peer, a.out)
             phase("devicesTab", peer, a.out)

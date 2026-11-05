@@ -129,6 +129,12 @@
     <string name="widget_not_running">Arrêté</string>
     <string name="widget_no_device">Aucune connexion</string>
     <string name="widget_last_seen">Dernier appareil vu %1$s</string>
+    <plurals name="conflicts">
+        <item quantity="one">%1$d conflit</item>
+        <item quantity="many">%1$d de conflits</item>
+        <item quantity="other">%1$d conflits</item>
+    </plurals>
+    <string name="widget_title_conflicts">%1$s, %2$s</string>
     <string name="when_yesterday">hier, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d appareil connecté</item>

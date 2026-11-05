@@ -121,6 +121,11 @@
     <string name="widget_not_running">Läuft nicht</string>
     <string name="widget_no_device">Kein Gerät verbunden</string>
     <string name="widget_last_seen">Letztes Gerät gesehen %1$s</string>
+    <plurals name="conflicts">
+        <item quantity="one">%1$d Konflikt</item>
+        <item quantity="other">%1$d Konflikte</item>
+    </plurals>
+    <string name="widget_title_conflicts">%1$s, %2$s</string>
     <string name="when_yesterday">gestern, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d Gerät verbunden</item>

@@ -20,6 +20,7 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isEnabled
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -215,6 +216,46 @@ class E2eTest {
         eventually("old $VERSIONED back on the phone", 60_000) { file.readText() == V1 }
         // The restored file must sync too, not only come back on the phone.
         eventually("old $VERSIONED on the peer", 120_000) { peer.localFile(FOLDER, VERSIONED)?.optLong("size") == V1.length.toLong() }
+    }
+
+    /**
+     * run.py wrote $CONFLICT on the peer while the peer kept the phone away; the phone writes its own.
+     * The older edit becomes a conflict copy, which syncs to the phone: its card counts it, a restart
+     * finds it again by walking the folder, and deleting it on the phone clears the count and the peer's copy.
+     */
+    @Test
+    fun conflicts() {
+        val me = phoneId()
+        val dir = folderDir()
+        val client = (SyncthingCore.state.value as CoreState.Running).client
+        File(dir, CONFLICT).writeText(CONFLICT_PHONE)
+        runBlocking { client.scan(FOLDER, listOf(CONFLICT)) }
+        peer.setPaused(me, false)
+
+        eventually("a conflict copy on the phone", 180_000) { SyncStatus.snapshot.value.conflicts[FOLDER]?.size == 1 }
+        val copy = SyncStatus.snapshot.value.conflicts.getValue(FOLDER).single()
+        assertTrue(copy, copy.startsWith("conflict.sync-conflict-") && copy.endsWith(".txt"))
+        // One edit kept, the other in the copy; which one is the older is the clocks' business.
+        assertEquals(setOf(CONFLICT_PHONE, CONFLICT_PEER), setOf(File(dir, CONFLICT).readText(), File(dir, copy).readText()))
+        eventually("the summary counts it", 10_000) { SyncStatus.summary.value.conflicts == 1 }
+        val one = app.resources.getQuantityString(CoreR.plurals.conflicts, 1, 1)
+        tap(str(R.string.tab_folders))
+        eventually("the card shows it", 10_000) { rule.onAllNodesWithText(one, substring = true).fetchSemanticsNodes().size == 1 }
+
+        // A new run of the core knows nothing yet: the walk finds it again.
+        SyncthingService.stopByUser(app)
+        eventually("core stopped", 30_000) { SyncthingCore.state.value is CoreState.Stopped }
+        eventually("no count while stopped", 30_000) { SyncStatus.summary.value.conflicts == 0 }
+        SyncthingService.start(app)
+        eventually("the copy found again after a restart", 90_000) { SyncStatus.snapshot.value.conflicts[FOLDER] == listOf(copy) }
+
+        File(dir, copy).delete()
+        val running = SyncthingCore.state.value as CoreState.Running
+        runBlocking { running.client.scan(FOLDER, listOf(copy)) }
+        eventually("the count gone", 60_000) { SyncStatus.snapshot.value.conflicts[FOLDER] == null && SyncStatus.summary.value.conflicts == 0 }
+        eventually("the card's text gone", 10_000) { rule.onAllNodesWithText(one, substring = true).fetchSemanticsNodes().isEmpty() }
+        eventually("peer connected", 120_000) { peer.connected(me) }
+        eventually("the copy deleted on the peer", 120_000) { peer.localFile(FOLDER, copy) == null }
     }
 
     /** Wi-Fi off leaves mobile data (or nothing), where syncing is off by default: the peer must lose the phone. */
@@ -705,6 +746,9 @@ class E2eTest {
         const val FROM_PEER_AFTER = "from-peer-after-update.txt" // upgrade.py's
         const val FROM_PHONE_AFTER = "from-phone-after-update.txt"
         // Different lengths, so the peer's file size tells which one it has.
+        const val CONFLICT = "conflict.txt" // run.py's too
+        const val CONFLICT_PHONE = "written on the phone\n"
+        const val CONFLICT_PEER = "written on the peer\n" // run.py's
         const val V1 = "version 1\n"
         const val V2 = "second version\n"
         const val IDLE_FRAMES = 30
