@@ -35,7 +35,8 @@ import (
 // zip, optionally WinZip-AES encrypted, holding config.xml, cert.pem, key.pem,
 // sharedpreferences.dat, the GUI's HTTPS certificate and the index database.
 // Only the first four are read, in memory. The app's own export (export.go)
-// has the same layout with mysyncthing.json in place of the preferences. The database is never imported:
+// has the same layout with mysyncthing.json in place of the preferences,
+// optionally sealed as a whole (sealed.go). The database is never imported:
 // with an empty one the core treats every folder as new, so a file missing on
 // this phone can not be mistaken for a deletion and spread to other devices.
 
@@ -130,7 +131,23 @@ func readForkBackupFd(fd int, password string) (*forkBackup, error) {
 // 100 bytes each); millions of tiny entries would exhaust memory.
 const maxZipDirectory = 16 << 20
 
+// readForkBackup reads a zip backup (Fork's or this app's, either plain or
+// WinZip AES) or this app's sealed one (sealed.go), which holds a plain zip.
 func readForkBackup(r io.ReaderAt, size int64, password string) (*forkBackup, error) {
+	head := make([]byte, len(sealMagic))
+	if n, _ := r.ReadAt(head, 0); isSealed(head[:n]) {
+		plain, err := unseal(r, size, password)
+		if err != nil {
+			return nil, err
+		}
+		return readBackupZip(bytes.NewReader(plain), int64(len(plain)), "", true)
+	}
+	return readBackupZip(r, size, password, false)
+}
+
+// readBackupZip reads the zip; sealed says it came out of a sealed backup,
+// whose entries must not be encrypted a second time.
+func readBackupZip(r io.ReaderAt, size int64, password string, sealed bool) (*forkBackup, error) {
 	br := &budgetReaderAt{r: r, left: maxZipDirectory}
 	z, err := zip.NewReader(br, size)
 	if errors.Is(err, errZipDirectory) {
@@ -164,6 +181,9 @@ func readForkBackup(r io.ReaderAt, size int64, password string) (*forkBackup, er
 	}
 	if encrypted != 0 && encrypted != len(found) {
 		return nil, errors.New("the backup mixes encrypted and unencrypted files")
+	}
+	if sealed && encrypted != 0 {
+		return nil, errors.New("not a Syncthing backup: its files are encrypted twice")
 	}
 
 	data := map[string][]byte{}

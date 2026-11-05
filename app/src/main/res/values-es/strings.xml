@@ -326,7 +326,7 @@
     <string name="settings_restart">Reiniciar Syncthing</string>
     <string name="settings_restart_hint">Aplica los ajustes que necesitan un reinicio</string>
     <string name="settings_export">Exportar una copia de seguridad</string>
-    <string name="settings_export_hint">Carpetas, dispositivos, la identidad de este teléfono y los ajustes de sincronización, en un archivo zip</string>
+    <string name="settings_export_hint">Carpetas, dispositivos, la identidad de este teléfono y los ajustes de sincronización, en un archivo de copia de seguridad</string>
     <string name="settings_import">Importar una copia de seguridad</string>
     <string name="settings_import_hint">De una exportación de esta app o de una copia de seguridad de Syncthing-Fork</string>
     <string name="settings_group_permissions">Permisos</string>
@@ -798,11 +798,20 @@
     <string name="export_failed">No se ha podido exportar</string>
     <string name="export_intro_title">Haz una copia de la configuración de este teléfono</string>
     <string name="export_intro">La copia de seguridad contiene las carpetas, los dispositivos, el ID de dispositivo de este teléfono con su clave privada y los ajustes de sincronización, incluido el proxy. No los archivos de las carpetas ni el inicio de sesión de la interfaz web.</string>
-    <string name="export_password_group">Contraseña (recomendada)</string>
+    <string name="export_encryption_group">Cifrado</string>
+    <string name="export_strong">Fuerte (recomendado)</string>
+    <string name="export_strong_hint">Argon2id y XChaCha20-Poly1305. Solo se abre en MySyncthing.</string>
+    <string name="export_compatible">Compatible</string>
+    <string name="export_compatible_hint">Zip con WinZip AES-256. Se abre en Syncthing-Fork y en apps de zip, pero es fácil de descifrar.</string>
+    <string name="export_none">Ninguno</string>
+    <string name="export_none_hint">Sin cifrar.</string>
+    <string name="export_strong_note">Archivo fuerte. Solo MySyncthing puede abrirlo, en este u otro teléfono. Guarda la contraseña: sin ella no se puede abrir la copia.</string>
+    <string name="export_compatible_warning">Archivo vulnerable. Su cifrado antiguo permite a un ordenador probar millones de contraseñas por segundo, y los nombres de los archivos que contiene siguen siendo legibles. Elígelo solo para pasar esta configuración a otra app, como Syncthing-Fork, y luego borra el archivo.</string>
+    <string name="export_password_group">Contraseña</string>
     <plurals name="export_password_hint">
-        <item quantity="one">Al menos %1$d carácter. Cifra la copia de seguridad con AES-256.</item>
-        <item quantity="many">Al menos %1$d caracteres. Cifra la copia de seguridad con AES-256.</item>
-        <item quantity="other">Al menos %1$d caracteres. Cifra la copia de seguridad con AES-256.</item>
+        <item quantity="one">Al menos %1$d carácter.</item>
+        <item quantity="many">Al menos %1$d caracteres.</item>
+        <item quantity="other">Al menos %1$d caracteres.</item>
     </plurals>
     <string name="password_again">Repite la contraseña</string>
     <string name="export_no_password_warning">Sin contraseña, cualquier app o persona que pueda leer el archivo puede hacerse pasar por este teléfono.</string>

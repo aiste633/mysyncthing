@@ -8,7 +8,7 @@
 <li>Laufbedingungen: getaktetes WLAN, mobile Daten und Roaming jeweils an oder aus, nur beim Laden oder nur im Akkubetrieb, Pause im Energiesparmodus, nur zu festen Zeiten der Woche</li>
 <li>Einzelne Geräte auf ihrer Karte pausieren, einem Gerät eigene Sync-Zeiten geben (etwa das NAS nur nachts) und sehen, wann jedes Gerät zuletzt online war</li>
 <li>SOCKS5- oder HTTP-Proxy, etwa Tor mit Orbot</li>
-<li>Einfacher Umstieg von Syncthing-Fork: dessen Sicherung importieren, auch verschlüsselte; die eigene Einrichtung exportieren, wahlweise mit AES-256 verschlüsselt</li>
+<li>Einfacher Umstieg von Syncthing-Fork: dessen Sicherung importieren, auch verschlüsselte; die eigene Einrichtung exportieren, stark verschlüsselt (Argon2id, XChaCha20-Poly1305) oder als AES-256-ZIP für andere Apps</li>
 <li>Die eigene Web-GUI von Syncthing ist für erweiterte Einstellungen eingebaut</li>
 <li>Auf Deutsch, Englisch, Italienisch, Spanisch und Französisch, in der Sprache des Smartphones oder einer nur für die App gewählten; Datum, Uhrzeit und Zahlen so, wie die Region des Smartphones sie schreibt</li>
 </ul>
