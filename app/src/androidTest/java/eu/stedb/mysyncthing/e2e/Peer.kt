@@ -58,10 +58,14 @@ class Peer(val id: String, private val key: String, private val phoneAddress: St
         call("POST", "rest/system/${if (paused) "pause" else "resume"}?device=$device")
     }
 
-    /** The peer's own copy of [file]: null when it has none or it is deleted. */
+    /**
+     * The peer's own copy of [file]: null when it has none or it is deleted. The core answers
+     * with an empty "local" entry (no name) while it only knows the file from the phone's index,
+     * so a file counts as on the peer only once the entry carries its name.
+     */
     fun localFile(folder: String, file: String): JSONObject? = runCatching {
         JSONObject(call("GET", "rest/db/file?folder=$folder&file=$file")).optJSONObject("local")
-    }.getOrNull()?.takeIf { !it.optBoolean("deleted") }
+    }.getOrNull()?.takeIf { it.optString("name") == file && !it.optBoolean("deleted") }
 
     /** How far [device] is with [folder], in percent, as the peer sees it. */
     fun completion(folder: String, device: String): Double =
