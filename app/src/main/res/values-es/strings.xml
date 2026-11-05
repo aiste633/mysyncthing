@@ -624,6 +624,17 @@
         <item quantity="many">Syncthing guarda sus últimos %1$s cambios en memoria hasta que se reinicia.</item>
         <item quantity="other">Syncthing guarda sus últimos %1$s cambios en memoria hasta que se reinicia.</item>
     </plurals>
+    <string name="conflict_made">copia: %1$s</string>
+    <string name="conflict_with">en conflicto con %1$s</string>
+    <string name="conflict_with_this_phone">en conflicto con este teléfono</string>
+    <string name="conflicts_limit_default">Syncthing guarda hasta %1$s copias por archivo (predeterminado) y borra las más antiguas.</string>
+    <plurals name="conflicts_limit">
+        <item quantity="one">Syncthing guarda hasta %1$s copia por archivo (predeterminado %2$s) y borra las más antiguas.</item>
+        <item quantity="many">Syncthing guarda hasta %1$s copias por archivo (predeterminado %2$s) y borra las más antiguas.</item>
+        <item quantity="other">Syncthing guarda hasta %1$s copias por archivo (predeterminado %2$s) y borra las más antiguas.</item>
+    </plurals>
+    <string name="conflicts_limit_off">Esta carpeta no guarda copias de conflicto: la edición más antigua se borra (predeterminado %1$s copias por archivo).</string>
+    <string name="conflicts_limit_all">Esta carpeta guarda todas las copias de conflicto (predeterminado %1$s por archivo).</string>
     <string name="change_deleted_here">eliminado en este teléfono</string>
     <string name="change_changed_here">cambiado en este teléfono</string>
     <string name="change_deleted_by">eliminado por %1$s</string>

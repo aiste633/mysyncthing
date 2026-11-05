@@ -602,6 +602,16 @@
         <item quantity="one">Syncthing behält seine letzte Änderung bis zum Neustart im Speicher.</item>
         <item quantity="other">Syncthing behält seine letzten %1$s Änderungen bis zum Neustart im Speicher.</item>
     </plurals>
+    <string name="conflict_made">Kopie: %1$s</string>
+    <string name="conflict_with">Konflikt mit %1$s</string>
+    <string name="conflict_with_this_phone">Konflikt mit diesem Smartphone</string>
+    <string name="conflicts_limit_default">Syncthing behält bis zu %1$s Kopien je Datei (Vorgabe) und löscht ältere.</string>
+    <plurals name="conflicts_limit">
+        <item quantity="one">Syncthing behält bis zu %1$s Kopie je Datei (Vorgabe %2$s) und löscht ältere.</item>
+        <item quantity="other">Syncthing behält bis zu %1$s Kopien je Datei (Vorgabe %2$s) und löscht ältere.</item>
+    </plurals>
+    <string name="conflicts_limit_off">Dieser Ordner behält keine Konfliktkopien: Die ältere Änderung wird gelöscht (Vorgabe %1$s Kopien je Datei).</string>
+    <string name="conflicts_limit_all">Dieser Ordner behält alle Konfliktkopien (Vorgabe %1$s je Datei).</string>
     <string name="change_deleted_here">auf diesem Smartphone gelöscht</string>
     <string name="change_changed_here">auf diesem Smartphone geändert</string>
     <string name="change_deleted_by">gelöscht von %1$s</string>

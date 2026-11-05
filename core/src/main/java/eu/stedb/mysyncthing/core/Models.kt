@@ -180,6 +180,8 @@ data class Folder(
     val minDiskFree: DiskSize = DiskSize(),
     val group: String = "",
     val ignorePerms: Boolean = false,
+    /** Conflict copies kept per file; 0 makes none, -1 keeps all. */
+    val maxConflicts: Int = 10,
 ) {
     /** Changes the user must decide on: edits on a receive-only phone, or remote edits a send-only phone ignores. */
     fun needsReview(st: FolderStatus?): Boolean = st != null && when (type) {

@@ -28,6 +28,8 @@ val screens = listOf(
     ScreenCase("folders-conflicts") {
         FoldersScreen(Fixtures.withConflicts, Fixtures.conflictsSummary, it, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = { _ -> })
     },
+    // Without a core the changes stay "Loading"; the conflicts come from the snapshot.
+    ScreenCase("recent-conflicts") { RecentChangesScreen(Fixtures.withConflicts, "docs", it, onBack = {}) },
     ScreenCase("folder-syncing") { FolderScreen(snapshot, "docs", it, {}, {}, {}, {}, {}, {}) },
     ScreenCase("folder-error") { FolderScreen(snapshot, "music", it, {}, {}, {}, {}, {}, {}) },
     ScreenCase("folder-accept") {
