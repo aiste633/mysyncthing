@@ -43,7 +43,12 @@ class FolderBrowserTest {
         assertEquals("Inside the synced folder \"Photos\"", pickProblem("$root/DCIM/Camera/2026", folders).en())
         assertEquals("Holds the synced folder \"Photos\"", pickProblem("$root/DCIM", folders).en())
         assertEquals("Holds the synced folder \"Photos\"", pickProblem(root, folders).en())
-        assertNull(pickProblem("/storage/1234-ABCD", folders))
+        assertNull(pickProblem("/storage/1234-ABCD/Films", folders))
+        // The top of a storage and its Android folder hold Android/data and obb, which the core can't read.
+        val holds = "Holds folders Android keeps for apps (Android/data, obb)"
+        assertEquals(holds, pickProblem("/storage/1234-ABCD", folders).en())
+        assertEquals(holds, pickProblem("$root/Android", folders).en())
+        assertNull(pickProblem("$root/Android/media", folders))
         assertEquals("Holds the synced folder \"Photos\"", pickProblem("/sdcard/DCIM/", folders).en())
     }
 

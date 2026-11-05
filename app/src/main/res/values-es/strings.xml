@@ -450,6 +450,7 @@
     <string name="browse_holds_synced">Contiene la carpeta sincronizada «%1$s»</string>
     <string name="error_path_app_private">Android reserva esta carpeta para las apps</string>
     <string name="error_path_other_user">Pertenece a otro usuario o perfil del teléfono</string>
+    <string name="error_path_holds_app_private">Contiene carpetas que Android reserva para las apps (Android/data, obb)</string>
     <string name="error_name_long">Como máximo 255 bytes</string>
     <string name="error_name_removable">No en una tarjeta SD o memoria USB: %1$s, ni un . al final</string>
     <string name="error_name_taken">Ya hay una carpeta con este nombre aquí</string>

@@ -452,6 +452,7 @@
     <string name="browse_holds_synced">Contient le partage « %1$s »</string>
     <string name="error_path_app_private">Android réserve ce dossier aux applications</string>
     <string name="error_path_other_user">Appartient à un autre utilisateur ou profil du téléphone</string>
+    <string name="error_path_holds_app_private">Contient des dossiers qu\'Android réserve aux applications (Android/data, obb)</string>
     <string name="error_name_long">255 octets au maximum</string>
     <string name="error_name_removable">Pas sur une carte SD ou une clé USB : %1$s, ni un . à la fin</string>
     <string name="error_name_taken">Un dossier de ce nom existe déjà ici</string>

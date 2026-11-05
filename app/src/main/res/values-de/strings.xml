@@ -435,6 +435,7 @@
     <string name="browse_holds_synced">Enthält den synchronisierten Ordner „%1$s“</string>
     <string name="error_path_app_private">Android hält diesen Ordner für Apps frei</string>
     <string name="error_path_other_user">Gehört einem anderen Nutzer oder Profil auf diesem Smartphone</string>
+    <string name="error_path_holds_app_private">Enthält Ordner, die Android für Apps freihält (Android/data, obb)</string>
     <string name="error_name_long">Höchstens 255 Byte</string>
     <string name="error_name_removable">Nicht auf einer SD-Karte oder einem USB-Stick: %1$s, oder ein . am Ende</string>
     <string name="error_name_taken">Hier gibt es bereits einen Ordner mit diesem Namen</string>

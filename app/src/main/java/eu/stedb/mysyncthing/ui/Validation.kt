@@ -74,6 +74,7 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): UiT
         !inside(p, "/storage") || p == "/storage" || p == "/storage/emulated" -> text(R.string.error_path_storage)
         isAppPrivate(p) -> text(R.string.error_path_app_private)
         isOtherUsers(p) -> text(R.string.error_path_other_user)
+        holdsAppPrivate(p) -> text(R.string.error_path_holds_app_private)
         others.map(::folderPath).any { inside(p, it) || inside(it, p) } -> text(R.string.error_path_overlap)
         else -> null
     }
@@ -100,6 +101,13 @@ fun folderPath(path: String): String {
  */
 fun isOtherUsers(path: String): Boolean =
     path.startsWith("/storage/emulated/") && path != internalStorage && !path.startsWith("$internalStorage/")
+
+/**
+ * The top of a storage or its Android folder: they hold [isAppPrivate] folders, which Android
+ * hides from the app, so the core would report them as unreadable on every scan and could not
+ * watch the folder. (go/bridge/importpolicy.go holdsAppPrivate refuses the same.)
+ */
+fun holdsAppPrivate(path: String): Boolean = isAppPrivate("$path/Android/data") || isAppPrivate("$path/data")
 
 /**
  * Android/data and Android/obb (and below) on any storage, for any Android user: Android

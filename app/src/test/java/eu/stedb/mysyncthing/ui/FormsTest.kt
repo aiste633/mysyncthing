@@ -123,16 +123,6 @@ class FormsTest : ScreenTest() {
         assertEquals("$root/Download", saved?.path)
     }
 
-    /** The top of a storage gives the folder the storage's name, not the last part of its path ("0"). */
-    @Test
-    fun storageTopIsNamedAfterTheStorage() {
-        folderForm(fixtureDisk(), offer = null) {}
-        compose.onNodeWithTag("browse").performClick()
-        compose.onNodeWithText("SanDisk SD card").performClick()
-        compose.onNodeWithTag("browseUse").assertIsEnabled().performClick()
-        field(str(R.string.name)).assert(hasText("SanDisk SD card"))
-    }
-
     @Test
     fun browserRefusesAroundASyncedFolderAndAndroidData() {
         var picked: String? = null

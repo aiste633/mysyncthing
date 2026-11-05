@@ -287,6 +287,7 @@ class ValidationTest {
         // Android/data and Android/obb right under a storage (internal storage of any user, or an SD card).
         val rest = p.split('/').drop(if (p.startsWith("/storage/emulated/")) 4 else 3).map { it.lowercase() }
         assertFalse("Android keeps it for apps", rest.size >= 2 && rest[0] == "android" && rest[1] in setOf("data", "obb"))
+        assertFalse("holds what Android keeps for apps", rest.isEmpty() || rest == listOf("android"))
         for (e in existing.map { it.trimEnd('/') }) {
             assertFalse("overlaps $e", p == e || p.startsWith("$e/") || e.startsWith("$p/"))
         }
@@ -296,7 +297,8 @@ class ValidationTest {
     fun folderPathExamples() {
         assertEquals(null, folderPathError("/storage/emulated/0/Documents/", existing).en())
         assertEquals("Another folder is already here, or inside it", folderPathError("/storage/emulated/0/DCIM/Camera", existing).en())
-        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-ABCD", existing).en())
+        assertEquals("Holds folders Android keeps for apps (Android/data, obb)", folderPathError("/storage/1234-ABCD", existing).en())
+        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-ABCD/Music/Live", existing).en())
         assertEquals("In the phone's storage or on an SD card (/storage/…)", folderPathError("/data/user/0/eu.stedb.mysyncthing/files/syncthing").en())
         assertEquals("No empty, . or .. parts", folderPathError("/storage/emulated/0/Syncthing/..").en())
         assertEquals("No line breaks or control characters", folderPathError("/storage/emulated/0/a\nb").en())

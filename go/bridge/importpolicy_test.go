@@ -486,6 +486,11 @@ func TestInternalStorageOfAnotherUser(t *testing.T) {
 	if err := folderPathError(folderPath("/sdcard/Android/data/x"), nil); err != errPathApps {
 		t.Errorf("Android/data in a work profile: %v", err)
 	}
+	for _, top := range []string{"/storage/emulated/10", "/storage/emulated/10/Android", "/storage/1234-ABCD", "/storage/1234-ABCD/android"} {
+		if err := folderPathError(top, nil); err != errPathHolds {
+			t.Errorf("%s: %v", top, err)
+		}
+	}
 	if err := folderPathError("/storage/emulated/10/Music", nil); err != nil {
 		t.Errorf("own storage: %v", err)
 	}

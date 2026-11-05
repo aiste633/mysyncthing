@@ -281,6 +281,7 @@ const (
 	errPathOverlap  = pathError("folder path is the same as, inside or around another folder")
 	errPathApps     = pathError("folder path is in Android/data or Android/obb, which Android keeps for apps")
 	errPathUser     = pathError("folder path is in another Android user's or profile's storage")
+	errPathHolds    = pathError("folder path holds Android/data or Android/obb, which Android keeps for apps")
 )
 
 // folderPath is a path as the app saves it: trimmed, without a trailing "/",
@@ -293,6 +294,12 @@ func folderPath(path string) string {
 		}
 	}
 	return p
+}
+
+// holdsAppPrivate: the top of a storage or its Android folder, which hold the
+// isAppPrivate folders: the core could not read or watch them.
+func holdsAppPrivate(p string) bool {
+	return isAppPrivate(p+"/Android/data") || isAppPrivate(p+"/data")
 }
 
 // isOtherUsers: internal storage of another Android user, such as the owner's
@@ -336,6 +343,8 @@ func folderPathError(p string, others []string) error {
 		return errPathApps
 	case isOtherUsers(p):
 		return errPathUser
+	case holdsAppPrivate(p):
+		return errPathHolds
 	}
 	for _, o := range others {
 		if o = folderPath(o); inside(p, o) || inside(o, p) {

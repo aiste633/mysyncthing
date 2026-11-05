@@ -540,6 +540,7 @@
     <!-- Android/data and Android/obb: closed to other apps even with All files access -->
     <string name="error_path_app_private">Android keeps this folder for apps</string>
     <string name="error_path_other_user">Belongs to another user or profile on this phone</string>
+    <string name="error_path_holds_app_private">Holds folders Android keeps for apps (Android/data, obb)</string>
     <string name="error_name_long">At most 255 bytes</string>
     <!-- %1$s: the characters FAT file systems refuse, e.g. \ : * ? " < > | -->
     <string name="error_name_removable">Not on an SD card or USB stick: %1$s, or a . at the end</string>
