@@ -150,12 +150,15 @@ func prepare(early *suture.Supervisor, p params) (tls.Certificate, config.Wrappe
 	evLogger := events.NewLogger()
 	early.Add(evLogger)
 
-	cfg, err := syncthing.LoadConfigAtStartup(locations.Get(locations.ConfigFile), cert, evLogger, false, false)
+	cfgFile := locations.Get(locations.ConfigFile)
+	_, statErr := os.Stat(cfgFile)
+	fresh := errors.Is(statErr, fs.ErrNotExist) // LoadConfigAtStartup generates it
+	cfg, err := syncthing.LoadConfigAtStartup(cfgFile, cert, evLogger, false, false)
 	if err != nil {
 		return tls.Certificate{}, nil, nil, fmt.Errorf("config: %w", err)
 	}
 	early.Add(cfg)
-	if err := applyAndroidDefaults(cfg, p.apiKey, p.guiUser, p.guiPassword); err != nil {
+	if err := applyAndroidDefaults(cfg, fresh, p.apiKey, p.guiUser, p.guiPassword); err != nil {
 		return tls.Certificate{}, nil, nil, fmt.Errorf("config defaults: %w", err)
 	}
 	cfg.Subscribe(guiGuard{})
@@ -260,13 +263,20 @@ func Version() string {
 	return build.Version
 }
 
+// phoneConnections is what a new config gives new devices: one connection
+// instead of upstream's 3. Either side asking for 1 makes the link use 1
+// (lib/connections/service.go), which spares a phone's battery and radio.
+const phoneConnections = 1
+
 // applyAndroidDefaults enforces settings the app relies on. The core accepts
 // the config's API key next to STGUIAPIKEY, so the config gets the app's key
 // too: a key from elsewhere (an imported config) must not stay valid.
-func applyAndroidDefaults(cfg config.Wrapper, apiKey, user, password string) error {
+// A fresh config (first start) also gets the phone's defaults for new
+// devices; an existing or imported one keeps whatever it has.
+func applyAndroidDefaults(cfg config.Wrapper, fresh bool, apiKey, user, password string) error {
 	gui := cfg.GUI()
 	needPassword := gui.User != user || gui.CompareHashedPassword(password) != nil
-	if !needPassword && gui.APIKey == apiKey && lockOf(gui) == lockOf(locked(gui)) && !cfg.Options().StartBrowser {
+	if !fresh && !needPassword && gui.APIKey == apiKey && lockOf(gui) == lockOf(locked(gui)) && !cfg.Options().StartBrowser {
 		return nil
 	}
 	var hashErr error
@@ -274,6 +284,9 @@ func applyAndroidDefaults(cfg config.Wrapper, apiKey, user, password string) err
 		c.GUI = locked(c.GUI)
 		c.GUI.APIKey = apiKey
 		c.Options.StartBrowser = false
+		if fresh {
+			c.Defaults.Device.RawNumConnections = phoneConnections
+		}
 		if needPassword {
 			c.GUI.User = user
 			hashErr = c.GUI.SetPassword(password)

@@ -178,6 +178,25 @@ class E2eTest {
         File(dir, FROM_PHONE).writeText("written on the phone\n")
         eventually("$FROM_PHONE on the peer", 120_000) { peer.localFile(FOLDER, FROM_PHONE) != null }
         eventually("peer sees the phone up to date", 60_000) { peer.completion(FOLDER, me) == 100.0 }
+
+        // A fresh install gives new devices one connection; the peer (3 by default) honours that.
+        assertEquals("connections of the added peer", 1, SyncStatus.snapshot.value.devices.single { it.deviceID == peer.id }.numConnections)
+        assertEquals("extra connections from the peer", 0, peer.secondaryConnections(me))
+    }
+
+    /** A folder card's history icon opens that folder's recent changes, with a change made on the phone. */
+    @Test
+    fun recentChanges() {
+        // The core keeps changes in memory only, and each phase starts a new process: make one now.
+        val name = "recent-${System.currentTimeMillis()}.txt"
+        File(folderDir(), name).writeText("changed on the phone\n")
+        eventually("$name on the peer", 120_000) { peer.localFile(FOLDER, name) != null }
+
+        rule.waitUntil(30_000) { rule.onAllNodes(hasTestTag("recent-$FOLDER")).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasTestTag("recent-$FOLDER")).assert(hasContentDescription(str(R.string.recent_changes))).performClick()
+        rule.waitUntil(30_000) { rule.onAllNodes(hasText(name)).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNodeWithText(FOLDER_LABEL).assertIsDisplayed() // the subtitle names the folder
+        rule.onNode(hasText(str(R.string.change_changed_here), substring = true)).assertIsDisplayed()
     }
 
     /** The host changed versioned.txt on the peer; the phone's Trash can kept the old one, restored here. */

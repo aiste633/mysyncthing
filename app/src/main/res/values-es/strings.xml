@@ -589,7 +589,6 @@
     <string name="device_nearby_tap">Toca para usarlo</string>
     <string name="device_share_folders">Compartir carpetas</string>
 
-    <string name="all_folders">Todas las carpetas</string>
     <string name="recent_none">No hay cambios desde que se inició Syncthing.</string>
     <plurals name="recent_note">
         <item quantity="one">Syncthing guarda su último cambio en memoria hasta que se reinicia.</item>

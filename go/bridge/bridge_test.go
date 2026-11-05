@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/syncthing/syncthing/lib/protocol"
 	"github.com/syncthing/syncthing/lib/syncthing"
 )
 
@@ -253,5 +254,55 @@ func TestFolderIDsInRESTPaths(t *testing.T) {
 		if got != addressable {
 			t.Errorf("%q: addressable %v, want %v", id, got, addressable)
 		}
+	}
+}
+
+// A new config gives new devices one connection; a config that exists keeps
+// what it has, so a later start (or an imported config) is never rewritten.
+func TestNewDevicesUseOneConnection(t *testing.T) {
+	home := t.TempDir()
+	type dev struct {
+		NumConnections int `json:"numConnections"`
+	}
+	send := func(method, path, body string) {
+		t.Helper()
+		req, _ := http.NewRequest(method, "http://"+GuiAddress()+path, strings.NewReader(body))
+		req.Header.Set("X-API-Key", "app-key")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s %s: HTTP %d", method, path, resp.StatusCode)
+		}
+	}
+
+	if err := Start(home, "app-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	var d dev
+	getJSON(t, "/rest/config/defaults/device", &d)
+	if d.NumConnections != phoneConnections {
+		t.Fatalf("fresh config: default device has %d connections, want %d", d.NumConnections, phoneConnections)
+	}
+	// A device added without a value takes the default.
+	peer := protocol.NewDeviceID([]byte("a new peer")).String()
+	send(http.MethodPost, "/rest/config/devices", `{"deviceID":"`+peer+`"}`)
+	getJSON(t, "/rest/config/devices/"+peer, &d)
+	if d.NumConnections != phoneConnections {
+		t.Fatalf("new device has %d connections, want %d", d.NumConnections, phoneConnections)
+	}
+	// The user's own choice survives the next start.
+	send(http.MethodPatch, "/rest/config/defaults/device", `{"numConnections":0}`)
+	Stop()
+
+	if err := Start(home, "app-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	defer Stop()
+	getJSON(t, "/rest/config/defaults/device", &d)
+	if d.NumConnections != 0 {
+		t.Fatalf("existing config rewritten: default device has %d connections, want 0", d.NumConnections)
 	}
 }

@@ -14,7 +14,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 
 ### Syncing
 
-- Folders and devices as clear cards with colour and icon status. Pair devices by QR code or device ID.
+- Folders and devices as clear cards with colour and icon status. Each folder card has a button for that folder's recent changes. Pair devices by QR code or device ID.
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning; restore older versions of a file.
 - Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver; only at set times of the week (for example 22:00–07:00 on weekdays).
 - Pause single devices from their card. Each card says why a device is paused (by you, or for example on mobile data), and a device you paused stays paused when the run conditions allow syncing again.
@@ -38,6 +38,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 
 - When idle, the app writes about 0.02–0.14 MB an hour to flash; it keeps no log files. Writes come from syncing itself.
 - The run conditions and sync windows let it sync only when it suits you: on Wi-Fi, while charging, at night, and each device at its own times.
+- New devices use one connection instead of Syncthing's usual three, which is plenty for a phone; each device can still be set to more.
 
 ### Privacy
 

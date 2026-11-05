@@ -60,43 +60,34 @@ import java.time.temporal.ChronoUnit
 data class RecentChange(val id: Long, val time: String, val fromThisPhone: Boolean, val change: DiskChange)
 
 /**
- * The latest file changes in all folders, as far back as the core remembers
+ * The latest file changes in one folder, as far back as the core remembers
  * since it started. Nothing is stored by the app.
  */
 @Composable
-fun RecentChangesScreen(s: Snapshot, vm: MainViewModel, onBack: () -> Unit) {
+fun RecentChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> Unit) {
     var changes by remember { mutableStateOf<List<RecentChange>?>(null) }
     // Folder states change whenever files do, so this follows new changes without a second event poll.
-    LaunchedEffect(s.folderStatus) { vm.recentChanges(RECENT_LIMIT)?.let { changes = it } }
-    var folder by rememberSaveable { mutableStateOf<String?>(null) }
-    val shown = changes.orEmpty().filter { folder == null || it.change.folder == folder }
+    LaunchedEffect(s.folderStatus) { vm.recentChanges(RECENT_LIMIT)?.let { all -> changes = all.filter { it.change.folder == folder } } }
+    val label = s.folders.find { it.id == folder }?.label?.ifEmpty { null } ?: folder
 
-    AppScreen(title = stringResource(R.string.recent_changes), onBack = onBack) { padding ->
+    AppScreen(title = stringResource(R.string.recent_changes), subtitle = label, onBack = onBack) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(top = 4.dp, bottom = 32.dp)) {
-            item("chips") {
-                Row(
-                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    FilterChip(folder == null, { folder = null }, { Text(stringResource(R.string.all_folders)) }, shape = ButtonShape)
-                    s.folders.forEach { f ->
-                        FilterChip(folder == f.id, { folder = f.id }, { Text(f.label.ifEmpty { f.id }) }, shape = ButtonShape)
-                    }
-                }
-            }
+            val shown = changes
             when {
-                changes == null -> item("loading") { Hint(stringResource(R.string.loading)) }
+                shown == null -> item("loading") { Hint(stringResource(R.string.loading)) }
                 shown.isEmpty() -> item("none") { Hint(stringResource(R.string.recent_none)) }
-            }
-            shown.groupBy { dayText(it.time) }.forEach { (day, list) ->
-                item("day-$day") { GroupTitle(day?.asString().orEmpty()) }
-                item("list-$day") {
-                    ListCard {
-                        list.forEach { ChangeRow(it, s) }
+                else -> {
+                    shown.groupBy { dayText(it.time) }.forEach { (day, list) ->
+                        item("day-$day") { GroupTitle(day?.asString().orEmpty()) }
+                        item("list-$day") {
+                            ListCard {
+                                list.forEach { ChangeRow(it, s) }
+                            }
+                        }
                     }
+                    item("note") { Hint(pluralStringResource(R.plurals.recent_note, RECENT_LIMIT, grouped(RECENT_LIMIT))) }
                 }
             }
-            if (shown.isNotEmpty()) item("note") { Hint(pluralStringResource(R.plurals.recent_note, RECENT_LIMIT, grouped(RECENT_LIMIT))) }
         }
     }
 }
@@ -113,11 +104,9 @@ private fun ChangeRow(r: RecentChange, s: Snapshot) {
         val by = s.devices.find { shortId(it.deviceID) == c.modifiedBy }?.name?.ifEmpty { null } ?: c.modifiedBy
         stringResource(if (deleted) R.string.change_deleted_by else R.string.change_changed_by, by)
     }
-    val folder = s.folders.find { it.id == c.folder }?.label?.ifEmpty { null } ?: c.label.ifEmpty { c.folder }
-    val dir = c.path.substringBeforeLast('/', "")
     SettingRow(
         c.path.substringAfterLast('/'),
-        listOfNotNull(folder + if (dir.isEmpty()) "" else "/$dir", what, exactTimeText(r.time).asString()).joinToString(" · "),
+        listOfNotNull(c.path.substringBeforeLast('/', "").ifEmpty { null }, what, exactTimeText(r.time).asString()).joinToString(" · "),
         icon = when {
             c.type == "dir" -> Icons.Default.Folder
             deleted -> Icons.Default.Delete

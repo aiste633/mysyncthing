@@ -143,7 +143,7 @@ real phone.
 | Step | What must hold |
 |---|---|
 | Pairing | Fresh install: the checklist, the usage question, the peer added by typing its ID, the peer's folder offer accepted with Trash can versioning |
-| Sync both ways | 21 files from the peer arrive; a file written on the phone reaches the peer, which then sees the phone at 100 % |
+| Sync both ways | 21 files from the peer arrive; a file written on the phone reaches the peer, which then sees the phone at 100 %. The peer added on the fresh install has 1 connection, and the peer (3 by default) opens no extra ones |
 | Restore a version | The peer changes a file; the old one is restored from the phone's Trash can, and the peer gets it back too |
 | Run conditions | Wi-Fi off (mobile data, which is off for syncing by default): the peer loses the phone; Wi-Fi on: it comes back. Every step starts on Wi-Fi, with the emulator's internet check off so a runner without Google's check server still uses Wi-Fi |
 | Device pause | Paused from its card: the peer loses the phone. With all syncing paused, the card's toggle is disabled; resumed on the device's screen, it stays paused until syncing is allowed, then the peer connects. Paused on its screen while blocked, it stays paused after the block (the peer stays away for 20 s), and resumes from the screen |
@@ -151,6 +151,7 @@ real phone.
 | Own sync windows | The peer's own windows closed now: the peer loses the phone, the core holds it, the card names the next opening and its pause button rests, the device's screen says why; turned off in its editor (Save), the peer comes back and the hold is released. Own windows that miss the global ones: the peer stays away and the card says "Never syncs". The windows are set around the phone's clock, so no alarm is waited for |
 | Typed text | Text typed in a rename dialog and in list dialogs (Settings, device defaults) survives the screen being recreated. Checked at once, with no wait: dialogs on values read from Syncthing are there on the recreated screen's first frame, and Settings keeps its scroll position. Afterwards only one copy of the screen stays in memory |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
+| Recent changes | A file written on the phone reaches the peer; the folder card's history icon opens that folder's recent changes, which list the file as changed on this phone |
 | Stop and start | The user's stop: the main thread answers within 1 s throughout (the core's shutdown runs in the background), the stop ends within 20 s (it does not wait for the 60 s event long-poll), the peer loses the phone; started again, it comes back. A start right after a stop starts the core once the stop is done |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |

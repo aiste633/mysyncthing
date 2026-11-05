@@ -21,7 +21,7 @@ private val names = snapshot.devices.associate { it.deviceID to it.name }
 
 val screens = listOf(
     ScreenCase("setup") { SetupScreen(PermissionState(LocalContext.current), mobileData = false, onMobileData = {}, onDone = {}) },
-    ScreenCase("folders") { FoldersScreen(snapshot, summary, it, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = {}) },
+    ScreenCase("folders") { FoldersScreen(snapshot, summary, it, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = { _ -> }) },
     ScreenCase("folder-syncing") { FolderScreen(snapshot, "docs", it, {}, {}, {}, {}, {}, {}) },
     ScreenCase("folder-error") { FolderScreen(snapshot, "music", it, {}, {}, {}, {}, {}, {}) },
     ScreenCase("folder-accept") {

@@ -86,9 +86,9 @@ private object Routes {
     const val ADD_DEVICE = "add-device?id={id}&name={name}"
     const val WEB_GUI = "webgui"
     const val IGNORED = "ignored"
-    const val RECENT = "recent"
     const val ABOUT = "about"
     const val FOLDER_VERSIONS = "folder/{id}/versions"
+    const val FOLDER_RECENT = "folder/{id}/recent"
     const val FOLDER_DEFAULTS = "defaults/folder"
     const val DEFAULT_IGNORES = "defaults/ignores"
     const val DEVICE_DEFAULTS = "defaults/device"
@@ -186,7 +186,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                             onOpen = { nav.navigate(Routes.folder(it)) },
                             onAdd = { nav.navigate(Routes.addFolder()) },
                             onAccept = { folder, device -> nav.navigate(Routes.addFolder(folder, device)) },
-                            onOpenRecent = { nav.navigate(Routes.RECENT) },
+                            onOpenRecent = { nav.navigate("${Routes.folder(it)}/recent") },
                         )
                     }
                 }
@@ -307,8 +307,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 composable(Routes.DEVICE_DEFAULTS) {
                     CoreGate(core) { DefaultDeviceScreen(vm, onBack = { nav.popBackStack() }) }
                 }
-                composable(Routes.RECENT) {
-                    CoreGate(core) { RecentChangesScreen(snapshot, vm, onBack = { nav.popBackStack() }) }
+                composable(Routes.FOLDER_RECENT) { entry ->
+                    CoreGate(core) { RecentChangesScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
                 }
                 composable(Routes.FOLDER_VERSIONS) { entry ->
                     CoreGate(core) { VersionsScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }

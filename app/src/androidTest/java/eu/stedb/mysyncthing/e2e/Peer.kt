@@ -48,6 +48,11 @@ class Peer(val id: String, private val key: String, private val phoneAddress: St
     fun connected(device: String): Boolean =
         JSONObject(call("GET", "rest/system/connections")).getJSONObject("connections").optJSONObject(device)?.optBoolean("connected") == true
 
+    /** Connections to [device] beyond the first; none when either side wants one. */
+    fun secondaryConnections(device: String): Int =
+        JSONObject(call("GET", "rest/system/connections")).getJSONObject("connections").optJSONObject(device)
+            ?.optJSONArray("secondary")?.length() ?: 0
+
     /** Pauses or resumes [device] on the peer's side, so it stays away without the phone pausing it. */
     fun setPaused(device: String, paused: Boolean) {
         call("POST", "rest/system/${if (paused) "pause" else "resume"}?device=$device")
