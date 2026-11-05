@@ -224,13 +224,13 @@ private fun BrowserContent(
     var makeFailed by rememberSaveable { mutableStateOf(false) }
     // Bumped after a failed New folder, so the listing is read again.
     var reload by rememberSaveable { mutableIntStateOf(0) }
-    var entries by remember { mutableStateOf<List<DirEntry>?>(null) }
-    var loaded by remember { mutableStateOf(false) }
-    LaunchedEffect(dir, reload) {
-        loaded = false
-        entries = withContext(disk.reads) { disk.directories(dir) }
-        loaded = true
-    }
+    // The last listing read, with its directory: rows of the folder left behind are never shown
+    // under the new one, and the list is only laid out once its rows are there, so it opens
+    // at its top (or, after a rotation, where it was) rather than one row down.
+    var listing by remember { mutableStateOf<Pair<String, List<DirEntry>?>?>(null) }
+    LaunchedEffect(dir, reload) { listing = dir to withContext(disk.reads) { disk.directories(dir) } }
+    val loaded = listing?.first == dir
+    val entries = listing?.takeIf { loaded }?.second
     val open = { p: String -> makeFailed = false; onOpen(p) }
     val scope = rememberCoroutineScope()
     val root = rootOf(dir, roots) ?: roots.first()
@@ -277,9 +277,8 @@ private fun BrowserContent(
         }
         val listing = @Composable { modifier: Modifier ->
             Card(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), colors = AppColors.card(), border = AppColors.cardBorder()) {
-                LazyColumn(Modifier.testTag("browseList"), state = list) {
+                if (!loaded) Box48 { BusyIndicator() } else LazyColumn(Modifier.testTag("browseList"), state = list) {
                     when {
-                        !loaded -> item { Box48 { BusyIndicator() } }
                         rows == null -> item { Hint(stringResource(R.string.browse_unreadable)) }
                         rows.isEmpty() -> item { Hint(stringResource(R.string.browse_empty)) }
                     }

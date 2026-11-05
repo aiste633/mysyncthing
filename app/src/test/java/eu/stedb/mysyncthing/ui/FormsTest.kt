@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.performTextReplacement
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.ui.Fixtures.snapshot
+import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -121,6 +123,16 @@ class FormsTest : ScreenTest() {
         assertEquals("$root/Download", saved?.path)
     }
 
+    /** The top of a storage gives the folder the storage's name, not the last part of its path ("0"). */
+    @Test
+    fun storageTopIsNamedAfterTheStorage() {
+        folderForm(fixtureDisk(), offer = null) {}
+        compose.onNodeWithTag("browse").performClick()
+        compose.onNodeWithText("SanDisk SD card").performClick()
+        compose.onNodeWithTag("browseUse").assertIsEnabled().performClick()
+        field(str(R.string.name)).assert(hasText("SanDisk SD card"))
+    }
+
     @Test
     fun browserRefusesAroundASyncedFolderAndAndroidData() {
         var picked: String? = null
@@ -136,18 +148,48 @@ class FormsTest : ScreenTest() {
         assertEquals("$root/Android/media", picked)
     }
 
-    /** Each folder opens at its top, not at the parent's scroll position; hidden folders, sorted first, come into view. */
+    /** A folder of 40 folders in a folder of 40, read on another thread as on a phone. */
+    private fun longDisk(): Disk {
+        val outer = (1..40).map { "$root/Long/sub%02d".format(it) }
+        val inner = (1..40).map { "$root/Long/sub40/c%02d".format(it) }
+        val disk = MapDisk(listOf(StorageRoot(root)), (outer + inner + "$root/Long/sub40/.cache").associateWith { 0 } + ("$root/Long" to 40))
+        return object : Disk by disk { override val reads = Dispatchers.Default }
+    }
+
+    /** The row is the list's first, whole: its top not above the list's. */
+    private fun assertAtTop(name: String) {
+        val list = compose.onNodeWithTag("browseList").fetchSemanticsNode().boundsInRoot
+        val row = compose.onNodeWithText(name).fetchSemanticsNode().boundsInRoot
+        assertTrue("$name at ${row.top}, list at ${list.top}", row.top >= list.top && row.top - list.top < row.height * 2)
+    }
+
+    private fun waitForRow(name: String) = compose.waitUntil(5_000) { compose.onAllNodesWithText(name).fetchSemanticsNodes().isNotEmpty() }
+
+    /** Each folder opens at its top, not at the parent's position or one row down; hidden folders, sorted first, come into view. */
     @Test
     fun browserOpensEachFolderAtItsTop() {
-        val names = (1..40).map { "sub%02d".format(it) }
-        val dirs = names.associate { "$root/Long/$it" to 0 } + names.associate { "$root/Long/sub40/$it" to 0 } + mapOf("$root/Long" to 40, "$root/Long/sub40/.cache" to 0)
-        show { CompositionLocalProvider(LocalDisk provides MapDisk(listOf(StorageRoot(root)), dirs)) { FolderBrowser("$root/Long", root, emptyList(), onBack = {}, onPick = {}) } }
+        show { CompositionLocalProvider(LocalDisk provides longDisk()) { FolderBrowser("$root/Long", root, emptyList(), onBack = {}, onPick = {}) } }
+        waitForRow("sub01")
         compose.onNodeWithTag("browseList").performScrollToKey("$root/Long/sub40")
         compose.onNodeWithText("sub40").performClick()
-        compose.onNodeWithText("sub01").assertIsDisplayed()
+        waitForRow("c01")
+        assertAtTop("c01")
         compose.onNodeWithTag("browseMenu").performClick()
         compose.onNodeWithText(str(R.string.browse_show_hidden)).performClick()
         compose.onNodeWithText(".cache").assertIsDisplayed()
+    }
+
+    /** A rotation reads the folder again; the list comes back where it was. */
+    @Test
+    fun browserKeepsItsPlaceOverARotation() {
+        val restore = StateRestorationTester(compose)
+        val disk = longDisk()
+        restore.setContent { AppTheme { CompositionLocalProvider(LocalDisk provides disk) { FolderBrowser("$root/Long/sub40", root, emptyList(), onBack = {}, onPick = {}) } } }
+        waitForRow("c01")
+        compose.onNodeWithTag("browseList").performScrollToKey("$root/Long/sub40/c40")
+        restore.emulateSavedInstanceStateRestore()
+        waitForRow("c40")
+        compose.onNodeWithText("c40").assertIsDisplayed()
     }
 
     @Test

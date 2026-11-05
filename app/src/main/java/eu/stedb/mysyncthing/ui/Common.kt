@@ -176,7 +176,7 @@ val LocalNow = staticCompositionLocalOf<() -> LocalDateTime> { LocalDateTime::no
 @Composable
 private fun BarTitle(title: String) = Text(
     title, maxLines = 1, overflow = TextOverflow.Ellipsis,
-    autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = LocalTextStyle.current.fontSize),
+    autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = LocalTextStyle.current.fontSize, stepSize = 0.5.sp),
 )
 
 /**

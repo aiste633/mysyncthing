@@ -42,6 +42,7 @@ import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Versioning
+import eu.stedb.mysyncthing.core.resolve
 import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.withContext
 import java.util.UUID
@@ -82,14 +83,17 @@ fun FolderEditScreen(
     var d by rememberSaveable(stateSaver = draftSaver) { mutableStateOf(initial) }
     // Follow the label into the suggested path until the user picks a place.
     var pathTouched by rememberSaveable { mutableStateOf(offeredBy == null) }
-    val choose = { path: String ->
-        pathTouched = true
-        d = d.copy(path = path, label = d.label.ifEmpty { path.substringAfterLast('/') })
-    }
     var browsing by rememberSaveable { mutableStateOf(false) }
     val disk = rememberDisk()
     // Read off the main thread: storages can be slow.
     val roots by produceState(emptyList<StorageRoot>(), disk) { value = withContext(disk.reads) { disk.roots() } }
+    // A name from the place, if none yet: the folder's own, or the storage's at its top (not "0").
+    val words = currentStrings()
+    val choose = { path: String ->
+        pathTouched = true
+        val (storage, rest) = pathParts(path, roots)
+        d = d.copy(path = path, label = d.label.ifEmpty { rest.substringAfterLast('/').ifEmpty { storage?.resolve(words) ?: path.substringAfterLast('/') } })
+    }
     val picks by produceState(emptyList<String>(), disk) { value = withContext(disk.reads) { quickPicks(disk) } }
     val isOffer = offeredBy != null
     // The untrusted device whose password dialog is open.
