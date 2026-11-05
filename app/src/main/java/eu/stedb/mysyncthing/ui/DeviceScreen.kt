@@ -252,14 +252,15 @@ internal fun AddressesDialog(initial: List<String>, onDismiss: () -> Unit, onSav
 )
 
 /**
- * The device screen's status line while [d] is paused: "Paused by you" for its own pause, which
- * outlasts any other; otherwise why everything is paused. Null when it is not paused.
+ * The device screen's status line while [d] is paused: why the run conditions or its own windows
+ * hold it, as on its card; "Paused by you" for its own pause once nothing else holds it. Null when
+ * it is not paused.
  */
 fun pauseTitle(d: Device, pause: DevicePause): UiText? {
     val reason = pause.reason(d)
     return when {
         !pause.paused(d) -> null
-        pause.byUser(d) -> text(CoreR.string.pause_reason_user)
+        !pause.blocked(d) && pause.byUser(d) -> text(CoreR.string.pause_reason_user)
         reason == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
         // A sentence of its own: "Paused: Never syncs: …" would say it twice.
         pause.devices[d.deviceID]?.never == true -> reason

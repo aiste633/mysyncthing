@@ -48,12 +48,13 @@ fun deviceStatus(d: Device, conn: Connection?, completion: Completion?, pause: D
 }
 
 /**
- * Who paused [d], for its card: the user, the user's pause of all syncing, or a run condition
- * ("On mobile data"). Null when it is not paused.
+ * Why [d] is paused, for its card: a run condition ("On mobile data"), its own windows or the
+ * user's pause of all syncing while one of those holds it, as that is what decides when it syncs;
+ * the user's own pause of it only once nothing else does. Null when it is not paused.
  */
 fun pauseReason(d: Device, pause: DevicePause): UiText? = when {
     !pause.paused(d) -> null
-    pause.byUser(d) -> text(R.string.device_paused_by_you)
+    !pause.blocked(d) && pause.byUser(d) -> text(R.string.device_paused_by_you)
     pause.reason(d) == PAUSED_BY_USER -> text(R.string.device_all_paused_by_you)
     else -> pause.reason(d)
 }

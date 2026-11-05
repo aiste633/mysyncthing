@@ -177,7 +177,8 @@ private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, on
 
 /**
  * A remote device: its status, why it is paused, and the user's own pause as a toggle. While the
- * run conditions pause everything the toggle is off limits; the device's screen still sets it.
+ * run conditions or its own windows hold it the toggle is off limits and the line says why (that
+ * reason wins over "By you"); the device's screen still sets the user's pause.
  */
 @Composable
 private fun DeviceCard(d: Device, s: Snapshot, onPause: (Boolean) -> Unit, onClick: () -> Unit) {

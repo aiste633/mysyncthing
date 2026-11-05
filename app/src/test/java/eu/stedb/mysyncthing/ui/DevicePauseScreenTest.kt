@@ -38,10 +38,11 @@ class DevicePauseScreenTest : ScreenTest() {
         devices(blocked = true)
         compose.onNodeWithContentDescription(str(R.string.device_pause_named, "Laptop")).assertIsNotEnabled()
         compose.onNodeWithContentDescription(str(R.string.device_resume_named, "Old tablet")).assertIsNotEnabled()
+        // What holds them wins over the tablet's own pause: that only decides once syncing is allowed.
         compose.onAllNodes(hasText(str(CoreR.string.pause_reason_mobile_data) + " · ", substring = true)).fetchSemanticsNodes().let {
-            check(it.size == 2) { "the laptop's and the server's cards say why: ${it.size}" }
+            check(it.size == 3) { "every card says why, the tablet's too: ${it.size}" }
         }
-        compose.onNodeWithText(str(R.string.device_paused_by_you), substring = true).assertExists()
+        compose.onNodeWithText(str(R.string.device_paused_by_you), substring = true).assertDoesNotExist()
     }
 
     @Test
@@ -52,10 +53,12 @@ class DevicePauseScreenTest : ScreenTest() {
         pauseSwitch.performScrollTo().assertIsEnabled().assertIsOff()
     }
 
+    /** The block is what it says while it holds; the switch shows the user's own pause, kept for after. */
     @Test
     fun ownPauseOutlastsTheBlock() {
         show { DeviceScreen(Fixtures.blocked, Fixtures.tablet, vm, onBack = {}, onOpenNeeds = {}) }
-        compose.onNodeWithText(str(CoreR.string.pause_reason_user)).assertExists()
+        compose.onNodeWithText(str(CoreR.string.status_paused_because, str(CoreR.string.pause_reason_mobile_data))).assertExists()
+        compose.onNodeWithText(str(CoreR.string.pause_reason_user)).assertDoesNotExist()
         compose.onNodeWithText(str(R.string.device_block_note_conditions)).assertDoesNotExist()
         pauseSwitch.performScrollTo().assertIsEnabled().assertIsOn()
     }
