@@ -179,7 +179,7 @@ in the [README](../README.md#reproducible-builds-and-releases)), not in CI.
 | Step | What must hold |
 |---|---|
 | Sync comes back | Without the app being opened: the process restarts, the service runs and the peer reconnects |
-| Nothing lost | The keys (so the device ID) are byte-identical. Every value of the core's config is unchanged, except the format version and the per-start GUI port; a newer core may only add values, which are logged. The ignore patterns read back the same. The database files are the same files, so there is no full rescan and no "moved from another phone" note. Every app setting is unchanged. All files access, notifications and the battery exemption are still granted |
+| Nothing lost | The keys (so the device ID) are byte-identical. Every value of the core's config is unchanged, except the format version and the GUI's port and login, both new at every start; a newer core may only add values, which are logged. The ignore patterns read back the same. The database files are the same files, so there is no full rescan and no "moved from another phone" note. Every app setting is unchanged, except the login stored by 0.2.0 and older, which must be gone. All files access, notifications and the battery exemption are still granted |
 | The interrupted download | Finishes after the update, identical to the peer's file, with no conflict copies |
 | In the new build | The setup checklist is done, the peer and the folder are there, and new files sync both ways |
 | A user's Stop | Holds through an update |
