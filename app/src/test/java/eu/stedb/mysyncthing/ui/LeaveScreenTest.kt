@@ -18,7 +18,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import eu.stedb.mysyncthing.R
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.robolectric.shadows.ShadowLog
+import java.io.File
 
 /**
  * Leaving a folder or device screen pops that screen only, also when it asks twice: Remove leaves at
@@ -35,6 +38,7 @@ class LeaveScreenTest : ScreenTest() {
 
     private fun app() = show {
         nav = rememberNavController()
+        ReportEmptyBackStack(nav)
         NavHost(nav, startDestination = FOLDERS) {
             composable(FOLDERS) {
                 FoldersScreen(snapshot, Fixtures.summary, vm, onOpen = { nav.navigate("folder/$it") }, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = {})
@@ -52,6 +56,8 @@ class LeaveScreenTest : ScreenTest() {
     }
 
     private val route get() = nav.currentBackStackEntry?.destination?.route
+
+    private fun blankScreenReports() = ShadowLog.getLogsForTag(NAV_LOG_TAG).count { it.msg == EMPTY_BACK_STACK }
 
     /**
      * Confirms Remove, and 200 ms into the exit animation (NavHost's default fade takes 700 ms) the
@@ -80,6 +86,7 @@ class LeaveScreenTest : ScreenTest() {
 
         assertEquals("back stack: ${nav.currentBackStack.value.map { it.destination.route }}", FOLDERS, route)
         compose.onNodeWithText("Documents").assertIsDisplayed()
+        assertEquals(0, blankScreenReports())
     }
 
     @Test
@@ -94,6 +101,7 @@ class LeaveScreenTest : ScreenTest() {
 
         assertEquals("back stack: ${nav.currentBackStack.value.map { it.destination.route }}", DEVICES, route)
         compose.onNodeWithText("Home server").assertIsDisplayed()
+        assertEquals(0, blankScreenReports())
     }
 
     /** Two taps on the back arrow before the screen is gone leave one screen. */
@@ -109,6 +117,25 @@ class LeaveScreenTest : ScreenTest() {
 
         assertEquals("back stack: ${nav.currentBackStack.value.map { it.destination.route }}", FOLDERS, route)
         compose.onNodeWithText("Documents").assertIsDisplayed()
+        assertEquals(0, blankScreenReports())
+    }
+
+    /**
+     * What lets the e2e and monkey runs catch a blank screen, which no crash check sees: nothing while
+     * the stack fills, one error once it empties. run.py looks for that line, so its text is checked too.
+     */
+    @Test
+    fun anEmptiedBackStackIsReported() {
+        app()
+        compose.waitForIdle()
+        assertEquals("on the way in, before the graph is set and after", 0, blankScreenReports())
+
+        compose.runOnUiThread { nav.popBackStack() }
+        compose.waitForIdle()
+        assertEquals(1, blankScreenReports())
+
+        val script = File("../scripts/e2e/run.py").readText()
+        assertTrue("run.py looks for the tag and the message", NAV_LOG_TAG in script && EMPTY_BACK_STACK in script)
     }
 
     private companion object {

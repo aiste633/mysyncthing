@@ -414,6 +414,16 @@ def logcat_app_crashes(logcat: str) -> tuple[list[str], list[str]]:
     return ours, known
 
 
+# App.kt's NAV_LOG_TAG and EMPTY_BACK_STACK (LeaveScreenTest checks they match).
+NAV_LOG_TAG = "AppNav"
+EMPTY_BACK_STACK = "back stack empty: blank screen"
+
+
+def blank_screens(logcat: str) -> int:
+    """Times the app's back stack emptied: a blank screen, which no crash or ANR check sees."""
+    return len(re.findall(rf" E {NAV_LOG_TAG}\s*: {re.escape(EMPTY_BACK_STACK)}", logcat))
+
+
 def native_crashes(logcat: str) -> tuple[bool, list[str]]:
     """Native crashes in a logcat (the tombstone's ">>> process <<<" line): whether the app's process
     had one (a Go panic in the core ends that way too), and the other processes that had one."""
@@ -633,6 +643,8 @@ def main() -> None:
         pull_anr_traces(a.out / "anr")
     if others:
         log(f"ANRs of other processes (not failing): {others}")
+    if n := blank_screens(logcat):
+        fail(f"the app showed a blank screen {n} time(s): its back stack emptied (see logcat.txt: '{NAV_LOG_TAG}')")
     ours, others = native_crashes(logcat)
     if ours:
         fail("the app's process crashed natively (see logcat.txt: '>>> eu.stedb.mysyncthing <<<')")

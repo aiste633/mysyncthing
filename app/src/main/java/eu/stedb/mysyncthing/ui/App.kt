@@ -1,6 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -45,6 +47,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
+import androidx.navigation.NavGraph
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -130,6 +133,33 @@ internal fun NavGraphBuilder.screen(
     content(entry, back)
 }
 
+/** Logcat tag and message of [ReportEmptyBackStack]; scripts/e2e/run.py fails a run on them. */
+internal const val NAV_LOG_TAG = "AppNav"
+internal const val EMPTY_BACK_STACK = "back stack empty: blank screen"
+
+/**
+ * Logs an error when the back stack, once filled, empties: the screen is then blank, a bug no crash
+ * check sees (the app stays alive and responsive). Only the step from filled to empty counts: the
+ * stack is also empty before the graph is set, and nothing in the app empties it on purpose (Back
+ * on a tab finishes the activity and leaves the stack as it is).
+ *
+ * currentBackStack is the only way to see the stack empty (currentBackStackEntryFlow and the
+ * destination listeners stay silent then). Navigation marks it for its own library group; if a
+ * later version stops filling it, LeaveScreenTest fails.
+ */
+@SuppressLint("RestrictedApi")
+@Composable
+internal fun ReportEmptyBackStack(nav: NavController) {
+    LaunchedEffect(nav) {
+        var filled = false
+        nav.currentBackStack.collect { stack ->
+            val screens = stack.count { it.destination !is NavGraph }
+            if (screens > 0) filled = true
+            else if (filled) Log.e(NAV_LOG_TAG, EMPTY_BACK_STACK)
+        }
+    }
+}
+
 @Composable
 fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainViewModel = viewModel()) {
     val context = LocalContext.current
@@ -154,6 +184,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         }
 
         val nav = rememberNavController()
+        ReportEmptyBackStack(nav)
         val snackbar = remember { SnackbarHostState() }
         LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it.resolve(context)) } }
         val core by vm.core.collectAsStateWithLifecycle()
