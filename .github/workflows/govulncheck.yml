@@ -6,6 +6,7 @@ name: govulncheck
 # runs this daily and opens an issue for what it finds.
 on:
   push:
+    branches: [main]
   pull_request:
   workflow_dispatch:
   workflow_call:

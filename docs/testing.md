@@ -2,7 +2,7 @@
 
 A sync app can do more damage than most apps: when Syncthing records a file as deleted, every
 paired device deletes its copy too. So every change to MySyncthing goes through automated
-checks on each push, and every feature is also checked by hand on emulators and phones before
+checks on each pull request, and every feature is also checked by hand on emulators and phones before
 it is merged. This page lists what is tested, how, and what the tests found. The numbers come
 from the test reports of October 2026, with Syncthing v2.1.7.
 
@@ -13,9 +13,9 @@ uses anyone's real folders, devices or backups.
 
 | Area | How | Result |
 |---|---|---|
-| Every push | Build, Go and Kotlin unit tests, screen tests, emulator end-to-end tests on Android 15 and 16, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
-| Screen tests | 25 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names | 125 reference images, on every push |
-| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15 and 16, on every push |
+| Every pull request | Build, Go and Kotlin unit tests, screen tests, emulator end-to-end tests on Android 15 and 16, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
+| Screen tests | 25 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names | 125 reference images, on every pull request |
+| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15 and 16, on every pull request |
 | App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15 and 16, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 9 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
@@ -27,9 +27,10 @@ uses anyone's real folders, devices or backups.
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
 
-## On every push
+## On every pull request
 
-The checks below run on GitHub for every push and pull request. The `main` branch is
+The checks below run on GitHub for every pull request, and again on `main` after the merge.
+A new commit on a pull request cancels the run of the commit before it. The `main` branch is
 protected: a change reaches it only through a pull request whose checks have passed.
 
 | Job | What it checks |
@@ -409,7 +410,7 @@ debug build on an emulator; a release build should write less.
 
 The same commit gave a byte-identical unsigned release APK, with the same SHA-256, from a local
 build, both legs of the CI twin build, and F-Droid's build server image. CI checks this on
-every push. See [README](../README.md#reproducible-builds-and-releases).
+every pull request. See [README](../README.md#reproducible-builds-and-releases).
 
 ## Not covered yet
 

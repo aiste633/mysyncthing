@@ -34,14 +34,16 @@ fi
 export ANDROID_AVD_HOME="${ANDROID_AVD_HOME:-$HOME/.android/avd}"
 mkdir -p "$ANDROID_AVD_HOME"
 echo no | "$bin/avdmanager" create avd --force -n "$avd" -k "$image" -d pixel_7 >/dev/null
-# The emulator links system libraries a minimal Linux may lack (GitHub's runner image has no
-# libpulse). Its own libraries are bundled under emulator/ and found by its launcher, not by ldd.
+# With -no-window the launcher starts qemu-system-x86_64-headless. Unlike the windowed
+# qemu-system-x86_64 it does not link PulseAudio, which GitHub's runner image lacks, so check the
+# binary that runs. Its own libraries are bundled under emulator/ and found by its launcher, not by ldd.
 emu_dir="$ANDROID_HOME/emulator"
-missing_libs=$(ldd "$emu_dir/qemu/linux-x86_64/qemu-system-x86_64" | awk '/not found/ {print $1}' | while read -r lib; do
+missing_libs=$(ldd "$emu_dir/qemu/linux-x86_64/qemu-system-x86_64-headless" | awk '/not found/ {print $1}' | while read -r lib; do
   [ -n "$(find "$emu_dir" -name "$lib" -print -quit)" ] || echo "$lib"
 done)
 [ -z "$missing_libs" ] || { echo "the emulator needs system libraries that are missing: $missing_libs" >&2; exit 1; }
-"$ANDROID_HOME/emulator/emulator" -version | head -n 1
+# From the package, not `emulator -version`: that runs the windowed binary, which needs PulseAudio.
+echo "Android emulator $(sed -n 's/^Pkg.Revision=//p' "$emu_dir/source.properties")"
 
 log="${E2E_EMULATOR_LOG:-$(mktemp)}"
 "$ANDROID_HOME/emulator/emulator" -avd "$avd" -no-window -no-audio -no-boot-anim -no-snapshot \

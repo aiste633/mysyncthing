@@ -7,11 +7,19 @@ name: reproducible
 
 on:
   push:
+    branches: [main]
+    tags: ["v*"]
   pull_request:
   workflow_dispatch:
 
 permissions:
   contents: read
+
+# A new commit on a pull request stops the run of the commit before it. Every other run has
+# a group of its own, so runs on main (and tags) are never cancelled or dropped from the queue.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   release:
