@@ -8,7 +8,7 @@
 <li>Run conditions: metered Wi-Fi, mobile data and roaming each on or off, only while charging or only on battery, pause in battery saver, only at set times of the week</li>
 <li>Pause single devices from their card, give a device its own sync windows (for example the NAS only at night), and see when each device was last seen</li>
 <li>SOCKS5 or HTTP proxy, such as Tor with Orbot</li>
-<li>Easy switch from Syncthing-Fork: import its backup, encrypted ones too; export your own setup, optionally AES-256 encrypted</li>
+<li>Easy switch from Syncthing-Fork: import its backup, encrypted ones too; export your own setup, strongly encrypted (Argon2id, XChaCha20-Poly1305) or as an AES-256 zip for other apps</li>
 <li>Syncthing's own web interface is built in for advanced settings</li>
 <li>In English, Italian, Spanish, German and French, in the phone's language or one chosen for the app alone; dates, times and numbers as the phone's region writes them</li>
 </ul>

@@ -328,7 +328,7 @@
     <string name="settings_restart">Redémarrer Syncthing</string>
     <string name="settings_restart_hint">Applique les réglages qui nécessitent un redémarrage</string>
     <string name="settings_export">Exporter une sauvegarde</string>
-    <string name="settings_export_hint">Partages, appareils, identité de ce téléphone et réglages de synchronisation, dans un fichier zip</string>
+    <string name="settings_export_hint">Partages, appareils, identité de ce téléphone et réglages de synchronisation, dans un fichier de sauvegarde</string>
     <string name="settings_import">Importer une sauvegarde</string>
     <string name="settings_import_hint">Depuis un export de cette appli ou une sauvegarde de Syncthing-Fork</string>
     <string name="settings_group_permissions">Autorisations</string>
@@ -802,11 +802,20 @@
     <string name="export_failed">Échec de l’exportation</string>
     <string name="export_intro_title">Sauvegarder la configuration de ce téléphone</string>
     <string name="export_intro">La sauvegarde contient les partages, les appareils, l’ID d’appareil de ce téléphone avec sa clé privée, et les réglages de synchronisation, proxy compris. Pas les fichiers des partages, ni l’identifiant de l’interface graphique web.</string>
-    <string name="export_password_group">Mot de passe (recommandé)</string>
+    <string name="export_encryption_group">Chiffrement</string>
+    <string name="export_strong">Fort (recommandé)</string>
+    <string name="export_strong_hint">Argon2id et XChaCha20-Poly1305. S’ouvre uniquement dans MySyncthing.</string>
+    <string name="export_compatible">Compatible</string>
+    <string name="export_compatible_hint">Zip avec WinZip AES-256. S’ouvre dans Syncthing-Fork et les applis zip, mais se casse facilement.</string>
+    <string name="export_none">Aucun</string>
+    <string name="export_none_hint">Non chiffré.</string>
+    <string name="export_strong_note">Archive forte. Seul MySyncthing peut l’ouvrir, sur ce téléphone ou un autre. Gardez le mot de passe : sans lui, la sauvegarde ne peut pas être ouverte.</string>
+    <string name="export_compatible_warning">Archive vulnérable. Son ancien chiffrement permet à un ordinateur d’essayer des millions de mots de passe par seconde, et les noms des fichiers qu’elle contient restent lisibles. Choisissez-la uniquement pour transférer cette configuration vers une autre appli, comme Syncthing-Fork, puis supprimez le fichier.</string>
+    <string name="export_password_group">Mot de passe</string>
     <plurals name="export_password_hint">
-        <item quantity="one">Au moins %1$d caractère. Chiffre la sauvegarde avec AES-256.</item>
-        <item quantity="many">Au moins %1$d de caractères. Chiffre la sauvegarde avec AES-256.</item>
-        <item quantity="other">Au moins %1$d caractères. Chiffre la sauvegarde avec AES-256.</item>
+        <item quantity="one">Au moins %1$d caractère.</item>
+        <item quantity="many">Au moins %1$d de caractères.</item>
+        <item quantity="other">Au moins %1$d caractères.</item>
     </plurals>
     <string name="password_again">Confirmer le mot de passe</string>
     <string name="export_no_password_warning">Sans mot de passe, toute appli ou personne capable de lire le fichier peut se faire passer pour ce téléphone.</string>

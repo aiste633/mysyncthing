@@ -8,7 +8,7 @@
 <li>Condiciones de ejecución: Wi-Fi de uso medido, datos móviles e itinerancia, cada uno activado o desactivado; solo mientras carga o solo con batería; pausa con el ahorro de batería; solo en horarios fijados de la semana</li>
 <li>Pausa dispositivos sueltos desde su tarjeta, da a un dispositivo sus propios horarios de sincronización (por ejemplo, el NAS solo de noche) y mira cuándo se vio por última vez cada dispositivo</li>
 <li>Proxy SOCKS5 o HTTP, como Tor con Orbot</li>
-<li>Cambio fácil desde Syncthing-Fork: importa su copia de seguridad, también las cifradas; exporta tu propia configuración, opcionalmente cifrada con AES-256</li>
+<li>Cambio fácil desde Syncthing-Fork: importa su copia de seguridad, también las cifradas; exporta tu propia configuración, con cifrado fuerte (Argon2id, XChaCha20-Poly1305) o como zip AES-256 para otras apps</li>
 <li>La interfaz web propia de Syncthing está integrada para los ajustes avanzados</li>
 <li>En español, inglés, italiano, alemán y francés, en el idioma del teléfono o en uno elegido solo para la app; fechas, horas y números como los escribe la región del teléfono</li>
 </ul>

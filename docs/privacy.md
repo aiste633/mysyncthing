@@ -45,7 +45,7 @@ transfer stays between the two phones. Afterwards stop Syncthing on the old phon
 reminds you once): two phones with the same keys look like one device to your other devices.
 
 A backup you export (Settings › System › Export a backup) contains the configuration, the
-device keys and the app settings (run conditions, sync windows, proxy). It is written where you choose, and is AES-256 encrypted if you set a password.
+device keys and the app settings (run conditions, sync windows, proxy). It is written where you choose, in one of three formats. Strong (the default) encrypts the whole file with XChaCha20-Poly1305 under a key Argon2id derives from your password (64 MiB, 3 passes), which also hides the file names inside; only this app opens it. Compatible is a zip with WinZip AES-256 that Syncthing-Fork and zip apps open, but its key derivation (1000 PBKDF2-SHA1 rounds) lets a computer try millions of passwords per second and the file names stay readable: use it only to move to another app. None is not encrypted.
 Keep it safe: anyone with the file can act as this phone towards your devices.
 
 An imported backup (this app's or Syncthing-Fork's) never carries over consent to usage

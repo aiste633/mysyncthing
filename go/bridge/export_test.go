@@ -67,20 +67,41 @@ func TestExportRoundTrip(t *testing.T) {
 	if c, _ := os.ReadFile(filepath.Join(home, "config.xml")); bytes.Count(c, []byte("<paused>true</paused>")) != 2 {
 		t.Fatalf("the home is not paused:\n%s", c)
 	}
-	for _, password := range []string{"", "correct horse battery", "пароль-пароль-✓"} {
+	for _, c := range []struct{ format, password string }{
+		{ExportPlain, ""},
+		{ExportCompatible, "correct horse battery"}, {ExportCompatible, "пароль-пароль-✓"},
+		{ExportStrong, "correct horse battery"}, {ExportStrong, "пароль-пароль-✓"},
+	} {
+		password := c.password
 		var buf bytes.Buffer
-		if err := writeBackup(&buf, home, password, settingsJSON(t, someSettings), time.Date(2026, 10, 26, 23, 0, 0, 0, time.UTC)); err != nil {
-			t.Fatalf("password %q: %v", password, err)
+		if err := writeBackup(&buf, home, c.format, password, settingsJSON(t, someSettings), time.Date(2026, 10, 26, 23, 0, 0, 0, time.UTC)); err != nil {
+			t.Fatalf("%s %q: %v", c.format, password, err)
 		}
-		z, err := zip.NewReader(bytes.NewReader(buf.Bytes()), int64(buf.Len()))
+		zipBytes := buf.Bytes()
+		if c.format == ExportStrong {
+			// Sealed as a whole: nothing of the zip shows, not even its names.
+			if !isSealed(zipBytes) {
+				t.Fatalf("strong: no sealed header: % x", zipBytes[:16])
+			}
+			for _, leak := range []string{"PK\x03\x04", "config.xml", "key.pem", ownSettingsFile, "PRIVATE KEY"} {
+				if bytes.Contains(zipBytes, []byte(leak)) {
+					t.Errorf("strong: %q readable in the file", leak)
+				}
+			}
+			var err error
+			if zipBytes, err = unseal(bytes.NewReader(zipBytes), int64(len(zipBytes)), password); err != nil {
+				t.Fatal(err)
+			}
+		}
+		z, err := zip.NewReader(bytes.NewReader(zipBytes), int64(len(zipBytes)))
 		if err != nil {
 			t.Fatal(err)
 		}
 		var names []string
 		for _, f := range z.File {
 			names = append(names, f.Name)
-			if encrypted := f.Flags&0x1 != 0; encrypted != (password != "") || encrypted && f.Method != 99 {
-				t.Errorf("password %q: %s flags %x method %d", password, f.Name, f.Flags, f.Method)
+			if encrypted := f.Flags&0x1 != 0; encrypted != (c.format == ExportCompatible) || encrypted && f.Method != 99 {
+				t.Errorf("%s: %s flags %x method %d", c.format, f.Name, f.Flags, f.Method)
 			}
 			if !f.Modified.Equal(time.Date(2026, 10, 26, 23, 0, 0, 0, time.UTC)) {
 				t.Errorf("%s: modified %v", f.Name, f.Modified)
@@ -159,14 +180,32 @@ func TestExportRefuses(t *testing.T) {
 		"settings schedule empty":   {"", settingsString(t, ownSettings{Version: 1, Conditions: runConditions{Power: "Any", TimeSchedule: true}, Proxy: proxySettings{Type: "None"}})},
 		"settings proxy leftover":   {"", settingsString(t, ownSettings{Version: 1, Conditions: runConditions{Power: "Any"}, Proxy: proxySettings{Type: "None", Host: "x"}})},
 	} {
-		if err := writeBackup(&bytes.Buffer{}, home, c.password, []byte(c.settings), time.Now()); err == nil {
+		formats := []string{ExportPlain}
+		if c.password != "" {
+			formats = []string{ExportCompatible, ExportStrong}
+		}
+		for _, f := range formats {
+			if err := writeBackup(&bytes.Buffer{}, home, f, c.password, []byte(c.settings), time.Now()); err == nil {
+				t.Errorf("%s, %s: exported", name, f)
+			}
+		}
+	}
+	for name, c := range map[string]struct{ format, password string }{
+		"unknown format":       {"aes", "correct horse battery"},
+		"empty format":         {"", ""},
+		"plain with password":  {ExportPlain, "correct horse battery"},
+		"strong no password":   {ExportStrong, ""},
+		"compat no password":   {ExportCompatible, ""},
+		"format case mismatch": {"Strong", "correct horse battery"},
+	} {
+		if err := writeBackup(&bytes.Buffer{}, home, c.format, c.password, good, time.Now()); err == nil {
 			t.Errorf("%s: exported", name)
 		}
 	}
 	// A key that is not the certificate's.
 	other := newIdentity(t, true)
 	os.WriteFile(filepath.Join(home, "key.pem"), other.keyPEM, 0o600)
-	if err := writeBackup(&bytes.Buffer{}, home, "", good, time.Now()); err == nil {
+	if err := writeBackup(&bytes.Buffer{}, home, ExportPlain, "", good, time.Now()); err == nil {
 		t.Error("exported a key that does not match the certificate")
 	}
 }
@@ -224,8 +263,9 @@ func TestSyncWindowCheckProperty(t *testing.T) {
 }
 
 // Property: any settings the app can store, and any password it accepts,
-// come back from an export unchanged.
+// come back from an export unchanged, in every format.
 func TestExportRoundTripProperty(t *testing.T) {
+	cheapSealKey(t) // 300 real Argon2id runs would take minutes; TestSealRealKey covers it
 	home, _ := exportHome(t)
 	r := rand.New(rand.NewSource(26))
 	powers := []string{"Any", "ChargingOnly", "BatteryOnly"}
@@ -240,14 +280,15 @@ func TestExportRoundTripProperty(t *testing.T) {
 			p = proxySettings{map[string]string{"socks5": "Socks5", "http": "Http"}[proxy.Scheme], proxy.Host, proxy.Port, proxy.User, proxy.Password, r.Intn(2) == 0}
 		}
 		var pw strings.Builder
-		if pwLen%3 != 0 {
+		format := []string{ExportPlain, ExportCompatible, ExportStrong}[pwLen%3]
+		if format != ExportPlain {
 			for range minExportPassword + int(pwLen)%40 {
 				pw.WriteRune(pwRunes[r.Intn(len(pwRunes))])
 			}
 		}
 		s := ownSettings{Version: ownSettingsVersion, Conditions: c, Proxy: p}
 		var buf bytes.Buffer
-		if err := writeBackup(&buf, home, pw.String(), settingsJSON(t, s), time.Now()); err != nil {
+		if err := writeBackup(&buf, home, format, pw.String(), settingsJSON(t, s), time.Now()); err != nil {
 			t.Logf("%+v: %v", s, err)
 			return false
 		}

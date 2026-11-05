@@ -32,14 +32,25 @@ import (
 // The app's own backup: config.xml, cert.pem and key.pem as the core keeps
 // them, plus the app's settings in ownSettingsFile. Nothing else: no database
 // (see forkimport.go), no GUI login or API key (each install has its own).
-// With a password every entry is WinZip AES-256 (AE-2), which zip4j, 7-Zip
-// and this app's import read.
+// Three formats, see ExportStrong, ExportCompatible and ExportPlain.
+
+const (
+	// ExportStrong seals the zip as a whole with Argon2id and
+	// XChaCha20-Poly1305 (sealed.go). Only this app reads it.
+	ExportStrong = "strong"
+	// ExportCompatible encrypts every entry as WinZip AES-256 (AE-2), which
+	// zip4j (Syncthing-Fork), 7-Zip and this app read. Its key derivation is
+	// fixed at 1000 PBKDF2-SHA1 rounds: weak against guessing.
+	ExportCompatible = "compatible"
+	// ExportPlain is a zip without encryption.
+	ExportPlain = "none"
+)
 
 const (
 	ownSettingsFile    = "mysyncthing.json"
 	ownSettingsVersion = 1
-	// WinZip AES has a fixed 1000 PBKDF2 rounds, so the password itself must
-	// be hard to guess.
+	// Every encrypted export needs a password this long: WinZip AES stretches
+	// it little, and even Argon2id can't save a short one.
 	minExportPassword = 12
 	maxExportPassword = 1024 // bytes
 )
@@ -82,7 +93,7 @@ func readOwnSettings(js []byte) (*ownSettings, error) {
 }
 
 // ExportPasswordError says why password can't protect an export, or returns
-// "" when it can. Empty means no password.
+// "" when it can. Empty means no password, which only ExportPlain takes.
 func ExportPasswordError(password string) string {
 	switch {
 	case password == "":
@@ -98,10 +109,11 @@ func ExportPasswordError(password string) string {
 }
 
 // ExportBackup writes a backup of the setup under homeDir to fd (the caller
-// keeps it open and closes it), encrypted when password is set. settingsJSON
-// is ownSettingsFile's content; it is checked like an import would check it.
+// keeps it open and closes it) in format (ExportStrong, ExportCompatible or
+// ExportPlain); the encrypted ones need password. settingsJSON is
+// ownSettingsFile's content; it is checked like an import would check it.
 // The core may be running: it replaces config.xml atomically.
-func ExportBackup(fd int, homeDir, password, settingsJSON string) error {
+func ExportBackup(fd int, homeDir, format, password, settingsJSON string) error {
 	dup, err := syscall.Dup(fd)
 	if err != nil {
 		return err
@@ -109,7 +121,7 @@ func ExportBackup(fd int, homeDir, password, settingsJSON string) error {
 	f := os.NewFile(uintptr(dup), "export")
 	defer f.Close()
 	var buf bytes.Buffer
-	if err := writeBackup(&buf, homeDir, password, []byte(settingsJSON), time.Now()); err != nil {
+	if err := writeBackup(&buf, homeDir, format, password, []byte(settingsJSON), time.Now()); err != nil {
 		return err
 	}
 	if err := f.Truncate(0); err != nil && !errors.Is(err, syscall.EINVAL) {
@@ -124,7 +136,15 @@ func ExportBackup(fd int, homeDir, password, settingsJSON string) error {
 	return nil
 }
 
-func writeBackup(w io.Writer, homeDir, password string, settingsJSON []byte, now time.Time) error {
+func writeBackup(w io.Writer, homeDir, format, password string, settingsJSON []byte, now time.Time) error {
+	switch {
+	case format != ExportStrong && format != ExportCompatible && format != ExportPlain:
+		return fmt.Errorf("unknown export format %q", format)
+	case format == ExportPlain && password != "":
+		return errors.New("a password needs an encrypted format")
+	case format != ExportPlain && password == "":
+		return errors.New("password: an encrypted backup needs one")
+	}
 	if msg := ExportPasswordError(password); msg != "" {
 		return fmt.Errorf("password: %s", msg)
 	}
@@ -165,18 +185,34 @@ func writeBackup(w io.Writer, homeDir, password string, settingsJSON []byte, now
 		return err
 	}
 
-	z := zip.NewWriter(w)
+	entryPassword := password // WinZip AES per entry
+	if format != ExportCompatible {
+		entryPassword = ""
+	}
+	var zipBuf bytes.Buffer
+	z := zip.NewWriter(&zipBuf)
 	for _, e := range []struct {
 		name string
 		data []byte
 	}{
 		{"config.xml", cfgBuf.Bytes()}, {"cert.pem", certPEM}, {"key.pem", keyPEM}, {ownSettingsFile, settingsJSON},
 	} {
-		if err := writeZipEntry(z, e.name, e.data, password, now); err != nil {
+		if err := writeZipEntry(z, e.name, e.data, entryPassword, now); err != nil {
 			return fmt.Errorf("%s: %w", e.name, err)
 		}
 	}
-	return z.Close()
+	if err := z.Close(); err != nil {
+		return err
+	}
+	out := zipBuf.Bytes()
+	if format == ExportStrong {
+		var err error
+		if out, err = seal(out, password, sealParams); err != nil {
+			return err
+		}
+	}
+	_, err = w.Write(out)
+	return err
 }
 
 // writeZipEntry adds data as name, deflated, and with a password encrypted
