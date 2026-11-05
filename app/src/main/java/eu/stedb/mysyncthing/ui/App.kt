@@ -30,6 +30,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -93,9 +94,9 @@ private object Routes {
     const val ADD_DEVICE = "add-device?id={id}&name={name}"
     const val WEB_GUI = "webgui"
     const val IGNORED = "ignored"
-    const val RECENT = "recent"
     const val ABOUT = "about"
     const val FOLDER_VERSIONS = "folder/{id}/versions"
+    const val FOLDER_RECENT = "folder/{id}/recent"
     const val FOLDER_DEFAULTS = "defaults/folder"
     const val DEFAULT_IGNORES = "defaults/ignores"
     const val DEVICE_DEFAULTS = "defaults/device"
@@ -239,7 +240,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                             onOpen = { nav.navigate(Routes.folder(it)) },
                             onAdd = { nav.navigate(Routes.addFolder()) },
                             onAccept = { folder, device -> nav.navigate(Routes.addFolder(folder, device)) },
-                            onOpenRecent = { nav.navigate(Routes.RECENT) },
+                            onOpenRecent = { nav.navigate("${Routes.folder(it)}/recent") },
                         )
                     }
                 }
@@ -360,8 +361,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                 screen(nav, Routes.DEVICE_DEFAULTS) { _, back ->
                     CoreGate(core) { DefaultDeviceScreen(vm, onBack = back) }
                 }
-                screen(nav, Routes.RECENT) { _, back ->
-                    CoreGate(core) { RecentChangesScreen(snapshot, vm, onBack = back) }
+                screen(nav, Routes.FOLDER_RECENT) { entry, back ->
+                    CoreGate(core) { RecentChangesScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = back) }
                 }
                 screen(nav, Routes.FOLDER_VERSIONS) { entry, back ->
                     CoreGate(core) { VersionsScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = back) }
@@ -379,7 +380,10 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                     CoreGate(core) { IgnoredScreen(vm, onBack = back) }
                 }
                 screen(nav, Routes.WEB_GUI) { _, back ->
-                    (core as? CoreState.Running)?.let { WebGuiScreen(it, onClose = back) }
+                    // Each start brings a new address and login, which the WebView takes when it is made:
+                    // a new run gets a new WebView, even if the state skipped from one run straight to the next.
+                    // While the core is not running it shows the same stopped / starting screen as every other screen, not a blank page.
+                    CoreGate(core) { (core as? CoreState.Running)?.let { key(it) { WebGuiScreen(it, onClose = back) } } }
                 }
             }
         }

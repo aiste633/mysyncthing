@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -16,6 +17,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -33,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,7 +55,7 @@ fun FoldersScreen(
     onOpen: (String) -> Unit,
     onAdd: () -> Unit,
     onAccept: (folder: String, device: String) -> Unit,
-    onOpenRecent: () -> Unit,
+    onOpenRecent: (String) -> Unit,
 ) {
     AppScreen(
         title = stringResource(R.string.tab_folders),
@@ -65,7 +68,6 @@ fun FoldersScreen(
                     text = { Text(stringResource(R.string.folders_rescan_all)) }, enabled = s.folders.any { !it.paused },
                     onClick = { menu = false; vm.rescanAll() },
                 )
-                DropdownMenuItem(text = { Text(stringResource(R.string.recent_changes)) }, onClick = { menu = false; onOpenRecent() })
             }
         },
         fab = { AddFab(stringResource(R.string.folders_add), onAdd) },
@@ -116,7 +118,7 @@ fun FoldersScreen(
                 }
                 grouped(s.folders) { it.group }.forEach { (group, folders) ->
                     if (group.isNotEmpty()) item("group-$group") { GroupTitle(group) }
-                    items(folders, key = { it.id }) { f -> FolderCard(f, s.folderStatus[f.id], s) { onOpen(f.id) } }
+                    items(folders, key = { it.id }) { f -> FolderCard(f, s.folderStatus[f.id], s, onRecent = { onOpenRecent(f.id) }) { onOpen(f.id) } }
                 }
             }
         }
@@ -124,7 +126,7 @@ fun FoldersScreen(
 }
 
 @Composable
-private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onClick: () -> Unit) {
+private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -> Unit, onClick: () -> Unit) {
     val status = folderStatus(f, st)
     val look = status.state.look()
     val shared = f.devices.count { it.deviceID != s.myId }
@@ -139,16 +141,24 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onClick: () ->
                 Spacer(Modifier.width(4.dp))
                 Text(status.text.asString(), style = MaterialTheme.typography.labelLarge, color = look.color)
             }
-            Text(
-                displayPath(f.path).asString(), style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
-            )
-            val details = listOfNotNull(
-                st?.let { bytes(it.localBytes) },
-                folderTypeLabel(f.type).takeIf { f.type != "sendreceive" }?.asString(),
-                if (shared == 0) stringResource(R.string.folder_card_not_shared) else pluralStringResource(R.plurals.folder_card_shared, shared, shared),
-            )
-            Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        displayPath(f.path).asString(), style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                    )
+                    val details = listOfNotNull(
+                        st?.let { bytes(it.localBytes) },
+                        folderTypeLabel(f.type).takeIf { f.type != "sendreceive" }?.asString(),
+                        if (shared == 0) stringResource(R.string.folder_card_not_shared) else pluralStringResource(R.plurals.folder_card_shared, shared, shared),
+                    )
+                    Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                // The 48 dp touch target overlaps the card's padding, so the icon lines up with the status text above.
+                IconButton(onClick = onRecent, modifier = Modifier.offset(x = 12.dp).testTag("recent-${f.id}")) {
+                    Icon(Icons.Default.History, stringResource(R.string.recent_changes))
+                }
+            }
             status.progress?.let {
                 ProgressBar(it, look.color, Modifier.padding(top = 6.dp))
             }
