@@ -42,7 +42,8 @@ missing_libs=$(ldd "$emu_dir/qemu/linux-x86_64/qemu-system-x86_64-headless" | aw
   [ -n "$(find "$emu_dir" -name "$lib" -print -quit)" ] || echo "$lib"
 done)
 [ -z "$missing_libs" ] || { echo "the emulator needs system libraries that are missing: $missing_libs" >&2; exit 1; }
-"$ANDROID_HOME/emulator/emulator" -version | head -n 1
+# From the package, not `emulator -version`: that runs the windowed binary, which needs PulseAudio.
+echo "Android emulator $(sed -n 's/^Pkg.Revision=//p' "$emu_dir/source.properties")"
 
 log="${E2E_EMULATOR_LOG:-$(mktemp)}"
 "$ANDROID_HOME/emulator/emulator" -avd "$avd" -no-window -no-audio -no-boot-anim -no-snapshot \
