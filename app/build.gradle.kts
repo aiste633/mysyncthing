@@ -14,8 +14,8 @@ android {
         applicationId = "eu.stedb.mysyncthing"
         minSdk = 35
         targetSdk = 36
-        versionCode = 4
-        versionName = "0.1.3"
+        versionCode = 5
+        versionName = "0.2.0"
         // End-to-end tests on an emulator against a real Syncthing peer (scripts/e2e/run.py).
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -58,7 +58,12 @@ android {
     buildFeatures { compose = true }
     packaging { jniLibs { useLegacyPackaging = false } }
     // Screen tests run on Robolectric, which needs the merged resources.
-    testOptions { unitTests.isIncludeAndroidResources = true }
+    testOptions {
+        unitTests.isIncludeAndroidResources = true
+        // Fixtures hold fixed instants that screens print in the default zone: pin it to CI's (UTC),
+        // or the screenshots differ on a machine in another zone.
+        unitTests.all { it.systemProperty("user.timezone", "UTC") }
+    }
 }
 
 kotlin {
