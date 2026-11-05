@@ -437,6 +437,7 @@
     <string name="browse_free">%1$s liberi</string>
     <string name="browse_new_folder">Nuova cartella</string>
     <string name="browse_type_path">Scrivi un percorso</string>
+    <string name="browse_path">Percorso</string>
     <string name="browse_show_hidden">Mostra cartelle nascoste</string>
     <string name="browse_empty">Nessuna cartella qui</string>
     <string name="browse_unreadable">Questa cartella non si può aprire</string>
@@ -448,6 +449,7 @@
     <string name="browse_inside_synced">Dentro la cartella sincronizzata \"%1$s\"</string>
     <string name="browse_holds_synced">Contiene la cartella sincronizzata \"%1$s\"</string>
     <string name="error_path_app_private">Android riserva questa cartella alle app</string>
+    <string name="error_path_other_user">Appartiene a un altro utente o profilo del telefono</string>
     <string name="error_name_long">Al massimo 255 byte</string>
     <string name="error_name_removable">Non su una scheda SD o chiavetta USB: %1$s, o un . alla fine</string>
     <string name="error_name_taken">Qui c\'è già una cartella con questo nome</string>

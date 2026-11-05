@@ -4,6 +4,7 @@ import android.view.WindowManager
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertHasNoClickAction
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.hasSetTextAction
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTextReplacement
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Folder
@@ -132,6 +134,20 @@ class FormsTest : ScreenTest() {
         compose.onNodeWithText("media").performClick()
         compose.onNodeWithTag("browseUse").assertIsEnabled().performClick()
         assertEquals("$root/Android/media", picked)
+    }
+
+    /** Each folder opens at its top, not at the parent's scroll position; hidden folders, sorted first, come into view. */
+    @Test
+    fun browserOpensEachFolderAtItsTop() {
+        val names = (1..40).map { "sub%02d".format(it) }
+        val dirs = names.associate { "$root/Long/$it" to 0 } + names.associate { "$root/Long/sub40/$it" to 0 } + mapOf("$root/Long" to 40, "$root/Long/sub40/.cache" to 0)
+        show { CompositionLocalProvider(LocalDisk provides MapDisk(listOf(StorageRoot(root)), dirs)) { FolderBrowser("$root/Long", root, emptyList(), onBack = {}, onPick = {}) } }
+        compose.onNodeWithTag("browseList").performScrollToKey("$root/Long/sub40")
+        compose.onNodeWithText("sub40").performClick()
+        compose.onNodeWithText("sub01").assertIsDisplayed()
+        compose.onNodeWithTag("browseMenu").performClick()
+        compose.onNodeWithText(str(R.string.browse_show_hidden)).performClick()
+        compose.onNodeWithText(".cache").assertIsDisplayed()
     }
 
     @Test

@@ -5,16 +5,22 @@ package eu.stedb.mysyncthing.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.CreateNewFolder
@@ -229,6 +235,11 @@ private fun BrowserContent(
     val scope = rememberCoroutineScope()
     val root = rootOf(dir, roots) ?: roots.first()
     val rows = entries?.let { browseRows(dir, it, folders, showHidden) }
+    // Each directory opens at its top; the position is kept over a rotation.
+    val list = rememberSaveable(dir, saver = LazyListState.Saver) { LazyListState() }
+    // Hidden folders sort first: once they are listed, the list goes to the top to show them.
+    var toTop by remember { mutableStateOf(false) }
+    LaunchedEffect(rows) { if (toTop) { list.scrollToItem(0); toTop = false } }
     val problem = if (loaded && entries == null) text(R.string.browse_unreadable) else pickProblem(dir, folders)
 
     AppScreen(
@@ -242,12 +253,12 @@ private fun BrowserContent(
                 DropdownMenuItem(
                     text = { Text(stringResource(R.string.browse_show_hidden)) },
                     trailingIcon = { Checkbox(showHidden, onCheckedChange = null) },
-                    onClick = { menu = false; showHidden = !showHidden },
+                    onClick = { menu = false; showHidden = !showHidden; toTop = showHidden },
                 )
             }
         },
     ) { padding ->
-        Column(Modifier.padding(padding)) {
+        val storages = @Composable {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
                 roots.forEachIndexed { i, r ->
                     SegmentedButton(
@@ -263,11 +274,10 @@ private fun BrowserContent(
                 }
             }
             Crumbs(dir, root, open)
-            Card(
-                Modifier.weight(1f).fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                colors = AppColors.card(), border = AppColors.cardBorder(),
-            ) {
-                LazyColumn(Modifier.testTag("browseList")) {
+        }
+        val listing = @Composable { modifier: Modifier ->
+            Card(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), colors = AppColors.card(), border = AppColors.cardBorder()) {
+                LazyColumn(Modifier.testTag("browseList"), state = list) {
                     when {
                         !loaded -> item { Box48 { BusyIndicator() } }
                         rows == null -> item { Hint(stringResource(R.string.browse_unreadable)) }
@@ -287,7 +297,9 @@ private fun BrowserContent(
                     }
                 }
             }
-            Surface(color = AppColors.card().containerColor, modifier = Modifier.fillMaxWidth()) {
+        }
+        val choice = @Composable { modifier: Modifier ->
+            Surface(color = AppColors.card().containerColor, modifier = modifier) {
                 Column(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val (top, rest) = pathParts(dir, roots)
                     Text(
@@ -301,6 +313,18 @@ private fun BrowserContent(
                         modifier = Modifier.fillMaxWidth().testTag("browseUse"),
                     ) { Text(stringResource(R.string.browse_use)) }
                 }
+            }
+        }
+        BoxWithConstraints(Modifier.padding(padding)) {
+            // A phone on its side: the choice beside the list, which keeps the height.
+            val side = maxWidth * 0.4f
+            if (maxWidth > maxHeight && maxHeight < 480.dp) Row {
+                Column(Modifier.weight(1f)) { storages(); listing(Modifier.weight(1f)) }
+                choice(Modifier.fillMaxHeight().width(side).verticalScroll(rememberScrollState()))
+            } else Column {
+                storages()
+                listing(Modifier.weight(1f))
+                choice(Modifier.fillMaxWidth())
             }
         }
     }
@@ -323,7 +347,7 @@ private fun BrowserContent(
             }
         }
         BrowseDialog.TypePath -> TextDialog(
-            stringResource(R.string.browse_type_path), dir, stringResource(R.string.folder_path),
+            stringResource(R.string.browse_type_path), dir, stringResource(R.string.browse_path),
             error = { pickProblem(it, folders) },
             onDismiss = { dialog = null },
         ) { dialog = null; onPick(folderPath(it)) }

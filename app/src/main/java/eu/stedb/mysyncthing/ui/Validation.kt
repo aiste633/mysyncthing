@@ -73,6 +73,7 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): UiT
         p.split('/').drop(1).any { it.isEmpty() || it == "." || it == ".." } -> text(R.string.error_path_parts)
         !inside(p, "/storage") || p == "/storage" || p == "/storage/emulated" -> text(R.string.error_path_storage)
         isAppPrivate(p) -> text(R.string.error_path_app_private)
+        isOtherUsers(p) -> text(R.string.error_path_other_user)
         others.map(::folderPath).any { inside(p, it) || inside(it, p) } -> text(R.string.error_path_overlap)
         else -> null
     }
@@ -91,6 +92,14 @@ fun folderPath(path: String): String {
     val alias = listOf("/sdcard", "/storage/self/primary").find { p == it || p.startsWith("$it/") } ?: return p
     return internalStorage + p.removePrefix(alias)
 }
+
+/**
+ * Internal storage of another Android user: the owner's /storage/emulated/0 seen from a
+ * work profile or cloned app. Android doesn't let the app reach it, so the core would fail.
+ * (go/bridge/importpolicy.go isOtherUsers refuses the same in imported paths.)
+ */
+fun isOtherUsers(path: String): Boolean =
+    path.startsWith("/storage/emulated/") && path != internalStorage && !path.startsWith("$internalStorage/")
 
 /**
  * Android/data and Android/obb (and below) on any storage, for any Android user: Android

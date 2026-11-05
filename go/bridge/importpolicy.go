@@ -280,6 +280,7 @@ const (
 	errPathStorage  = pathError("folder path is not in shared storage or on an SD card")
 	errPathOverlap  = pathError("folder path is the same as, inside or around another folder")
 	errPathApps     = pathError("folder path is in Android/data or Android/obb, which Android keeps for apps")
+	errPathUser     = pathError("folder path is in another Android user's or profile's storage")
 )
 
 // folderPath is a path as the app saves it: trimmed, without a trailing "/",
@@ -292,6 +293,13 @@ func folderPath(path string) string {
 		}
 	}
 	return p
+}
+
+// isOtherUsers: internal storage of another Android user, such as the owner's
+// /storage/emulated/0 seen from a work profile. Android doesn't let the app reach it.
+func isOtherUsers(p string) bool {
+	own := internalStorage.Load().(string)
+	return strings.HasPrefix(p, sharedStorage+"/emulated/") && p != own && !strings.HasPrefix(p, own+"/")
 }
 
 // isAppPrivate: Android/data and Android/obb (and below) on any storage, for
@@ -326,6 +334,8 @@ func folderPathError(p string, others []string) error {
 		return errPathStorage
 	case isAppPrivate(p):
 		return errPathApps
+	case isOtherUsers(p):
+		return errPathUser
 	}
 	for _, o := range others {
 		if o = folderPath(o); inside(p, o) || inside(o, p) {

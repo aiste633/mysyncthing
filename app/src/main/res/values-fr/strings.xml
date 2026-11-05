@@ -439,6 +439,7 @@
     <string name="browse_free">%1$s libres</string>
     <string name="browse_new_folder">Nouveau dossier</string>
     <string name="browse_type_path">Saisir un chemin</string>
+    <string name="browse_path">Chemin</string>
     <string name="browse_show_hidden">Afficher les dossiers masqués</string>
     <string name="browse_empty">Aucun dossier ici</string>
     <string name="browse_unreadable">Impossible d’ouvrir ce dossier</string>
@@ -450,6 +451,7 @@
     <string name="browse_inside_synced">Dans le partage « %1$s »</string>
     <string name="browse_holds_synced">Contient le partage « %1$s »</string>
     <string name="error_path_app_private">Android réserve ce dossier aux applications</string>
+    <string name="error_path_other_user">Appartient à un autre utilisateur ou profil du téléphone</string>
     <string name="error_name_long">255 octets au maximum</string>
     <string name="error_name_removable">Pas sur une carte SD ou une clé USB : %1$s, ni un . à la fin</string>
     <string name="error_name_taken">Un dossier de ce nom existe déjà ici</string>

@@ -283,6 +283,7 @@ class ValidationTest {
         assertTrue("no control characters", p.none { it.isISOControl() })
         assertTrue("no bidi controls", p.none { it == '\u061C' || it in '\u200E'..'\u200F' || it in '\u202A'..'\u202E' || it in '\u2066'..'\u2069' })
         assertEquals("normalised", java.io.File(p).normalize().path, p)
+        assertTrue("this user's storage", !p.startsWith("/storage/emulated/") || p == internalStorage || p.startsWith("$internalStorage/"))
         // Android/data and Android/obb right under a storage (internal storage of any user, or an SD card).
         val rest = p.split('/').drop(if (p.startsWith("/storage/emulated/")) 4 else 3).map { it.lowercase() }
         assertFalse("Android keeps it for apps", rest.size >= 2 && rest[0] == "android" && rest[1] in setOf("data", "obb"))
@@ -315,6 +316,10 @@ class ValidationTest {
             assertEquals("/storage/emulated/10", folderPath("/storage/self/primary"))
             assertEquals("Internal storage", displayPath("/storage/emulated/10").en())
             assertEquals("/DCIM", displayPath("/storage/emulated/10/DCIM").en())
+            assertEquals(null, folderPathError("/storage/emulated/10/Music").en())
+            for (other in listOf("/storage/emulated/0/Music", "/storage/emulated/0", "/storage/emulated/100/x")) {
+                assertEquals(other, "Belongs to another user or profile on this phone", folderPathError(other).en())
+            }
         } finally {
             internalStorage = owner
         }

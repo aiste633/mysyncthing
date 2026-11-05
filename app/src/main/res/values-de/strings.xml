@@ -422,6 +422,7 @@
     <string name="browse_free">%1$s frei</string>
     <string name="browse_new_folder">Neuer Ordner</string>
     <string name="browse_type_path">Pfad eingeben</string>
+    <string name="browse_path">Pfad</string>
     <string name="browse_show_hidden">Versteckte Ordner zeigen</string>
     <string name="browse_empty">Hier sind keine Ordner</string>
     <string name="browse_unreadable">Dieser Ordner lässt sich nicht öffnen</string>
@@ -433,6 +434,7 @@
     <string name="browse_inside_synced">Im synchronisierten Ordner „%1$s“</string>
     <string name="browse_holds_synced">Enthält den synchronisierten Ordner „%1$s“</string>
     <string name="error_path_app_private">Android hält diesen Ordner für Apps frei</string>
+    <string name="error_path_other_user">Gehört einem anderen Nutzer oder Profil auf diesem Smartphone</string>
     <string name="error_name_long">Höchstens 255 Byte</string>
     <string name="error_name_removable">Nicht auf einer SD-Karte oder einem USB-Stick: %1$s, oder ein . am Ende</string>
     <string name="error_name_taken">Hier gibt es bereits einen Ordner mit diesem Namen</string>

@@ -172,6 +172,13 @@ fun BusyIndicator() {
  */
 val LocalNow = staticCompositionLocalOf<() -> LocalDateTime> { LocalDateTime::now }
 
+/** A screen's title: at the largest font sizes it shrinks to fit rather than being cut ("Ordner hinz…"). */
+@Composable
+private fun BarTitle(title: String) = Text(
+    title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    autoSize = TextAutoSize.StepBased(minFontSize = 14.sp, maxFontSize = LocalTextStyle.current.fontSize),
+)
+
 /**
  * A screen with a top bar on the app's tinted background. [onBack] adds a back
  * arrow; [status] adds the status chip after the title; [subtitle] a line under it (what the screen is for).
@@ -199,14 +206,14 @@ fun AppScreen(
                 TopAppBar(
                     title = {
                         if (subtitle != null) Column {
-                            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            BarTitle(title)
                             Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        else if (status == null || !roomy) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        else if (status == null || !roomy) BarTitle(title)
                         // In the title slot, not the actions: the bar sizes actions first, so a long
                         // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
                         else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            BarTitle(title)
                             StatusChip(status, Modifier.weight(1f, fill = false).padding(start = 12.dp))
                         }
                     },
@@ -538,7 +545,7 @@ fun TextDialog(
         title = { Text(title) },
         text = {
             OutlinedTextField(
-                text, { text = it }, label = { Text(label) }, singleLine = singleLine,
+                text, { text = it }, label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = singleLine,
                 minLines = if (singleLine) 1 else 6, isError = problem != null,
                 supportingText = (problem ?: supporting)?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
