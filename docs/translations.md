@@ -74,7 +74,7 @@ unless one was chosen in the web GUI itself.
 - Units are SI symbols and are not translated: kB, MB/s, %, d, h, min, s. They follow the
   number after a non-breaking space (` `).
 - Names stay as they are: Syncthing, Syncthing-Fork, Tor, Orbot, SOCKS5, HTTP, QUIC,
-  AES-256, Wi-Fi, and licence names. Strings marked `translatable="false"` are not offered.
+  AES-256, WinZip, Argon2id, XChaCha20-Poly1305, MySyncthing, Wi-Fi, and licence names. Strings marked `translatable="false"` are not offered.
 - Follow the terms of upstream Syncthing's translation for the same language (folder types,
   versioning, ignore patterns, introducer, and so on), so the app and the web GUI agree.
   The usage-reporting question uses upstream's wording; take upstream's translation of it.

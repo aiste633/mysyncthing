@@ -22,7 +22,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - The Devices tab has the switches for all devices together: pause syncing, and the sync windows. Every device card says when the device was last seen.
 - No device connected is a grey "Waiting for devices" for 30 minutes, and only then a red problem; devices you paused don't count.
 - Connect through a SOCKS5 or HTTP proxy, such as Tor with Orbot, optionally with nothing going around it.
-- Easy switch from Syncthing-Fork: import its backup, encrypted ones too, and take over its device ID, folders and devices. Export this app's setup to a zip, optionally AES-256 encrypted, and import it on another phone.
+- Easy switch from Syncthing-Fork: import its backup, encrypted ones too, and take over its device ID, folders and devices. Export this app's setup and import it on another phone: strongly encrypted (Argon2id and XChaCha20-Poly1305) by default, or as a WinZip AES-256 zip that other apps open.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.
 - Notifies you of new devices and shared folders (with Review and Ignore) and of folders that stop syncing.
 - Syncthing's own web GUI is built in for the few things the app does not cover, signed in automatically and private to the app.
