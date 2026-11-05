@@ -45,15 +45,15 @@ object SyncthingCore {
     fun setProxy(p: ProxySettings) = Stbridge.setProxy(p.type.scheme, p.host, p.port.toLong(), p.user, p.password, p.only)
 
     /**
-     * Starts the core with the login [login] gives, through [proxy]; any
-     * failure on the way, storing new credentials included, ends in
-     * [CoreState.Failed].
+     * Starts the core through [proxy], with a new login (API key, GUI user and
+     * password) that lives only as long as this run; any failure on the way
+     * ends in [CoreState.Failed]. Restarts in place within the run keep it.
      */
-    internal suspend fun start(home: File, login: suspend () -> Credentials, proxy: ProxySettings) = withContext(serial) {
+    internal suspend fun start(home: File, proxy: ProxySettings) = withContext(serial) {
         if (Stbridge.isRunning()) return@withContext
         _state.value = CoreState.Starting
         _state.value = try {
-            val credentials = login()
+            val credentials = Credentials.random()
             setProxy(proxy)
             Stbridge.start(home.absolutePath, credentials.apiKey, credentials.guiUser, credentials.guiPassword)
             val address = Stbridge.guiAddress()

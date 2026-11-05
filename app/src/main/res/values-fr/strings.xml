@@ -591,7 +591,6 @@
     <string name="device_nearby_tap">Touchez pour l’utiliser</string>
     <string name="device_share_folders">Partager</string>
 
-    <string name="all_folders">Tous les partages</string>
     <string name="recent_none">Aucun changement depuis le démarrage de Syncthing.</string>
     <!-- "one" leaves out the number: in French it also covers 0, which this count never is (at least 1) -->
     <plurals name="recent_note" tools:ignore="ImpliedQuantity">

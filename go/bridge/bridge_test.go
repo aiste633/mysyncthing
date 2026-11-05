@@ -7,10 +7,12 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/syncthing/syncthing/lib/protocol"
 	"github.com/syncthing/syncthing/lib/syncthing"
 )
 
@@ -253,5 +255,164 @@ func TestFolderIDsInRESTPaths(t *testing.T) {
 		if got != addressable {
 			t.Errorf("%q: addressable %v, want %v", id, got, addressable)
 		}
+	}
+}
+
+// A new config gives new devices one connection; a config that exists keeps
+// what it has, so a later start (or an imported config) is never rewritten.
+func TestNewDevicesUseOneConnection(t *testing.T) {
+	home := t.TempDir()
+	type dev struct {
+		NumConnections int `json:"numConnections"`
+	}
+	send := func(method, path, body string) {
+		t.Helper()
+		req, _ := http.NewRequest(method, "http://"+GuiAddress()+path, strings.NewReader(body))
+		req.Header.Set("X-API-Key", "app-key")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("%s %s: HTTP %d", method, path, resp.StatusCode)
+		}
+	}
+
+	if err := Start(home, "app-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	var d dev
+	getJSON(t, "/rest/config/defaults/device", &d)
+	if d.NumConnections != phoneConnections {
+		t.Fatalf("fresh config: default device has %d connections, want %d", d.NumConnections, phoneConnections)
+	}
+	// A device added without a value takes the default.
+	peer := protocol.NewDeviceID([]byte("a new peer")).String()
+	send(http.MethodPost, "/rest/config/devices", `{"deviceID":"`+peer+`"}`)
+	getJSON(t, "/rest/config/devices/"+peer, &d)
+	if d.NumConnections != phoneConnections {
+		t.Fatalf("new device has %d connections, want %d", d.NumConnections, phoneConnections)
+	}
+	// The user's own choice survives the next start.
+	send(http.MethodPatch, "/rest/config/defaults/device", `{"numConnections":0}`)
+	Stop()
+
+	if err := Start(home, "app-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	defer Stop()
+	getJSON(t, "/rest/config/defaults/device", &d)
+	if d.NumConnections != 0 {
+		t.Fatalf("existing config rewritten: default device has %d connections, want 0", d.NumConnections)
+	}
+}
+
+// Every Start brings a new login, and the old one stops working: its API key,
+// its Basic auth and the web GUI sessions it opened. A restart in place keeps
+// the run's login and sessions, so the open web GUI stays logged in.
+func TestLoginNewEveryStart(t *testing.T) {
+	home := t.TempDir()
+	t.Cleanup(Stop)
+	status := func(set func(*http.Request)) int {
+		t.Helper()
+		req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/rest/system/status", nil)
+		set(req)
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		return resp.StatusCode
+	}
+	key := func(k string) func(*http.Request) {
+		return func(r *http.Request) { r.Header.Set("X-API-Key", k) }
+	}
+	// login logs in as the WebView does, with Basic auth on the page load, and
+	// returns how the GUI's scripts then call REST: with the session and CSRF
+	// cookies and the CSRF header; nil when no session was opened.
+	login := func(user, password string) func(*http.Request) {
+		t.Helper()
+		req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/", nil)
+		req.SetBasicAuth(user, password)
+		resp, err := client.Do(req)
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp.Body.Close()
+		cookies := resp.Cookies()
+		if !slices.ContainsFunc(cookies, func(c *http.Cookie) bool { return strings.HasPrefix(c.Name, "sessionid-") }) {
+			return nil
+		}
+		return func(r *http.Request) {
+			for _, c := range cookies {
+				r.AddCookie(c)
+				if id, ok := strings.CutPrefix(c.Name, "CSRF-Token-"); ok {
+					r.Header.Set("X-CSRF-Token-"+id, c.Value)
+				}
+			}
+		}
+	}
+
+	if err := Start(home, "key-1", "user-1", "pass-1"); err != nil {
+		t.Fatal(err)
+	}
+	session := login("user-1", "pass-1")
+	if session == nil {
+		t.Fatal("run 1: the login opens no session")
+	}
+	if code := status(session); code != http.StatusOK {
+		t.Fatalf("run 1: session: HTTP %d", code)
+	}
+	if code := status(key("key-1")); code != http.StatusOK {
+		t.Fatalf("run 1: API key: HTTP %d", code)
+	}
+
+	// Restart in place: same login, the session still works. lib/api saves
+	// sessions after a second without logins (tokenmanager.go).
+	time.Sleep(1500 * time.Millisecond)
+	mu.Lock()
+	before := app
+	mu.Unlock()
+	req, _ := http.NewRequest(http.MethodPost, "http://"+GuiAddress()+"/rest/system/restart", nil)
+	key("key-1")(req)
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	for deadline := time.Now().Add(30 * time.Second); ; time.Sleep(50 * time.Millisecond) {
+		mu.Lock()
+		back := app != nil && app != before
+		mu.Unlock()
+		if back && status(key("key-1")) == http.StatusOK {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("core did not come back after restart: %q", LastError())
+		}
+	}
+	if code := status(session); code != http.StatusOK {
+		t.Fatalf("restart in place ended the session: HTTP %d", code)
+	}
+	Stop()
+
+	if err := Start(home, "key-2", "user-2", "pass-2"); err != nil {
+		t.Fatal(err)
+	}
+	if code := status(key("key-1")); code == http.StatusOK {
+		t.Fatal("run 2: the old API key still works")
+	}
+	if code := status(session); code == http.StatusOK {
+		t.Fatal("run 2: the old session still works")
+	}
+	if login("user-1", "pass-1") != nil {
+		t.Fatal("run 2: the old login still opens a session")
+	}
+	if code := status(key("key-2")); code != http.StatusOK {
+		t.Fatalf("run 2: new API key: HTTP %d", code)
+	}
+	if s := login("user-2", "pass-2"); s == nil || status(s) != http.StatusOK {
+		t.Fatal("run 2: the new login opens no working session")
 	}
 }

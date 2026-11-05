@@ -3,13 +3,13 @@ package eu.stedb.mysyncthing.core
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.preferencesOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.fail
 import org.junit.Test
 import java.io.IOException
 
@@ -50,18 +50,34 @@ class SettingsWriteTest {
         assertFalse(settings.runConditions.first().respectBatterySaver)
     }
 
-    /** New credentials that can't be stored must fail the start, not run the core with a login the next start won't know. */
+    /** The login versions up to 0.2.0 stored is removed, with a write only when it is there; a full storage can't stop a start. */
     @Test
-    fun credentialsThatCantBeStoredThrow() = runBlocking {
-        val store = FillableStore().apply { full = true }
-        try {
-            Settings(store).credentials()
-            fail("credentials() returned without storing them")
-        } catch (_: IOException) {
-        }
-        store.full = false
-        val first = Settings(store).credentials()
+    fun storedLoginIsForgotten() = runBlocking {
+        val store = FillableStore()
+        val settings = Settings(store)
         store.full = true
-        assertEquals(first, Settings(store).credentials()) // stored ones need no write
+        assertTrue(settings.forgetStoredLogin()) // nothing stored: no write
+        store.full = false
+        store.state.value = preferencesOf(
+            Settings.API_KEY to "old-key", Settings.GUI_USER to "old-user", Settings.GUI_PASSWORD to "old-password",
+            Settings.START_ON_BOOT to false,
+        )
+        store.full = true
+        assertFalse(settings.forgetStoredLogin()) // fails without throwing
+        store.full = false
+        assertTrue(settings.forgetStoredLogin())
+        val left = store.state.value
+        assertTrue(listOf(Settings.API_KEY, Settings.GUI_USER, Settings.GUI_PASSWORD).none { it in left })
+        assertEquals(false, left[Settings.START_ON_BOOT]) // the rest stays
+    }
+
+    /** A new login for every start, in the form the bridge takes (go/bridge token), and never the same twice. */
+    @Test
+    fun loginIsNewEachTime() {
+        val token = Regex("[A-Za-z0-9_-]{64}")
+        val logins = List(100) { Credentials.random() }
+        val all = logins.flatMap { listOf(it.apiKey, it.guiUser, it.guiPassword) }
+        assertTrue(all.all { token.matches(it) })
+        assertEquals(all.size, all.toSet().size)
     }
 }
