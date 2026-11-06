@@ -35,7 +35,10 @@ Runs only on an emulator: it wipes the app's data. Results: <out>/summary.md, lo
   scripts/e2e/scenarios.py --peer go/build/e2e-peer \\
       --apk app/build/outputs/apk/debug/app-debug.apk \\
       --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk \\
-      [--only fast | --only edit_edit,three_way] --out build/scenarios
+      [--only fast | --only edit_edit,three_way] [--hold-min 60] --out build/scenarios
+
+  --only walk_state --hold-min 60 sets up a paired app with 121 conflict copies and keeps the peer
+  running for an hour, for a walk by hand.
 """
 import argparse
 import hashlib
@@ -508,6 +511,15 @@ def seeded_copies(w: World) -> None:
     expect_shown(before)
 
 
+def walk_state(w: World) -> None:
+    """Not a test: leaves 120 copies from elsewhere and one real conflict in the folder, for a walk by hand
+    (with --hold-min): the card's count, the badge's "99+", Recent changes' box, the widget's dot."""
+    for i in range(120):
+        peer_write(w.peer, f"seeded/s{i:03d}.sync-conflict-20261106-120000-{FAKE_SHORT}.txt", "seeded copy\n")
+    w.settle()
+    both_new(w)
+
+
 def ignored_copy(w: World) -> None:
     """An ignore pattern on the phone hides the copies from the core; the app's walk still counts them."""
     cs = sorted(copies(phone_list()))
@@ -890,7 +902,7 @@ def count_after_reboot(w: World) -> None:
 SCENARIOS = {f.__name__: f for f in (edit_edit, edit_delete, both_new, rename_edit, odd_names, copy_deleted, copy_conflict,
                                      login_rotates, max_conflicts, seeded_copies, ignored_copy, three_way, send_only,
                                      receive_only, long_name, many_files, big_file, conflicts_200, churn_both, pause_storm,
-                                     network_flaps, count_after_kill, count_after_reboot)}
+                                     network_flaps, count_after_kill, count_after_reboot, walk_state)}
 
 
 # ---- main --------------------------------------------------------------------------------------
@@ -909,6 +921,7 @@ def main() -> None:
     ap.add_argument("--test-apk", type=Path, required=True)
     ap.add_argument("--only", default="all", help="all, fast, slow, stress, or scenario names, comma-separated")
     ap.add_argument("--out", type=Path, default=Path("build/scenarios"))
+    ap.add_argument("--hold-min", type=int, default=0, help="keep the peer running this long after the last scenario (a walk by hand)")
     a = ap.parse_args()
     names = [n for part in a.only.split(",") for n in GROUPS.get(part, [part])]
     if unknown := [n for n in names if n not in SCENARIOS]:
@@ -952,6 +965,12 @@ def main() -> None:
             results.append((name, "ok" if not mine else "FAIL: " + "; ".join(mine), time.monotonic() - began,
                             f"{app_memory()}, {goroutines(w)} goroutines"))
             log(f"scenario {name}: {results[-1][1]}")
+        if a.hold_min:
+            log(f"holding the peer for {a.hold_min} min (Ctrl-C ends it early)")
+            try:
+                time.sleep(a.hold_min * 60)
+            except KeyboardInterrupt:
+                pass
     finally:
         for p in w.peers():
             p.stop()
