@@ -180,6 +180,8 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
             result["result"] = f"setup failed: {'; '.join(run.failures)}"
             return result
         phone = run.phone_id(peer)
+        if a.offline:
+            run.phone_offline()
         offer_folder(peer, phone)
         seed_copies(peer, setup.get("copies", 0))
         if "phase" in setup and not run.phase(setup["phase"], peer, out):
@@ -292,6 +294,7 @@ def main() -> None:
     ap.add_argument("--events", type=int, default=120000)
     ap.add_argument("--throttle", type=int, default=100)
     ap.add_argument("--out", type=Path, default=Path("build/monkey"))
+    ap.add_argument("--offline", action="store_true", help="the phone off Syncthing's public servers once paired (PC runs)")
     a = ap.parse_args()
     setups = a.setups.split(",")
     if unknown := [s for s in setups if s not in SETUPS]:

@@ -61,7 +61,7 @@ sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run  # noqa: E402
 from run import ADB, APP, FOLDER, FORWARD_PORT, PHONE_DIR, Peer, adb, eventually, fail, log, sh  # noqa: E402
-from upgrade import PHONE_API_PORT, PhoneCore, private  # noqa: E402
+from run import PHONE_API_PORT, PhoneCore, private  # noqa: E402
 
 PEER_B_GUI, PEER_B_LISTEN = 8387, 22002
 CORE_DIRS = {".stfolder", ".stversions"}
@@ -922,6 +922,7 @@ def main() -> None:
     ap.add_argument("--test-apk", type=Path, required=True)
     ap.add_argument("--only", default="all", help="all, fast, slow, stress, or scenario names, comma-separated")
     ap.add_argument("--out", type=Path, default=Path("build/scenarios"))
+    ap.add_argument("--offline", action="store_true", help="the phone off Syncthing's public servers once paired (PC runs)")
     ap.add_argument("--hold-min", type=int, default=0, help="keep the peer running this long after the last scenario (a walk by hand)")
     a = ap.parse_args()
     names = [n for part in a.only.split(",") for n in GROUPS.get(part, [part])]
@@ -943,6 +944,8 @@ def main() -> None:
         if not run.phase("pairAndSync", w.peer, a.out):
             sys.exit("pairing failed: " + "; ".join(run.failures))
         w.phone = run.phone_id(w.peer)
+        if a.offline:
+            run.phone_offline()
         run.open_app()
         w.core.connect()
         results.append(("(start)", "", 0.0, f"{app_memory()}, {goroutines(w)} goroutines"))
