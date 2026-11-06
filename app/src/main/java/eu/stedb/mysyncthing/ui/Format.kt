@@ -215,8 +215,8 @@ fun wrapPath(path: String): String = if (path.length > 1 && path[0] == '/') "/\u
 
 /** Paths in internal storage are shown relative to it, as the Files app does. */
 fun displayPath(path: String): UiText = when {
-    path == INTERNAL_STORAGE -> text(R.string.internal_storage)
-    path.startsWith("$INTERNAL_STORAGE/") -> raw(path.removePrefix(INTERNAL_STORAGE))
+    path == internalStorage -> text(R.string.internal_storage)
+    path.startsWith("$internalStorage/") -> raw(path.removePrefix(internalStorage))
     else -> raw(path)
 }
 

@@ -806,6 +806,71 @@
  ],
  "folderPath": [
   {
+   "path": "/storage/emulated/0/Android/data/com.example.app",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/Android/data",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/Android/obb",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/android/DATA/x",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/1234-ABCD/Android/data",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/10/Android/obb/x",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/sdcard/Android/data/x",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/Android",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/Android/media/com.example.app/Media",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/0/Android/datax",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/0/Documents/Android/data",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/10/Documents",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/1234-ABCD/Android",
+   "others": [],
+   "ok": false
+  },
+  {
    "path": "/storage/emulated/0/DCIM",
    "others": [],
    "ok": true
@@ -813,7 +878,7 @@
   {
    "path": "/storage/emulated/0",
    "others": [],
-   "ok": true
+   "ok": false
   },
   {
    "path": "/storage/1234-ABCD/Music",
@@ -827,6 +892,31 @@
   },
   {
    "path": "/sdcard",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/1234-ABCD",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/android",
+   "others": [],
+   "ok": false
+  },
+  {
+   "path": "/storage/emulated/0/Android/media",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/1234-ABCD/Android/media/x",
+   "others": [],
+   "ok": true
+  },
+  {
+   "path": "/storage/emulated/0/Documents/Android",
    "others": [],
    "ok": true
   },

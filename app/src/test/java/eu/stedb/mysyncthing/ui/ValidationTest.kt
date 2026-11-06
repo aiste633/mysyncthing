@@ -266,8 +266,10 @@ class ValidationTest {
     private val existing = listOf("/storage/emulated/0/DCIM", "/storage/1234-ABCD/Music/")
 
     private val path: Gen<String> = {
-        val root = pick("/storage/emulated/0", "/storage/1234-ABCD", "/storage", "/sdcard", "/data/user/0/eu.stedb.mysyncthing/files", "", "~", "/")(this)
-        val parts = (0 until nextInt(0, 4)).map { pick("DCIM", "Music", "Camera", "my photos", ".", "..", "", "Ünï 😀", "a\nb", "...", "Android", "gpj\u202Eexe", "a\u2066b", "a\u200Fb")(this) }
+        val root = pick("/storage/emulated/0", "/storage/emulated/10", "/storage/1234-ABCD", "/storage", "/sdcard", "/data/user/0/eu.stedb.mysyncthing/files", "", "~", "/")(this)
+        val parts = (0 until nextInt(0, 4)).map {
+            pick("DCIM", "Music", "Camera", "my photos", ".", "..", "", "Ünï 😀", "a\nb", "...", "Android", "android", "data", "DATA", "obb", "media", "gpj\u202Eexe", "a\u2066b", "a\u200Fb")(this)
+        }
         root + parts.joinToString("") { "/$it" } + pick("", "/", " ")(this)
     }
 
@@ -281,6 +283,11 @@ class ValidationTest {
         assertTrue("no control characters", p.none { it.isISOControl() })
         assertTrue("no bidi controls", p.none { it == '\u061C' || it in '\u200E'..'\u200F' || it in '\u202A'..'\u202E' || it in '\u2066'..'\u2069' })
         assertEquals("normalised", java.io.File(p).normalize().path, p)
+        assertTrue("this user's storage", !p.startsWith("/storage/emulated/") || p == internalStorage || p.startsWith("$internalStorage/"))
+        // Android/data and Android/obb right under a storage (internal storage of any user, or an SD card).
+        val rest = p.split('/').drop(if (p.startsWith("/storage/emulated/")) 4 else 3).map { it.lowercase() }
+        assertFalse("Android keeps it for apps", rest.size >= 2 && rest[0] == "android" && rest[1] in setOf("data", "obb"))
+        assertFalse("holds what Android keeps for apps", rest.isEmpty() || rest == listOf("android"))
         for (e in existing.map { it.trimEnd('/') }) {
             assertFalse("overlaps $e", p == e || p.startsWith("$e/") || e.startsWith("$p/"))
         }
@@ -290,12 +297,34 @@ class ValidationTest {
     fun folderPathExamples() {
         assertEquals(null, folderPathError("/storage/emulated/0/Documents/", existing).en())
         assertEquals("Another folder is already here, or inside it", folderPathError("/storage/emulated/0/DCIM/Camera", existing).en())
-        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-ABCD", existing).en())
+        assertEquals("Holds folders Android keeps for apps (Android/data, obb)", folderPathError("/storage/1234-ABCD", existing).en())
+        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-ABCD/Music/Live", existing).en())
         assertEquals("In the phone's storage or on an SD card (/storage/…)", folderPathError("/data/user/0/eu.stedb.mysyncthing/files/syncthing").en())
         assertEquals("No empty, . or .. parts", folderPathError("/storage/emulated/0/Syncthing/..").en())
         assertEquals("No line breaks or control characters", folderPathError("/storage/emulated/0/a\nb").en())
         assertEquals("/storage/emulated/0/Music", folderPath(" /sdcard/Music/ "))
         assertEquals("Another folder is already here, or inside it", folderPathError("/sdcard/DCIM", existing).en())
+        assertEquals("Android keeps this folder for apps", folderPathError("/sdcard/Android/data/com.example.app").en())
+        assertEquals(null, folderPathError("/storage/emulated/0/Android/media/com.example.app").en())
+    }
+
+    /** In a work profile, Private Space or a cloned app, /sdcard is that user's storage, not the owner's. */
+    @Test
+    fun sdcardIsTheStorageOfTheAppsUser() {
+        val owner = internalStorage
+        try {
+            internalStorage = "/storage/emulated/10"
+            assertEquals("/storage/emulated/10/Music", folderPath("/sdcard/Music/"))
+            assertEquals("/storage/emulated/10", folderPath("/storage/self/primary"))
+            assertEquals("Internal storage", displayPath("/storage/emulated/10").en())
+            assertEquals("/DCIM", displayPath("/storage/emulated/10/DCIM").en())
+            assertEquals(null, folderPathError("/storage/emulated/10/Music").en())
+            for (other in listOf("/storage/emulated/0/Music", "/storage/emulated/0", "/storage/emulated/100/x")) {
+                assertEquals(other, "Belongs to another user or profile on this phone", folderPathError(other).en())
+            }
+        } finally {
+            internalStorage = owner
+        }
     }
 
     @Test

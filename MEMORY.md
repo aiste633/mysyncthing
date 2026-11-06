@@ -9,7 +9,7 @@ Resume notes for any session. Dates are ISO 8601, times 24 h.
 - Core: in-process via `gomobile bind` of `go/bridge` (Go package `stbridge`, Java package `eu.stedb.mysyncthing.stbridge`). Not the exec'd-binary approach.
 - Kotlin controls the core only through the REST API on a random loopback port. Credentials (API key, GUI user/password) are new at every core start (`Credentials.random()`) and kept only in memory (`CoreState.Running`); restarts in place keep them. The DataStore keys of versions up to 0.2.0 are removed at start (`Settings.forgetStoredLogin`).
 - FGS type `specialUse` (dataSync has a 6 h/day cap on API 35+ and cannot start at boot).
-- Storage: `MANAGE_EXTERNAL_STORAGE`. The folder picker (SAF tree URI) is converted to a POSIX path.
+- Storage: `MANAGE_EXTERNAL_STORAGE`. Folders are chosen in the app's own browser (`ui/FolderBrowser.kt`, storages from `StorageManager`, read with All files access) or by quick picks; Android's SAF picker was dropped 2026-11-05 (it refuses Download and storage roots). Internal storage is `internalStorage` (set in MainActivity from Environment; not always /storage/emulated/0: work profile, Private Space, cloned apps); the bridge gets it via `SetInternalStorage` before an import. `Android/data` and `Android/obb` are refused (app and import).
 - Run conditions pause all devices via REST and remember which ones the user had paused, so a resume does not undo the user's choice.
 - Web GUI fallback in a WebView, using Basic auth on the first request and then the session cookie.
 

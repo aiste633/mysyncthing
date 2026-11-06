@@ -3,13 +3,9 @@
 package eu.stedb.mysyncthing.ui
 
 import android.animation.ValueAnimator
-import android.net.Uri
-import android.provider.DocumentsContract
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -178,6 +174,13 @@ fun BusyIndicator() {
  */
 val LocalNow = staticCompositionLocalOf<() -> LocalDateTime> { LocalDateTime::now }
 
+/** A screen's title: at the largest font sizes it shrinks to fit rather than being cut ("Ordner hinz…"). */
+@Composable
+private fun BarTitle(title: String) = Text(
+    title, maxLines = 1, overflow = TextOverflow.Ellipsis,
+    autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = LocalTextStyle.current.fontSize, stepSize = 0.5.sp),
+)
+
 /**
  * A screen with a top bar on the app's tinted background. [onBack] adds a back
  * arrow; [status] adds the status chip after the title; [subtitle] a line under it (what the screen is for).
@@ -205,14 +208,14 @@ fun AppScreen(
                 TopAppBar(
                     title = {
                         if (subtitle != null) Column {
-                            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            BarTitle(title)
                             Text(subtitle, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
-                        else if (status == null || !roomy) Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        else if (status == null || !roomy) BarTitle(title)
                         // In the title slot, not the actions: the bar sizes actions first, so a long
                         // status cut the title ("Folde…"). Here the title keeps its width and the chip gets the rest.
                         else Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                            Text(title, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            BarTitle(title)
                             StatusChip(status, Modifier.weight(1f, fill = false).padding(start = 12.dp))
                         }
                     },
@@ -554,7 +557,7 @@ fun TextDialog(
         title = { Text(title) },
         text = {
             OutlinedTextField(
-                text, { text = it }, label = { Text(label) }, singleLine = singleLine,
+                text, { text = it }, label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = singleLine,
                 minLines = if (singleLine) 1 else 6, isError = problem != null,
                 supportingText = (problem ?: supporting)?.let { { Text(it) } },
                 modifier = Modifier.fillMaxWidth(),
@@ -595,29 +598,6 @@ fun ConfirmDialog(title: String, text: String, confirm: String, onDismiss: () ->
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
     )
 }
-
-/**
- * Folder picker returning a POSIX path. With All files access the core uses
- * paths directly, so the SAF tree URI is only used to name the directory.
- */
-@Composable
-fun rememberFolderPicker(onPath: (String) -> Unit): () -> Unit {
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        uri?.let(::treeUriToPath)?.let(onPath)
-    }
-    return { launcher.launch(null) }
-}
-
-fun treeUriToPath(uri: Uri): String? {
-    if (uri.authority != "com.android.externalstorage.documents") return null
-    val docId = DocumentsContract.getTreeDocumentId(uri)
-    val volume = docId.substringBefore(':')
-    val rel = docId.substringAfter(':', "")
-    val root = if (volume == "primary") INTERNAL_STORAGE else "/storage/$volume"
-    return if (rel.isEmpty()) root else "$root/$rel"
-}
-
-const val INTERNAL_STORAGE = "/storage/emulated/0"
 
 /** Heading over a group of cards on a tab (folder or device groups). */
 @Composable
