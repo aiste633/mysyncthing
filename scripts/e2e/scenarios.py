@@ -342,9 +342,10 @@ def edit_edit(w: World) -> None:
 
 def edit_delete(w: World) -> None:
     """The newer change wins, a deletion too: the core's WinsConflict goes by modification time, and a
-    deletion carries the time of the scan that found it. So the order is set, more than a second apart
-    (a deletion's time has whole seconds), and each side deletes once before and once after the other's
-    edit. A deletion that wins keeps the losing edit as a conflict copy."""
+    deletion carries the time of the scan that found it: that second with the old file's nanoseconds
+    (SetDeleted sets ModifiedS only), so it can look up to a second newer than it is. So the order is set,
+    2 s apart, and each side deletes once before and once after the other's edit. A deletion that wins
+    keeps the losing edit as a conflict copy."""
     w.base({f"ed-{n}.txt": "start\n" for n in "abcd"})
     w.apart()
     (w.peer.folder / "ed-a.txt").unlink()  # deleted first, edited later: the edit wins
@@ -383,9 +384,14 @@ def both_new(w: World) -> None:
 
 
 def rename_edit(w: World) -> None:
+    """A rename is a deletion of the old name, and the newer change wins (see edit_delete): the rename is
+    scanned first and the edit made 2 s later, so the edit wins. In no set order, the winner hung on two
+    timestamps' fractions and the case failed half the time (PC, 06/11)."""
     w.base({"rename-me.txt": "start\n"})
     w.apart()
     phone_mv("rename-me.txt", "renamed.txt")
+    w.scan_all()
+    time.sleep(2)
     peer_write(w.peer, "rename-me.txt", "edited on the peer\n")
     w.scan_all()
     w.together()

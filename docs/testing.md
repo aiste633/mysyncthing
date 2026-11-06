@@ -182,7 +182,7 @@ same files, and then checks the files on every side and the count on the folder 
 | Edit and edit | Both edit a file: one conflict copy, and file plus copy hold both edits |
 | Edit and delete | Edited on one side, deleted on the other, each side deleting once before and once after the other's edit: the newer change wins, as Syncthing decides by time. An edit that wins leaves no copy; a deletion that wins keeps the edit as one conflict copy |
 | Both new | The same new name on both sides: one copy |
-| Rename and edit | Renamed on the phone, edited on the peer: both names stay, no copy |
+| Rename and edit | Renamed on the phone, then (2 s later) the old name edited on the peer: both names stay, no copy. A rename deletes the old name, and the newer change wins |
 | Odd names | Subfolders, spaces, accents, CJK, emoji, no extension, a dotfile, two dots, upper case: one copy each, named after its file |
 | Copy deleted | A copy deleted on the phone and another on the peer: gone everywhere, and the count follows. The Trash can keeps the one deleted on the peer, and the count leaves it out |
 | Copy of a copy | Both edit the same copy: Syncthing keeps no copy of a copy |
