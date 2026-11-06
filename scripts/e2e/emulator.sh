@@ -46,8 +46,14 @@ done)
 echo "Android emulator $(sed -n 's/^Pkg.Revision=//p' "$emu_dir/source.properties")"
 
 log="${E2E_EMULATOR_LOG:-$(mktemp)}"
-"$ANDROID_HOME/emulator/emulator" -avd "$avd" -no-window -no-audio -no-boot-anim -no-snapshot \
-  -gpu swiftshader_indirect -memory 4096 >"$log" 2>&1 &
+# The log's last line says how the emulator ended (status 128 + n: killed by signal n; bash also
+# names the signal). Twice on CI it vanished mid-run with nothing in its log (issue #78).
+(
+  "$ANDROID_HOME/emulator/emulator" -avd "$avd" -no-window -no-audio -no-boot-anim -no-snapshot \
+    -gpu swiftshader_indirect -memory 4096
+  status=$?
+  echo "emulator ended at $(date -u +%H:%M:%S) UTC with status $status"
+) >"$log" 2>&1 &
 emu=$!
 
 # Waits for the boot, but gives up with the emulator's own output if it exits or takes over 10 minutes.
