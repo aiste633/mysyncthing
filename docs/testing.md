@@ -169,6 +169,11 @@ real phone.
 The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
 
+On a PC the runs keep the emulator off Syncthing's public servers: `E2E_OFFLINE=1 scripts/e2e/emulator.sh <api>`
+gives the emulator a DNS server where nothing answers (the script checks that no name resolves), and `--offline`
+(run.py, scenarios.py, monkey.py) turns off the phone core's global discovery, relays and NAT traversal after pairing.
+The DNS block is the one that holds: the monkey can switch those options back on in Settings. CI keeps the defaults.
+
 ### Sync scenarios
 
 `scripts/e2e/scenarios.py` runs after run.py, from a fresh install paired with the same kind of
