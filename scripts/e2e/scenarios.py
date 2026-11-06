@@ -601,12 +601,14 @@ KNOWN_UPSTREAM = {
 }
 
 
-def copy_named_alike(w: World) -> bool:
-    """The core's sign of KNOWN_UPSTREAM["copy_named_alike"], on any side."""
-    sign = "Conflict on existing conflict copy"
+def copy_named_alike(w: World, rel: str = "three.txt") -> bool:
+    """The core's sign of KNOWN_UPSTREAM["copy_named_alike"] for a copy of [rel], on any side. Only that
+    file's copies: copy_conflict makes the same log line on purpose, which must not excuse a lost edit here."""
+    stem = rel.rsplit(".", 1)[0]
     logs = [adb("logcat", "-d", check=False, timeout=300)]
     logs += [(w.out / f"{p.name}.log").read_text(errors="replace") for p in w.peers() if (w.out / f"{p.name}.log").exists()]
-    return any(sign in text for text in logs)
+    return any("Conflict on existing conflict copy" in line and f"{stem}.sync-conflict-" in line
+               for text in logs for line in text.splitlines())
 
 
 def leave_three_way(w: World) -> None:
