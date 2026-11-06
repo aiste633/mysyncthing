@@ -196,7 +196,13 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         val topLevel = Tab.entries.any { it.route == route }
         LaunchedEffect(target) {
             when (target) {
-                is LaunchTarget.Tab -> Tab.entries.find { it.route == target.route }?.let { nav.navigate(it.route) { launchSingleTop = true } }
+                // The tab at its top, as the tab bar opens it, not on top of the screen left open.
+                is LaunchTarget.Tab -> Tab.entries.find { it.route == target.route }?.let {
+                    nav.navigate(it.route) {
+                        popUpTo(nav.graph.findStartDestination().id)
+                        launchSingleTop = true
+                    }
+                }
                 // Any app can start MainActivity with these extras, so only a real pending offer opens the form.
                 is LaunchTarget.ReviewFolder -> {
                     val s = vm.snapshot.first { it.loaded }

@@ -49,7 +49,7 @@ class StatusWidget : AppWidgetProvider() {
         private const val ACTION_TOGGLE_PAUSE = "eu.stedb.mysyncthing.TOGGLE_PAUSE"
         private const val ACTION_HAT_CHANGE = "eu.stedb.mysyncthing.HAT_CHANGE"
 
-        /** Extra on the launch intent: which tab to open ("devices"), so a device request opens where it is handled. */
+        /** Extra on the launch intent: which tab to open ("devices", "folders"), so what waits opens where it is handled. */
         const val EXTRA_TAB = "eu.stedb.mysyncthing.TAB"
 
         fun render(context: Context, summary: Summary) {
@@ -124,7 +124,18 @@ class StatusWidget : AppWidgetProvider() {
             }
             v.setImageViewResource(R.id.widget_status_icon, icon)
             v.setColorInt(R.id.widget_status_icon, "setColorFilter", light, dark)
-            v.setTextViewText(R.id.widget_title, s.text.resolve(context))
+            val title = s.text.resolve(context)
+            v.setTextViewText(R.id.widget_title, title)
+            // The dot is drawn only; a screen reader hears the count with the status.
+            v.setViewVisibility(R.id.widget_conflicts, if (s.conflicts > 0) View.VISIBLE else View.GONE)
+            v.setContentDescription(
+                R.id.widget_title,
+                if (s.conflicts > 0) {
+                    context.getString(R.string.widget_title_conflicts, title, context.resources.getQuantityString(R.plurals.conflicts, s.conflicts, s.conflicts))
+                } else {
+                    null
+                },
+            )
             v.setTextViewText(R.id.widget_detail, widgetDetail(s).resolve(context))
             v.setViewVisibility(R.id.widget_detail, if (detail) View.VISIBLE else View.GONE)
 
@@ -135,7 +146,7 @@ class StatusWidget : AppWidgetProvider() {
                 v.setColorStateList(R.id.widget_progress, "setProgressTintList", ColorStateList.valueOf(light), ColorStateList.valueOf(dark))
             }
 
-            v.setOnClickPendingIntent(android.R.id.background, openApp(context))
+            v.setOnClickPendingIntent(android.R.id.background, openApp(context, s))
             val (buttonIcon, label, action) = when {
                 s.state == SyncState.Stopped -> Triple(R.drawable.widget_ic_play, R.string.widget_start, startService(context))
                 s.text == PAUSED_BY_USER -> Triple(R.drawable.widget_ic_play, R.string.widget_resume, togglePause(context))
@@ -147,12 +158,27 @@ class StatusWidget : AppWidgetProvider() {
             return v
         }
 
-        private fun openApp(context: Context): PendingIntent {
+        /**
+         * The app, on Devices while only a device request waits, on Folders while conflict copies wait
+         * (their cards say where), else as the user left it.
+         */
+        private fun openApp(context: Context, s: Summary): PendingIntent {
             val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
                 .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             val snap = SyncStatus.snapshot.value
-            if (snap.pendingDevices.isNotEmpty() && snap.pendingFolders.isEmpty()) launch.putExtra(EXTRA_TAB, "devices")
-            return PendingIntent.getActivity(context, 0, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            val tab = when {
+                snap.pendingDevices.isNotEmpty() && snap.pendingFolders.isEmpty() -> "devices"
+                s.conflicts > 0 -> "folders"
+                else -> null
+            }
+            tab?.let { launch.putExtra(EXTRA_TAB, it) }
+            // One PendingIntent per target, so none depends on the system replacing an earlier one's extras.
+            val code = when (tab) {
+                "devices" -> 4
+                "folders" -> 5
+                else -> 0
+            }
+            return PendingIntent.getActivity(context, code, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
 
         private fun togglePause(context: Context): PendingIntent = PendingIntent.getBroadcast(

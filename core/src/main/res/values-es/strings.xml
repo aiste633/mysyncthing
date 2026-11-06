@@ -128,6 +128,12 @@
     <string name="widget_not_running">Detenido</string>
     <string name="widget_no_device">Sin conexión</string>
     <string name="widget_last_seen">Último dispositivo visto %1$s</string>
+    <plurals name="conflicts">
+        <item quantity="one">%1$d\u00A0conflicto</item>
+        <item quantity="many">%1$d\u00A0conflictos</item>
+        <item quantity="other">%1$d\u00A0conflictos</item>
+    </plurals>
+    <string name="widget_title_conflicts">%1$s, %2$s</string>
     <string name="when_yesterday">ayer, %1$s</string>
     <plurals name="widget_devices_connected">
         <item quantity="one">%1$d dispositivo conectado</item>

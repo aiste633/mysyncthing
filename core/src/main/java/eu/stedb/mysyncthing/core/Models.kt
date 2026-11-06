@@ -85,6 +85,10 @@ data class Options(
     val globalAnnounceServers: List<String> = listOf("default"),
 )
 
+/** The data of a LocalIndexUpdated event: files the core scanned or pulled into this phone's index. */
+@Serializable
+data class IndexUpdate(val folder: String = "", val filenames: List<String> = emptyList())
+
 /** The data of a LocalChangeDetected or RemoteChangeDetected event. */
 @Serializable
 data class DiskChange(
@@ -176,6 +180,8 @@ data class Folder(
     val minDiskFree: DiskSize = DiskSize(),
     val group: String = "",
     val ignorePerms: Boolean = false,
+    /** Conflict copies kept per file; 0 makes none, -1 keeps all. */
+    val maxConflicts: Int = 10,
 ) {
     /** Changes the user must decide on: edits on a receive-only phone, or remote edits a send-only phone ignores. */
     fun needsReview(st: FolderStatus?): Boolean = st != null && when (type) {

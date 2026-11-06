@@ -1,6 +1,7 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,9 +21,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Undo
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.FileCopy
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -42,26 +46,33 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.whenText
 import eu.stedb.mysyncthing.core.DiskChange
 import eu.stedb.mysyncthing.core.FileVersion
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.parseConflictCopy
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.OffsetDateTime
+import java.time.ZoneId
 import java.time.temporal.ChronoUnit
+import eu.stedb.mysyncthing.core.R as CoreR
 
 /** One file change from the core's in-memory event buffer; [fromThisPhone] when this phone's scan found it. */
 data class RecentChange(val id: Long, val time: String, val fromThisPhone: Boolean, val change: DiskChange)
 
 /**
  * The latest file changes in one folder, as far back as the core remembers
- * since it started. Nothing is stored by the app.
+ * since it started. Nothing is stored by the app. Above them, while the folder
+ * has any, the conflict copies on this phone ([Snapshot.conflicts]).
  */
 @Composable
 fun RecentChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> Unit) {
@@ -72,6 +83,17 @@ fun RecentChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: 
 
     AppScreen(title = stringResource(R.string.recent_changes), subtitle = label, onBack = onBack) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(top = 4.dp, bottom = 32.dp)) {
+            val copies = s.conflicts[folder].orEmpty()
+            if (copies.isNotEmpty()) {
+                item("conflicts-title") {
+                    Text(
+                        pluralStringResource(CoreR.plurals.conflicts, copies.size, copies.size),
+                        style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = AppColors.busy,
+                        modifier = Modifier.padding(start = 32.dp, end = 16.dp, top = 20.dp, bottom = 6.dp),
+                    )
+                }
+                item("conflicts") { ConflictsBox(copies, s, s.folders.find { it.id == folder }?.maxConflicts ?: DEFAULT_MAX_CONFLICTS) }
+            }
             val shown = changes
             when {
                 shown == null -> item("loading") { Hint(stringResource(R.string.loading)) }
@@ -93,6 +115,50 @@ fun RecentChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: 
 }
 
 private const val RECENT_LIMIT = 500
+
+/** Upstream's default for a folder's maxConflicts. */
+private const val DEFAULT_MAX_CONFLICTS = 10
+
+/**
+ * The folder's conflict copies, framed in amber: per copy the file it came from, when it was made and
+ * whose edit was kept, then how many copies the folder keeps. A list only: the user sorts them out.
+ */
+@Composable
+private fun ConflictsBox(copies: List<String>, s: Snapshot, max: Int) {
+    val busy = AppColors.busy
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).testTag("conflicts"),
+        colors = CardDefaults.cardColors(containerColor = busy.copy(alpha = 0.08f).compositeOver(MaterialTheme.colorScheme.surface)),
+        border = BorderStroke(1.dp, busy),
+    ) {
+        val now = LocalNow.current().atZone(ZoneId.systemDefault())
+        copies.forEach { path ->
+            val c = parseConflictCopy(path)
+            val details = listOfNotNull(
+                (c?.original ?: path).substringBeforeLast('/', "").ifEmpty { null },
+                c?.madeAt?.let { stringResource(R.string.conflict_made, whenText(it.atZone(now.zone).toInstant(), now).asString()) },
+                c?.device?.let { id ->
+                    if (id == shortId(s.myId)) {
+                        stringResource(R.string.conflict_with_this_phone)
+                    } else {
+                        stringResource(R.string.conflict_with, s.devices.find { shortId(it.deviceID) == id }?.name?.ifEmpty { null } ?: id)
+                    }
+                },
+            )
+            SettingRow((c?.original ?: path).substringAfterLast('/'), details.joinToString(" · "), icon = Icons.Default.FileCopy)
+        }
+        Text(
+            when {
+                max < 0 -> stringResource(R.string.conflicts_limit_all, grouped(DEFAULT_MAX_CONFLICTS))
+                max == 0 -> stringResource(R.string.conflicts_limit_off, grouped(DEFAULT_MAX_CONFLICTS))
+                max == DEFAULT_MAX_CONFLICTS -> stringResource(R.string.conflicts_limit_default, grouped(max))
+                else -> pluralStringResource(R.plurals.conflicts_limit, max, grouped(max), grouped(DEFAULT_MAX_CONFLICTS))
+            },
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 12.dp),
+        )
+    }
+}
 
 @Composable
 private fun ChangeRow(r: RecentChange, s: Snapshot) {

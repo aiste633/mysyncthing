@@ -173,6 +173,13 @@
     <string name="widget_no_device">No device connected</string>
     <!-- Widget second line while no device is connected. %1$s: a time from when_yesterday or a date, e.g. 14:41 -->
     <string name="widget_last_seen">Last device seen %1$s</string>
+    <!-- Conflict copies (name.sync-conflict-…) on this phone: on the folder card and read out with the widget's status -->
+    <plurals name="conflicts">
+        <item quantity="one">%1$d\u00A0conflict</item>
+        <item quantity="other">%1$d\u00A0conflicts</item>
+    </plurals>
+    <!-- What a screen reader says for the widget's status while there are conflict copies, e.g. "Up to date, 2 conflicts" -->
+    <string name="widget_title_conflicts">%1$s, %2$s</string>
     <!-- Times. %1$s: a time of day, e.g. 22:10 -->
     <string name="when_yesterday">yesterday, %1$s</string>
     <plurals name="widget_devices_connected">

@@ -303,8 +303,8 @@
     <string name="folder_card_not_shared">not shared</string>
     <!-- On a folder card, after its size: "shared with 2 devices". %1$d: number of other devices -->
     <plurals name="folder_card_shared">
-        <item quantity="one">shared with %1$d device</item>
-        <item quantity="other">shared with %1$d devices</item>
+        <item quantity="one">shared with %1$d\u00A0device</item>
+        <item quantity="other">shared with %1$d\u00A0devices</item>
     </plurals>
 
     <!-- Devices tab -->
@@ -755,6 +755,22 @@
         <item quantity="one">Syncthing keeps its latest %1$s change in memory until it restarts.</item>
         <item quantity="other">Syncthing keeps its latest %1$s changes in memory until it restarts.</item>
     </plurals>
+    <!-- Recent changes, the conflict copies box: per copy, when the core made it (%1$s: e.g. 14:20 or a date) -->
+    <string name="conflict_made">copy from %1$s</string>
+    <!-- The device whose edit was kept (the copy holds the other one): its name -->
+    <string name="conflict_with">clashed with %1$s</string>
+    <string name="conflict_with_this_phone">clashed with this phone</string>
+    <!-- How many conflict copies the folder keeps (the core's maxConflicts), at the upstream default. %1$s: 10 -->
+    <string name="conflicts_limit_default">Syncthing keeps up to %1$s copies per file (default) and deletes older ones.</string>
+    <!-- The same, set to another number. %1$s: that number, %2$s: the default, 10 -->
+    <plurals name="conflicts_limit">
+        <item quantity="one">Syncthing keeps up to %1$s copy per file (default %2$s) and deletes older ones.</item>
+        <item quantity="other">Syncthing keeps up to %1$s copies per file (default %2$s) and deletes older ones.</item>
+    </plurals>
+    <!-- maxConflicts 0. %1$s: the default, 10 -->
+    <string name="conflicts_limit_off">This folder keeps no conflict copies: the older edit is deleted (default %1$s copies per file).</string>
+    <!-- maxConflicts -1. %1$s: the default, 10 -->
+    <string name="conflicts_limit_all">This folder keeps every conflict copy (default %1$s per file).</string>
     <!-- How a file changed, after its folder and before the time -->
     <string name="change_deleted_here">deleted on this phone</string>
     <string name="change_changed_here">changed on this phone</string>

@@ -58,12 +58,31 @@
         android:background="@color/widget_text_secondary"
         android:importantForAccessibility="no" />
 
-    <ImageView
-        android:id="@+id/widget_status_icon"
+    <!-- The amber dot at the icon's corner: conflict copies on this phone. It reaches 3 dp
+         past the icon's top and far side, as a badge does, so it takes no room. -->
+    <FrameLayout
         android:layout_width="26dp"
         android:layout_height="26dp"
-        android:importantForAccessibility="no"
-        android:src="@drawable/widget_ic_stopped" />
+        android:clipChildren="false">
+
+        <ImageView
+            android:id="@+id/widget_status_icon"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_ic_stopped" />
+
+        <ImageView
+            android:id="@+id/widget_conflicts"
+            android:layout_width="12dp"
+            android:layout_height="12dp"
+            android:layout_gravity="top"
+            android:layout_marginStart="17dp"
+            android:importantForAccessibility="no"
+            android:src="@drawable/widget_dot"
+            android:translationY="-3dp"
+            android:visibility="gone" />
+    </FrameLayout>
 
     <LinearLayout
         android:layout_width="0dp"

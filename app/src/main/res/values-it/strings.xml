@@ -249,9 +249,9 @@
     <string name="folders_offer_have">Ce l\'hai già in %1$s. Condividerla anche con %2$s?</string>
     <string name="folder_card_not_shared">non condivisa</string>
     <plurals name="folder_card_shared">
-        <item quantity="one">condivisa con %1$d dispositivo</item>
-        <item quantity="many">condivisa con %1$d dispositivi</item>
-        <item quantity="other">condivisa con %1$d dispositivi</item>
+        <item quantity="one">condivisa con %1$d\u00A0dispositivo</item>
+        <item quantity="many">condivisa con %1$d\u00A0dispositivi</item>
+        <item quantity="other">condivisa con %1$d\u00A0dispositivi</item>
     </plurals>
 
     <string name="devices_add">Aggiungi dispositivo</string>
@@ -624,6 +624,17 @@
         <item quantity="many">Syncthing tiene in memoria le sue ultime %1$s modifiche fino al riavvio.</item>
         <item quantity="other">Syncthing tiene in memoria le sue ultime %1$s modifiche fino al riavvio.</item>
     </plurals>
+    <string name="conflict_made">copia: %1$s</string>
+    <string name="conflict_with">in conflitto con %1$s</string>
+    <string name="conflict_with_this_phone">in conflitto con questo telefono</string>
+    <string name="conflicts_limit_default">Syncthing conserva fino a %1$s copie per file (predefinito) ed elimina le più vecchie.</string>
+    <plurals name="conflicts_limit">
+        <item quantity="one">Syncthing conserva fino a %1$s copia per file (predefinito %2$s) ed elimina le più vecchie.</item>
+        <item quantity="many">Syncthing conserva fino a %1$s copie per file (predefinito %2$s) ed elimina le più vecchie.</item>
+        <item quantity="other">Syncthing conserva fino a %1$s copie per file (predefinito %2$s) ed elimina le più vecchie.</item>
+    </plurals>
+    <string name="conflicts_limit_off">Questa cartella non conserva copie di conflitto: la modifica più vecchia viene eliminata (predefinito %1$s copie per file).</string>
+    <string name="conflicts_limit_all">Questa cartella conserva tutte le copie di conflitto (predefinito %1$s per file).</string>
     <string name="change_deleted_here">eliminato su questo telefono</string>
     <string name="change_changed_here">modificato su questo telefono</string>
     <string name="change_deleted_by">eliminato da %1$s</string>
