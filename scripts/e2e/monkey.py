@@ -27,7 +27,7 @@ launcher's Overview button ignores screen pinning.
 
 The monkey goes on past crashes and ANRs (run.MONKEY_MIX): other processes' are listed, the
 app's own fail the run; the seed and the event number in its log reproduce them. Collected per run: the monkey's log of every event, the whole logcat, the
-system's crash records (dropbox), and a summary: crashes, ANRs, native crashes, Go panics,
+system's crash records (dropbox), and a summary: crashes, ANRs, native crashes, Go panics, blank screens,
 StrictMode reports grouped by kind and first app frame, pin losses.
 
 Runs only on an emulator: it wipes the app's data and changes system settings, which it
@@ -219,12 +219,15 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
     anrs, anr_others = run.logcat_anrs(text)
     result["anr"] = result["anr"] or bool(anrs)
     result["other_processes"] = result.get("other_processes", []) + [f"native crash {n}" for n in native_others] + [f"ANR {a}" for a in anr_others]
+    result["blank_screens"] = run.blank_screens(text)
     result["go_panic"] = sorted({l.strip() for l in text.splitlines() if re.search(r"\b(panic: |fatal error: )", l)})[:20]
     result["strictmode"] = dict(strictmode(text).most_common())
     (out / "dropbox.txt").write_text("\n\n".join(result["dropbox"]))
     bad = [k for k in ("crash", "anr", "java_crash", "native_crash") if result[k]]
     if result["go_panic"]:
         bad.append("go_panic")
+    if result["blank_screens"]:
+        bad.append("blank_screen")
     if result["dropbox"]:
         bad.append("dropbox")
     if not result["monkey_finished"] and not bad:

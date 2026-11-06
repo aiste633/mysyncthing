@@ -48,6 +48,8 @@ ALLOWED = [
     (r"ui/Format\.kt", r"d MMM( yyyy)?(, HH:mm)?"),
     # HTTP protocol words.
     (r"ui/WebGuiScreen\.kt", r"Basic |Authorization|Forbidden"),
+    # A log line for developers, kept in a constant because scripts/e2e/run.py and a test look for it.
+    (r"ui/App\.kt", r"back stack empty: blank screen"),
 ]
 
 # Messages for developers: logs, exceptions and preconditions stay English.
