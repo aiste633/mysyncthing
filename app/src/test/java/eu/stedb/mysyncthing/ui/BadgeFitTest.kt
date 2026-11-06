@@ -4,12 +4,16 @@ import androidx.activity.ComponentActivity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
+import eu.stedb.mysyncthing.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -22,6 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * The conflict badge on a folder card's Recent changes button is drawn whole at every font size and
  * count: it once sat inside an IconButton, whose 40 dp clip cut it from 1.3× font or two digits.
+ * The count stays on one line and the button keeps its label where the badge covers the icon.
  * Robolectric renders natively here, so a clipped edge shows as the card's colour instead of amber.
  */
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -30,7 +35,7 @@ class BadgeFitTest(private val fontScale: Float, private val count: Int) {
     companion object {
         @JvmStatic
         @ParameterizedRobolectricTestRunner.Parameters(name = "font {0}, {1} copies")
-        fun cases() = listOf(1f, 1.3f, 2f).flatMap { f -> listOf(1, 12, 99, 123).map { arrayOf<Any>(f, it) } }
+        fun cases() = listOf(1f, 1.3f, 1.8f, 2f).flatMap { f -> listOf(1, 12, 99, 123).map { arrayOf<Any>(f, it) } }
     }
 
     @get:Rule
@@ -47,7 +52,13 @@ class BadgeFitTest(private val fontScale: Float, private val count: Int) {
             AppTheme { FoldersScreen(s, Fixtures.conflictsSummary, vm, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = {}) }
         }
         val badge = compose.onNodeWithTag("badge-docs", useUnmergedTree = true)
-        compose.onNodeWithText(if (count > 99) "99+" else "$count", useUnmergedTree = true).assertExists()
+        // The whole count on one line: the button's 40 dp once squeezed "99+" to "99".
+        val text = compose.onNodeWithText(if (count > 99) "99+" else "$count", useUnmergedTree = true).fetchSemanticsNode()
+        val layouts = mutableListOf<TextLayoutResult>()
+        text.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
+        layouts.single().let { assertTrue("count laid out as ${it.lineCount} lines, ${it.getLineRight(0)} px in ${it.size}", it.lineCount == 1 && it.getLineRight(0) <= it.size.width) }
+        // The button keeps its name where the badge covers the icon, and never says the number.
+        compose.onNodeWithTag("recent-docs").assertContentDescriptionEquals(ApplicationProvider.getApplicationContext<android.app.Application>().getString(R.string.recent_changes))
 
         val b = badge.fetchSemanticsNode().boundsInRoot
         val card = compose.onNodeWithTag("recent-docs", useUnmergedTree = true).fetchSemanticsNode().let { button ->
