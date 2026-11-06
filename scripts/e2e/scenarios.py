@@ -96,7 +96,8 @@ def phone_write(rel: str, text: str, root: str = PHONE_DIR) -> None:
 
 
 def phone_read(rel: str, root: str = PHONE_DIR) -> str | None:
-    r = subprocess.run([ADB, "exec-out", f"cat {q(f'{root}/{rel}')}"], capture_output=True, timeout=60)
+    # `adb shell`, not exec-out: exec-out always exits 0, so a missing file would read as cat's error text.
+    r = subprocess.run([ADB, "shell", f"cat {q(f'{root}/{rel}')}"], capture_output=True, timeout=60)
     return r.stdout.decode("utf-8", errors="replace") if r.returncode == 0 else None
 
 
@@ -112,7 +113,14 @@ def phone_list(root: str = PHONE_DIR) -> set[str]:
     # One string: adb joins its arguments with spaces for the device's shell.
     out = subprocess.run([ADB, "exec-out", f"cd {q(root)} && find . -type f"], capture_output=True, timeout=120)
     names = {line[2:] for line in out.stdout.decode("utf-8", errors="replace").splitlines() if line.startswith("./")}
-    return {n for n in names if n.split("/", 1)[0] not in CORE_DIRS}
+    return {n for n in names if n.split("/", 1)[0] not in CORE_DIRS and not core_temp(n)}
+
+
+def core_temp(rel: str) -> bool:
+    """The core's temporary file of a pull (`.syncthing.<name>.tmp`): never scanned, kept for a failed pull
+    until KeepTemporariesH (long_name's failed conflict move leaves one)."""
+    base = rel.rsplit("/", 1)[-1]
+    return base.startswith(".syncthing.") and base.endswith(".tmp")
 
 
 def peer_write(peer: Peer, rel: str, text: str, folder: Path | None = None) -> None:
@@ -128,7 +136,8 @@ def peer_read(peer: Peer, rel: str) -> str | None:
 
 def peer_list(peer: Peer, folder: Path | None = None) -> set[str]:
     root = folder or peer.folder
-    return {str(p.relative_to(root)) for p in root.rglob("*") if p.is_file() and p.relative_to(root).parts[0] not in CORE_DIRS}
+    return {str(r) for p in root.rglob("*") if p.is_file() and (r := p.relative_to(root)).parts[0] not in CORE_DIRS
+            and not core_temp(str(r))}
 
 
 def copies(names: set[str], of: str | None = None) -> set[str]:
@@ -720,16 +729,15 @@ def big_file(w: World) -> None:
     big_peer_file(w.peer, "big.bin", mb)
     send_limit(w, 20_000)  # about 50 s for 1 GB: long enough to catch it halfway
     w.peer.call("POST", f"rest/db/scan?folder={FOLDER}")
-    eventually("big.bin a third through", 900, lambda: 30 <= transfer_percent(w) <= 70)
+    eventually("big.bin a third through", 900, lambda: 30 <= (transfer_percent(w, "big.bin") or 0) <= 70)
     folders_tab()
     with (w.out / "big_file-progress.png").open("wb") as f:  # the card's progress and rate, for the report
         subprocess.run([ADB, "exec-out", "screencap", "-p"], stdout=f, timeout=60, check=False)
     w.core.call("POST", f"rest/system/pause?device={w.peer.id}")
-    time.sleep(15)
-    at = transfer_percent(w)
-    time.sleep(15)
-    if transfer_percent(w) != at:
-        fail("big.bin kept arriving while the peer was paused on the phone")
+    eventually("the peer gone while paused on the phone", 30, lambda: not w.peer.connected(w.phone))
+    time.sleep(20)
+    if sh(f"test -f {PHONE_DIR}/big.bin && echo yes", check=False) == "yes":
+        fail("big.bin finished while the peer was paused on the phone")
     w.core.call("POST", f"rest/system/resume?device={w.peer.id}")
     send_limit(w, 0)
     began = time.monotonic()
@@ -745,10 +753,15 @@ def send_limit(w: World, kbps: int) -> None:
     w.peer.call("PATCH", f"rest/config/devices/{w.phone}", {"maxSendKbps": kbps})
 
 
-def transfer_percent(w: World) -> float:
-    """How much of the folder the phone has, by bytes (the core's own status)."""
-    st = w.core.call("GET", f"rest/db/status?folder={FOLDER}")
-    return 100.0 * st["inSyncBytes"] / max(1, st["globalBytes"])
+def transfer_percent(w: World, rel: str) -> float | None:
+    """How far the phone's pull of [rel] is, in percent: from the core's latest DownloadProgress event (every
+    5 s while pulling; the folder's inSyncBytes counts whole files only). None when no pull of it is reported."""
+    events = w.core.call("GET", "rest/events?events=DownloadProgress&limit=1&timeout=6") or []
+    for e in events:
+        p = (e.get("data") or {}).get(FOLDER, {}).get(rel)
+        if p and p.get("bytesTotal"):
+            return 100.0 * p["bytesDone"] / p["bytesTotal"]
+    return None
 
 
 def conflicts_200(w: World) -> None:
