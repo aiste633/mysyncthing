@@ -872,6 +872,8 @@ def count_after_kill(w: World) -> None:
 def count_after_reboot(w: World) -> None:
     """B2: the emulator restarted; the app starts at boot and counts the copies again."""
     n = ensure_copy(w)
+    # A reboot empties the log: what came before is kept and judged with the rest (main).
+    (w.out / "logcat-before-reboot.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
     adb("reboot", check=False)
     time.sleep(10)
     adb("wait-for-device", timeout=300)
@@ -918,6 +920,7 @@ def main() -> None:
     run.require_emulator()
     run.prepare(a.apk, a.test_apk)
     sh("svc power stayon true")
+    adb("logcat", "-G", "64M", check=False)  # the stress group's hour, not only its last minutes
     adb("logcat", "-c")
     w = World(a, a.out)
     results: list[tuple[str, str, float, str]] = []
@@ -959,7 +962,9 @@ def main() -> None:
             adb(*args, check=False)
         sh("rm -f /sdcard/scenarios-ui.xml", check=False)
 
-    logcat = (a.out / "logcat.txt").read_text(errors="replace")
+    before_reboot = a.out / "logcat-before-reboot.txt"
+    logcat = (before_reboot.read_text(errors="replace") if before_reboot.exists() else "") \
+        + (a.out / "logcat.txt").read_text(errors="replace")
     crashes, known = run.logcat_app_crashes(logcat)
     native, _ = run.native_crashes(logcat)
     anrs, _ = run.logcat_anrs(logcat)
