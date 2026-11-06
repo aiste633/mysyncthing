@@ -11,7 +11,8 @@ together, waits until all agree, and then checks the files on every side and wha
 
   fast (also in CI's e2e, about 5 min):
     edit_edit        both edit a file: one copy, both edits kept
-    edit_delete      edited on one side, deleted on the other, both ways: the edit wins, no copy
+    edit_delete      edited on one side, deleted on the other, both orders and both ways: the newer
+                     change wins; a deletion that wins keeps the edit as a copy
     both_new         the same new name on both sides: one copy
     rename_edit      renamed here, edited there: both names stay, no copy
     odd_names        subfolders, spaces, accents, CJK, emoji, no extension, a dotfile, two dots, upper case
@@ -327,16 +328,35 @@ def edit_edit(w: World) -> None:
 
 
 def edit_delete(w: World) -> None:
-    w.base({"edit-here.txt": "start\n", "edit-there.txt": "start\n"})
+    """The newer change wins, a deletion too: the core's WinsConflict goes by modification time, and a
+    deletion carries the time of the scan that found it. So the order is set, more than a second apart
+    (a deletion's time has whole seconds), and each side deletes once before and once after the other's
+    edit. A deletion that wins keeps the losing edit as a conflict copy."""
+    w.base({f"ed-{n}.txt": "start\n" for n in "abcd"})
     w.apart()
-    phone_write("edit-here.txt", "edited on the phone\n")
-    (w.peer.folder / "edit-here.txt").unlink()
-    phone_rm("edit-there.txt")
-    peer_write(w.peer, "edit-there.txt", "edited on the peer\n")
+    (w.peer.folder / "ed-a.txt").unlink()  # deleted first, edited later: the edit wins
+    phone_rm("ed-c.txt")
+    w.scan_all()
+    time.sleep(2)
+    phone_write("ed-a.txt", "edited on the phone\n")
+    phone_write("ed-b.txt", "edited on the phone\n")
+    peer_write(w.peer, "ed-c.txt", "edited on the peer\n")
+    peer_write(w.peer, "ed-d.txt", "edited on the peer\n")
+    w.scan_all()
+    time.sleep(2)
+    (w.peer.folder / "ed-b.txt").unlink()  # edited first, deleted later: the deletion wins, the edit is a copy
+    phone_rm("ed-d.txt")
     w.scan_all()
     w.together()
-    check_conflict(w, "edit-here.txt", {"edited on the phone\n"}, 0)
-    check_conflict(w, "edit-there.txt", {"edited on the peer\n"}, 0)
+    check_conflict(w, "ed-a.txt", {"edited on the phone\n"}, 0)
+    check_conflict(w, "ed-c.txt", {"edited on the peer\n"}, 0)
+    for rel, edit in (("ed-b.txt", "edited on the phone\n"), ("ed-d.txt", "edited on the peer\n")):
+        if same_on_all(w, rel) is not None:
+            fail(f"{rel}: still there, though its deletion is the newer change")
+        cs = copies(phone_list(), of=rel)
+        if len(cs) != 1 or {same_on_all(w, c) for c in cs} != {edit}:
+            fail(f"{rel}: copies {sorted(cs)}, expected one holding {edit!r}")
+    expect_shown(len(copies(phone_list())))
 
 
 def both_new(w: World) -> None:

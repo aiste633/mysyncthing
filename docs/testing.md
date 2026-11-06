@@ -180,7 +180,7 @@ same files, and then checks the files on every side and the count on the folder 
 | Scenario | What must hold |
 |---|---|
 | Edit and edit | Both edit a file: one conflict copy, and file plus copy hold both edits |
-| Edit and delete | Edited on one side, deleted on the other, both ways: the edit wins, no copy |
+| Edit and delete | Edited on one side, deleted on the other, each side deleting once before and once after the other's edit: the newer change wins, as Syncthing decides by time. An edit that wins leaves no copy; a deletion that wins keeps the edit as one conflict copy |
 | Both new | The same new name on both sides: one copy |
 | Rename and edit | Renamed on the phone, edited on the peer: both names stay, no copy |
 | Odd names | Subfolders, spaces, accents, CJK, emoji, no extension, a dotfile, two dots, upper case: one copy each, named after its file |
