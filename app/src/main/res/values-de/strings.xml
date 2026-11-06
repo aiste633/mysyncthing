@@ -311,7 +311,7 @@
     <string name="settings_restart">Syncthing neu starten</string>
     <string name="settings_restart_hint">Übernimmt Einstellungen, die einen Neustart brauchen</string>
     <string name="settings_export">Sicherung exportieren</string>
-    <string name="settings_export_hint">Ordner, Geräte, die Identität dieses Smartphones und die Synchronisierungseinstellungen, als ZIP-Datei</string>
+    <string name="settings_export_hint">Ordner, Geräte, die Identität dieses Smartphones und die Synchronisierungseinstellungen, als Sicherungsdatei</string>
     <string name="settings_import">Sicherung importieren</string>
     <string name="settings_import_hint">Aus einem Export dieser App oder einer Sicherung von Syncthing-Fork</string>
     <string name="settings_group_permissions">Berechtigungen</string>
@@ -803,10 +803,19 @@
     <string name="export_failed">Export fehlgeschlagen</string>
     <string name="export_intro_title">Einrichtung dieses Smartphones sichern</string>
     <string name="export_intro">Die Sicherung enthält die Ordner, die Geräte, die Gerätekennung dieses Smartphones mit ihrem privaten Schlüssel und die Synchronisierungseinstellungen einschließlich Proxy. Nicht die Dateien in den Ordnern und nicht die Anmeldung der Web-GUI.</string>
-    <string name="export_password_group">Passwort (empfohlen)</string>
+    <string name="export_encryption_group">Verschlüsselung</string>
+    <string name="export_strong">Stark (empfohlen)</string>
+    <string name="export_strong_hint">Argon2id und XChaCha20-Poly1305. Lässt sich nur in MySyncthing öffnen.</string>
+    <string name="export_compatible">Kompatibel</string>
+    <string name="export_compatible_hint">ZIP mit WinZip AES-256. Lässt sich in Syncthing-Fork und ZIP-Apps öffnen, ist aber leicht zu knacken.</string>
+    <string name="export_none">Keine</string>
+    <string name="export_none_hint">Nicht verschlüsselt.</string>
+    <string name="export_strong_note">Starkes Archiv. Nur MySyncthing kann es öffnen, auf diesem oder einem anderen Smartphone. Bewahren Sie das Passwort auf: Ohne es lässt sich die Sicherung nicht öffnen.</string>
+    <string name="export_compatible_warning">Angreifbares Archiv. Seine alte Verschlüsselung lässt einen Computer Millionen Passwörter pro Sekunde ausprobieren, und die Dateinamen darin bleiben lesbar. Wählen Sie es nur, um diese Einrichtung in eine andere App wie Syncthing-Fork zu übertragen, und löschen Sie die Datei danach.</string>
+    <string name="export_password_group">Passwort</string>
     <plurals name="export_password_hint">
-        <item quantity="one">Mindestens %1$d Zeichen. Verschlüsselt die Sicherung mit AES-256.</item>
-        <item quantity="other">Mindestens %1$d Zeichen. Verschlüsselt die Sicherung mit AES-256.</item>
+        <item quantity="one">Mindestens %1$d Zeichen.</item>
+        <item quantity="other">Mindestens %1$d Zeichen.</item>
     </plurals>
     <string name="password_again">Passwort wiederholen</string>
     <string name="export_no_password_warning">Ohne Passwort kann sich jede App oder Person, die die Datei lesen kann, als dieses Smartphone ausgeben.</string>

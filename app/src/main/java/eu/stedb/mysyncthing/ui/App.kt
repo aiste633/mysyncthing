@@ -1,6 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
+import android.annotation.SuppressLint
 import android.net.Uri
+import android.util.Log
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -43,7 +45,12 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NamedNavArgument
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavController
+import androidx.navigation.NavGraph
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -109,6 +116,51 @@ private object Routes {
         "add-folder?offer=${Uri.encode(offer.orEmpty())}&from=${Uri.encode(from.orEmpty())}"
 }
 
+/**
+ * A screen above a tab, given a back action that pops only that screen: once it is no longer on top,
+ * the action does nothing. A screen can ask to leave twice. Remove leaves at once, and the screen,
+ * still drawn while its exit animation runs, leaves again when the snapshot no longer has its folder
+ * or device; a quick second tap on the back arrow does the same. A plain popBackStack() then popped
+ * the screen below too: for a folder the Folders tab, the start of the back stack, which left a
+ * blank screen under the tab bar; for a device the Devices tab, which showed Folders.
+ */
+internal fun NavGraphBuilder.screen(
+    nav: NavController,
+    route: String,
+    arguments: List<NamedNavArgument> = emptyList(),
+    content: @Composable (entry: NavBackStackEntry, back: () -> Unit) -> Unit,
+) = composable(route, arguments) { entry ->
+    val back = remember(entry) { { if (nav.currentBackStackEntry?.id == entry.id) nav.popBackStack() } }
+    content(entry, back)
+}
+
+/** Logcat tag and message of [ReportEmptyBackStack]; scripts/e2e/run.py fails a run on them. */
+internal const val NAV_LOG_TAG = "AppNav"
+internal const val EMPTY_BACK_STACK = "back stack empty: blank screen"
+
+/**
+ * Logs an error when the back stack, once filled, empties: the screen is then blank, a bug no crash
+ * check sees (the app stays alive and responsive). Only the step from filled to empty counts: the
+ * stack is also empty before the graph is set, and nothing in the app empties it on purpose (Back
+ * on a tab finishes the activity and leaves the stack as it is).
+ *
+ * currentBackStack is the only way to see the stack empty (currentBackStackEntryFlow and the
+ * destination listeners stay silent then). Navigation marks it for its own library group; if a
+ * later version stops filling it, LeaveScreenTest fails.
+ */
+@SuppressLint("RestrictedApi")
+@Composable
+internal fun ReportEmptyBackStack(nav: NavController) {
+    LaunchedEffect(nav) {
+        var filled = false
+        nav.currentBackStack.collect { stack ->
+            val screens = stack.count { it.destination !is NavGraph }
+            if (screens > 0) filled = true
+            else if (filled) Log.e(NAV_LOG_TAG, EMPTY_BACK_STACK)
+        }
+    }
+}
+
 @Composable
 fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainViewModel = viewModel()) {
     val context = LocalContext.current
@@ -133,6 +185,7 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         }
 
         val nav = rememberNavController()
+        ReportEmptyBackStack(nav)
         val snackbar = remember { SnackbarHostState() }
         LaunchedEffect(vm) { vm.messages.collect { snackbar.showSnackbar(it.resolve(context)) } }
         val core by vm.core.collectAsStateWithLifecycle()
@@ -213,11 +266,11 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         onOpenProxy = { nav.navigate(Routes.PROXY) },
                     )
                 }
-                composable(Routes.FOLDER) { entry ->
+                screen(nav, Routes.FOLDER) { entry, back ->
                     val id = entry.arguments?.getString("id").orEmpty()
                     CoreGate(core) {
                         FolderScreen(
-                            snapshot, id, vm, onBack = { nav.popBackStack() },
+                            snapshot, id, vm, onBack = back,
                             onOpenNeed = { nav.navigate("${Routes.folder(id)}/need") },
                             onOpenFailed = { nav.navigate("${Routes.folder(id)}/failed") },
                             onOpenChanges = { nav.navigate("${Routes.folder(id)}/changes") },
@@ -226,42 +279,42 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         )
                     }
                 }
-                composable(Routes.FOLDER_NEED) { entry ->
-                    CoreGate(core) { NeedScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.FOLDER_NEED) { entry, back ->
+                    CoreGate(core) { NeedScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = back) }
                 }
-                composable(Routes.FOLDER_FAILED) { entry ->
-                    CoreGate(core) { FailedScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.FOLDER_FAILED) { entry, back ->
+                    CoreGate(core) { FailedScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = back) }
                 }
-                composable(Routes.FOLDER_CHANGES) { entry ->
-                    CoreGate(core) { LocalChangesScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.FOLDER_CHANGES) { entry, back ->
+                    CoreGate(core) { LocalChangesScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = back) }
                 }
-                composable(
-                    Routes.FOLDER_IGNORES, arguments = listOf(navArgument("first") { type = NavType.BoolType; defaultValue = false }),
-                ) { entry ->
+                screen(
+                    nav, Routes.FOLDER_IGNORES, arguments = listOf(navArgument("first") { type = NavType.BoolType; defaultValue = false }),
+                ) { entry, back ->
                     val args = entry.arguments
                     CoreGate(core) {
-                        IgnoresScreen(snapshot, args?.getString("id").orEmpty(), args?.getBoolean("first") == true, vm, onBack = { nav.popBackStack() })
+                        IgnoresScreen(snapshot, args?.getString("id").orEmpty(), args?.getBoolean("first") == true, vm, onBack = back)
                     }
                 }
-                composable(Routes.DEVICE) { entry ->
+                screen(nav, Routes.DEVICE) { entry, back ->
                     val id = entry.arguments?.getString("id").orEmpty()
                     CoreGate(core) {
                         DeviceScreen(
-                            snapshot, id, vm, onBack = { nav.popBackStack() }, onOpenNeeds = { nav.navigate(Routes.deviceNeeds(id, it)) },
+                            snapshot, id, vm, onBack = back, onOpenNeeds = { nav.navigate(Routes.deviceNeeds(id, it)) },
                             onOpenSchedule = { nav.navigate(Routes.deviceSchedule(id)) },
                         )
                     }
                 }
-                composable(Routes.DEVICE_NEEDS) { entry ->
+                screen(nav, Routes.DEVICE_NEEDS) { entry, back ->
                     val args = entry.arguments
                     CoreGate(core) {
-                        RemoteNeedScreen(snapshot, args?.getString("id").orEmpty(), args?.getString("folder").orEmpty(), vm, onBack = { nav.popBackStack() })
+                        RemoteNeedScreen(snapshot, args?.getString("id").orEmpty(), args?.getString("folder").orEmpty(), vm, onBack = back)
                     }
                 }
-                composable(Routes.THIS_PHONE) {
-                    CoreGate(core) { ThisPhoneScreen(snapshot, vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.THIS_PHONE) { _, back ->
+                    CoreGate(core) { ThisPhoneScreen(snapshot, vm, onBack = back) }
                 }
-                composable(Routes.ADD_FOLDER) { entry ->
+                screen(nav, Routes.ADD_FOLDER) { entry, back ->
                     val offer = entry.arguments?.getString("offer")?.ifEmpty { null }
                     val from = entry.arguments?.getString("from")?.ifEmpty { null }
                     CoreGate(core) {
@@ -274,63 +327,63 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         if (snapshot.loaded && base != null) {
                             // Saved, so a recreated screen keeps the same new folder ID and the form still counts as unchanged.
                             val initial = rememberSaveable(offer, from, saver = draftSaver) { draftFor(snapshot, offer, from, base) }
-                            FolderEditScreen(snapshot, initial, from, pathBase(base), onBack = { nav.popBackStack() }) {
+                            FolderEditScreen(snapshot, initial, from, pathBase(base), onBack = back) {
                                 vm.addFolder(it, paused = it.ignoresFirst)
                                 if (it.ignoresFirst) {
                                     nav.navigate(Routes.ignores(it.id.trim(), first = true)) { popUpTo(Routes.ADD_FOLDER) { inclusive = true } }
                                 } else {
-                                    nav.popBackStack()
+                                    back()
                                 }
                             }
                         }
                     }
                 }
-                composable(Routes.ADD_DEVICE) { entry ->
+                screen(nav, Routes.ADD_DEVICE) { entry, back ->
                     val id = entry.arguments?.getString("id").orEmpty()
                     val name = entry.arguments?.getString("name").orEmpty()
                     CoreGate(core) {
                         if (snapshot.loaded) {
-                            DeviceEditScreen(snapshot, id, name, vm, onBack = { nav.popBackStack() }) { newId, newName, folders ->
+                            DeviceEditScreen(snapshot, id, name, vm, onBack = back) { newId, newName, folders ->
                                 vm.addDevice(newId, newName, folders)
-                                nav.popBackStack()
+                                back()
                             }
                         }
                     }
                 }
-                composable(Routes.FOLDER_DEFAULTS) {
+                screen(nav, Routes.FOLDER_DEFAULTS) { _, back ->
                     CoreGate(core) {
-                        DefaultFolderScreen(vm, onBack = { nav.popBackStack() }, onOpenIgnores = { nav.navigate(Routes.DEFAULT_IGNORES) })
+                        DefaultFolderScreen(vm, onBack = back, onOpenIgnores = { nav.navigate(Routes.DEFAULT_IGNORES) })
                     }
                 }
-                composable(Routes.DEFAULT_IGNORES) {
-                    CoreGate(core) { IgnoresScreen(snapshot, null, firstSync = false, vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.DEFAULT_IGNORES) { _, back ->
+                    CoreGate(core) { IgnoresScreen(snapshot, null, firstSync = false, vm, onBack = back) }
                 }
-                composable(Routes.DEVICE_DEFAULTS) {
-                    CoreGate(core) { DefaultDeviceScreen(vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.DEVICE_DEFAULTS) { _, back ->
+                    CoreGate(core) { DefaultDeviceScreen(vm, onBack = back) }
                 }
-                composable(Routes.FOLDER_RECENT) { entry ->
-                    CoreGate(core) { RecentChangesScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.FOLDER_RECENT) { entry, back ->
+                    CoreGate(core) { RecentChangesScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = back) }
                 }
-                composable(Routes.FOLDER_VERSIONS) { entry ->
-                    CoreGate(core) { VersionsScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.FOLDER_VERSIONS) { entry, back ->
+                    CoreGate(core) { VersionsScreen(snapshot, entry.arguments?.getString("id").orEmpty(), vm, onBack = back) }
                 }
-                composable(Routes.ABOUT) { AboutScreen(onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.ABOUT) { _, back -> AboutScreen(onBack = back) }
                 // Not behind CoreGate: the import stops and restarts the core itself.
-                composable(Routes.FORK_IMPORT) { ImportScreen(onBack = { nav.popBackStack() }) }
-                composable(Routes.EXPORT) { ExportScreen(onBack = { nav.popBackStack() }) }
-                composable(Routes.PROXY) { ProxyScreen(vm, core, onBack = { nav.popBackStack() }) }
-                composable(Routes.SCHEDULE) { ScheduleScreen(vm, snapshot, onBack = { nav.popBackStack() }) }
-                composable(Routes.DEVICE_SCHEDULE) { entry ->
-                    CoreGate(core) { ScheduleScreen(vm, snapshot, entry.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.FORK_IMPORT) { _, back -> ImportScreen(onBack = back) }
+                screen(nav, Routes.EXPORT) { _, back -> ExportScreen(onBack = back) }
+                screen(nav, Routes.PROXY) { _, back -> ProxyScreen(vm, core, onBack = back) }
+                screen(nav, Routes.SCHEDULE) { _, back -> ScheduleScreen(vm, snapshot, onBack = back) }
+                screen(nav, Routes.DEVICE_SCHEDULE) { entry, back ->
+                    CoreGate(core) { ScheduleScreen(vm, snapshot, entry.arguments?.getString("id").orEmpty(), onBack = back) }
                 }
-                composable(Routes.IGNORED) {
-                    CoreGate(core) { IgnoredScreen(vm, onBack = { nav.popBackStack() }) }
+                screen(nav, Routes.IGNORED) { _, back ->
+                    CoreGate(core) { IgnoredScreen(vm, onBack = back) }
                 }
-                composable(Routes.WEB_GUI) {
+                screen(nav, Routes.WEB_GUI) { _, back ->
                     // Each start brings a new address and login, which the WebView takes when it is made:
                     // a new run gets a new WebView, even if the state skipped from one run straight to the next.
                     // While the core is not running it shows the same stopped / starting screen as every other screen, not a blank page.
-                    CoreGate(core) { (core as? CoreState.Running)?.let { key(it) { WebGuiScreen(it, onClose = { nav.popBackStack() }) } } }
+                    CoreGate(core) { (core as? CoreState.Running)?.let { key(it) { WebGuiScreen(it, onClose = back) } } }
                 }
             }
         }

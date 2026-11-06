@@ -1,9 +1,12 @@
 package eu.stedb.mysyncthing.ui
 
 import android.app.Application
+import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -15,13 +18,14 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.SaveAlt
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,6 +34,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -42,6 +50,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.ConfigExport
+import eu.stedb.mysyncthing.core.ExportFormat
 import eu.stedb.mysyncthing.core.UiText
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -52,8 +61,13 @@ import kotlinx.coroutines.launch
  * only, never saved instance state, as it holds the password.
  */
 class ExportViewModel(app: Application) : AndroidViewModel(app) {
+    var format by mutableStateOf(ExportFormat.Strong)
     var password by mutableStateOf("")
     var repeat by mutableStateOf("")
+
+    /** Whether the form can go to the save dialog: no password for [ExportFormat.None], else a valid one, typed twice. */
+    val canSave get() = !format.encrypted ||
+        password.isNotEmpty() && exportPasswordError(password) == null && exportRepeatError(password, repeat) == null
 
     private val _result = MutableStateFlow<ExportResult?>(null)
     val result = _result.asStateFlow()
@@ -61,9 +75,10 @@ class ExportViewModel(app: Application) : AndroidViewModel(app) {
     fun export(uri: Uri) {
         if (_result.value == ExportResult.Working) return
         _result.value = ExportResult.Working
+        val format = format
         viewModelScope.launch {
-            val problem = ConfigExport.export(getApplication(), uri, password)
-            _result.value = if (problem == null) ExportResult.Saved(password.isNotEmpty()) else ExportResult.Failed(problem)
+            val problem = ConfigExport.export(getApplication(), uri, format, password)
+            _result.value = if (problem == null) ExportResult.Saved(format.encrypted) else ExportResult.Failed(problem)
         }
     }
 
@@ -81,14 +96,14 @@ sealed interface ExportResult {
 @Composable
 fun ExportScreen(onBack: () -> Unit, vm: ExportViewModel = viewModel()) {
     val result by vm.result.collectAsStateWithLifecycle()
-    val save = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/zip")) { uri -> uri?.let(vm::export) }
+    val save = rememberLauncherForActivityResult(SaveFile) { uri -> uri?.let(vm::export) }
     val working = result == ExportResult.Working
     BackHandler(enabled = working) {} // leaving would hide whether the file was written
 
     AppScreen(stringResource(R.string.export_title), onBack = if (working) null else onBack) { padding ->
         Column(Modifier.padding(padding).verticalScroll(rememberScrollState()).padding(bottom = 32.dp)) {
             when (val r = result) {
-                null -> ExportForm(vm) { save.launch(ConfigExport.fileName()) }
+                null -> ExportForm(vm) { save.launch(ConfigExport.fileName(vm.format) to vm.format.mimeType) }
                 ExportResult.Working -> Column(
                     Modifier.fillMaxWidth().padding(32.dp), horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -111,6 +126,15 @@ fun ExportScreen(onBack: () -> Unit, vm: ExportViewModel = viewModel()) {
     }
 }
 
+/** The system's save dialog, for a file name and MIME type chosen at launch (they follow the format). */
+private object SaveFile : ActivityResultContract<Pair<String, String>, Uri?>() {
+    override fun createIntent(context: Context, input: Pair<String, String>): Intent =
+        ActivityResultContracts.CreateDocument(input.second).createIntent(context, input.first)
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? =
+        ActivityResultContracts.CreateDocument("*/*").parseResult(resultCode, intent)
+}
+
 @Composable
 private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
     var show by remember { mutableStateOf(false) }
@@ -120,21 +144,32 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
         stringResource(R.string.export_intro_title),
         stringResource(R.string.export_intro),
     )
-    SettingsGroup(stringResource(R.string.export_password_group)) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            val transformation = if (show) VisualTransformation.None else PasswordVisualTransformation()
-            val keyboard = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)
-            OutlinedTextField(
-                vm.password, { vm.password = it }, label = { Text(stringResource(R.string.password)) }, singleLine = true,
-                isError = passwordError != null,
-                supportingText = { Text(passwordError?.asString() ?: pluralStringResource(R.plurals.export_password_hint, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD)) },
-                visualTransformation = transformation, keyboardOptions = keyboard,
-                trailingIcon = {
-                    PasswordVisibilityButton(show) { show = !show }
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            if (vm.password.isNotEmpty()) {
+    SettingsGroup(stringResource(R.string.export_encryption_group)) {
+        for ((format, title, hint) in listOf(
+            Triple(ExportFormat.Strong, R.string.export_strong, R.string.export_strong_hint),
+            Triple(ExportFormat.Compatible, R.string.export_compatible, R.string.export_compatible_hint),
+            Triple(ExportFormat.None, R.string.export_none, R.string.export_none_hint),
+        )) {
+            Column(Modifier.testTag("export_${format.name}")) {
+                RadioRow(stringResource(title), stringResource(hint), vm.format == format) { vm.format = format }
+            }
+        }
+    }
+    if (vm.format.encrypted) {
+        SettingsGroup(stringResource(R.string.export_password_group)) {
+            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                val transformation = if (show) VisualTransformation.None else PasswordVisualTransformation()
+                val keyboard = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)
+                OutlinedTextField(
+                    vm.password, { vm.password = it }, label = { Text(stringResource(R.string.password)) }, singleLine = true,
+                    isError = passwordError != null,
+                    supportingText = { Text(passwordError?.asString() ?: pluralStringResource(R.plurals.export_password_hint, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD)) },
+                    visualTransformation = transformation, keyboardOptions = keyboard,
+                    trailingIcon = {
+                        PasswordVisibilityButton(show) { show = !show }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
                 OutlinedTextField(
                     vm.repeat, { vm.repeat = it }, label = { Text(stringResource(R.string.password_again)) }, singleLine = true,
                     isError = vm.repeat.isNotEmpty() && repeatError != null,
@@ -145,27 +180,35 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
             }
         }
     }
-    if (vm.password.isEmpty()) {
-        Card(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-        ) {
-            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Key, null, tint = MaterialTheme.colorScheme.onErrorContainer)
-                Text(
-                    stringResource(R.string.export_no_password_warning),
-                    color = MaterialTheme.colorScheme.onErrorContainer, modifier = Modifier.padding(start = 12.dp),
-                )
-            }
-        }
+    when (vm.format) {
+        ExportFormat.Strong -> FormatNote(Icons.Default.Lock, AppColors.ok, stringResource(R.string.export_strong_note))
+        ExportFormat.Compatible -> FormatNote(Icons.Default.Warning, AppColors.busy, stringResource(R.string.export_compatible_warning))
+        ExportFormat.None -> FormatNote(Icons.Default.Key, AppColors.problem, stringResource(R.string.export_no_password_warning))
     }
     Row(Modifier.padding(16.dp)) {
-        Button(shape = ButtonShape, enabled = passwordError == null && repeatError == null, onClick = onSave) {
+        Button(shape = ButtonShape, enabled = vm.canSave, onClick = onSave) {
             Icon(Icons.Default.SaveAlt, null)
             Text(stringResource(R.string.export_choose), Modifier.padding(start = 8.dp))
         }
     }
 }
+
+/** What the chosen format means, tinted by how safe it is; the icon carries the meaning without colour. */
+@Composable
+private fun FormatNote(icon: ImageVector, color: Color, text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp).testTag("exportNote"),
+        shape = MaterialTheme.shapes.extraSmall,
+        color = color.copy(alpha = NOTE_ALPHA).compositeOver(AppColors.card().containerColor),
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.Top) {
+            Icon(icon, null, tint = color)
+            Text(text, modifier = Modifier.padding(start = 12.dp), style = MaterialTheme.typography.bodyMedium)
+        }
+    }
+}
+
+private const val NOTE_ALPHA = 0.12f
 
 @Composable
 private fun ExportNote(title: String, text: String) {

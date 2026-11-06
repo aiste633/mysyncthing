@@ -54,6 +54,7 @@ object Fixtures {
     private fun dashed(id: String) = id.chunked(7).joinToString("-")
 
     val myId = dashed("AAFRMIJMG5BE2XWDDNZ4YJD42UWWYLXRWR3TT7F7I7ICMPCSNB7JJKQW")
+    /** The one fake ID scripts/check-leaks.sh allows written dashed too (the e2e test uses it). */
     val laptop = dashed("EUYDWRSRLRTXET7MISOPKTNF7ZLLK6B27WAEGBOIRYNHBBU4WLEN55AT")
     val server = idFromData("SERVERSERVERSERVERSERVERSERVERSERVERSERVERSERVERSERA")
     val tablet = idFromData("TABLETTABLETTABLETTABLETTABLETTABLETTABLETTABLETTABA")

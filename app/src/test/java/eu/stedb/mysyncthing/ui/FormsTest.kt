@@ -7,6 +7,8 @@ import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsSelected
+import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -203,6 +205,41 @@ class FormsTest : ScreenTest() {
         field(str(R.string.password_again)).performTextReplacement("correct horse")
         compose.onNodeWithText(str(R.string.error_password_repeat)).assertExists()
         compose.onNodeWithText(str(R.string.export_choose)).assertIsNotEnabled()
+    }
+
+    /** Strong is the default; an encrypted format can't be saved without a password, so Save starts off. */
+    @Test
+    fun exportStartsStrongAndNeedsAPassword() {
+        show { ExportScreen(onBack = {}) }
+        compose.onNodeWithTag("export_Strong").onChild().assertIsSelected()
+        compose.onNodeWithText(str(R.string.export_strong_note)).assertExists()
+        compose.onNodeWithText(str(R.string.export_choose)).performScrollTo().assertIsNotEnabled()
+        field(str(R.string.password)).performTextReplacement("correct horse battery")
+        field(str(R.string.password_again)).performTextReplacement("correct horse battery")
+        compose.onNodeWithText(str(R.string.export_choose)).performScrollTo().assertIsEnabled()
+    }
+
+    /** Compatible warns that the archive is vulnerable and still needs the 12-character password. */
+    @Test
+    fun exportCompatibleWarnsAndNeedsAPassword() {
+        show { ExportScreen(onBack = {}) }
+        compose.onNodeWithTag("export_Compatible").onChild().performClick()
+        compose.onNodeWithText(str(R.string.export_compatible_warning)).performScrollTo().assertExists()
+        compose.onNodeWithText(str(R.string.export_strong_note)).assertDoesNotExist()
+        field(str(R.string.password)).performTextReplacement("elevenchars")
+        compose.onNodeWithText(app.resources.getQuantityString(R.plurals.error_password_short, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD)).assertExists()
+        compose.onNodeWithText(str(R.string.export_choose)).performScrollTo().assertIsNotEnabled()
+    }
+
+    /** None hides the password fields, warns, and saves without a password even if one was typed before. */
+    @Test
+    fun exportNoneNeedsNoPassword() {
+        show { ExportScreen(onBack = {}) }
+        field(str(R.string.password)).performTextReplacement("short")
+        compose.onNodeWithTag("export_None").onChild().performClick()
+        field(str(R.string.password)).assertDoesNotExist()
+        compose.onNodeWithText(str(R.string.export_no_password_warning)).performScrollTo().assertExists()
+        compose.onNodeWithText(str(R.string.export_choose)).performScrollTo().assertIsEnabled()
     }
 
     /** A password shown in clear text keeps the screen out of screenshots, recordings and Recents; hidden again, it doesn't. */

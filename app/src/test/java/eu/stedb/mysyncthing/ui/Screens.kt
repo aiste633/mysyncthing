@@ -3,6 +3,8 @@ package eu.stedb.mysyncthing.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.viewmodel.compose.viewModel
+import eu.stedb.mysyncthing.core.ExportFormat
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.ui.Fixtures.core
 import eu.stedb.mysyncthing.ui.Fixtures.snapshot
@@ -63,5 +65,7 @@ val screens = listOf(
     ScreenCase("windows-device-never") { ScheduleForm(Fixtures.noOverlap, Fixtures.server, names, save = { true }, onBack = {}) },
     ScreenCase("windows-device-default") { ScheduleForm(Fixtures.globalShort, Fixtures.laptop, names, save = { true }, onBack = {}) },
     ScreenCase("export") { ExportScreen(onBack = {}) },
+    ScreenCase("export-compatible") { ExportScreen(onBack = {}, vm = viewModel<ExportViewModel>().apply { format = ExportFormat.Compatible }) },
+    ScreenCase("export-none") { ExportScreen(onBack = {}, vm = viewModel<ExportViewModel>().apply { format = ExportFormat.None }) },
     ScreenCase("import") { ImportScreen(onBack = {}) },
 )

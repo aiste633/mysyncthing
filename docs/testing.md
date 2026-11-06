@@ -85,8 +85,9 @@ notification and widget texts, the REST client's paths, version restores, the se
 migration and writes on a full disk, the Syncthing-Fork import preview, and the translations
 (every translated string must take the same placeholders as the English one). Go tests start
 and stop the real Syncthing core in-process and check the GUI lock, restarts in place, the
-proxy, the backup export (round trip, wrong passwords, known-answer tests of the AES zip
-format; devices' own sync windows only under device IDs as the core writes them, at most 256,
+proxy, the backup export in all three formats (round trip, wrong passwords, known-answer tests of the AES zip
+format, a sealed v1 golden file that must keep opening, every flipped bit and cut of a sealed file refused, Argon2id
+parameters from a file bounded before any key derivation; devices' own sync windows only under device IDs as the core writes them, at most 256,
 and dropped from the preview for devices the backup does not pair with) and the Fork import. Backups are treated as untrusted input: a hostile backup (external
 versioning, a versions folder that would be cleaned out, a folder in the app's own files,
 overlapping folders, bidi characters, relays and other servers, open GUI settings) is imported
@@ -99,8 +100,8 @@ The app's real screens run on the JVM (Robolectric, Android 16) with made-up fol
 devices: three folders (up to date, syncing, stopped by an error), three devices (on the LAN,
 through a relay, offline and paused by the user) and a folder offer. No real device ID, name or address is used.
 
-- Screenshots: 25 screens, from the first-run checklist to the export form, each in light,
-  dark, the largest font (200 %), Italian and German (the longest text): 125 images in `app/src/test/screenshots/`.
+- Screenshots: 27 screens, from the first-run checklist to the export form (Strong, Compatible and None), each in light,
+  dark, the largest font (200 %), Italian and German (the longest text): 135 images in `app/src/test/screenshots/`.
   The device list and a device's screen are also shown while a run condition pauses every device,
   and the device list after 30 min with no device connected; the device list and screens while
   devices' own sync windows hold them or never let them sync, and the sync windows editor for a
@@ -157,9 +158,10 @@ real phone.
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
 | Launcher starts | Opened first by an intent other than the launcher's, then three times from the launcher: one copy of the main screen stays, not four |
-| Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze |
+| Remove goes back to the tab | A folder and a device removed on their screens: the Folders and Devices lists show, not a blank screen or the wrong tab |
+| Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze, no blank screen |
 
-The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and counts StrictMode reports. On the PC
+The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
 
 ### App updates

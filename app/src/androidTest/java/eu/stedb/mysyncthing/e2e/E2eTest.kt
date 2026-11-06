@@ -35,6 +35,7 @@ import eu.stedb.mysyncthing.core.DeviceWindows
 import eu.stedb.mysyncthing.core.MINUTES_PER_DAY
 import eu.stedb.mysyncthing.core.RunConditions
 import eu.stedb.mysyncthing.core.SyncWindow
+import eu.stedb.mysyncthing.core.Versioning
 import eu.stedb.mysyncthing.core.minuteOfDay
 import eu.stedb.mysyncthing.core.withDeviceWindows
 import eu.stedb.mysyncthing.core.NO_DEVICE_LIMIT
@@ -531,6 +532,50 @@ class E2eTest {
     }
 
     /**
+     * Remove on a folder's or a device's screen goes back to its tab, with the tab's list on it. The
+     * screen used to leave twice: at the tap, and again when the core's change reached the snapshot
+     * during its exit animation. That popped the tab too: Folders went blank under the tab bar, and a
+     * removed device showed Folders. A folder and a device of their own, so the peer's stay.
+     */
+    @Test
+    fun removeGoesBackToTheTab() {
+        phoneId()
+        val core = (SyncthingCore.state.value as CoreState.Running).client
+        val path = File(folderDir().parentFile, REMOVE_FOLDER).path
+        try {
+            runBlocking {
+                core.addFolder(REMOVE_FOLDER, REMOVE_LABEL, path, emptyList(), "sendreceive", Versioning())
+                core.addDevice(REMOVE_DEVICE, REMOVE_NAME)
+            }
+            eventually("new folder and device on the screens", 30_000) {
+                SyncStatus.snapshot.value.let { s -> s.folders.any { it.id == REMOVE_FOLDER } && s.devices.any { it.deviceID == REMOVE_DEVICE } }
+            }
+
+            tap(str(R.string.tab_folders))
+            tap(REMOVE_LABEL)
+            tap(str(R.string.folder_remove))
+            tap(str(R.string.action_remove))
+            eventually("folder gone from the core", 30_000) { runBlocking { core.folders() }.none { it.id == REMOVE_FOLDER } }
+            eventually("folder gone from the screens", 30_000) { SyncStatus.snapshot.value.folders.none { it.id == REMOVE_FOLDER } }
+            rule.onAllNodes(hasText(FOLDER_LABEL)).onFirst().assertIsDisplayed()
+
+            tap(str(R.string.tab_devices))
+            tap(REMOVE_NAME)
+            tap(str(R.string.device_remove))
+            tap(str(R.string.action_remove))
+            eventually("device gone from the core", 30_000) { runBlocking { core.devices() }.none { it.deviceID == REMOVE_DEVICE } }
+            eventually("device gone from the screens", 30_000) { SyncStatus.snapshot.value.devices.none { it.deviceID == REMOVE_DEVICE } }
+            rule.onAllNodes(hasText(PEER_NAME)).onFirst().assertIsDisplayed()
+            rule.onNode(hasTestTag("pauseAll")).assertIsDisplayed()
+        } finally {
+            runBlocking {
+                runCatching { core.removeFolder(REMOVE_FOLDER) }
+                runCatching { core.removeDevice(REMOVE_DEVICE) }
+            }
+        }
+    }
+
+    /**
      * scripts/e2e/upgrade.py installed this build over the last release, which ran its own
      * [pairAndSync]: the setup, the identity, the peer and the folder are still there, the
      * database too (no "moved from another phone"), and files sync both ways.
@@ -649,6 +694,11 @@ class E2eTest {
         /** The core shuts down within 10 s (upstream's close timeout); waiting for the event long-poll could add 60 s. */
         const val STOP_MAX_MS = 20_000L
         const val PEER_NAME = "e2e-peer"
+        const val REMOVE_FOLDER = "e2e-remove"
+        const val REMOVE_LABEL = "To remove"
+        const val REMOVE_NAME = "To remove too"
+        /** Valid, and no device ever connects with it (the unit tests' laptop). */
+        const val REMOVE_DEVICE = "EUYDWRS-RLRTXET-7MISOPK-TNF7ZLL-K6B27WA-EGBOIRY-NHBBU4W-LEN55AT"
         const val SEEDS = 20
         const val VERSIONED = "versioned.txt"
         const val FROM_PHONE = "from-phone.txt"
