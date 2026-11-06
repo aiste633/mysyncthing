@@ -16,6 +16,7 @@ See your sync status at a glance, without opening the app. The widget is a singl
 
 - Folders and devices as clear cards with colour and icon status. Each folder card has a button for that folder's recent changes. Pair devices by QR code or device ID.
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning; restore older versions of a file.
+- Choose where a folder goes without typing a path: one tap for the usual folders (Camera, Screenshots, Download, Documents and more), or the app's own folder browser over internal storage, SD cards and USB sticks, with New folder. It shows which folders are already synced, and it can pick Download and the top of a storage, which Android's own picker refuses. Works in work profiles and Private Space too.
 - Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver; only at set times of the week (for example 22:00–07:00 on weekdays).
 - Pause single devices from their card. Each card says why a device is paused (by you, or for example on mobile data), and a device you paused stays paused when the run conditions allow syncing again.
 - Sync windows per device: a device can have its own windows, which narrow the global ones (for example the NAS only at night). The app warns of windows shorter than 1 h and refuses own windows that never overlap the global ones; the device card says "Outside its sync windows · next 22:00".

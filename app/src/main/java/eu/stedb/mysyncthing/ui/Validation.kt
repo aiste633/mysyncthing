@@ -59,7 +59,8 @@ fun amountError(s: String, unit: String, emptyOk: Boolean = false): UiText? {
 
 /**
  * Where a folder can be on the phone: shared storage or an SD card, so never
- * the app's own files (which hold this device's key). Not the same as, inside
+ * the app's own files (which hold this device's key), nor the apps' data
+ * Android keeps closed ([isAppPrivate]). Not the same as, inside
  * or around another folder, which would sync the same files twice.
  */
 fun folderPathError(path: String, others: Collection<String> = emptyList()): UiText? {
@@ -71,6 +72,9 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): UiT
         p.any { it.isISOControl() || it in BIDI_CONTROLS } -> text(R.string.error_control_characters)
         p.split('/').drop(1).any { it.isEmpty() || it == "." || it == ".." } -> text(R.string.error_path_parts)
         !inside(p, "/storage") || p == "/storage" || p == "/storage/emulated" -> text(R.string.error_path_storage)
+        isAppPrivate(p) -> text(R.string.error_path_app_private)
+        isOtherUsers(p) -> text(R.string.error_path_other_user)
+        holdsAppPrivate(p) -> text(R.string.error_path_holds_app_private)
         others.map(::folderPath).any { inside(p, it) || inside(it, p) } -> text(R.string.error_path_overlap)
         else -> null
     }
@@ -80,14 +84,42 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): UiT
  * Characters that reorder the text after them, so a path reads as another
  * (go/bridge/importpolicy.go unsafeRune refuses the same in imported paths).
  */
-private val BIDI_CONTROLS = setOf('\u061C', '\u200E', '\u200F') + ('\u202A'..'\u202E') + ('\u2066'..'\u2069')
+internal val BIDI_CONTROLS = setOf('\u061C', '\u200E', '\u200F') + ('\u202A'..'\u202E') + ('\u2066'..'\u2069')
 
 /** A folder path as saved: trimmed, without a trailing "/", and /sdcard, the old name of internal storage, spelled out. */
 @Suppress("SdCardPath") // recognises the aliases a user may type; it doesn't build paths from them
 fun folderPath(path: String): String {
     val p = path.trim().trimEnd('/')
     val alias = listOf("/sdcard", "/storage/self/primary").find { p == it || p.startsWith("$it/") } ?: return p
-    return INTERNAL_STORAGE + p.removePrefix(alias)
+    return internalStorage + p.removePrefix(alias)
+}
+
+/**
+ * Internal storage of another Android user: the owner's /storage/emulated/0 seen from a
+ * work profile or cloned app. Android doesn't let the app reach it, so the core would fail.
+ * (go/bridge/importpolicy.go isOtherUsers refuses the same in imported paths.)
+ */
+fun isOtherUsers(path: String): Boolean =
+    path.startsWith("/storage/emulated/") && path != internalStorage && !path.startsWith("$internalStorage/")
+
+/**
+ * The top of a storage or its Android folder: they hold [isAppPrivate] folders, which Android
+ * hides from the app, so the core would report them as unreadable on every scan and could not
+ * watch the folder. (go/bridge/importpolicy.go holdsAppPrivate refuses the same.)
+ */
+fun holdsAppPrivate(path: String): Boolean = isAppPrivate("$path/Android/data") || isAppPrivate("$path/data")
+
+/**
+ * Android/data and Android/obb (and below) on any storage, for any Android user: Android
+ * keeps them for apps even with All files access, so the core could not write there.
+ * Android/media stays open. Case is ignored, as internal storage does.
+ * (go/bridge/importpolicy.go isAppPrivate refuses the same in imported paths.)
+ */
+fun isAppPrivate(path: String): Boolean {
+    val parts = path.split('/')
+    if (parts.size < 4 || parts[0] != "" || parts[1] != "storage") return false
+    val rest = parts.drop(if (parts[2] == "emulated") 4 else 3)
+    return rest.size >= 2 && rest[0].equals("Android", ignoreCase = true) && (rest[1].equals("data", ignoreCase = true) || rest[1].equals("obb", ignoreCase = true))
 }
 
 /**

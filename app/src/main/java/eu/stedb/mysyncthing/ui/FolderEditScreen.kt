@@ -1,7 +1,22 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.platform.testTag
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,6 +43,7 @@ import eu.stedb.mysyncthing.core.FolderDevice
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Versioning
 import eu.stedb.mysyncthing.core.text
+import kotlinx.coroutines.withContext
 import java.util.UUID
 
 /** A folder to create, possibly pre-filled from a pending offer. */
@@ -45,7 +61,7 @@ data class FolderDraft(
 )
 
 /** The defaults' folder location, or Syncthing/ in shared storage while it is upstream's "~". */
-fun pathBase(defaults: Folder): String = defaults.path.trimEnd('/').takeIf { it.startsWith("/") } ?: "$INTERNAL_STORAGE/Syncthing"
+fun pathBase(defaults: Folder): String = defaults.path.trimEnd('/').takeIf { it.startsWith("/") } ?: "$internalStorage/Syncthing"
 
 /** Draft for a new local folder, or for an offer when [offerId] is set, starting from the [defaults]. */
 fun draftFor(s: Snapshot, offerId: String?, offerDevice: String?, defaults: Folder): FolderDraft {
@@ -66,10 +82,15 @@ fun FolderEditScreen(
     var d by rememberSaveable(stateSaver = draftSaver) { mutableStateOf(initial) }
     // Follow the label into the suggested path until the user picks a place.
     var pathTouched by rememberSaveable { mutableStateOf(offeredBy == null) }
-    val pick = rememberFolderPicker {
+    var browsing by rememberSaveable { mutableStateOf(false) }
+    val disk = rememberDisk()
+    // Read off the main thread: storages can be slow.
+    val roots by produceState(emptyList<StorageRoot>(), disk) { value = withContext(disk.reads) { disk.roots() } }
+    val choose = { path: String ->
         pathTouched = true
-        d = d.copy(path = it, label = d.label.ifEmpty { it.substringAfterLast('/') })
+        d = d.copy(path = path, label = d.label.ifEmpty { path.substringAfterLast('/') })
     }
+    val picks by produceState(emptyList<String>(), disk) { value = withContext(disk.reads) { quickPicks(disk) } }
     val isOffer = offeredBy != null
     // The untrusted device whose password dialog is open.
     var encrypt by rememberSaveable { mutableStateOf<String?>(null) }
@@ -83,12 +104,19 @@ fun FolderEditScreen(
         }
     }
     val who = offeredBy?.let { id -> s.devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: shortId(id) }
-    val pathError = folderPathError(d.path, s.folders.map { it.path })
+    val pathError = pickProblem(d.path, s.folders)
     // An offer's ID is the other device's; only a typed one must also work in REST paths.
     val idError = if (isOffer) text(R.string.folder_already_added).takeIf { s.folders.any { it.id == d.id } } else folderIdError(d.id, s.folders.map { it.id })
     val valid = pathError == null && idError == null
 
     val back = rememberDiscardGuard(d != initial, onBack)
+    if (browsing) {
+        FolderBrowser(d.path, pathBase, s.folders, onBack = { browsing = false }) {
+            choose(it)
+            browsing = false
+        }
+        return
+    }
 
     AppScreen(
         title = if (isOffer) stringResource(R.string.folder_add_offer, initial.label) else stringResource(R.string.folders_add),
@@ -109,23 +137,34 @@ fun FolderEditScreen(
                         { d = d.copy(label = it, path = if (pathTouched) d.path else suggestedPath(it, pathBase, d.id)) },
                         label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
-                    OutlinedTextField(
-                        d.path, { pathTouched = true; d = d.copy(path = it) },
-                        label = { Text(stringResource(R.string.folder_path)) }, maxLines = 3, modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        // An empty path on a new form is not yet a mistake: no red, but say it's needed.
-                        isError = d.path.isNotBlank() && pathError != null,
-                        supportingText = {
-                            Text(
-                                when {
-                                    d.path.isBlank() -> stringResource(R.string.folder_path_required)
-                                    pathError != null -> pathError.asString()
-                                    isOffer && !pathTouched -> stringResource(R.string.folder_path_suggested)
-                                    else -> stringResource(R.string.folder_path_hint)
-                                },
-                            )
+                    // An empty path on a new form is not yet a mistake: no red, but say it's needed.
+                    val error = d.path.isNotBlank() && pathError != null
+                    PathRow(d.path, roots, error, Modifier.padding(top = 12.dp)) { browsing = true }
+                    Text(
+                        when {
+                            d.path.isBlank() -> stringResource(R.string.folder_path_needed)
+                            pathError != null -> pathError.asString()
+                            isOffer && !pathTouched -> stringResource(R.string.folder_path_suggested)
+                            else -> stringResource(R.string.folder_path_created)
                         },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
                     )
-                    TextButton(onClick = pick) { Text(stringResource(R.string.folder_choose)) }
+                    // Syncthing/<name> first, while there is a name to put there.
+                    val suggestion = if (isOffer || d.label.isNotBlank()) suggestedPath(d.label, pathBase, d.id) else null
+                    QuickPicks(suggestion, picks, folderPath(d.path), s.folders, roots, Modifier.padding(top = 12.dp)) { p ->
+                        if (p == suggestion) {
+                            pathTouched = false
+                            d = d.copy(path = p)
+                        } else {
+                            choose(p)
+                        }
+                    }
+                    OutlinedButton(onClick = { browsing = true }, shape = ButtonShape, modifier = Modifier.padding(top = 4.dp, bottom = 8.dp).testTag("browse")) {
+                        Icon(Icons.Default.FolderOpen, null, Modifier.size(18.dp))
+                        Text(stringResource(R.string.folder_browse), Modifier.padding(start = 8.dp))
+                    }
                     if (!isOffer) {
                         OutlinedTextField(
                             d.id, { d = d.copy(id = it) }, label = { Text(stringResource(R.string.folder_id)) }, singleLine = true, isError = idError != null,
@@ -219,3 +258,58 @@ internal val draftSaver = androidx.compose.runtime.saveable.Saver<FolderDraft, L
         )
     },
 )
+
+/** The chosen folder: its storage and the path in it. The whole row opens the browser. */
+@Composable
+private fun PathRow(path: String, roots: List<StorageRoot>, error: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    val (top, rest) = pathParts(path, roots)
+    val outline = if (error) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
+    Row(
+        modifier.fillMaxWidth().heightIn(min = 56.dp)
+            .border(1.dp, outline, MaterialTheme.shapes.extraSmall)
+            .clickable(onClickLabel = stringResource(R.string.folder_browse), onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .testTag("folderPath"),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Default.Folder, null, tint = MaterialTheme.colorScheme.primary)
+        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+            Text(stringResource(R.string.folder_path), style = MaterialTheme.typography.bodySmall, color = if (error) outline else MaterialTheme.colorScheme.onSurfaceVariant)
+            when {
+                path.isBlank() -> Text(stringResource(R.string.folder_path_none), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                rest.isEmpty() -> Text(top?.asString() ?: path)
+                else -> {
+                    Text(rest)
+                    top?.let { Text(it.asString(), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * One-tap places: the suggested Syncthing/<name> and the usual folders that exist.
+ * One already synced, or around or inside a synced folder, can't be chosen.
+ */
+@Composable
+private fun QuickPicks(
+    suggestion: String?, picks: List<String>, chosen: String, folders: List<Folder>, roots: List<StorageRoot>,
+    modifier: Modifier = Modifier, onPick: (String) -> Unit,
+) {
+    // The suggestion by where it goes in its storage ("Syncthing/Holiday 2026"), the usual folders by name.
+    val shown = (listOfNotNull(suggestion?.let { it to pathParts(it, roots).second }) + picks.map { it to it.substringAfterLast('/') }).distinctBy { it.first }
+    if (shown.isEmpty()) return
+    Column(modifier) {
+        Text(stringResource(R.string.folder_quick_picks), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.testTag("quickPicks")) {
+            shown.forEach { (p, name) ->
+                val synced = folders.any { folderPath(it.path) == p }
+                FilterChip(
+                    selected = chosen == p, onClick = { onPick(p) }, enabled = chosen == p || pickProblem(p, folders) == null,
+                    label = { Text(if (synced) stringResource(R.string.folder_pick_synced, name) else name) },
+                    shape = ButtonShape,
+                )
+            }
+        }
+    }
+}

@@ -42,6 +42,9 @@ ALLOWED = [
     (r"ui/LiveStats\.kt", r"network is unreachable"),
     # A directory name on disk, made before the user picks one; not shown as text.
     (r"ui/Validation\.kt", r"Folder"),
+    # Directory names on disk: Android's own (Android/data) and the camera app's (DCIM/Camera).
+    (r"ui/Validation\.kt", r"Android"),
+    (r"ui/FolderBrowser\.kt", r"DCIM/Camera|Pictures/Screenshots|DCIM/Screenshots|Pictures|Download|Documents|Music"),
     # Names of libraries and licences.
     (r"ui/AboutScreen\.kt", r"Apache-2\.0|Apache License 2\.0|Kotlin, kotlinx\..*|OkHttp, Okio"),
     # Date patterns, made locale-aware separately.

@@ -467,3 +467,36 @@ func FuzzImportPolicy(f *testing.F) {
 		}
 	})
 }
+
+// In a work profile, Private Space or a cloned app, /sdcard leads to that
+// user's storage, not the owner's; only a real internal storage path is taken.
+func TestInternalStorageOfAnotherUser(t *testing.T) {
+	t.Cleanup(func() { internalStorage.Store("/storage/emulated/0") })
+	for _, bad := range []string{"", "/storage/emulated", "/storage/emulated/x", "/storage/emulated/10/", "/data/user/10", "/storage/emulated/10/../0"} {
+		if SetInternalStorage(bad) == nil {
+			t.Errorf("took %q", bad)
+		}
+	}
+	if err := SetInternalStorage("/storage/emulated/10"); err != nil {
+		t.Fatal(err)
+	}
+	if got := folderPath("/sdcard/DCIM/"); got != "/storage/emulated/10/DCIM" {
+		t.Errorf("/sdcard/DCIM/ -> %q", got)
+	}
+	if err := folderPathError(folderPath("/sdcard/Android/data/x"), nil); err != errPathApps {
+		t.Errorf("Android/data in a work profile: %v", err)
+	}
+	for _, top := range []string{"/storage/emulated/10", "/storage/emulated/10/Android", "/storage/1234-ABCD", "/storage/1234-ABCD/android"} {
+		if err := folderPathError(top, nil); err != errPathHolds {
+			t.Errorf("%s: %v", top, err)
+		}
+	}
+	if err := folderPathError("/storage/emulated/10/Music", nil); err != nil {
+		t.Errorf("own storage: %v", err)
+	}
+	for _, other := range []string{"/storage/emulated/0/Music", "/storage/emulated/0", "/storage/emulated/1", "/storage/emulated/100/x"} {
+		if err := folderPathError(other, nil); err != errPathUser {
+			t.Errorf("%s in a work profile: %v", other, err)
+		}
+	}
+}

@@ -85,7 +85,7 @@ fun DefaultFolderScreen(vm: MainViewModel, onBack: () -> Unit, onOpenIgnores: ()
         DefaultsDialog.Order -> ChoiceDialog(stringResource(R.string.download_order), PULL_ORDERS, d.order, onDismiss = close) { o ->
             close(); vm.changeDefaultFolder(d.copy(order = o), R.string.op_download_order) { put("order", o) }
         }
-        DefaultsDialog.DiskFree -> DiskFreeDialog(d.minDiskFree, INTERNAL_STORAGE, onDismiss = close) { size ->
+        DefaultsDialog.DiskFree -> DiskFreeDialog(d.minDiskFree, internalStorage, onDismiss = close) { size ->
             close()
             vm.changeDefaultFolder(d.copy(minDiskFree = size), R.string.op_keep_free) { putJsonObject("minDiskFree") { put("value", size.value); put("unit", size.unit) } }
         }

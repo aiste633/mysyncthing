@@ -24,6 +24,7 @@ import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.R as CoreR
 import java.time.Instant
 import java.time.LocalDateTime
+import kotlin.coroutines.EmptyCoroutineContext
 
 private const val B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
 
@@ -169,3 +170,36 @@ object Fixtures {
         windows = listOf(SyncWindow(at(22), at(7), workdays), SyncWindow(at(12), at(12, 30), setOf(6))),
     )
 }
+
+/** A made-up phone storage for the folder browser: directories by full path, with how many entries each holds. */
+class MapDisk(private val roots: List<StorageRoot>, dirs: Map<String, Int>) : Disk {
+    val dirs = dirs.toMutableMap().apply { roots.forEach { putIfAbsent(it.path, 0) } }
+
+    override fun roots() = roots
+
+    // At once, so screenshots show the listing, not the wait for it.
+    override val reads = EmptyCoroutineContext
+
+    override fun isDirectory(path: String) = path in dirs
+
+    override fun directories(path: String): List<DirEntry>? {
+        if (path !in dirs || isAppPrivate(path)) return null
+        return dirs.keys.filter { it.substringBeforeLast('/') == path }.map { DirEntry(it.substringAfterLast('/'), dirs[it]) }
+    }
+
+    override fun makeDirectory(path: String): Boolean {
+        if (path in dirs || path.substringBeforeLast('/') !in dirs) return false
+        dirs[path] = 0
+        return true
+    }
+}
+
+/** Internal storage as a phone has it, with [Fixtures]' folders (DCIM/Camera, Documents, Music) synced, and an SD card. */
+fun fixtureDisk() = MapDisk(
+    listOf(StorageRoot(internalStorage, free = 92_400_000_000), StorageRoot("/storage/1234-ABCD", "SanDisk SD card", 54_100_000_000)),
+    listOf(
+        "Android" to 3, "Android/data" to 40, "Android/media" to 6, "Android/obb" to 2, ".thumbnails" to 120,
+        "DCIM" to 2, "DCIM/Camera" to 1204, "DCIM/Screenshots" to 87, "Documents" to 14, "Download" to 31,
+        "Music" to 208, "Pictures" to 5, "Syncthing" to 0,
+    ).associate { (p, n) -> "$internalStorage/$p" to n } + mapOf("/storage/1234-ABCD/Music" to 12),
+)

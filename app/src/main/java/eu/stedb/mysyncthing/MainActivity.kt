@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing
 
 import android.content.Intent
 import android.os.Bundle
+import android.os.Environment
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,6 +12,7 @@ import eu.stedb.mysyncthing.core.RequestNotifications
 import eu.stedb.mysyncthing.core.StatusWidget
 import eu.stedb.mysyncthing.ui.App
 import eu.stedb.mysyncthing.ui.LaunchTarget
+import eu.stedb.mysyncthing.ui.internalStorage
 
 class MainActivity : ComponentActivity() {
     /** Where the widget or a request or problem notification asked to go; cleared once shown. */
@@ -26,6 +28,8 @@ class MainActivity : ComponentActivity() {
             finish()
             return
         }
+        // Another number than 0 in a work profile, Private Space or a cloned app.
+        internalStorage = Environment.getExternalStorageDirectory().path
         enableEdgeToEdge()
         if (savedInstanceState == null) target.value = intent.launchTarget()
         setContent { App(target = target.value, onTargetShown = { target.value = null }) }
