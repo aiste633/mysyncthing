@@ -235,8 +235,8 @@
     <string name="folders_offer_have">Sie haben ihn bereits in %1$s. Auch mit %2$s teilen?</string>
     <string name="folder_card_not_shared">ungeteilt</string>
     <plurals name="folder_card_shared">
-        <item quantity="one">geteilt mit %1$d Gerät</item>
-        <item quantity="other">geteilt mit %1$d Geräten</item>
+        <item quantity="one">geteilt mit %1$d\u00A0Gerät</item>
+        <item quantity="other">geteilt mit %1$d\u00A0Geräten</item>
     </plurals>
 
     <string name="devices_add">Gerät hinzufügen</string>

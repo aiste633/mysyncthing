@@ -251,9 +251,9 @@
     <string name="folders_offer_have">Vous l’avez déjà dans %1$s. Le partager aussi avec %2$s ?</string>
     <string name="folder_card_not_shared">non partagé</string>
     <plurals name="folder_card_shared">
-        <item quantity="one">%1$d participant</item>
-        <item quantity="many">%1$d de participants</item>
-        <item quantity="other">%1$d participants</item>
+        <item quantity="one">%1$d\u00A0participant</item>
+        <item quantity="many">%1$d\u00A0de participants</item>
+        <item quantity="other">%1$d\u00A0participants</item>
     </plurals>
 
     <string name="devices_add">Ajouter un appareil</string>
