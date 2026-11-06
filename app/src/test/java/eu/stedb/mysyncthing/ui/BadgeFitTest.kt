@@ -26,7 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * The conflict badge on a folder card's Recent changes button is drawn whole at every font size and
  * count: it once sat inside an IconButton, whose 40 dp clip cut it from 1.3× font or two digits.
- * The count stays on one line and the button keeps its label where the badge covers the icon.
+ * The count stays on one line, and the badge is no child of the button, which keeps its own label.
  * Robolectric renders natively here, so a clipped edge shows as the card's colour instead of amber.
  */
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -58,7 +58,12 @@ class BadgeFitTest(private val fontScale: Float, private val count: Int) {
         text.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
         layouts.single().let { assertTrue("count laid out as ${it.lineCount} lines, ${it.getLineRight(0)} px in ${it.size}", it.lineCount == 1 && it.getLineRight(0) <= it.size.width) }
         // The button keeps its name where the badge covers the icon, and never says the number.
-        compose.onNodeWithTag("recent-docs").assertContentDescriptionEquals(ApplicationProvider.getApplicationContext<android.app.Application>().getString(R.string.recent_changes))
+        // The label sits on the button's own node, which has no semantics children: with one, Compose's
+        // accessibility delegate moves the label and role onto a stand-in child (a merged tree can't show it).
+        val label = ApplicationProvider.getApplicationContext<android.app.Application>().getString(R.string.recent_changes)
+        compose.onNodeWithTag("recent-docs", useUnmergedTree = true).assertContentDescriptionEquals(label).fetchSemanticsNode().let {
+            assertEquals(emptyList<Any>(), it.children.map { c -> c.config })
+        }
 
         val b = badge.fetchSemanticsNode().boundsInRoot
         val card = compose.onNodeWithTag("recent-docs", useUnmergedTree = true).fetchSemanticsNode().let { button ->

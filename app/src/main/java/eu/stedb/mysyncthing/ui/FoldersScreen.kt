@@ -176,9 +176,9 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                     val conflictText = if (conflicts > 0) pluralStringResource(CoreR.plurals.conflicts, conflicts, conflicts) else null
                     Text(
                         buildAnnotatedString {
-                            append(details.joinToString(" · "))
+                            append(details.joinToString(DETAILS_SEPARATOR))
                             conflictText?.let {
-                                append(" · ")
+                                append(DETAILS_SEPARATOR)
                                 withStyle(SpanStyle(color = busy, fontWeight = FontWeight.Medium)) { append(it) }
                             }
                         },
@@ -188,17 +188,19 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                 // The 48 dp touch target overlaps the card's padding, so the icon lines up with the status text above.
                 // Not an IconButton with a BadgedBox: the button clips its content to a 40 dp circle, and the badge
                 // grows to the right past the card's edge. Here the badge's right edge stays in the button's circle
-                // and a longer count grows it to the left, over the icon. The label is the button's own: the badge
-                // would hide the icon's from a screen reader where it covers it.
+                // and a longer count grows it to the left, over the icon. The badge is the button's sibling, not
+                // its child: a child would make Compose move the button's label onto a stand-in child node.
+                // It takes no touches, so a tap on it still reaches the button.
                 val recentLabel = stringResource(R.string.recent_changes)
-                Box(
-                    Modifier.offset(x = 12.dp).testTag("recent-${f.id}").minimumInteractiveComponentSize().size(40.dp)
-                        .clickable(onClick = onRecent, role = Role.Button, interactionSource = null, indication = ripple(bounded = false, radius = 20.dp))
-                        .semantics { contentDescription = recentLabel },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Default.History, null)
-                    if (conflicts > 0) ConflictBadge(conflicts, busy, Modifier.align(Alignment.TopEnd).testTag("badge-${f.id}"))
+                Box(Modifier.offset(x = 12.dp)) {
+                    Box(
+                        Modifier.testTag("recent-${f.id}").minimumInteractiveComponentSize().size(40.dp)
+                            .clickable(onClick = onRecent, role = Role.Button, interactionSource = null, indication = ripple(bounded = false, radius = 20.dp))
+                            .semantics { contentDescription = recentLabel },
+                        contentAlignment = Alignment.Center,
+                    ) { Icon(Icons.Default.History, null) }
+                    // 4 dp in from the 48 dp target: the top end of the 40 dp circle.
+                    if (conflicts > 0) ConflictBadge(conflicts, busy, Modifier.align(Alignment.TopEnd).padding(4.dp).testTag("badge-${f.id}"))
                 }
             }
             status.progress?.let {
@@ -211,6 +213,9 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
 /** A badge's number: Material's limit of three characters, as the details line gives the exact count. */
 @Composable
 internal fun badgeCount(n: Int): String = if (n > 99) grouped(99) + "+" else grouped(n)
+
+/** Between a card's details: the no-break space keeps the dot at the end of a line, never starting the next. */
+private const val DETAILS_SEPARATOR = "\u00A0· "
 
 /** Text in the badge grows with the font only up to this: past it the badge would hide the icon it marks. */
 private const val BADGE_MAX_FONT_SCALE = 1.3f
