@@ -105,8 +105,8 @@ fun DevicesScreen(
                             stringResource(CoreR.string.request_device_title, p.name.ifEmpty { shortId(id) }),
                             stringResource(R.string.devices_request_detail, shortId(id), p.address),
                         ) {
-                            TextButton(onClick = { vm.ignoreDevice(id) }) { Text(stringResource(CoreR.string.action_ignore)) }
-                            TextButton(onClick = { onAdd(id, p.name) }) { Text(stringResource(CoreR.string.action_review)) }
+                            CardAction(stringResource(CoreR.string.action_ignore)) { vm.ignoreDevice(id) }
+                            CardAction(stringResource(CoreR.string.action_review)) { onAdd(id, p.name) }
                         }
                     }
                 }
@@ -135,8 +135,11 @@ fun DevicesScreen(
 private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, onShowQr: () -> Unit) {
     val context = LocalContext.current
     val on = MaterialTheme.colorScheme.onSecondaryContainer
-    // Tonal buttons are secondaryContainer too: on this card they take the other cards' colour.
-    val buttons = ButtonDefaults.filledTonalButtonColors(containerColor = AppColors.card().containerColor, contentColor = on)
+    // Tonal buttons are secondaryContainer too: on this card they take the other cards' colour,
+    // with that colour's own text colour. The card's text colour is only a match for the card:
+    // with a high-contrast palette it is white, and the labels vanished on the white buttons.
+    val cards = AppColors.card()
+    val buttons = ButtonDefaults.filledTonalButtonColors(containerColor = cards.containerColor, contentColor = cards.contentColor)
     Card(
         onClick = onOpen, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer, contentColor = on),

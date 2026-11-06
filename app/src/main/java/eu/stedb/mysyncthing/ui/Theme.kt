@@ -13,6 +13,7 @@ import androidx.compose.material.icons.filled.StopCircle
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
@@ -32,7 +33,12 @@ import eu.stedb.mysyncthing.core.SyncState
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
     val context = LocalContext.current
-    val scheme = if (isSystemInDarkTheme()) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    AppTheme(if (isSystemInDarkTheme()) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context), content)
+}
+
+/** The app's theme with a given palette: tests try palettes a phone may have (ContrastTest). */
+@Composable
+internal fun AppTheme(scheme: ColorScheme, content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = scheme, shapes = AppShapes, typography = AppTypography, content = content)
 }
 

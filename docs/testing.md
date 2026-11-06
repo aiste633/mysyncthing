@@ -14,7 +14,7 @@ uses anyone's real folders, devices or backups.
 | Area | How | Result |
 |---|---|---|
 | Every pull request | Build, Go and Kotlin unit tests, screen tests, emulator end-to-end tests on Android 15 and 16, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
-| Screen tests | 25 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names | 125 reference images, on every pull request |
+| Screen tests | 27 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 135 reference images, 108 contrast checks, on every pull request |
 | End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15 and 16, on every pull request |
 | App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15 and 16, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
@@ -108,6 +108,10 @@ through a relay, offline and paused by the user) and a folder offer. No real dev
   device (overlapping, under 1 h, never, default) and for all (under 1 h). CI
   compares every screen with its image and attaches the difference when one changes.
 - TalkBack: on every screen, every control that can be tapped or switched must have a name.
+- Contrast: on every screen, every text stands out from what is behind it by at least 4.5:1
+  (WCAG AA), measured on the drawn pixels, with the phone's usual palette and with a high-contrast
+  one (Android's Colour contrast setting turns card colours dark in light mode), in light and
+  dark: 27 screens × 4 palettes. Disabled controls are left out; they are faint by design.
 - Forms: the device ID check character, a device already added, the suggested path for an
   offered folder, proxy and export password errors, "Discard changes?" only after a change,
   and a shown password marking the window secure.

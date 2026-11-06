@@ -56,6 +56,7 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
@@ -68,6 +69,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -340,9 +342,19 @@ fun ProblemsCard(errors: List<SystemError>, onClear: () -> Unit) {
             }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.End) {
-            TextButton(onClick = onClear) { Text(stringResource(CoreR.string.action_clear), color = fg) }
+            CardAction(stringResource(CoreR.string.action_clear), onClear)
         }
     }
+}
+
+/**
+ * A text button on a coloured card, in the card's own text colour. TextButton's default
+ * (primary) is not paired with the card's colour: with a high-contrast palette both are dark
+ * (or both light) and the label disappears.
+ */
+@Composable
+fun CardAction(text: String, onClick: () -> Unit) {
+    TextButton(onClick, colors = ButtonDefaults.textButtonColors(contentColor = LocalContentColor.current)) { Text(text) }
 }
 
 /** Card group of settings rows under a heading, like system Settings. */
