@@ -749,8 +749,9 @@ def big_file(w: World) -> None:
 
 
 def send_limit(w: World, kbps: int) -> None:
-    """The peer's send rate to the phone, in kB/s (0: no limit)."""
-    w.peer.call("PATCH", f"rest/config/devices/{w.phone}", {"maxSendKbps": kbps})
+    """The peer's send rate, in kB/s (0: no limit). Loopback counts as LAN, which the core leaves
+    unlimited unless limitBandwidthInLan is on (as upgrade.py does)."""
+    w.peer.call("PATCH", "rest/config/options", {"maxSendKbps": kbps, "limitBandwidthInLan": kbps > 0})
 
 
 def transfer_percent(w: World, rel: str) -> float | None:
