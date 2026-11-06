@@ -25,7 +25,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -101,16 +100,16 @@ fun FoldersScreen(
                             val title = stringResource(R.string.folders_offer, who, offer.label.ifEmpty { id })
                             if (existing == null) {
                                 RequestCard(title, stringResource(R.string.folders_offer_choose)) {
-                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text(stringResource(CoreR.string.action_ignore)) }
-                                    TextButton(onClick = { onAccept(id, device) }) { Text(stringResource(CoreR.string.action_review)) }
+                                    CardAction(stringResource(CoreR.string.action_ignore)) { vm.ignoreFolder(id, device) }
+                                    CardAction(stringResource(CoreR.string.action_review)) { onAccept(id, device) }
                                 }
                             } else {
                                 RequestCard(title, stringResource(R.string.folders_offer_have, displayPath(existing.path).asString(), who)) {
-                                    TextButton(onClick = { vm.ignoreFolder(id, device) }) { Text(stringResource(CoreR.string.action_ignore)) }
-                                    TextButton(onClick = {
+                                    CardAction(stringResource(CoreR.string.action_ignore)) { vm.ignoreFolder(id, device) }
+                                    CardAction(stringResource(R.string.action_share)) {
                                         // An untrusted device needs a password, asked on the folder's screen.
                                         if (dev != null && sharesEncrypted(dev, null)) onOpen(id) else vm.setShared(existing, device, true)
-                                    }) { Text(stringResource(R.string.action_share)) }
+                                    }
                                 }
                             }
                         }
