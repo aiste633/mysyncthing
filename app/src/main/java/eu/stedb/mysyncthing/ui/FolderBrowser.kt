@@ -268,7 +268,9 @@ private fun BrowserContent(
                     ) {
                         Column {
                             Text(rootName(r).asString(), maxLines = 2)
-                            r.free?.let { Text(stringResource(R.string.browse_free, bytes(it)), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                            // The button's own text colour: the selected one is secondaryContainer,
+                            // where onSurfaceVariant is no pair (unreadable with high contrast).
+                            r.free?.let { Text(stringResource(R.string.browse_free, bytes(it)), style = MaterialTheme.typography.bodySmall) }
                         }
                     }
                 }
