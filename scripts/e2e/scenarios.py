@@ -566,6 +566,13 @@ def three_way(w: World) -> None:
     time.sleep(1.1)
     peer_write(b, "three.txt", "edited on peer-b\n")
     w.scan_all()
+    # Back together one loser at a time: the phone meets peer-b (the winner) and makes its copy, then the
+    # peer joins seconds later and makes its own. Both at once, the two copies can get the same name and
+    # Syncthing deletes one (KNOWN_UPSTREAM["copy_named_alike"], issue #80): avoided, so the rest is tested.
+    b.call("POST", f"rest/system/resume?device={w.phone}")
+    eventually("peer-b's edit on the phone", 120, lambda: phone_read("three.txt") == "edited on peer-b\n")
+    eventually("the phone's copy made", 60, lambda: bool(copies(phone_list(), of="three.txt")))
+    time.sleep(3)
     w.together()
     # Each device that holds a losing edit makes its own copy; one that took a version that then loses
     # again makes another: two or more copies, holding the two losing edits between them.

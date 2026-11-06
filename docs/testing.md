@@ -195,7 +195,7 @@ These eight (`--only fast`, about 5 min) run in CI after run.py. The PC also run
 | Copy limit | 12 conflicts in a row on one file with the phone's watcher off: 10 copies stay (Syncthing's default `maxConflicts`), and the count follows the deletions |
 | Copies from elsewhere | 12, then 120 copies arriving from the peer: the card counts them |
 | Ignored copies | Copies hidden by an ignore pattern still count, and stop counting once deleted |
-| Three devices | A second peer joins, and all three edit one file: two or more copies holding the two losing edits, named by the short IDs of the three devices. When the two losers make their copies within the same second, Syncthing (v2.1.7) names them alike and deletes one, losing that edit: a known upstream bug, listed in the summary, not a failure |
+| Three devices | A second peer joins, and all three edit one file: two or more copies holding the two losing edits, named by the short IDs of the three devices. The two losers come back seconds apart: within the same second, Syncthing (v2.1.7) names their copies alike and deletes one, losing that edit (issue #80, upstream). Should it still happen, the summary lists it as a known upstream bug |
 | Send-only | The peer's change waits; Override… on the folder's screen puts the phone's version back on the peer |
 | Receive-only | A local edit and a new file; Revert… on the folder's screen undoes both |
 | Long name | A 240-byte name in conflict: the copy's name is too long for Android. Observed only: the folder's problem and both sides' files are recorded |
