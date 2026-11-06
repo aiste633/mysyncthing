@@ -27,7 +27,7 @@ class ConflictsScreenTest : ScreenTest() {
         folders(Fixtures.withConflicts)
         compose.onNodeWithText(two, substring = true).assertExists()
         // Only Documents has some.
-        compose.onNodeWithText("shared with 1 device\u00A0· $two", substring = true).assertExists()
+        compose.onNodeWithText("shared with 1\u00A0device\u00A0· $two", substring = true).assertExists()
     }
 
     @Test
