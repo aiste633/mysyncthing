@@ -845,15 +845,16 @@ def pause_storm(w: World) -> None:
 
 
 def network_flaps(w: World) -> None:
-    """C6: airplane mode on and off every 20 s while a 300 MB file arrives; the app's run conditions
-    stop and start syncing each time (the test link itself runs over adb, not the radio)."""
+    """C6: airplane mode on and off every 30 s while a 300 MB file arrives; the app's run conditions
+    stop and start syncing each time (the test link itself runs over adb, not the radio). Not 20 s: each
+    flap then met the peer's 20 s redial, so the pull never got going in between (PC, 06/11)."""
     big_peer_file(w.peer, "flaps.bin", 300)
-    send_limit(w, 2_000)  # about 150 s: the flaps happen during the transfer
+    send_limit(w, 1_500)  # about 200 s of sending: the flaps happen during the transfer
     w.peer.call("POST", f"rest/db/scan?folder={FOLDER}")
     try:
         for i in range(8):
             sh(f"cmd connectivity airplane-mode {'enable' if i % 2 == 0 else 'disable'}")
-            time.sleep(20)
+            time.sleep(30)
     finally:
         sh("cmd connectivity airplane-mode disable", check=False)
         sh("svc wifi enable", check=False)

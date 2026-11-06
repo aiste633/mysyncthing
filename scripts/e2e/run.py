@@ -28,6 +28,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
@@ -123,6 +124,7 @@ class Peer:
     def start(self) -> None:
         subprocess.run([self.binary, "generate", "--home", self.dir, "--no-port-probing"], env=self.env, check=True, capture_output=True)
         self.id = subprocess.run([self.binary, "device-id", "--home", self.dir], env=self.env, check=True, capture_output=True, text=True).stdout.strip()
+        self.loopback_only()
         self.proc = subprocess.Popen(
             [self.binary, "serve", "--home", self.dir, "--no-browser", "--no-restart",
              f"--gui-address=http://127.0.0.1:{self.gui_port}", f"--gui-apikey={self.key}", f"--log-file={self.out / (self.name + '.log')}"],
@@ -130,11 +132,10 @@ class Peer:
         )
         if not eventually(f"{self.name} REST API up", 60, lambda: self.call("GET", "rest/system/ping")):
             raise RuntimeError(f"{self.name} did not start")
-        self.call("PATCH", "rest/config/options", {
-            "listenAddresses": [f"tcp://127.0.0.1:{self.listen_port}"],
-            "globalAnnounceEnabled": False, "localAnnounceEnabled": False,
-            "relaysEnabled": False, "natEnabled": False, "urAccepted": -1, "crashReportingEnabled": False,
-        })
+        o = self.call("GET", "rest/config/options")
+        if o["listenAddresses"] != [f"tcp://127.0.0.1:{self.listen_port}"] or o["globalAnnounceEnabled"] or o["localAnnounceEnabled"] \
+                or o["relaysEnabled"] or o["natEnabled"]:
+            raise RuntimeError(f"{self.name} is not loopback-only: {o}")
         self.folder.mkdir()
         if not self.seeded:
             return
@@ -144,6 +145,22 @@ class Peer:
         self.call("POST", "rest/config/folders", {"id": FOLDER, "label": LABEL, "path": str(self.folder), "fsWatcherEnabled": False, "rescanIntervalS": 3600})
         eventually("peer scanned its folder", 60, lambda: self.call("GET", f"rest/db/status?folder={FOLDER}")["globalFiles"] == SEEDS + 1)
         log(f"peer up with {SEEDS + 1} files")
+
+    # Written into config.xml before the first start: set over REST after it, the peer ran on Syncthing's
+    # defaults for its first second (listening on every interface, discovery and relays on).
+    LOOPBACK_OPTIONS = {"globalAnnounceEnabled": "false", "localAnnounceEnabled": "false", "relaysEnabled": "false",
+                        "natEnabled": "false", "urAccepted": "-1", "crashReportingEnabled": "false"}
+
+    def loopback_only(self) -> None:
+        conf = self.dir / "config.xml"
+        tree = ET.parse(conf)
+        options = tree.getroot().find("options")
+        for e in options.findall("listenAddress"):
+            options.remove(e)
+        ET.SubElement(options, "listenAddress").text = f"tcp://127.0.0.1:{self.listen_port}"
+        for key, value in self.LOOPBACK_OPTIONS.items():
+            (options.find(key) if options.find(key) is not None else ET.SubElement(options, key)).text = value
+        tree.write(conf, encoding="utf-8", xml_declaration=False)
 
     def scan(self) -> None:
         self.call("POST", f"rest/db/scan?folder={FOLDER}")

@@ -199,7 +199,7 @@ These eight (`--only fast`, about 5 min) run in CI after run.py. The PC also run
 | Send-only | The peer's change waits; Override… on the folder's screen puts the phone's version back on the peer |
 | Receive-only | A local edit and a new file; Revert… on the folder's screen undoes both |
 | Long name | A 240-byte name in conflict: the copy's name is too long for Android. Observed only: the folder's problem and both sides' files are recorded |
-| Stress (`--only stress`) | 5,000 small files; a 1 GB file paused halfway and resumed, identical at the end; 200 conflicts at once; 10 min of edits from both sides, after which the count equals the copies on disk; 50 rapid pause/resume rounds of the device and the folder, plus 10 through the folder's button; airplane mode on and off every 20 s during a transfer; the count after the app's process is killed and after a reboot. The app's memory and the core's goroutines are recorded after each step |
+| Stress (`--only stress`) | 5,000 small files; a 1 GB file paused halfway and resumed, identical at the end; 200 conflicts at once; 10 min of edits from both sides, after which the count equals the copies on disk; 50 rapid pause/resume rounds of the device and the folder, plus 10 through the folder's button; airplane mode on and off every 30 s during a transfer; the count after the app's process is killed and after a reboot. The app's memory and the core's goroutines are recorded after each step |
 
 ### App updates
 
