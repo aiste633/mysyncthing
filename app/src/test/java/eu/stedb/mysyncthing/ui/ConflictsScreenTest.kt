@@ -33,7 +33,7 @@ class ConflictsScreenTest : ScreenTest() {
     @Test
     fun noCopiesNoText() {
         folders(Fixtures.snapshot)
-        compose.onNodeWithText(app.resources.getQuantityString(CoreR.plurals.conflicts, 1, 1).substringAfter(' '), substring = true).assertDoesNotExist()
+        compose.onNodeWithText(app.resources.getQuantityString(CoreR.plurals.conflicts, 1, 1).substringAfter('\u00A0'), substring = true).assertDoesNotExist()
     }
 
     @Test

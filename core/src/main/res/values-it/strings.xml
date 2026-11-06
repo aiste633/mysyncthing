@@ -129,9 +129,9 @@
     <string name="widget_no_device">Nessuna connessione</string>
     <string name="widget_last_seen">Ultimo dispositivo visto %1$s</string>
     <plurals name="conflicts">
-        <item quantity="one">%1$d conflitto</item>
-        <item quantity="many">%1$d conflitti</item>
-        <item quantity="other">%1$d conflitti</item>
+        <item quantity="one">%1$d\u00A0conflitto</item>
+        <item quantity="many">%1$d\u00A0conflitti</item>
+        <item quantity="other">%1$d\u00A0conflitti</item>
     </plurals>
     <string name="widget_title_conflicts">%1$s, %2$s</string>
     <string name="when_yesterday">ieri, %1$s</string>

@@ -1,5 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,8 +25,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material3.ripple
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,7 +41,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.hideFromAccessibility
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -176,17 +180,22 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                     )
                 }
                 // The 48 dp touch target overlaps the card's padding, so the icon lines up with the status text above.
-                IconButton(onClick = onRecent, modifier = Modifier.offset(x = 12.dp).testTag("recent-${f.id}")) {
-                    BadgedBox(
-                        badge = {
-                            if (conflicts > 0) {
-                                // The details line says it in words; a screen reader needn't hear the number twice.
-                                Badge(Modifier.clearAndSetSemantics {}, containerColor = busy, contentColor = MaterialTheme.colorScheme.surface) {
-                                    Text(grouped(conflicts))
-                                }
-                            }
-                        },
-                    ) { Icon(Icons.Default.History, stringResource(R.string.recent_changes)) }
+                // Not an IconButton with a BadgedBox: the button clips its content to a 40 dp circle, and the badge
+                // grows to the right past the card's edge. Here the badge's right edge stays in the button's circle
+                // and a longer count or a larger font grows it to the left, over the icon.
+                Box(
+                    Modifier.offset(x = 12.dp).testTag("recent-${f.id}").minimumInteractiveComponentSize().size(40.dp)
+                        .clickable(onClick = onRecent, role = Role.Button, interactionSource = null, indication = ripple(bounded = false, radius = 20.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Default.History, stringResource(R.string.recent_changes))
+                    if (conflicts > 0) {
+                        // The details line says it in words; a screen reader needn't hear the number twice.
+                        Badge(
+                            Modifier.align(Alignment.TopEnd).testTag("badge-${f.id}").semantics { hideFromAccessibility() },
+                            containerColor = busy, contentColor = MaterialTheme.colorScheme.surface,
+                        ) { Text(badgeCount(conflicts)) }
+                    }
                 }
             }
             status.progress?.let {
@@ -195,3 +204,7 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
         }
     }
 }
+
+/** A badge's number: Material's limit of three characters, as the details line gives the exact count. */
+@Composable
+internal fun badgeCount(n: Int): String = if (n > 99) grouped(99) + "+" else grouped(n)
