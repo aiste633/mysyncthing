@@ -169,6 +169,38 @@ real phone.
 The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
 
+### Sync scenarios
+
+`scripts/e2e/scenarios.py` runs after run.py, from a fresh install paired with the same kind of
+peer. It drives everything from the build machine: files on the phone through `adb`, the phone's
+core through its REST API, the app's screens through uiautomator. Each scenario sets the devices
+apart, changes files on more than one side, brings them together, waits until every side holds the
+same files, and then checks the files on every side and the count on the folder card.
+
+| Scenario | What must hold |
+|---|---|
+| Edit and edit | Both edit a file: one conflict copy, and file plus copy hold both edits |
+| Edit and delete | Edited on one side, deleted on the other, both ways: the edit wins, no copy |
+| Both new | The same new name on both sides: one copy |
+| Rename and edit | Renamed on the phone, edited on the peer: both names stay, no copy |
+| Odd names | Subfolders, spaces, accents, CJK, emoji, no extension, a dotfile, two dots, upper case: one copy each, named after its file |
+| Copy deleted | A copy deleted on the phone and another on the peer: gone everywhere, and the count follows. The Trash can keeps the one deleted on the peer, and the count leaves it out |
+| Copy of a copy | Both edit the same copy: Syncthing keeps no copy of a copy |
+| Web GUI login | A new API key, user and password at every start; the old key is refused |
+
+These eight (`--only fast`, about 5 min) run in CI after run.py. The PC also runs:
+
+| Scenario | What must hold |
+|---|---|
+| Copy limit | 12 conflicts in a row on one file with the phone's watcher off: 10 copies stay (Syncthing's default `maxConflicts`), and the count follows the deletions |
+| Copies from elsewhere | 12, then 120 copies arriving from the peer: the card counts them |
+| Ignored copies | Copies hidden by an ignore pattern still count, and stop counting once deleted |
+| Three devices | A second peer joins, and all three edit one file: two or more copies holding the two losing edits, named by the short IDs of the three devices |
+| Send-only | The peer's change waits; Override… on the folder's screen puts the phone's version back on the peer |
+| Receive-only | A local edit and a new file; Revert… on the folder's screen undoes both |
+| Long name | A 240-byte name in conflict: the copy's name is too long for Android. Observed only: the folder's problem and both sides' files are recorded |
+| Stress (`--only stress`) | 5,000 small files; a 1 GB file paused halfway and resumed, identical at the end; 200 conflicts at once; 10 min of edits from both sides, after which the count equals the copies on disk; 50 rapid pause/resume rounds of the device and the folder, plus 10 through the folder's button; airplane mode on and off every 20 s during a transfer; the count after the app's process is killed and after a reboot. The app's memory and the core's goroutines are recorded after each step |
+
 ### App updates
 
 People update by installing the new APK over the old one, by hand or through F-Droid. Android

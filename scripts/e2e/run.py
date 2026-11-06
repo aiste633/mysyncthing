@@ -98,8 +98,12 @@ def eventually(what: str, timeout: float, done) -> bool:
 
 
 class Peer:
-    def __init__(self, binary: Path, home: Path, out: Path):
+    def __init__(self, binary: Path, home: Path, out: Path, gui_port: int = GUI_PORT, listen_port: int = PEER_LISTEN,
+                 name: str = "peer", seeded: bool = True):
+        """A second peer (scenarios.py) has its own [gui_port], [listen_port] and [name] (its log file), and is
+        not [seeded]: it starts with an empty folder directory and joins the first peer's folder."""
         self.binary, self.dir, self.out = binary, home, out
+        self.gui_port, self.listen_port, self.name, self.seeded = gui_port, listen_port, name, seeded
         self.key = secrets.token_hex(16)
         self.folder = home / "folder"
         self.proc: subprocess.Popen | None = None
@@ -108,7 +112,7 @@ class Peer:
 
     def call(self, method: str, path: str, body=None):
         req = urllib.request.Request(
-            f"http://127.0.0.1:{GUI_PORT}/{path}", method=method,
+            f"http://127.0.0.1:{self.gui_port}/{path}", method=method,
             data=None if body is None else json.dumps(body).encode(),
             headers={"X-API-Key": self.key, "Content-Type": "application/json"},
         )
@@ -121,17 +125,19 @@ class Peer:
         self.id = subprocess.run([self.binary, "device-id", "--home", self.dir], env=self.env, check=True, capture_output=True, text=True).stdout.strip()
         self.proc = subprocess.Popen(
             [self.binary, "serve", "--home", self.dir, "--no-browser", "--no-restart",
-             f"--gui-address=http://127.0.0.1:{GUI_PORT}", f"--gui-apikey={self.key}", f"--log-file={self.out / 'peer.log'}"],
+             f"--gui-address=http://127.0.0.1:{self.gui_port}", f"--gui-apikey={self.key}", f"--log-file={self.out / (self.name + '.log')}"],
             env=self.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
-        if not eventually("peer REST API up", 60, lambda: self.call("GET", "rest/system/ping")):
-            raise RuntimeError("peer did not start")
+        if not eventually(f"{self.name} REST API up", 60, lambda: self.call("GET", "rest/system/ping")):
+            raise RuntimeError(f"{self.name} did not start")
         self.call("PATCH", "rest/config/options", {
-            "listenAddresses": [f"tcp://127.0.0.1:{PEER_LISTEN}"],
+            "listenAddresses": [f"tcp://127.0.0.1:{self.listen_port}"],
             "globalAnnounceEnabled": False, "localAnnounceEnabled": False,
             "relaysEnabled": False, "natEnabled": False, "urAccepted": -1, "crashReportingEnabled": False,
         })
         self.folder.mkdir()
+        if not self.seeded:
+            return
         for i in range(SEEDS):
             (self.folder / f"seed-{i:02d}.txt").write_text(f"seed file {i}\n" * (i + 1))
         (self.folder / "versioned.txt").write_text(V1)
