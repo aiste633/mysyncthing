@@ -27,7 +27,6 @@ the app's data.
 """
 import argparse
 import hashlib
-import json
 import re
 import secrets
 import shutil
@@ -35,19 +34,18 @@ import subprocess
 import sys
 import tempfile
 import time
-import urllib.request
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.dont_write_bytecode = True  # no __pycache__ next to run.py
 import run  # noqa: E402
-from run import ADB, APP, FOLDER, PHONE_DIR, Peer, adb, app_pid, eventually, fail, log, phase, phone_id, sh  # noqa: E402
+from run import (  # noqa: E402
+    ADB, APP, FOLDER, PHONE_API_PORT, PHONE_DIR, Peer, PhoneCore, adb, app_pid, eventually, fail, log, phase, phone_id, private, sh,
+)
 
 BIG = "big.bin"
 BIG_MB = 48
 SLOW_KBPS = 1000  # the peer's send limit while the update lands: BIG takes about 50 s
 FROM_PEER_AFTER = "from-peer-after-update.txt"  # E2eTest's
-PHONE_API_PORT = 8386  # host port forwarded to the phone core's REST API
 RO_DIR, ENC_DIR = "/sdcard/Syncthing/UpgradeRO", "/sdcard/Syncthing/UpgradeEnc"
 # Values an update may change, each with its reason; anything else changed or gone fails.
 MAY_CHANGE = {
@@ -60,14 +58,6 @@ MAY_CHANGE = {
 # The stored login of 0.2.0 and older: the app removes it at start and keeps the login in memory only.
 GONE_SETTINGS = ("api_key", "gui_user", "gui_password")
 SECRET = re.compile(r"api_?key|password|user", re.IGNORECASE)
-
-
-def private(path: str) -> bytes:
-    """A file in the app's private storage; run-as works as the builds are debuggable."""
-    r = subprocess.run([ADB, "exec-out", "run-as", APP, "cat", path], capture_output=True, timeout=60)
-    if r.returncode != 0:
-        raise RuntimeError(f"run-as cat {path}: {r.stderr.decode(errors='replace')}")
-    return r.stdout
 
 
 def varint(b: bytes, i: int) -> tuple[int, int]:
@@ -107,55 +97,6 @@ def preferences(pb: bytes) -> dict[str, bytes]:
             kv = dict(fields(entry))
             out[kv[1].decode()] = kv.get(2, b"")
     return out
-
-
-class PhoneCore:
-    """
-    The phone core's REST API, from the host: on 127.0.0.1 at a port the app picks at
-    every start (go/bridge), found among the app's listening sockets and forwarded by adb.
-    """
-
-    def __init__(self) -> None:
-        self.key = ""
-
-    def connect(self, timeout: float = 60) -> None:
-        """The key is new at every start and reaches config.xml with the core's own save a few seconds later."""
-        end = time.monotonic() + timeout
-        while True:
-            try:
-                return self.try_connect()
-            except (OSError, RuntimeError, ValueError):
-                if time.monotonic() > end:
-                    raise
-                time.sleep(2)
-
-    def try_connect(self) -> None:
-        self.key = ET.fromstring(private("files/syncthing/config.xml")).findtext("gui/apikey") or ""
-        uid = sh(f"run-as {APP} id -u")
-        ports = set()
-        for line in sh("cat /proc/net/tcp").split("\n")[1:]:
-            f = line.split()  # sl, local address, remote address, state (0A: listening), ..., uid
-            if len(f) > 7 and f[1].startswith("0100007F:") and f[3] == "0A" and f[7] == uid:
-                ports.add(int(f[1].split(":")[1], 16))
-        # The app may listen on more than one (the web GUI's screen); the core's answers with our key.
-        for port in sorted(ports):
-            adb("forward", f"tcp:{PHONE_API_PORT}", f"tcp:{port}")
-            try:
-                if self.call("GET", "rest/system/ping") == {"ping": "pong"}:
-                    return
-            except (OSError, ValueError):
-                pass
-        raise RuntimeError(f"no REST API among the app's {len(ports)} loopback ports")
-
-    def call(self, method: str, path: str, body=None):
-        req = urllib.request.Request(
-            f"http://127.0.0.1:{PHONE_API_PORT}/{path}", method=method,
-            data=None if body is None else json.dumps(body).encode(),
-            headers={"X-API-Key": self.key, "Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=10) as r:
-            text = r.read().decode()
-        return json.loads(text) if text.strip() else None
 
 
 def new_device_id(peer: Peer) -> str:

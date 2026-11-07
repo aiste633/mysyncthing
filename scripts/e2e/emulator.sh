@@ -45,12 +45,24 @@ done)
 # From the package, not `emulator -version`: that runs the windowed binary, which needs PulseAudio.
 echo "Android emulator $(sed -n 's/^Pkg.Revision=//p' "$emu_dir/source.properties")"
 
+# E2E_OFFLINE=1 (PC runs): the emulator gets a DNS server where nothing answers, so no name resolves
+# for the whole run, pairing and monkey taps included. Syncthing's public servers (global discovery,
+# relays, STUN, usage and crash reports) are all reached by name; the tests only use adb's tunnels.
+# run.py --offline turns the same options off in the core; this also holds when a monkey switches them on.
+dns=()
+if [ "${E2E_OFFLINE:-0}" = 1 ]; then
+  if ss -Hlun 'sport = :53' | awk '{print $4}' | grep -qE '^(127\.0\.0\.1|0\.0\.0\.0|\*|\[::\]):53$'; then
+    echo "E2E_OFFLINE: something listens on port 53 of 127.0.0.1, so DNS would still work" >&2; exit 1
+  fi
+  dns=(-dns-server 127.0.0.1)
+fi
+
 log="${E2E_EMULATOR_LOG:-$(mktemp)}"
 # The log's last line says how the emulator ended (status 128 + n: killed by signal n; bash also
 # names the signal). Twice on CI it vanished mid-run with nothing in its log (issue #78).
 (
   "$ANDROID_HOME/emulator/emulator" -avd "$avd" -no-window -no-audio -no-boot-anim -no-snapshot \
-    -gpu swiftshader_indirect -memory 4096
+    -gpu swiftshader_indirect -memory 4096 "${dns[@]}"
   status=$?
   echo "emulator ended at $(date -u +%H:%M:%S) UTC with status $status"
 ) >"$log" 2>&1 &
@@ -70,4 +82,11 @@ booted || { echo "emulator did not boot in 10 minutes:" >&2; tail -n 50 "$log" >
 # Screen on and unlocked, so the tests' activity comes to the front.
 "$adb" shell input keyevent KEYCODE_WAKEUP
 "$adb" shell wm dismiss-keyguard
+if [ "${E2E_OFFLINE:-0}" = 1 ]; then
+  # A resolved name prints "PING <name> (<address>)"; an unresolved one "unknown host".
+  if "$adb" shell ping -c 1 -W 2 discovery.syncthing.net 2>&1 | grep -q '^PING '; then
+    echo "E2E_OFFLINE: the emulator still resolves names" >&2; exit 1
+  fi
+  echo "emulator offline: no DNS"
+fi
 echo "Android $api emulator up"
