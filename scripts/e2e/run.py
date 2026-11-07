@@ -8,7 +8,9 @@ phone through `adb forward`. The phases in E2eTest run one at a time, with the
 checks only the host can make in between: what the peer has on disk, the app's
 process killed, All files access taken away, and a monkey run.
 
-Runs only on an emulator: it wipes the app's data and its test folder.
+Runs only on an emulator: it wipes the app's data and its test folder. Results:
+<out>/summary.md (each step, its result and time), logs and logcat. scripts/e2e/pc.py runs it
+on both emulators with scenarios.py, as a PR or release needs.
 
   scripts/e2e/run.py --peer go/build/e2e-peer \\
       --apk app/build/outputs/apk/debug/app-debug.apk \\
@@ -26,6 +28,7 @@ import sys
 import tempfile
 import threading
 import time
+from contextlib import contextmanager
 import urllib.error
 import urllib.request
 import xml.etree.ElementTree as ET
@@ -62,6 +65,7 @@ MONKEY = ["-s", "4242", "--throttle", "100", *MONKEY_MIX, "--pct-rotation", "2",
 NAVBAR = "com.android.internal.systemui.navbar."
 
 failures: list[str] = []
+steps: list[tuple[str, str, float]] = []  # name, "ok" or "FAIL: ...", seconds: summary.md
 _tools = Path(os.environ.get("ANDROID_HOME", "/nonexistent")) / "platform-tools/adb"
 ADB = str(_tools) if _tools.exists() else "adb"
 
@@ -73,6 +77,27 @@ def log(msg: str) -> None:
 def fail(msg: str) -> None:
     log(f"FAIL: {msg}")
     failures.append(msg)
+
+
+@contextmanager
+def step(name: str):
+    """One row of summary.md: the failures recorded meanwhile, or the exception that ended it."""
+    before, began = len(failures), time.monotonic()
+    try:
+        yield
+    except BaseException as e:
+        fail(f"{name}: {type(e).__name__}: {e}")
+        raise
+    finally:
+        mine = failures[before:]
+        steps.append((name, "FAIL: " + "; ".join(mine) if mine else "ok", time.monotonic() - began))
+
+
+def write_summary(out: Path) -> None:
+    lines = ["# run.py", "", "| step | result | min |", "|---|---|---|"]
+    lines += [f"| {n} | {r.replace('|', '/')} | {s / 60:.1f} |" for n, r, s in steps]
+    lines += ["", "Result: " + ("FAIL" if failures else "PASS")]
+    (out / "summary.md").write_text("\n".join(lines) + "\n")
 
 
 def adb(*args: str, check: bool = True, timeout: int = 120) -> str:
@@ -241,7 +266,7 @@ class PhoneCore:
 def phone_offline() -> None:
     """--offline (PC runs, user's choice 06/11/2026): once paired, the phone core stops using Syncthing's
     public servers (global discovery, relays, NAT traversal, crash reports), so a run from the user's own
-    network stays on it. Its first start, during pairing, still uses the app's defaults; CI keeps them all along."""
+    network stays on it. Its first start, during pairing, still uses the app's defaults; without --offline they stay all along."""
     run_core = PhoneCore()
     open_app()
     run_core.connect()
@@ -279,6 +304,11 @@ def prepare(apk: Path, test_apk: Path) -> None:
 
 
 def phase(name: str, peer: Peer, out: Path, **extra: str) -> bool:
+    with step(f"phase {name}"):
+        return _phase(name, peer, out, **extra)
+
+
+def _phase(name: str, peer: Peer, out: Path, **extra: str) -> bool:
     log(f"phase {name}")
     r = subprocess.run(
         [ADB, "shell", "am", "instrument", "-w", "-r",
@@ -708,12 +738,14 @@ def main() -> None:
             (peer.folder / "versioned.txt").write_text(V2)
             peer.scan()
             if phase("restoreVersion", peer, a.out):
-                eventually("old versioned.txt on the peer's disk", 60, lambda: (peer.folder / "versioned.txt").read_text() == V1)
+                with step("restored version on the peer's disk"):
+                    eventually("old versioned.txt on the peer's disk", 60, lambda: (peer.folder / "versioned.txt").read_text() == V1)
             # Both sides change conflict.txt while apart: the peer now, the phone in the phase.
-            peer.call("POST", f"rest/system/pause?device={phone}")
-            eventually("peer apart from the phone", 60, lambda: not peer.connected(phone))
-            (peer.folder / "conflict.txt").write_text("written on the peer\n")
-            peer.scan()
+            with step("peer apart from the phone, conflict.txt changed on it"):
+                peer.call("POST", f"rest/system/pause?device={phone}")
+                eventually("peer apart from the phone", 60, lambda: not peer.connected(phone))
+                (peer.folder / "conflict.txt").write_text("written on the peer\n")
+                peer.scan()
             phase("conflicts", peer, a.out)
             phase("runConditions", peer, a.out)
             phase("devicePause", peer, a.out)
@@ -724,10 +756,21 @@ def main() -> None:
             phase("browseFolder", peer, a.out)
             phase("removeGoesBackToTheTab", peer, a.out)
             phase("stopAndStart", peer, a.out)
-            process_death(peer, phone)
-            storage_revoked(peer, phone)
-            launcher_starts()
-            monkey(a.out)
+            with step("process death"):
+                process_death(peer, phone)
+            with step("All files access revoked"):
+                storage_revoked(peer, phone)
+            with step("launcher starts"):
+                launcher_starts()
+            with step("monkey"):
+                monkey(a.out)
+        else:
+            steps.append(("all later steps", "not run: they build on pairAndSync", 0.0))
+    except BaseException as e:
+        failures.append(f"ended early: {type(e).__name__}: {e}")
+        steps.append(("run ended early", f"FAIL: {type(e).__name__}: {e}", 0.0))
+        write_summary(a.out)
+        raise
     finally:
         peer.stop()
         (a.out / "logcat.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
@@ -736,7 +779,17 @@ def main() -> None:
                      ("forward", "--remove", f"tcp:{PHONE_API_PORT}")):
             adb(*args, check=False)
 
-    logcat = (a.out / "logcat.txt").read_text(errors="replace")
+    with step("logcat: crashes, ANRs, blank screens"):
+        logcat_checks(a.out)
+    write_summary(a.out)
+    if failures:
+        log(f"{len(failures)} failed:\n  " + "\n  ".join(failures))
+        sys.exit(1)
+    log("all passed")
+
+
+def logcat_checks(out: Path) -> None:
+    logcat = (out / "logcat.txt").read_text(errors="replace")
     crashes, known = logcat_app_crashes(logcat)
     if crashes:
         fail(f"the app crashed: {crashes} (see logcat.txt)")
@@ -745,7 +798,7 @@ def main() -> None:
     ours, others = logcat_anrs(logcat)
     if ours:
         fail(f"the app did not respond (ANR): {ours} (see logcat.txt, anr/)")
-        pull_anr_traces(a.out / "anr")
+        pull_anr_traces(out / "anr")
     if others:
         log(f"ANRs of other processes (not failing): {others}")
     if n := blank_screens(logcat):
@@ -756,10 +809,6 @@ def main() -> None:
     if others:
         log(f"native crashes of other processes (not failing): {others}")
     log(f"StrictMode reports in logcat: {logcat.count('StrictMode policy violation')}")
-    if failures:
-        log(f"{len(failures)} failed:\n  " + "\n  ".join(failures))
-        sys.exit(1)
-    log("all passed")
 
 
 if __name__ == "__main__":

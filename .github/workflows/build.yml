@@ -53,91 +53,21 @@ jobs:
       - name: Build, unit tests, screen tests, lint
         # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
         # verifyRoborazziDebug runs the unit tests with the screenshots compared to app/src/test/screenshots.
+        # The instrumented test APK is only compiled here: the emulator end-to-end tests run on the PC
+        # (scripts/e2e/pc.py), and a release needs their results committed (docs/e2e/, reproducible.yml).
         run: ./gradlew --no-daemon :app:assembleDebug :app:assembleDebugAndroidTest testDebugUnitTest :app:verifyRoborazziDebug :app:lintDebug :core:lintDebug :app:processReleaseManifest
-      # A desktop Syncthing from the same patched core, for the e2e job to sync with.
-      - name: Test peer for the emulator tests
-        working-directory: go/syncthing
-        run: go build -trimpath -tags noupgrade -ldflags "-X github.com/syncthing/syncthing/lib/build.Version=$(cat ../syncthing.version)" -o ../build/e2e-peer ./cmd/syncthing
       - name: Permissions and exported components as committed
         run: scripts/manifest-surface.py --check
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: app-debug
           path: app/build/outputs/apk/debug/*.apk
-      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: e2e-inputs
-          retention-days: 3
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-            go/build/e2e-peer
       - name: Screenshots that differ, with their diff images
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: screenshot-diffs
           path: app/build/outputs/roborazzi/
-          if-no-files-found: ignore
-
-  # The app on emulators (Android 15 and 16) against a real Syncthing peer: pairing, accepting a
-  # folder, sync both ways, restoring a version, run conditions, typed text kept, process death,
-  # All files access taken away, and a monkey run (scripts/e2e/run.py); then conflicts of
-  # several kinds and the web GUI login's change (scripts/e2e/scenarios.py --only fast).
-  e2e:
-    needs: android
-    runs-on: ubuntu-latest
-    timeout-minutes: 110
-    strategy:
-      fail-fast: false
-      matrix:
-        api: [35, 36]
-    steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
-        with:
-          persist-credentials: false
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: e2e-inputs
-      - name: Emulator
-        timeout-minutes: 15
-        env:
-          API: ${{ matrix.api }}
-          E2E_EMULATOR_LOG: build/e2e/emulator.log
-          E2E_SDK_UPDATE: "1"
-        run: mkdir -p build/e2e && scripts/e2e/emulator.sh "$API"
-      - name: End-to-end tests
-        timeout-minutes: 65
-        run: |
-          chmod +x go/build/e2e-peer
-          scripts/e2e/run.py --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
-            --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk --out build/e2e
-      # The fast conflict scenarios (scripts/e2e/scenarios.py), from a fresh install: also after a
-      # failure above, as they test other things.
-      - name: Sync scenarios
-        if: ${{ !cancelled() }}
-        timeout-minutes: 20
-        run: |
-          scripts/e2e/scenarios.py --only fast --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
-            --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk --out build/e2e/scenarios
-      # In the job log: the artifact is not always at hand. Tells an emulator that died (how qemu
-      # ended, the kernel's or systemd's OOM killers, memory, disk) from a failing test.
-      - name: Emulator state after a failure
-        if: failure()
-        run: |
-          pgrep -a qemu-system || echo "the emulator process is gone"
-          free -m
-          df -h / "$HOME" /tmp
-          sudo dmesg -T | grep -iE 'out of memory|oom|killed process|segfault|qemu|kvm' | tail -n 30 || true
-          sudo journalctl --no-pager --since "-90 min" | grep -iE 'oomd|oom|killed|qemu|emulator|out of memory|no space' | tail -n 30 || true
-          grep -E '^emulator ended' build/e2e/emulator.log || echo "no end line: qemu still runs, or the launcher did not exec it"
-          grep -vE 'ColorBuffer|bind to texture|CANNOT TRANSLATE' build/e2e/emulator.log | tail -n 60 || true
-      - name: Logs
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: e2e-api${{ matrix.api }}
-          path: build/e2e/
           if-no-files-found: ignore
 
   # The committed SBOM (docs/sbom.*) must match what the dependencies are now. Its own job:

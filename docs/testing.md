@@ -13,9 +13,9 @@ uses anyone's real folders, devices or backups.
 
 | Area | How | Result |
 |---|---|---|
-| Every pull request | Build, Go and Kotlin unit tests, screen tests, emulator end-to-end tests on Android 15 and 16, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical | Required to merge |
+| Every pull request | On GitHub: build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical. On the PC: the emulator end-to-end tests, with their results in the pull request | Required to merge |
 | Screen tests | 27 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 135 reference images, 4 contrast checks per screen, on every pull request |
-| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15 and 16, on every pull request |
+| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15 and 16 on the PC (`scripts/e2e/pc.py`), before every merge; each release commits its results in [`docs/e2e/`](e2e/) |
 | App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15 and 16, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 9 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
@@ -31,18 +31,19 @@ uses anyone's real folders, devices or backups.
 ## On every pull request
 
 The checks below run on GitHub for every pull request, and again on `main` after the merge.
+The emulator end-to-end tests are not among them: they run on the PC (see [End-to-end tests](#end-to-end-tests)),
+which leaves GitHub with checks of a few minutes and no emulator to die halfway.
 A new commit on a pull request cancels the run of the commit before it. The `main` branch is
 protected: a change reaches it only through a pull request whose checks have passed.
 
 | Job | What it checks |
 |---|---|
 | `android` | Builds the Go core and the app; runs the tests of the patched core package (`lib/api`), `go vet` and the Go bridge tests (which also run every fuzz target's seed inputs), the Kotlin unit tests, the screen tests (below) and Android lint of both modules. Lint and Kotlin compiler warnings fail the build; lint's settings and the few checks it skips, each with its reason, are in [`lint.xml`](../lint.xml). Then `scripts/manifest-surface.py` compares the release app's permissions and the components other apps can reach, from the merged manifest of all libraries, with the committed list ([manifest-surface.txt](manifest-surface.txt)): a library that adds a permission shows up in review, not in a release |
-| `e2e` | The end-to-end tests (below) on an Android 15 and an Android 16 emulator, with the APKs and test peer the `android` job built |
 | `strings` | `scripts/check-strings.py`: text for people only in string resources, so it can be translated, and every string used with the number of arguments it expects (a missing one crashes at run time) |
 | `privacy` | `scripts/check-leaks.sh`: no personal detail (addresses, host names, device IDs, home paths, e-mail addresses) in any file, commit message or commit identity in the whole history. It works by allowlist: anything that is not a known public host or a placeholder fails, so a new kind of leak is caught without updating a list |
 | `sbom` | Regenerates the [software bill of materials](sbom.md) and fails if it differs from the committed one, or if a dependency has a licence it has not seen before |
 | `workflows` | zizmor audits the GitHub workflows themselves: script injection, credentials left in the checkout, permissions, unpinned actions |
-| `reproducible` | Builds the release APK twice with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report shows where). Checks that the Go modules inside the APK match the SBOM. On pull requests, tags and manual runs, F-Droid's own build image builds it a third time and must match too |
+| `reproducible` | Builds the release APK twice with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report shows where). Checks that the Go modules inside the APK match the SBOM. On tags and manual runs, F-Droid's own build image builds it a third time and must match too (up to 90 min, so not on every pull request). A tag also needs the PC end-to-end results of its commit, committed as `docs/e2e/<version>.md` (`scripts/e2e/check-results.sh`) |
 
 CodeQL analyses the Kotlin app, the Go bridge and the whole Go core with our patches, from a
 real build, plus the workflows and scripts: on every push to `main` and weekly.
@@ -146,6 +147,17 @@ only, with discovery, relays and NAT off, so it never meets a real device; it re
 emulator through `adb`. `scripts/e2e/run.py` runs the steps in order, and refuses to run on a
 real phone.
 
+They run on the PC, not on GitHub (since 11/2026: GitHub's emulators doubled the PC's runs, took
+most of CI's time, and twice died halfway, issue #78). `scripts/e2e/pc.py` does a whole run for one
+commit: from a clean checkout it builds the app, the test APK and the peer, then on a fresh Android 15
+and then a fresh Android 16 emulator runs run.py and the fast [sync scenarios](#sync-scenarios), and
+writes `build/e2e-pc/summary.md` with the commit, the emulator images and each step's result and time.
+That summary goes into the pull request. For a release, `pc.py --release` also writes it to
+`docs/e2e/<version>.md`, which is committed before the tag; CI refuses a tag whose file is missing,
+did not pass on both versions, or names a commit that differs from the tag in anything but `docs/`,
+`fastlane/` and top-level `*.md`. Unlike the GitHub runs these results are not publicly reproduced:
+they are the record of a run on the maintainer's PC, and anyone can repeat it with the same commands.
+
 | Step | What must hold |
 |---|---|
 | Pairing | Fresh install: the checklist, the usage question, the peer added by typing its ID, the peer's folder offer accepted with Trash can versioning |
@@ -173,7 +185,8 @@ emulators (2026-10-28) every step passed on both versions, with 0 StrictMode rep
 On a PC the runs keep the emulator off Syncthing's public servers: `E2E_OFFLINE=1 scripts/e2e/emulator.sh <api>`
 gives the emulator a DNS server where nothing answers (the script checks that no name resolves), and `--offline`
 (run.py, scenarios.py, monkey.py) turns off the phone core's global discovery, relays and NAT traversal after pairing.
-The DNS block is the one that holds: the monkey can switch those options back on in Settings. CI keeps the defaults.
+The DNS block is the one that holds: the monkey can switch those options back on in Settings. `pc.py` runs this
+way by default; `pc.py --online` keeps the defaults, as CI did.
 
 ### Sync scenarios
 
@@ -194,7 +207,7 @@ same files, and then checks the files on every side and the count on the folder 
 | Copy of a copy | Both edit the same copy: Syncthing keeps no copy of a copy |
 | Web GUI login | A new API key, user and password at every start; the old key is refused |
 
-These eight (`--only fast`, about 5 min) run in CI after run.py. The PC also runs:
+These eight (`--only fast`, about 5 min) run after run.py in every `pc.py` run. By hand, the PC also runs:
 
 | Scenario | What must hold |
 |---|---|
@@ -409,7 +422,8 @@ library starts it that way; coming back through Recents keeps it open.
 Still open ([#68](https://github.com/aiste633/mysyncthing/issues/68)): on CI's Android 15 emulator, now and then a rotation with a
 text dialog, the keyboard and the cursor handle up leaves the new dialog window without input focus, so the
 monkey's keys time out (an ANR, while the app itself is idle). It did not happen in 100 tries on the PC
-emulator; the CI run now saves the window and input state when it happens.
+emulator; run.py saves the window and input state when it happens. Now that the end-to-end tests run on
+the PC only, it shows only if it happens there.
 
 ## 0.3.0 test (2026-11-06)
 
@@ -477,8 +491,8 @@ debug build on an emulator; a release build should write less.
 ## Reproducible builds
 
 The same commit gave a byte-identical unsigned release APK, with the same SHA-256, from a local
-build, both legs of the CI twin build, and F-Droid's build server image. CI checks this on
-every pull request. See [README](../README.md#reproducible-builds-and-releases).
+build, both legs of the CI twin build, and F-Droid's build server image. CI checks the twin build on
+every pull request, and F-Droid's build on every tag. See [README](../README.md#reproducible-builds-and-releases).
 
 ## Not covered yet
 
@@ -486,3 +500,5 @@ every pull request. See [README](../README.md#reproducible-builds-and-releases).
 - Battery and CPU use were not measured; the soak ran on Android 16 only.
 - Flash writes of a release build.
 - The end-to-end tests use one peer on loopback: no relays, discovery, NAT or slow networks.
+- The end-to-end results are a record of the maintainer's PC run, not a public CI run: each
+  release's file in `docs/e2e/` names the commit, and anyone can repeat the run with `scripts/e2e/pc.py`.
