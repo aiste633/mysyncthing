@@ -5,10 +5,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertContentDescriptionEquals
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -25,7 +27,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * The conflict badge on a folder card's Recent changes button is drawn whole at every font size and
- * count: it once sat inside an IconButton, whose 40 dp clip cut it from 1.3× font or two digits.
+ * count: it once sat inside an IconButton, whose 40 dp clip cut it from 1.3× font or two digits, then
+ * over the icon, where "99+" hid the icon's top half at font 2.0. Now it sits on the icon's top end corner.
  * The count stays on one line, and the badge is no child of the button, which keeps its own label.
  * Robolectric renders natively here, so a clipped edge shows as the card's colour instead of amber.
  */
@@ -57,7 +60,7 @@ class BadgeFitTest(private val fontScale: Float, private val count: Int) {
         val layouts = mutableListOf<TextLayoutResult>()
         text.config[SemanticsActions.GetTextLayoutResult].action!!.invoke(layouts)
         layouts.single().let { assertTrue("count laid out as ${it.lineCount} lines, ${it.getLineRight(0)} px in ${it.size}", it.lineCount == 1 && it.getLineRight(0) <= it.size.width) }
-        // The button keeps its name where the badge covers the icon, and never says the number.
+        // The button keeps its name, and never says the number.
         // The label sits on the button's own node, which has no semantics children: with one, Compose's
         // accessibility delegate moves the label and role onto a stand-in child (a merged tree can't show it).
         val label = ApplicationProvider.getApplicationContext<android.app.Application>().getString(R.string.recent_changes)
@@ -70,6 +73,18 @@ class BadgeFitTest(private val fontScale: Float, private val count: Int) {
             generateSequence(button.parent) { it.parent }.first { it.boundsInRoot.width > b.width * 4 }.boundsInRoot
         }
         assertTrue("badge $b outside its card $card", card.contains(b.topLeft) && card.contains(b.bottomRight - androidx.compose.ui.geometry.Offset(1f, 1f)))
+
+        // On the icon's top end corner: at most 6 dp into the 24 dp icon box at the centre of the 40 dp button, at
+        // every count and font size (it once covered the icon's top half at font 2.0), and over no text of the card.
+        val dp = compose.density.density
+        val button = compose.onNodeWithTag("recent-docs", useUnmergedTree = true).fetchSemanticsNode().boundsInRoot
+        val icon = androidx.compose.ui.geometry.Rect(button.center, 12 * dp)
+        assertTrue("badge $b reaches more than 6 dp into the icon $icon", b.bottom <= icon.top + 6 * dp + 0.5f)
+        assertTrue("badge $b not at the icon's end $icon", b.right > icon.right)
+        val texts = compose.onAllNodes(SemanticsMatcher.keyIsDefined(SemanticsProperties.Text), useUnmergedTree = true).fetchSemanticsNodes()
+            .filter { it.id != text.id }.map { it.boundsInRoot }.filter { card.overlaps(it) }
+        assertTrue("no text found in the card", texts.isNotEmpty())
+        texts.forEach { assertTrue("badge $b over text at $it", !b.overlaps(it)) }
 
         // The pill's fill at its ends and its top and bottom, a few pixels in from the edge.
         val pixels = compose.onRoot().captureToImage().toPixelMap()
