@@ -732,7 +732,8 @@ def main() -> None:
         peer.stop()
         (a.out / "logcat.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
         shutil.rmtree(home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{GUI_PORT}"), ("forward", "--remove", f"tcp:{FORWARD_PORT}")):
+        for args in (("reverse", "--remove", f"tcp:{GUI_PORT}"), ("forward", "--remove", f"tcp:{FORWARD_PORT}"),
+                     ("forward", "--remove", f"tcp:{PHONE_API_PORT}")):
             adb(*args, check=False)
 
     logcat = (a.out / "logcat.txt").read_text(errors="replace")
