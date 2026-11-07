@@ -28,6 +28,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
@@ -37,6 +38,7 @@ GUI_PORT = 8385         # E2eTest's Peer.PORT
 PEER_LISTEN = 22001     # the peer's own sync port, on the host
 PHONE_PORT = 22000      # the phone's sync port
 FORWARD_PORT = 22100    # host port forwarded to it
+PHONE_API_PORT = 8386   # host port forwarded to the phone core's REST API (PhoneCore)
 FOLDER, LABEL = "e2e", "E2E"
 PHONE_DIR = "/sdcard/Syncthing/E2E"
 SEEDS = 20
@@ -98,8 +100,12 @@ def eventually(what: str, timeout: float, done) -> bool:
 
 
 class Peer:
-    def __init__(self, binary: Path, home: Path, out: Path):
+    def __init__(self, binary: Path, home: Path, out: Path, gui_port: int = GUI_PORT, listen_port: int = PEER_LISTEN,
+                 name: str = "peer", seeded: bool = True):
+        """A second peer (scenarios.py) has its own [gui_port], [listen_port] and [name] (its log file), and is
+        not [seeded]: it starts with an empty folder directory and joins the first peer's folder."""
         self.binary, self.dir, self.out = binary, home, out
+        self.gui_port, self.listen_port, self.name, self.seeded = gui_port, listen_port, name, seeded
         self.key = secrets.token_hex(16)
         self.folder = home / "folder"
         self.proc: subprocess.Popen | None = None
@@ -108,7 +114,7 @@ class Peer:
 
     def call(self, method: str, path: str, body=None):
         req = urllib.request.Request(
-            f"http://127.0.0.1:{GUI_PORT}/{path}", method=method,
+            f"http://127.0.0.1:{self.gui_port}/{path}", method=method,
             data=None if body is None else json.dumps(body).encode(),
             headers={"X-API-Key": self.key, "Content-Type": "application/json"},
         )
@@ -119,25 +125,43 @@ class Peer:
     def start(self) -> None:
         subprocess.run([self.binary, "generate", "--home", self.dir, "--no-port-probing"], env=self.env, check=True, capture_output=True)
         self.id = subprocess.run([self.binary, "device-id", "--home", self.dir], env=self.env, check=True, capture_output=True, text=True).stdout.strip()
+        self.loopback_only()
         self.proc = subprocess.Popen(
             [self.binary, "serve", "--home", self.dir, "--no-browser", "--no-restart",
-             f"--gui-address=http://127.0.0.1:{GUI_PORT}", f"--gui-apikey={self.key}", f"--log-file={self.out / 'peer.log'}"],
+             f"--gui-address=http://127.0.0.1:{self.gui_port}", f"--gui-apikey={self.key}", f"--log-file={self.out / (self.name + '.log')}"],
             env=self.env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
         )
-        if not eventually("peer REST API up", 60, lambda: self.call("GET", "rest/system/ping")):
-            raise RuntimeError("peer did not start")
-        self.call("PATCH", "rest/config/options", {
-            "listenAddresses": [f"tcp://127.0.0.1:{PEER_LISTEN}"],
-            "globalAnnounceEnabled": False, "localAnnounceEnabled": False,
-            "relaysEnabled": False, "natEnabled": False, "urAccepted": -1, "crashReportingEnabled": False,
-        })
+        if not eventually(f"{self.name} REST API up", 60, lambda: self.call("GET", "rest/system/ping")):
+            raise RuntimeError(f"{self.name} did not start")
+        o = self.call("GET", "rest/config/options")
+        if o["listenAddresses"] != [f"tcp://127.0.0.1:{self.listen_port}"] or o["globalAnnounceEnabled"] or o["localAnnounceEnabled"] \
+                or o["relaysEnabled"] or o["natEnabled"]:
+            raise RuntimeError(f"{self.name} is not loopback-only: {o}")
         self.folder.mkdir()
+        if not self.seeded:
+            return
         for i in range(SEEDS):
             (self.folder / f"seed-{i:02d}.txt").write_text(f"seed file {i}\n" * (i + 1))
         (self.folder / "versioned.txt").write_text(V1)
         self.call("POST", "rest/config/folders", {"id": FOLDER, "label": LABEL, "path": str(self.folder), "fsWatcherEnabled": False, "rescanIntervalS": 3600})
         eventually("peer scanned its folder", 60, lambda: self.call("GET", f"rest/db/status?folder={FOLDER}")["globalFiles"] == SEEDS + 1)
         log(f"peer up with {SEEDS + 1} files")
+
+    # Written into config.xml before the first start: set over REST after it, the peer ran on Syncthing's
+    # defaults for its first second (listening on every interface, discovery and relays on).
+    LOOPBACK_OPTIONS = {"globalAnnounceEnabled": "false", "localAnnounceEnabled": "false", "relaysEnabled": "false",
+                        "natEnabled": "false", "urAccepted": "-1", "crashReportingEnabled": "false"}
+
+    def loopback_only(self) -> None:
+        conf = self.dir / "config.xml"
+        tree = ET.parse(conf)
+        options = tree.getroot().find("options")
+        for e in options.findall("listenAddress"):
+            options.remove(e)
+        ET.SubElement(options, "listenAddress").text = f"tcp://127.0.0.1:{self.listen_port}"
+        for key, value in self.LOOPBACK_OPTIONS.items():
+            (options.find(key) if options.find(key) is not None else ET.SubElement(options, key)).text = value
+        tree.write(conf, encoding="utf-8", xml_declaration=False)
 
     def scan(self) -> None:
         self.call("POST", f"rest/db/scan?folder={FOLDER}")
@@ -155,6 +179,75 @@ class Peer:
                 self.proc.wait(timeout=20)
             except (OSError, subprocess.TimeoutExpired):
                 self.proc.kill()
+
+
+def private(path: str) -> bytes:
+    """A file in the app's private storage; run-as works as the builds are debuggable."""
+    r = subprocess.run([ADB, "exec-out", "run-as", APP, "cat", path], capture_output=True, timeout=60)
+    if r.returncode != 0:
+        raise RuntimeError(f"run-as cat {path}: {r.stderr.decode(errors='replace')}")
+    return r.stdout
+
+
+class PhoneCore:
+    """
+    The phone core's REST API, from the host: on 127.0.0.1 at a port the app picks at
+    every start (go/bridge), found among the app's listening sockets and forwarded by adb.
+    """
+
+    def __init__(self) -> None:
+        self.key = ""
+
+    def connect(self, timeout: float = 60) -> None:
+        """The key is new at every start and reaches config.xml with the core's own save a few seconds later."""
+        end = time.monotonic() + timeout
+        while True:
+            try:
+                return self.try_connect()
+            except (OSError, RuntimeError, ValueError):
+                if time.monotonic() > end:
+                    raise
+                time.sleep(2)
+
+    def try_connect(self) -> None:
+        self.key = ET.fromstring(private("files/syncthing/config.xml")).findtext("gui/apikey") or ""
+        uid = sh(f"run-as {APP} id -u")
+        ports = set()
+        for line in sh("cat /proc/net/tcp").split("\n")[1:]:
+            f = line.split()  # sl, local address, remote address, state (0A: listening), ..., uid
+            if len(f) > 7 and f[1].startswith("0100007F:") and f[3] == "0A" and f[7] == uid:
+                ports.add(int(f[1].split(":")[1], 16))
+        # The app may listen on more than one (the web GUI's screen); the core's answers with our key.
+        for port in sorted(ports):
+            adb("forward", f"tcp:{PHONE_API_PORT}", f"tcp:{port}")
+            try:
+                if self.call("GET", "rest/system/ping") == {"ping": "pong"}:
+                    return
+            except (OSError, ValueError):
+                pass
+        raise RuntimeError(f"no REST API among the app's {len(ports)} loopback ports")
+
+    def call(self, method: str, path: str, body=None):
+        req = urllib.request.Request(
+            f"http://127.0.0.1:{PHONE_API_PORT}/{path}", method=method,
+            data=None if body is None else json.dumps(body).encode(),
+            headers={"X-API-Key": self.key, "Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as r:
+            text = r.read().decode()
+        return json.loads(text) if text.strip() else None
+
+
+def phone_offline() -> None:
+    """--offline (PC runs, user's choice 06/11/2026): once paired, the phone core stops using Syncthing's
+    public servers (global discovery, relays, NAT traversal, crash reports), so a run from the user's own
+    network stays on it. Its first start, during pairing, still uses the app's defaults; CI keeps them all along."""
+    run_core = PhoneCore()
+    open_app()
+    run_core.connect()
+    run_core.call("PATCH", "rest/config/options", {"globalAnnounceEnabled": False, "relaysEnabled": False,
+                                                   "natEnabled": False, "crashReportingEnabled": False})
+    log("phone core offline: no global discovery, relays or NAT traversal")
 
 
 def require_emulator() -> None:
@@ -597,6 +690,7 @@ def main() -> None:
     ap.add_argument("--apk", type=Path, required=True)
     ap.add_argument("--test-apk", type=Path, required=True)
     ap.add_argument("--out", type=Path, default=Path("build/e2e"))
+    ap.add_argument("--offline", action="store_true", help="the phone off Syncthing's public servers once paired (PC runs)")
     a = ap.parse_args()
     a.out.mkdir(parents=True, exist_ok=True)
 
@@ -608,6 +702,8 @@ def main() -> None:
     try:
         peer.start()
         if phase("pairAndSync", peer, a.out):
+            if a.offline:
+                phone_offline()
             phone = phone_id(peer)
             (peer.folder / "versioned.txt").write_text(V2)
             peer.scan()
@@ -636,7 +732,8 @@ def main() -> None:
         peer.stop()
         (a.out / "logcat.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
         shutil.rmtree(home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{GUI_PORT}"), ("forward", "--remove", f"tcp:{FORWARD_PORT}")):
+        for args in (("reverse", "--remove", f"tcp:{GUI_PORT}"), ("forward", "--remove", f"tcp:{FORWARD_PORT}"),
+                     ("forward", "--remove", f"tcp:{PHONE_API_PORT}")):
             adb(*args, check=False)
 
     logcat = (a.out / "logcat.txt").read_text(errors="replace")

@@ -54,9 +54,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run  # noqa: E402  (scripts/e2e/run.py: adb, Peer, prepare, phase)
 from run import ADB, APP, MONKEY_MIX, Device, adb, log, pin, sh  # noqa: E402
 
+# "copies": conflict copies the peer holds from the start (Recent changes' box, the card's count; 120
+# shows the badge's "99+"). Churn adds real ones in every setup.
 SETUPS = {
-    "plain": {"rotation": "2"},
-    "de-big": {"rotation": "2", "locale": "de-DE", "font": "2.0", "night": "yes", "away_min": 35},
+    "plain": {"rotation": "2", "copies": 12},
+    "de-big": {"rotation": "2", "locale": "de-DE", "font": "2.0", "night": "yes", "away_min": 35, "copies": 120},
     "recreate": {"rotation": "10", "dont_keep": True, "phase": "monkeyNeverSyncs"},
 }
 DROPBOX_TAGS = ["data_app_crash", "data_app_anr", "data_app_native_crash", "data_app_wtf", "SYSTEM_TOMBSTONE"]
@@ -64,8 +66,10 @@ DROPBOX_TAGS = ["data_app_crash", "data_app_anr", "data_app_native_crash", "data
 
 class Churn(threading.Thread):
     """During the run: the peer changes a file every 20 s and drops the phone for 30 s every 5 min.
-    With [away_min], the peer stays away that long from minute 3 on, so the Devices tab goes from
-    grey "Waiting for devices" to red after 30 min."""
+    While dropped, both sides edit one of five clash-N.txt, so each return makes a conflict copy: the
+    card's count, the badge and Recent changes' box change under the monkey. With [away_min], the peer
+    stays away that long from minute 3 on, so the Devices tab goes from grey "Waiting for devices" to
+    red after 30 min."""
 
     def __init__(self, peer: "run.Peer", phone: str, out: Path, away_min: int = 0) -> None:
         super().__init__(daemon=True)
@@ -82,8 +86,14 @@ class Churn(threading.Thread):
                 # Every fifth change is 2 MB, long enough to show transfer progress.
                 (self.peer.folder / name).write_bytes(bytes([tick % 256]) * (2_000_000 if tick % 5 == 0 else 2_000))
                 self.peer.scan()
+                clash = f"clash-{(tick + 5) // 15 % 5}.txt"  # the same name from tick 15k-5 to 15k+9
+                if tick % 15 == 10:  # the common start, synced while together
+                    (self.peer.folder / clash).write_text(f"start {tick}\n")
                 if tick in self.away or tick % 15 == 0:
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": True})
+                elif tick % 15 == 1:  # apart: an edit on each side of the same file
+                    (self.peer.folder / clash).write_text(f"peer {tick}\n")
+                    sh(f"echo phone {tick} > {run.PHONE_DIR}/{clash}", check=False)
                 elif tick % 15 == 2:
                     self.peer.call("PATCH", f"rest/config/devices/{self.phone}", {"paused": False})
             except (OSError, RuntimeError, ValueError, subprocess.TimeoutExpired) as e:
@@ -107,6 +117,16 @@ def offer_folder(peer: "run.Peer", phone: str) -> None:
         "id": "offer", "label": "Offered", "path": str(d), "fsWatcherEnabled": False,
         "devices": [{"deviceID": peer.id}, {"deviceID": phone}],
     })
+
+
+def seed_copies(peer: "run.Peer", n: int) -> None:
+    """[n] conflict copies, as if made elsewhere (the short device ID is no device's), synced to the phone."""
+    for i in range(n):
+        p = peer.folder / "seeded" / f"s{i:03d}.sync-conflict-20261106-120000-TESTAAA.txt"
+        p.parent.mkdir(exist_ok=True)
+        p.write_text("seeded copy\n")
+    if n:
+        peer.scan()
 
 
 def device_time() -> str:
@@ -160,7 +180,10 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
             result["result"] = f"setup failed: {'; '.join(run.failures)}"
             return result
         phone = run.phone_id(peer)
+        if a.offline:
+            run.phone_offline()
         offer_folder(peer, phone)
+        seed_copies(peer, setup.get("copies", 0))
         if "phase" in setup and not run.phase(setup["phase"], peer, out):
             result["result"] = f"setup failed: {'; '.join(run.failures)}"
             return result
@@ -208,7 +231,8 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         logcat.terminate()
         logcat_file.close()
         shutil.rmtree(home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{run.GUI_PORT}"), ("forward", "--remove", f"tcp:{run.FORWARD_PORT}")):
+        for args in (("reverse", "--remove", f"tcp:{run.GUI_PORT}"), ("forward", "--remove", f"tcp:{run.FORWARD_PORT}"),
+                     ("forward", "--remove", f"tcp:{run.PHONE_API_PORT}")):
             adb(*args, check=False)
 
     text = (out / "logcat.txt").read_text(errors="replace")
@@ -271,6 +295,7 @@ def main() -> None:
     ap.add_argument("--events", type=int, default=120000)
     ap.add_argument("--throttle", type=int, default=100)
     ap.add_argument("--out", type=Path, default=Path("build/monkey"))
+    ap.add_argument("--offline", action="store_true", help="the phone off Syncthing's public servers once paired (PC runs)")
     a = ap.parse_args()
     setups = a.setups.split(",")
     if unknown := [s for s in setups if s not in SETUPS]:

@@ -82,11 +82,12 @@ jobs:
 
   # The app on emulators (Android 15 and 16) against a real Syncthing peer: pairing, accepting a
   # folder, sync both ways, restoring a version, run conditions, typed text kept, process death,
-  # All files access taken away, and a monkey run (scripts/e2e/run.py).
+  # All files access taken away, and a monkey run (scripts/e2e/run.py); then conflicts of
+  # several kinds and the web GUI login's change (scripts/e2e/scenarios.py --only fast).
   e2e:
     needs: android
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 110
     strategy:
       fail-fast: false
       matrix:
@@ -111,6 +112,14 @@ jobs:
           chmod +x go/build/e2e-peer
           scripts/e2e/run.py --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
             --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk --out build/e2e
+      # The fast conflict scenarios (scripts/e2e/scenarios.py), from a fresh install: also after a
+      # failure above, as they test other things.
+      - name: Sync scenarios
+        if: ${{ !cancelled() }}
+        timeout-minutes: 20
+        run: |
+          scripts/e2e/scenarios.py --only fast --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
+            --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk --out build/e2e/scenarios
       # In the job log: the artifact is not always at hand. Tells an emulator that died (how qemu
       # ended, the kernel's or systemd's OOM killers, memory, disk) from a failing test.
       - name: Emulator state after a failure

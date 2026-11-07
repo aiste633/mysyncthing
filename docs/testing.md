@@ -23,6 +23,7 @@ uses anyone's real folders, devices or backups.
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
 | Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 2 ANRs found and fixed; no app crash of its own |
+| Sync scenarios | Conflicts of every kind, three devices, send- and receive-only, copy limits, 5,000 files, a 1 GB file, 200 conflicts, flaps, the count after a kill and a reboot | All pass on Android 15 and 16 (0.3.0); 1 upstream data-loss bug found (#80) |
 | Memory soak | 10 h 21 min of syncing and GUI use, sampled every minute | No leak |
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
@@ -168,6 +169,43 @@ real phone.
 
 The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. On the PC
 emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
+
+On a PC the runs keep the emulator off Syncthing's public servers: `E2E_OFFLINE=1 scripts/e2e/emulator.sh <api>`
+gives the emulator a DNS server where nothing answers (the script checks that no name resolves), and `--offline`
+(run.py, scenarios.py, monkey.py) turns off the phone core's global discovery, relays and NAT traversal after pairing.
+The DNS block is the one that holds: the monkey can switch those options back on in Settings. CI keeps the defaults.
+
+### Sync scenarios
+
+`scripts/e2e/scenarios.py` runs after run.py, from a fresh install paired with the same kind of
+peer. It drives everything from the build machine: files on the phone through `adb`, the phone's
+core through its REST API, the app's screens through uiautomator. Each scenario sets the devices
+apart, changes files on more than one side, brings them together, waits until every side holds the
+same files, and then checks the files on every side and the count on the folder card.
+
+| Scenario | What must hold |
+|---|---|
+| Edit and edit | Both edit a file: one conflict copy, and file plus copy hold both edits |
+| Edit and delete | Edited on one side, deleted on the other, each side deleting once before and once after the other's edit: the newer change wins, as Syncthing decides by time. An edit that wins leaves no copy; a deletion that wins keeps the edit as one conflict copy |
+| Both new | The same new name on both sides: one copy |
+| Rename and edit | Renamed on the phone, then (2 s later) the old name edited on the peer: both names stay, no copy. A rename deletes the old name, and the newer change wins |
+| Odd names | Subfolders, spaces, accents, CJK, emoji, no extension, a dotfile, two dots, upper case: one copy each, named after its file |
+| Copy deleted | A copy deleted on the phone and another on the peer: gone everywhere, and the count follows. The Trash can keeps the one deleted on the peer, and the count leaves it out |
+| Copy of a copy | Both edit the same copy: Syncthing keeps no copy of a copy |
+| Web GUI login | A new API key, user and password at every start; the old key is refused |
+
+These eight (`--only fast`, about 5 min) run in CI after run.py. The PC also runs:
+
+| Scenario | What must hold |
+|---|---|
+| Copy limit | 12 conflicts in a row on one file with the phone's watcher off: 10 copies stay (Syncthing's default `maxConflicts`), and the count follows the deletions |
+| Copies from elsewhere | 12, then 120 copies arriving from the peer: the card counts them |
+| Ignored copies | Copies hidden by an ignore pattern still count, and stop counting once deleted |
+| Three devices | A second peer joins, and all three edit one file: two or more copies holding the two losing edits, named by the short IDs of the three devices. The two losers come back seconds apart: within the same second, Syncthing (v2.1.7) names their copies alike and deletes one, losing that edit (issue #80, upstream). Should it still happen, the summary lists it as a known upstream bug |
+| Send-only | The peer's change waits; Override… on the folder's screen puts the phone's version back on the peer |
+| Receive-only | A local edit and a new file; Revert… on the folder's screen undoes both |
+| Long name | A 240-byte name in conflict: the copy's name is too long for Android. Observed only: the folder's problem and both sides' files are recorded |
+| Stress (`--only stress`) | 5,000 small files; a 1 GB file paused halfway and resumed, identical at the end; 200 conflicts at once; 10 min of edits from both sides, after which the count equals the copies on disk; 50 rapid pause/resume rounds of the device and the folder, plus 10 through the folder's button; airplane mode on and off every 30 s during a transfer; the count after the app's process is killed and after a reboot. The app's memory and the core's goroutines are recorded after each step |
 
 ### App updates
 
@@ -372,6 +410,26 @@ Still open ([#68](https://github.com/aiste633/mysyncthing/issues/68)): on CI's A
 text dialog, the keyboard and the cursor handle up leaves the new dialog window without input focus, so the
 monkey's keys time out (an ANR, while the app itself is idle). It did not happen in 100 tries on the PC
 emulator; the CI run now saves the window and input state when it happens.
+
+## 0.3.0 test (2026-11-06)
+
+Everything new since 0.2.0, on the PC emulators (Android 16, then 15), with the emulator offline.
+
+| Run | Android 16 | Android 15 |
+|---|---|---|
+| Sync scenarios, fast and slow (15) | All pass (three devices after its fix) | All pass, 12 min |
+| Stress (8) | All pass, about 22 min; the 1 GB file paused at 42 % | All pass, about 22 min; paused at 41 % |
+| End-to-end run plus the fast scenarios | 21 min 45 s, plus about 4 min | 21 min 54 s, plus 4 min 7 s |
+| Deep monkey, 2 seeds × 3 setups × 120,000 events, conflicts made by the peer and 12 or 120 copies seeded | 6 of 6, 0 crashes, 0 ANRs | 6 of 6, 0 ANRs; 2 crashes of the known framework race in scroll capture (above), no app frame |
+| Walk by hand (German, font 2.0, dark, widget) | Conflict count and badge, Recent changes, widget dot, folder browser, export Strong/Compatible/none and import, Remove folder, Show ID in dark, web GUI after Stop and Start: all as designed | The same |
+
+Found: two conflict copies made in the same second on two devices get the same name, and Syncthing then deletes
+one of them, losing that edit (upstream, [#80](https://github.com/aiste633/mysyncthing/issues/80)). At font 2.0 the
+"99+" badge covers half of the card's history icon (fixed separately). A name of about 240 bytes in conflict cannot
+get a copy on Android: each side keeps its own edit and the folder shows the error (upstream behaviour, no data
+lost). StrictMode reports came from Android's own frames and the WebView, none from the app. MainActivity instances stayed
+flat over each hour (at most 7), so no leak; memory rose from 164 to 254 MB after the big transfers and went back
+once the process was killed.
 
 ## Memory soak (2026-10-27)
 
