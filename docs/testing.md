@@ -23,6 +23,7 @@ uses anyone's real folders, devices or backups.
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
 | Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 2 ANRs found and fixed; no app crash of its own |
+| Sync scenarios | Conflicts of every kind, three devices, send- and receive-only, copy limits, 5,000 files, a 1 GB file, 200 conflicts, flaps, the count after a kill and a reboot | All pass on Android 15 and 16 (0.3.0); 1 upstream data-loss bug found (#80) |
 | Memory soak | 10 h 21 min of syncing and GUI use, sampled every minute | No leak |
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
@@ -409,6 +410,26 @@ Still open ([#68](https://github.com/aiste633/mysyncthing/issues/68)): on CI's A
 text dialog, the keyboard and the cursor handle up leaves the new dialog window without input focus, so the
 monkey's keys time out (an ANR, while the app itself is idle). It did not happen in 100 tries on the PC
 emulator; the CI run now saves the window and input state when it happens.
+
+## 0.3.0 test (2026-11-06)
+
+Everything new since 0.2.0, on the PC emulators (Android 16, then 15), with the emulator offline.
+
+| Run | Android 16 | Android 15 |
+|---|---|---|
+| Sync scenarios, fast and slow (15) | All pass (three devices after its fix) | All pass, 12 min |
+| Stress (8) | All pass, about 22 min; the 1 GB file paused at 42 % | All pass, about 22 min; paused at 41 % |
+| End-to-end run plus the fast scenarios | 21 min 45 s, plus about 4 min | 21 min 54 s, plus 4 min 7 s |
+| Deep monkey, 2 seeds × 3 setups × 120,000 events, conflicts made by the peer and 12 or 120 copies seeded | 6 of 6, 0 crashes, 0 ANRs | 6 of 6, 0 ANRs; 2 crashes of the known framework race in scroll capture (above), no app frame |
+| Walk by hand (German, font 2.0, dark, widget) | Conflict count and badge, Recent changes, widget dot, folder browser, export Strong/Compatible/none and import, Remove folder, Show ID in dark, web GUI after Stop and Start: all as designed | The same |
+
+Found: two conflict copies made in the same second on two devices get the same name, and Syncthing then deletes
+one of them, losing that edit (upstream, [#80](https://github.com/aiste633/mysyncthing/issues/80)). At font 2.0 the
+"99+" badge covers half of the card's history icon (fixed separately). A name of about 240 bytes in conflict cannot
+get a copy on Android: each side keeps its own edit and the folder shows the error (upstream behaviour, no data
+lost). StrictMode reports came from Android's own frames and the WebView, none from the app. MainActivity instances stayed
+flat over each hour (at most 7), so no leak; memory rose from 164 to 254 MB after the big transfers and went back
+once the process was killed.
 
 ## Memory soak (2026-10-27)
 
