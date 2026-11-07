@@ -11,7 +11,9 @@ import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.core.app.ApplicationProvider
@@ -51,8 +53,10 @@ class BadgeFitTest(private val fontScale: Float, private val count: Int) {
         compose.activityRule.scenario.recreate()
         val s = Fixtures.withConflicts.copy(conflicts = mapOf("docs" to (1..count).map { "f$it.sync-conflict-20251003-184200-EUYDWRS.txt" }))
         val vm = MainViewModel(ApplicationProvider.getApplicationContext())
+        var recent = 0
+        var folder = 0
         compose.setContent {
-            AppTheme { FoldersScreen(s, Fixtures.conflictsSummary, vm, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = {}) }
+            AppTheme { FoldersScreen(s, Fixtures.conflictsSummary, vm, onOpen = { folder++ }, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = { recent++ }) }
         }
         val badge = compose.onNodeWithTag("badge-docs", useUnmergedTree = true)
         // The whole count on one line: the button's 40 dp once squeezed "99+" to "99".
@@ -85,6 +89,13 @@ class BadgeFitTest(private val fontScale: Float, private val count: Int) {
             .filter { it.id != text.id }.map { it.boundsInRoot }.filter { card.overlaps(it) }
         assertTrue("no text found in the card", texts.isNotEmpty())
         texts.forEach { assertTrue("badge $b over text at $it", !b.overlaps(it)) }
+
+        // A tap on the badge's top edge opens Recent changes, not the folder: from 1.3x font that edge lies
+        // above the button's 48 dp target, over the card (found in the PC walk).
+        compose.onRoot().performTouchInput { click(androidx.compose.ui.geometry.Offset(b.center.x, b.top + 1.5f * dp)) }
+        compose.waitForIdle()
+        assertEquals("Recent changes opened", 1, recent)
+        assertEquals("folder opened", 0, folder)
 
         // The pill's fill at its ends and its top and bottom, a few pixels in from the edge.
         val pixels = compose.onRoot().captureToImage().toPixelMap()

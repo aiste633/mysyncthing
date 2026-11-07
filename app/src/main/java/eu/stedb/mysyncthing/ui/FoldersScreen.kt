@@ -1,6 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -43,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -193,12 +197,15 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                 // larger font grows it to the left and upwards, never further down over the icon (at 1.3x its text
                 // the badge reaches 3 dp above the target, inside the 4 dp gap to the title row).
                 // The badge is the button's sibling, not its child: a child would make Compose move the button's
-                // label onto a stand-in child node. It takes no touches, so a tap on it still reaches the button.
+                // label onto a stand-in child node. From 1.3x font its top reaches above the 48 dp target, over the
+                // card, so the badge takes taps itself: they open Recent changes and press the button (its ripple
+                // shows), without adding a node for screen readers.
                 val recentLabel = stringResource(R.string.recent_changes)
+                val press = remember { MutableInteractionSource() }
                 Box(Modifier.offset(x = 12.dp)) {
                     Box(
                         Modifier.testTag("recent-${f.id}").minimumInteractiveComponentSize().size(40.dp)
-                            .clickable(onClick = onRecent, role = Role.Button, interactionSource = null, indication = ripple(bounded = false, radius = 20.dp))
+                            .clickable(onClick = onRecent, role = Role.Button, interactionSource = press, indication = ripple(bounded = false, radius = 20.dp))
                             .semantics { contentDescription = recentLabel },
                         contentAlignment = Alignment.Center,
                     ) { Icon(Icons.Default.History, null) }
@@ -207,7 +214,8 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                         ConflictBadge(
                             conflicts, busy,
                             Modifier.align(Alignment.TopEnd).padding(end = 4.dp).height(12.dp + BADGE_INTO_ICON)
-                                .wrapContentHeight(Alignment.Bottom, unbounded = true).testTag("badge-${f.id}"),
+                                .wrapContentHeight(Alignment.Bottom, unbounded = true).testTag("badge-${f.id}")
+                                .pressing(press, onRecent),
                         )
                     }
                 }
@@ -225,6 +233,18 @@ internal fun badgeCount(n: Int): String = if (n > 99) grouped(99) + "+" else gro
 
 /** Between a card's details: the no-break space keeps the dot at the end of a line, never starting the next. */
 private const val DETAILS_SEPARATOR = "\u00A0· "
+
+/** Taps here act as taps on the button that [source] belongs to: its pressed state and ripple, then [onTap]. */
+private fun Modifier.pressing(source: MutableInteractionSource, onTap: () -> Unit) = pointerInput(source, onTap) {
+    detectTapGestures(
+        onPress = { at ->
+            val p = PressInteraction.Press(at)
+            source.emit(p)
+            source.emit(if (tryAwaitRelease()) PressInteraction.Release(p) else PressInteraction.Cancel(p))
+        },
+        onTap = { onTap() },
+    )
+}
 
 /** How far the conflict badge reaches down into the history icon's box, at any count and font size. */
 private val BADGE_INTO_ICON = 6.dp
