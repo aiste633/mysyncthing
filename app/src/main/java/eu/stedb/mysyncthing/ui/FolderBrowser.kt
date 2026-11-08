@@ -220,12 +220,13 @@ fun FolderBrowser(path: String, base: String, folders: List<Folder>, onBack: () 
         AppScreen(title = stringResource(R.string.browse_title), onBack = onBack) { padding -> Box48(Modifier.padding(padding)) { BusyIndicator() } }
         return
     }
-    BrowserContent(disk, here, all, folders, onOpen = { dir = it }, onBack = onBack, onPick = onPick)
+    BrowserContent(disk, here, all, folders, base, onOpen = { dir = it }, onBack = onBack, onPick = onPick)
 }
 
 @Composable
 private fun BrowserContent(
-    disk: Disk, dir: String, roots: List<StorageRoot>, folders: List<Folder>, onOpen: (String) -> Unit, onBack: () -> Unit, onPick: (String) -> Unit,
+    disk: Disk, dir: String, roots: List<StorageRoot>, folders: List<Folder>, base: String,
+    onOpen: (String) -> Unit, onBack: () -> Unit, onPick: (String) -> Unit,
 ) {
     var showHidden by rememberSaveable { mutableStateOf(false) }
     var dialog by rememberSaveable { mutableStateOf<BrowseDialog?>(null) }
