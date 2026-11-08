@@ -142,6 +142,27 @@ fun pickProblem(path: String, folders: List<Folder>, base: String): UiText? {
 }
 
 /**
+ * [path] as the disk spells it: each part naming an existing directory in another case takes
+ * that directory's own name ("/sdcard/dcim/camera" is ".../DCIM/Camera"), an exact match first, as
+ * a case-sensitive USB stick may hold both. From the first part with no directory on, as typed.
+ */
+fun diskSpelling(path: String, roots: List<StorageRoot>, disk: Disk): String {
+    val p = folderPath(path)
+    val root = roots.filter { pathInside(p, it.path) }.maxByOrNull { it.path.length } ?: return p
+    val parts = p.drop(root.path.length).split('/').drop(1)
+    if (parts.any { it.isEmpty() }) return p
+    var out = root.path
+    var found = true
+    for (part in parts) {
+        val names = if (found) disk.directories(out)?.map { it.name }.orEmpty() else emptyList()
+        val name = names.find { it == part } ?: names.find { it.equals(part, ignoreCase = true) }
+        found = name != null
+        out += "/" + (name ?: part)
+    }
+    return out
+}
+
+/**
  * Where the browser opens: the deepest existing directory of the form's [path],
  * else of [base] (Syncthing/), else the top of internal storage.
  */
@@ -364,7 +385,11 @@ private fun BrowserContent(
             stringResource(R.string.browse_type_path), dir, stringResource(R.string.browse_path),
             error = { pickProblem(it, folders, base) },
             onDismiss = { dialog = null },
-        ) { dialog = null; onPick(folderPath(it)) }
+        ) { typed ->
+            dialog = null
+            // Saved as the disk spells it: "/sdcard/dcim" is the DCIM folder.
+            scope.launch { onPick(withContext(disk.reads) { diskSpelling(typed, roots, disk) }) }
+        }
         null -> {}
     }
 }

@@ -133,12 +133,12 @@ class FormsTest : ScreenTest() {
         compose.onNodeWithText("Download").performClick()
         compose.onNodeWithTag("browseUse").assertIsEnabled().performClick()
         pathRow.assert(hasText("Download", substring = true))
-        // The name stays; Syncthing/New folder is a quick pick again, to go back to.
-        field(str(R.string.name)).assert(hasText("New folder"))
-        quickPick("Syncthing/New folder").assertCountEquals(1)
+        // The name was never typed, so the picked place names the folder; Syncthing/<name> is a quick pick again.
+        field(str(R.string.name)).assert(hasText("Download"))
+        quickPick("Syncthing/Download").assertCountEquals(1)
         save.assertIsEnabled().performClick()
         assertEquals("$root/Download", saved?.path)
-        assertEquals("New folder", saved?.label)
+        assertEquals("Download", saved?.label)
     }
 
     private fun quickPick(name: String) = compose.onAllNodes(hasText(name) and hasAnyAncestor(hasTestTag("quickPicks")))
@@ -151,6 +151,11 @@ class FormsTest : ScreenTest() {
         field(str(R.string.name)).performTextInput("Recipes")
         field(str(R.string.name)).assert(hasText("Recipes"))
         pathRow.assert(hasText("Syncthing/Recipes", substring = true))
+        // A typed name stays when a place is picked, and Syncthing/Recipes comes back as a quick pick.
+        quickPick("Download").onFirst().performClick()
+        field(str(R.string.name)).assert(hasText("Recipes"))
+        pathRow.assert(hasText("Download", substring = true))
+        quickPick("Syncthing/Recipes").onFirst().performClick()
         save.assertIsEnabled().performClick()
         assertEquals("$root/Syncthing/Recipes", saved?.path)
         assertEquals("Recipes", saved?.label)

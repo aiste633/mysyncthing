@@ -98,6 +98,32 @@ class FolderBrowserTest {
         if (pickProblem(p, folders, base) == null) assertNull(folderPathError(p, folders.map { it.path }))
     }
 
+    /** A typed path is saved as the disk spells it, as far as its directories exist. */
+    @Test
+    fun typedPathsTakeTheDisksSpelling() {
+        assertEquals("$root/DCIM/Camera", diskSpelling("/sdcard/dcim/camera/", roots, disk))
+        assertEquals("$root/DCIM/new one", diskSpelling("/storage/self/primary/Dcim/new one", roots, disk))
+        assertEquals("$root/Syncthing/a/Music", diskSpelling("$root/syncthing/a/Music", roots, disk))
+        assertEquals("/storage/1234-ABCD/Music", diskSpelling("/storage/1234-abcd/MUSIC", roots, disk))
+        assertEquals(root, diskSpelling("/sdcard", roots, disk))
+        assertEquals("/storage/9999-0000/x", diskSpelling("/storage/9999-0000/x", roots, disk))
+        // An exact match wins where both spellings exist (a case-sensitive USB stick).
+        val usb = MapDisk(listOf(StorageRoot("/storage/USB", "USB")), mapOf("/storage/USB/a" to 1, "/storage/USB/A" to 1))
+        assertEquals("/storage/USB/A", diskSpelling("/storage/USB/A", usb.roots(), usb))
+        assertEquals("/storage/USB/a", diskSpelling("/storage/USB/a", usb.roots(), usb))
+    }
+
+    /** Respelling never changes what the browser allows. */
+    @Test
+    fun respellingKeepsTheVerdict() = forAll({
+        pick(*disk.dirs.keys.toTypedArray())(this).map { if (nextBoolean()) it.uppercaseChar() else it.lowercaseChar() }.joinToString("")
+            .replace(Regex("^/STORAGE", RegexOption.IGNORE_CASE), "/storage").replace(Regex("^/storage/EMULATED", RegexOption.IGNORE_CASE), "/storage/emulated")
+    }) { p ->
+        val spelled = diskSpelling(p, roots, disk)
+        assertTrue(spelled.equals(folderPath(p), ignoreCase = true))
+        assertEquals(pickProblem(p, folders, base)?.en(), pickProblem(spelled, folders, base)?.en())
+    }
+
     @Test
     fun opensWhereTheFormIsElseInSyncthing() {
         assertEquals("$root/DCIM", startDir("$root/DCIM/Holiday 2026", "$root/Syncthing", roots, disk))

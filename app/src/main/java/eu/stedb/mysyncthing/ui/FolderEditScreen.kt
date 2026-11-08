@@ -111,13 +111,16 @@ fun FolderEditScreen(
         mutableStateOf(TextFieldValue(initial.label, if (offeredBy == null) TextRange(0, initial.label.length) else TextRange(initial.label.length)))
     }
     var nameTapped by rememberSaveable { mutableStateOf(offeredBy != null) }
+    // Until the user types a name, a place picked by quick pick or Browse names the folder
+    // ("New folder" becomes "Camera"). An offer keeps the name the other device gave it.
+    var nameTyped by rememberSaveable { mutableStateOf(offeredBy != null) }
     var browsing by rememberSaveable { mutableStateOf(false) }
     val disk = rememberDisk()
     // Read off the main thread: storages can be slow.
     val roots by produceState(emptyList<StorageRoot>(), disk) { value = withContext(disk.reads) { disk.roots() } }
     val choose = { path: String ->
         pathTouched = true
-        if (d.label.isEmpty()) name = TextFieldValue(path.substringAfterLast('/')).let { it.copy(selection = TextRange(it.text.length)) }
+        if (!nameTyped || d.label.isEmpty()) name = TextFieldValue(path.substringAfterLast('/')).let { it.copy(selection = TextRange(it.text.length)) }
         d = d.copy(path = path, label = name.text)
     }
     val picks by produceState(emptyList<String>(), disk) { value = withContext(disk.reads) { quickPicks(disk) } }
@@ -165,6 +168,7 @@ fun FolderEditScreen(
                     OutlinedTextField(
                         name,
                         { v ->
+                            if (v.text != name.text) nameTyped = true
                             // The tap that puts the cursor in changes only the selection.
                             name = if (!nameTapped && v.text == name.text) v.copy(selection = TextRange(0, v.text.length)) else v
                             nameTapped = true
