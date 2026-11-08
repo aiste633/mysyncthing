@@ -122,10 +122,14 @@ fun browseRows(dir: String, entries: List<DirEntry>, folders: List<Folder>, show
 /**
  * Why [path] can't be a new folder, naming the synced folder in the way, or
  * null when it can. The same rules as an import ([folderPathError]), plus the
- * default location for new folders, [base] ([defaultLocationError]).
+ * default location for new folders, [base] ([defaultLocationError]). The
+ * default location itself says so first, even with synced folders inside it
+ * (accepted offers go there): the way out is a folder inside, not elsewhere.
  */
 fun pickProblem(path: String, folders: List<Folder>, base: String): UiText? {
     val p = folderPath(path)
+    val b = folderPath(base)
+    if (b.isNotEmpty() && p.equals(b, ignoreCase = true)) return defaultLocationError(p, base)
     for (f in folders) {
         val o = folderPath(f.path)
         when {

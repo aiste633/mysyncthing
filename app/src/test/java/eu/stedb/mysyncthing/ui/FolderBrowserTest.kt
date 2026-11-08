@@ -1,5 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
+import eu.stedb.mysyncthing.core.Folder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -36,6 +37,13 @@ class FolderBrowserTest {
         assertEquals(reason, pickProblem("/storage/self/primary/SYNCTHING", folders, base).en())
         assertNull(pickProblem("$base/Recipes", emptyList(), base))
         assertNull(pickProblem("$base/Laptop", folders, base))
+        // With an accepted offer inside, the default location still says so, not that it holds that folder.
+        val offer = folders + Folder("lap", "Laptop", "$base/Laptop")
+        assertEquals(reason, pickProblem(base, offer, base).en())
+        assertEquals(reason, pickProblem("/sdcard/syncthing", offer, base).en())
+        assertEquals("Already synced as \"Laptop\"", pickProblem("$base/laptop", offer, base).en())
+        assertEquals("Inside the synced folder \"Laptop\"", pickProblem("$base/Laptop/Notes", offer, base).en())
+        assertEquals("Holds the synced folder \"Photos\"", pickProblem(root, offer, base).en())
         assertNull(pickProblem("$root/Syncthing2", folders, base))
         // A default set deeper by an imported backup: the folder holding it is refused too.
         val deep = "$root/Sync/Phone"
