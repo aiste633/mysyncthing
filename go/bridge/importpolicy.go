@@ -324,6 +324,20 @@ func isAppPrivate(p string) bool {
 	return len(rest) >= 2 && strings.EqualFold(rest[0], "Android") && (strings.EqualFold(rest[1], "data") || strings.EqualFold(rest[1], "obb"))
 }
 
+// insideFold: a is b or inside it, ignoring case as shared storage and
+// FAT/exFAT SD cards do ("dcim" is the DCIM folder). ui/Validation.kt
+// pathInside is the same.
+// Counted in characters, not bytes: a letter and its other case can differ in
+// length in UTF-8.
+func insideFold(a, b string) bool {
+	i := 0
+	for n := utf8.RuneCountInString(b); n > 0 && i < len(a); n-- {
+		_, w := utf8.DecodeRuneInString(a[i:])
+		i += w
+	}
+	return strings.EqualFold(a[:i], b) && (i == len(a) || a[i] == '/')
+}
+
 // folderPathError checks p, as folderPath returns it, against the paths of
 // other folders.
 func folderPathError(p string, others []string) error {
@@ -347,7 +361,7 @@ func folderPathError(p string, others []string) error {
 		return errPathHolds
 	}
 	for _, o := range others {
-		if o = folderPath(o); inside(p, o) || inside(o, p) {
+		if o = folderPath(o); insideFold(p, o) || insideFold(o, p) {
 			return errPathOverlap
 		}
 	}

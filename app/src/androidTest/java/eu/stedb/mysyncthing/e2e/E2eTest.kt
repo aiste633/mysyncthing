@@ -545,15 +545,24 @@ class E2eTest {
     /**
      * The app's own folder browser on a real storage: Download, which Android's picker
      * refuses, a new folder in it, and the folder the core then syncs. Removed again after.
+     * On the way: the form opens as "New folder", which a tap and typing replace, and
+     * Syncthing/, the default location for new folders, opens but can't be chosen.
      */
     @Test
     fun browseFolder() {
         val storage = Environment.getExternalStorageDirectory().path
         val dir = File("$storage/${Environment.DIRECTORY_DOWNLOADS}/$BROWSED")
         dir.deleteRecursively()
+        File("$storage/Syncthing").mkdirs() // as after accepting a folder: the browser opens there
         phoneId()
         tap(str(R.string.folders_add))
+        field(str(R.string.name)).assert(hasText(str(R.string.folder_new_name), substring = true))
+        field(str(R.string.name)).performClick()
+        field(str(R.string.name)).performTextInput(BROWSED)
+        field(str(R.string.name)).assert(hasText(BROWSED))
         tap(str(R.string.folder_browse))
+        rule.waitUntil(10_000) { rule.onAllNodes(hasText(str(R.string.error_path_default_location))).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasTestTag("browseUse")).assertIsNotEnabled()
         tap(str(R.string.internal_storage))
         tap(Environment.DIRECTORY_DOWNLOADS)
         tap(str(R.string.browse_new_folder))
@@ -562,7 +571,7 @@ class E2eTest {
         eventually("$BROWSED made in Download", 10_000) { dir.isDirectory }
         rule.waitUntil(10_000) { rule.onAllNodes(hasTestTag("browseUse") and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
         rule.onNode(hasTestTag("browseUse")).performClick()
-        // Back in the form, named after the folder; the same name stays on the top bar's Save.
+        // Back in the form, with the name typed before; the same name stays on the top bar's Save.
         field(str(R.string.name)).assert(hasText(BROWSED))
         tap(str(R.string.action_save))
         eventually("folder at ${dir.path} in the core", 30_000) { SyncStatus.snapshot.value.folders.any { it.path == dir.path } }

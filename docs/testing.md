@@ -258,7 +258,9 @@ found 14 bugs, all fixed, for example:
 Each form check has property tests: 20,000 generated inputs each, with a fixed seed so a
 failure can be repeated. Every bug fixed in Kotlin has a test that fails when the old code is
 put back. Later inputs got the same treatment as they were added: the proxy, the sync windows,
-the backup passwords, the Fork import.
+the backup passwords, the Fork import. Folder paths: the default location for new folders and any
+folder holding it are refused, anything inside it is not, and a path spelled with other
+case, `/sdcard` or a trailing `/` always gets the same answer (`DefaultLocationTest`).
 
 ## Fuzzing
 

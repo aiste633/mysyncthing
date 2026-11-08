@@ -66,6 +66,7 @@ import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.resolve
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private enum class Tab(val route: String, @param:StringRes val label: Int, val icon: ImageVector) {
     Folders("folders", R.string.tab_folders, Icons.Default.Folder),
@@ -330,9 +331,19 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
                         LaunchedEffect(Unit) { vm.defaultFolder.load(); read = true }
                         val defaults by vm.defaultFolder.value.collectAsStateWithLifecycle()
                         val base = if (read) defaults ?: Folder() else null
-                        if (snapshot.loaded && base != null) {
+                        // "New folder", or the first free "New folder N", looked up on the disk off the main thread.
+                        val disk = rememberDisk()
+                        val newFolder = stringResource(R.string.folder_new_name)
+                        var newName by rememberSaveable { mutableStateOf<String?>(null) }
+                        LaunchedEffect(snapshot.loaded, base) {
+                            if (newName == null && snapshot.loaded && base != null) {
+                                newName = if (offer != null) "" else withContext(disk.reads) { newFolderName(newFolder, pathBase(base), snapshot.folders, disk::isDirectory) }
+                            }
+                        }
+                        val name = newName
+                        if (snapshot.loaded && base != null && name != null) {
                             // Saved, so a recreated screen keeps the same new folder ID and the form still counts as unchanged.
-                            val initial = rememberSaveable(offer, from, saver = draftSaver) { draftFor(snapshot, offer, from, base) }
+                            val initial = rememberSaveable(offer, from, saver = draftSaver) { draftFor(snapshot, offer, from, base, name) }
                             FolderEditScreen(snapshot, initial, from, pathBase(base), onBack = back) {
                                 vm.addFolder(it, paused = it.ignoresFirst)
                                 if (it.ignoresFirst) {

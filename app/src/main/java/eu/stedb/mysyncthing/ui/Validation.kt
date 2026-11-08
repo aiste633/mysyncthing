@@ -75,7 +75,36 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): UiT
         isAppPrivate(p) -> text(R.string.error_path_app_private)
         isOtherUsers(p) -> text(R.string.error_path_other_user)
         holdsAppPrivate(p) -> text(R.string.error_path_holds_app_private)
-        others.map(::folderPath).any { inside(p, it) || inside(it, p) } -> text(R.string.error_path_overlap)
+        others.map(::folderPath).any { overlaps(p, it) } -> text(R.string.error_path_overlap)
+        else -> null
+    }
+}
+
+/**
+ * Whether [a] is [b] or inside it, as shared storage and SD cards see paths:
+ * case is ignored, as internal storage and FAT/exFAT do (Android's own
+ * shared storage folds case), so "dcim" is the DCIM folder. Both as
+ * [folderPath] returns them. (go/bridge/importpolicy.go insideFold is the same.)
+ */
+fun pathInside(a: String, b: String): Boolean =
+    a.equals(b, ignoreCase = true) || a.length > b.length && a[b.length] == '/' && a.startsWith(b, ignoreCase = true)
+
+/** Whether one of two folder paths is, holds or sits inside the other: they would sync the same files twice. */
+fun overlaps(a: String, b: String): Boolean = pathInside(a, b) || pathInside(b, a)
+
+/**
+ * Why [path] can't be a new folder because of the default location for new
+ * folders, [base] (Syncthing/ unless a backup set another): every folder
+ * added later goes inside it, so syncing it, or a folder holding it, would
+ * sync them twice. Refused even before any folder exists; inside it is fine.
+ */
+fun defaultLocationError(path: String, base: String): UiText? {
+    val p = folderPath(path)
+    val b = folderPath(base)
+    return when {
+        b.isEmpty() -> null
+        p.equals(b, ignoreCase = true) -> text(R.string.error_path_default_location)
+        pathInside(b, p) -> text(R.string.error_path_holds_default_location)
         else -> null
     }
 }

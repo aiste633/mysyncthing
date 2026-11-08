@@ -429,6 +429,7 @@
     <string name="folder">Partage</string>
     <string name="folder_path">Chemin racine du partage</string>
     <string name="folder_path_suggested">Suggéré. Il est créé s’il n’existe pas.</string>
+    <string name="folder_new_name">Nouveau dossier</string>
     <string name="folder_path_needed">Obligatoire. Choisissez-en un ci-dessous, ou Parcourir</string>
     <string name="folder_path_created">Il est créé s’il n’existe pas.</string>
     <string name="folder_path_none">Aucun choisi</string>
@@ -450,6 +451,7 @@
     <string name="browse_synced_already">Déjà synchronisé par le partage « %1$s »</string>
     <string name="browse_inside_synced">Dans le partage « %1$s »</string>
     <string name="browse_holds_synced">Contient le partage « %1$s »</string>
+    <string name="browse_default_location">Emplacement par défaut des nouveaux partages</string>
     <string name="error_path_app_private">Android réserve ce dossier aux applications</string>
     <string name="error_path_other_user">Appartient à un autre utilisateur ou profil du téléphone</string>
     <string name="error_path_holds_app_private">Contient des dossiers qu\'Android réserve aux applications (Android/data, obb)</string>
@@ -484,6 +486,8 @@
     <string name="error_path_parts">Pas de partie vide, . ou ..</string>
     <string name="error_path_storage">Dans la mémoire du téléphone ou sur une carte SD (/storage/…)</string>
     <string name="error_path_overlap">Un autre partage est déjà ici, ou à l’intérieur</string>
+    <string name="error_path_default_location">Emplacement par défaut des nouveaux partages. Ouvrez ou créez un dossier à l’intérieur.</string>
+    <string name="error_path_holds_default_location">Contient l’emplacement par défaut des nouveaux partages</string>
     <string name="error_id_slash">Pas de /</string>
     <string name="error_id_dots">Ni . ni ..</string>
     <string name="error_id_control">Pas de caractère de contrôle</string>

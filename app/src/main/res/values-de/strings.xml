@@ -412,6 +412,7 @@
     <string name="folder">Ordner</string>
     <string name="folder_path">Ordner auf diesem Smartphone</string>
     <string name="folder_path_suggested">Vorgeschlagen. Er wird angelegt, falls er fehlt.</string>
+    <string name="folder_new_name">Neuer Ordner</string>
     <string name="folder_path_needed">Erforderlich. Wählen Sie unten einen, oder Durchsuchen</string>
     <string name="folder_path_created">Er wird angelegt, falls er fehlt.</string>
     <string name="folder_path_none">Noch keiner gewählt</string>
@@ -433,6 +434,7 @@
     <string name="browse_synced_already">Bereits synchronisiert als „%1$s“</string>
     <string name="browse_inside_synced">Im synchronisierten Ordner „%1$s“</string>
     <string name="browse_holds_synced">Enthält den synchronisierten Ordner „%1$s“</string>
+    <string name="browse_default_location">Standard-Speicherort für neue Ordner</string>
     <string name="error_path_app_private">Android hält diesen Ordner für Apps frei</string>
     <string name="error_path_other_user">Gehört einem anderen Nutzer oder Profil auf diesem Smartphone</string>
     <string name="error_path_holds_app_private">Enthält Ordner, die Android für Apps freihält (Android/data, obb)</string>
@@ -466,6 +468,8 @@
     <string name="error_path_parts">Keine leeren Teile, . oder ..</string>
     <string name="error_path_storage">Im Speicher des Smartphones oder auf einer SD-Karte (/storage/…)</string>
     <string name="error_path_overlap">Hier oder darin liegt bereits ein anderer Ordner</string>
+    <string name="error_path_default_location">Standard-Speicherort für neue Ordner. Öffnen oder erstellen Sie einen Ordner darin.</string>
+    <string name="error_path_holds_default_location">Enthält den Standard-Speicherort für neue Ordner</string>
     <string name="error_id_slash">Kein /</string>
     <string name="error_id_dots">Nicht . oder ..</string>
     <string name="error_id_control">Keine Steuerzeichen</string>

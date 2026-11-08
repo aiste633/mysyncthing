@@ -510,6 +510,7 @@
     <string name="folder">Folder</string>
     <string name="folder_path">Folder on this phone</string>
     <string name="folder_path_suggested">Suggested. It is created if missing.</string>
+    <string name="folder_new_name">New folder</string>
     <string name="folder_path_needed">Required. Pick one below, or Browse</string>
     <string name="folder_path_created">It is created if missing.</string>
     <!-- Add folder: no folder on the phone chosen yet -->
@@ -537,6 +538,7 @@
     <string name="browse_synced_already">Already synced as \"%1$s\"</string>
     <string name="browse_inside_synced">Inside the synced folder \"%1$s\"</string>
     <string name="browse_holds_synced">Holds the synced folder \"%1$s\"</string>
+    <string name="browse_default_location">Default location for new folders</string>
     <!-- Android/data and Android/obb: closed to other apps even with All files access -->
     <string name="error_path_app_private">Android keeps this folder for apps</string>
     <string name="error_path_other_user">Belongs to another user or profile on this phone</string>
@@ -581,6 +583,8 @@
     <!-- Keep /storage/… as it is -->
     <string name="error_path_storage">In the phone\'s storage or on an SD card (/storage/…)</string>
     <string name="error_path_overlap">Another folder is already here, or inside it</string>
+    <string name="error_path_default_location">Default location for new folders. Open or create a folder inside it.</string>
+    <string name="error_path_holds_default_location">Holds the default location for new folders</string>
     <string name="error_id_slash">No /</string>
     <string name="error_id_dots">Not . or ..</string>
     <string name="error_id_control">No control characters</string>

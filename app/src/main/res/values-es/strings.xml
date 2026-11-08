@@ -427,6 +427,7 @@
     <string name="folder">Carpeta</string>
     <string name="folder_path">Carpeta en este teléfono</string>
     <string name="folder_path_suggested">Sugerida. Se crea si no existe.</string>
+    <string name="folder_new_name">Nueva carpeta</string>
     <string name="folder_path_needed">Obligatorio. Elige una abajo, o Explorar</string>
     <string name="folder_path_created">Se crea si no existe.</string>
     <string name="folder_path_none">Ninguna elegida</string>
@@ -448,6 +449,7 @@
     <string name="browse_synced_already">Ya sincronizada como «%1$s»</string>
     <string name="browse_inside_synced">Dentro de la carpeta sincronizada «%1$s»</string>
     <string name="browse_holds_synced">Contiene la carpeta sincronizada «%1$s»</string>
+    <string name="browse_default_location">Ubicación predeterminada de las carpetas nuevas</string>
     <string name="error_path_app_private">Android reserva esta carpeta para las apps</string>
     <string name="error_path_other_user">Pertenece a otro usuario o perfil del teléfono</string>
     <string name="error_path_holds_app_private">Contiene carpetas que Android reserva para las apps (Android/data, obb)</string>
@@ -482,6 +484,8 @@
     <string name="error_path_parts">Sin partes vacías, . ni ..</string>
     <string name="error_path_storage">En el almacenamiento del teléfono o en una tarjeta SD (/storage/…)</string>
     <string name="error_path_overlap">Ya hay otra carpeta aquí o dentro</string>
+    <string name="error_path_default_location">Ubicación predeterminada de las carpetas nuevas. Abre o crea una carpeta dentro.</string>
+    <string name="error_path_holds_default_location">Contiene la ubicación predeterminada de las carpetas nuevas</string>
     <string name="error_id_slash">Sin /</string>
     <string name="error_id_dots">Ni . ni ..</string>
     <string name="error_id_control">Sin caracteres de control</string>

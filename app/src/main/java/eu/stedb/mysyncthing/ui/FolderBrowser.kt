@@ -93,40 +93,48 @@ fun crumbs(path: String, root: StorageRoot): List<String> =
 
 private val Folder.shownName get() = label.ifEmpty { id }
 
-private fun inside(a: String, b: String) = a == b || a.startsWith("$b/")
+/**
+ * A directory in the browser: whether it opens, how it relates to the folders
+ * already synced, and whether it is the default location for new folders.
+ */
+data class BrowseRow(
+    val name: String, val path: String, val items: Int?, val locked: Boolean, val syncedAs: String?, val syncedInside: Int,
+    val isDefault: Boolean = false,
+)
 
-/** A directory in the browser: whether it opens, and how it relates to the folders already synced. */
-data class BrowseRow(val name: String, val path: String, val items: Int?, val locked: Boolean, val syncedAs: String?, val syncedInside: Int)
-
-/** The directories of [dir] in name order, dot directories only when [showHidden]. */
-fun browseRows(dir: String, entries: List<DirEntry>, folders: List<Folder>, showHidden: Boolean): List<BrowseRow> {
+/** The directories of [dir] in name order, dot directories only when [showHidden]; [base] is the default location. */
+fun browseRows(dir: String, entries: List<DirEntry>, folders: List<Folder>, showHidden: Boolean, base: String = ""): List<BrowseRow> {
     val synced = folders.map { folderPath(it.path) to it.shownName }
+    val b = folderPath(base)
     return entries.filter { showHidden || !it.name.startsWith(".") }
         .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER, DirEntry::name).thenBy(DirEntry::name))
         .map { e ->
             val p = "$dir/${e.name}"
             BrowseRow(
                 e.name, p, e.items, isAppPrivate(p),
-                synced.find { it.first == p }?.second, synced.count { it.first != p && inside(it.first, p) },
+                synced.find { it.first.equals(p, ignoreCase = true) }?.second,
+                synced.count { !it.first.equals(p, ignoreCase = true) && pathInside(it.first, p) },
+                isDefault = b.isNotEmpty() && b.equals(p, ignoreCase = true),
             )
         }
 }
 
 /**
  * Why [path] can't be a new folder, naming the synced folder in the way, or
- * null when it can. The same rules as the form ([folderPathError]).
+ * null when it can. The same rules as an import ([folderPathError]), plus the
+ * default location for new folders, [base] ([defaultLocationError]).
  */
-fun pickProblem(path: String, folders: List<Folder>): UiText? {
+fun pickProblem(path: String, folders: List<Folder>, base: String): UiText? {
     val p = folderPath(path)
     for (f in folders) {
         val o = folderPath(f.path)
         when {
-            p == o -> return text(R.string.browse_synced_already, f.shownName)
-            inside(p, o) -> return text(R.string.browse_inside_synced, f.shownName)
-            inside(o, p) -> return text(R.string.browse_holds_synced, f.shownName)
+            p.equals(o, ignoreCase = true) -> return text(R.string.browse_synced_already, f.shownName)
+            pathInside(p, o) -> return text(R.string.browse_inside_synced, f.shownName)
+            pathInside(o, p) -> return text(R.string.browse_holds_synced, f.shownName)
         }
     }
-    return folderPathError(p)
+    return folderPathError(p) ?: defaultLocationError(p, base)
 }
 
 /**
@@ -234,13 +242,13 @@ private fun BrowserContent(
     val open = { p: String -> makeFailed = false; onOpen(p) }
     val scope = rememberCoroutineScope()
     val root = rootOf(dir, roots) ?: roots.first()
-    val rows = entries?.let { browseRows(dir, it, folders, showHidden) }
+    val rows = entries?.let { browseRows(dir, it, folders, showHidden, base) }
     // Each directory opens at its top; the position is kept over a rotation.
     val list = rememberSaveable(dir, saver = LazyListState.Saver) { LazyListState() }
     // Hidden folders sort first: once they are listed, the list goes to the top to show them.
     var toTop by remember { mutableStateOf(false) }
     LaunchedEffect(rows) { if (toTop) { list.scrollToItem(0); toTop = false } }
-    val problem = if (loaded && entries == null) text(R.string.browse_unreadable) else pickProblem(dir, folders)
+    val problem = if (loaded && entries == null) text(R.string.browse_unreadable) else pickProblem(dir, folders, base)
 
     AppScreen(
         title = stringResource(R.string.browse_title), onBack = onBack,
@@ -349,7 +357,7 @@ private fun BrowserContent(
         }
         BrowseDialog.TypePath -> TextDialog(
             stringResource(R.string.browse_type_path), dir, stringResource(R.string.browse_path),
-            error = { pickProblem(it, folders) },
+            error = { pickProblem(it, folders, base) },
             onDismiss = { dialog = null },
         ) { dialog = null; onPick(folderPath(it)) }
         null -> {}
@@ -384,6 +392,7 @@ private fun BrowseRowItem(row: BrowseRow, onOpen: () -> Unit) {
     val dim = MaterialTheme.colorScheme.onSurfaceVariant
     // Everything but the arrow under the name: beside it, a count squeezed long names at large font sizes.
     val lines = buildList<@Composable () -> Unit> {
+        if (row.isDefault && !row.locked) add { Text(stringResource(R.string.browse_default_location), color = MaterialTheme.colorScheme.primary) }
         when {
             row.locked -> add { Text(stringResource(R.string.error_path_app_private)) }
             row.syncedAs != null -> add {
