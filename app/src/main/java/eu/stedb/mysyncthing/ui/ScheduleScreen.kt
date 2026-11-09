@@ -360,16 +360,12 @@ private fun <T> List<T>.replace(i: Int, item: T) = mapIndexed { j, x -> if (j ==
 /** A time picker with the phone's 12 or 24 h clock; returns minutes after midnight. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun TimeDialog(title: String, minutes: Int, onDismiss: () -> Unit, onPick: (Int) -> Unit) {
+internal fun TimeDialog(title: String, minutes: Int, onDismiss: () -> Unit, onPick: (Int) -> Unit) {
     val state = rememberTimePickerState(minutes / 60, minutes % 60, is24Hour = currentStrings().is24Hour)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
+    EntryDialog(title, stringResource(R.string.action_ok), true, onConfirm = { onPick(state.hour * 60 + state.minute) }, onDismiss = onDismiss) {
         // The dial is taller than a phone in landscape: there, typing the time (as Material does).
-        text = { if (TimePickerDefaults.layoutType() == TimePickerLayoutType.Horizontal) TimeInput(state) else TimePicker(state) },
-        confirmButton = { TextButton(onClick = { onPick(state.hour * 60 + state.minute) }) { Text(stringResource(R.string.action_ok)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+        if (TimePickerDefaults.layoutType() == TimePickerLayoutType.Horizontal) TimeInput(state) else TimePicker(state)
+    }
 }
 
 /** "Mon–Fri 22:00–07:00 (next day)": a window for people. */

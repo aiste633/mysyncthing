@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -288,31 +287,28 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
         this.value = withContext(Dispatchers.IO) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
     }
     val error = amountError(value, unit)?.asString()
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.keep_free)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value, { value = it }, label = { Text(stringResource(R.string.amount)) }, singleLine = true, isError = error != null,
-                    supportingText = error?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
-                )
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    units.forEachIndexed { i, u ->
-                        SegmentedButton(
-                            selected = unit == u, onClick = { unit = u }, icon = {},
-                            shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
-                        ) { Text(u) }
-                    }
+    EntryDialog(
+        stringResource(R.string.keep_free), stringResource(R.string.action_save), error == null,
+        onConfirm = { onSave(DiskSize(decimal(value)!!, unit)) }, onDismiss = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value, { value = it }, label = { Text(stringResource(R.string.amount)) }, singleLine = true, isError = error != null,
+                supportingText = error?.let { { Text(it) } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+            )
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                units.forEachIndexed { i, u ->
+                    SegmentedButton(
+                        selected = unit == u, onClick = { unit = u }, icon = {},
+                        shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
+                    ) { Text(u) }
                 }
-                Text(
-                    free?.let { (a, t) -> stringResource(R.string.keep_free_text_now, bytes(a), bytes(t)) } ?: stringResource(R.string.keep_free_text),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
-        },
-        confirmButton = { TextButton(onClick = { onSave(DiskSize(decimal(value)!!, unit)) }, enabled = error == null) { Text(stringResource(R.string.action_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+            Text(
+                free?.let { (a, t) -> stringResource(R.string.keep_free_text_now, bytes(a), bytes(t)) } ?: stringResource(R.string.keep_free_text),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }

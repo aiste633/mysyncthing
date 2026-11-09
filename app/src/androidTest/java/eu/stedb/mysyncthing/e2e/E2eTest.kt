@@ -12,9 +12,11 @@ import android.os.Looper
 import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -31,6 +33,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -51,6 +54,7 @@ import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
 import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.resolve
+import eu.stedb.mysyncthing.ui.SHORT_WINDOW_DP
 import eu.stedb.mysyncthing.ui.lastSeenText
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -573,8 +577,17 @@ class E2eTest {
         try {
             tap(FOLDER_LABEL)
             tap(str(R.string.name))
-            rule.onNode(hasSetTextAction()).performTextInput("1")
+            // Typed at the end, where people type. With the cursor at the start of a word, Android 15's AOSP
+            // keyboard commits the word it composes there when it restarts for the new orientation
+            // (commitText(word, 1), seen in the PC run of 09/11/2026), which moves the cursor behind that word:
+            // the keyboard's doing, with the field and its state kept. At the end it finishes the word in place.
+            val field = rule.onNode(hasSetTextAction())
+            field.performClick()
+            field.performTextInputSelection(TextRange(FOLDER_LABEL.length))
+            field.performTextInput("1")
             val typed = rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.EditableText].text
+            val cursor = rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange]
+            rule.onNode(hasSetTextAction()).assertIsFocused()
             val activity = rule.activity
             eventually("main window and the dialog's", 10_000) { appWindows().size == 2 }
             val windows = appWindows()
@@ -588,7 +601,15 @@ class E2eTest {
                 } catch (e: IllegalStateException) {
                     throw IllegalStateException("${e.message}: before $windows, now ${appWindows()}", e)
                 }
-                rule.onNode(hasSetTextAction()).assert(hasText(typed))
+                // The text, its cursor and the keyboard's focus stay; on its side the dialog fills the screen
+                // with Cancel (✕) and Save on a bar at the top, upright it has them as buttons at the end.
+                rule.onNode(hasSetTextAction()).assert(hasText(typed)).assertIsFocused()
+                assertEquals("cursor after rotation $turn", cursor, rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+                val short = activity.window.decorView.height / activity.resources.displayMetrics.density < SHORT_WINDOW_DP
+                assertEquals("short window after rotation $turn", turn == 1, short)
+                rule.onNode(hasContentDescription(str(R.string.action_cancel)) and hasClickAction()).apply { if (short) assertIsDisplayed() else assertDoesNotExist() }
+                rule.onNode(hasText(str(R.string.action_cancel)) and hasClickAction()).apply { if (short) assertDoesNotExist() else assertIsDisplayed() }
+                rule.onNode(hasText(str(R.string.action_save)) and hasClickAction()).assertIsDisplayed()
             }
             // Cancelled: the dialog is gone (the folder's screen has no text field) and the name is as it was.
             tap(str(R.string.action_cancel))
