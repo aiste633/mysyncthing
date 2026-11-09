@@ -177,7 +177,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
         }
         if (setupDone == null) return@AppTheme
         // Each time the app comes to the front, not only at its first composition, so a failed start is
-        // tried again. A Stop by the user holds: ON_START also comes with a rotation or the screen turning on.
+        // tried again. A Stop by the user holds: ON_START also comes with the screen turning on and with a theme,
+        // language or font size change (they recreate the activity; a rotation does not, see the manifest).
         val scope = rememberCoroutineScope()
         LifecycleStartEffect(Unit) {
             scope.launch { SyncthingService.startUnlessStopped(context) }

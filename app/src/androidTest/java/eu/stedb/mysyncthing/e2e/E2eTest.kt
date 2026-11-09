@@ -1,12 +1,17 @@
 package eu.stedb.mysyncthing.e2e
 
+import android.app.Activity
+import android.app.Application
+import android.content.res.Configuration
 import android.net.ConnectivityManager
+import android.os.Bundle
 import android.net.NetworkCapabilities
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
@@ -541,6 +546,64 @@ class E2eTest {
             activities() == 1
         }
     }
+
+    /**
+     * A rotation with a text dialog open keeps the activity and the dialog's window (#68). On Android 15
+     * a dialog window that a relaunched activity re-added during the rotation's transition could end up
+     * outside SurfaceFlinger's hierarchy: focused for the window manager, never for input, so every key
+     * waited 5 s and was dropped. MainActivity now handles rotation itself: no onDestroy, the same
+     * windows before and after, and the typed text, keyboard focus and all, stays. Turned with
+     * `wm user-rotation`, as a person turning the phone with auto-rotate on; restored after.
+     */
+    @Test
+    fun rotationKeepsActivityAndDialog() {
+        val destroyed = mutableListOf<String>()
+        val callbacks = object : Application.ActivityLifecycleCallbacks {
+            override fun onActivityCreated(a: Activity, b: Bundle?) {}
+            override fun onActivityStarted(a: Activity) {}
+            override fun onActivityResumed(a: Activity) {}
+            override fun onActivityPaused(a: Activity) {}
+            override fun onActivityStopped(a: Activity) {}
+            override fun onActivitySaveInstanceState(a: Activity, b: Bundle) {}
+            override fun onActivityDestroyed(a: Activity) { synchronized(destroyed) { destroyed += a.toString() } }
+        }
+        val rotation = shell("wm user-rotation").trim()
+        val application = app.applicationContext as Application
+        application.registerActivityLifecycleCallbacks(callbacks)
+        try {
+            tap(FOLDER_LABEL)
+            tap(str(R.string.name))
+            rule.onNode(hasSetTextAction()).performTextInput("1")
+            val typed = rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.EditableText].text
+            val activity = rule.activity
+            eventually("main window and the dialog's", 10_000) { appWindows().size == 2 }
+            val windows = appWindows()
+            for ((turn, orientation) in listOf(1 to Configuration.ORIENTATION_LANDSCAPE, 0 to Configuration.ORIENTATION_PORTRAIT)) {
+                shell("wm user-rotation lock $turn")
+                eventually("activity turned to rotation $turn", 20_000) { activity.resources.configuration.orientation == orientation }
+                assertTrue("activity destroyed by rotation $turn: $destroyed", synchronized(destroyed) { destroyed.isEmpty() })
+                assertTrue("the same MainActivity after rotation $turn", rule.activity === activity && !activity.isDestroyed)
+                try {
+                    eventually("the same windows after rotation $turn", 10_000) { appWindows() == windows }
+                } catch (e: IllegalStateException) {
+                    throw IllegalStateException("${e.message}: before $windows, now ${appWindows()}", e)
+                }
+                rule.onNode(hasSetTextAction()).assert(hasText(typed))
+            }
+            // Cancelled: the dialog is gone (the folder's screen has no text field) and the name is as it was.
+            tap(str(R.string.action_cancel))
+            rule.waitUntil(5_000) { rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isEmpty() }
+            assertEquals(FOLDER_LABEL, SyncStatus.snapshot.value.folders.first { it.id == FOLDER }.label)
+        } finally {
+            application.unregisterActivityLifecycleCallbacks(callbacks)
+            shell(if (rotation.startsWith("lock")) "wm user-rotation $rotation" else "wm user-rotation free")
+        }
+    }
+
+    /** The app's windows (main and dialogs), as `dumpsys window windows` names them: `Window{hash u0 package/…}`. */
+    private fun appWindows(): Set<String> =
+        Regex("""^\s*Window #\d+ (Window\{\S+ \S+ ${Regex.escape(app.packageName)}/[^}]*\})""", RegexOption.MULTILINE)
+            .findAll(shell("dumpsys window windows")).map { it.groupValues[1] }.toSet()
 
     /**
      * The app's own folder browser on a real storage: Download, which Android's picker

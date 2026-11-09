@@ -12,7 +12,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Something a screen reads from the core and shows or edits, kept in the view model:
- * a screen recreated by a rotation, dark mode or a language change draws it, and the
+ * a screen recreated by dark mode, a language or font size change draws it, and the
  * dialog open on it, on its first frame while [load] refreshes it. Read in the screen
  * only, the first frame would be empty: the dialog would come back late and the
  * scroll position would be lost to a shorter screen.
