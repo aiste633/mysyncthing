@@ -1,9 +1,10 @@
 name: reproducible
 
 # Builds the unsigned release APK twice under different conditions and requires identical
-# bytes. On pull requests, v* tags and manual runs, F-Droid's own build environment builds
-# it a third time from fdroid/eu.stedb.mysyncthing.yml. A tag then gets a draft release
-# with the unsigned APK for scripts/sign-release.sh, and the SBOM, checked against the APK's Go core.
+# bytes. On v* tags and manual runs, F-Droid's own build environment builds it a third time
+# from fdroid/eu.stedb.mysyncthing.yml (up to 90 min, so not on every pull request). A tag
+# needs the PC end-to-end results of its commit in docs/e2e/<version>.md, and then gets a draft
+# release with the unsigned APK for scripts/sign-release.sh, and the SBOM, checked against the APK's Go core.
 
 on:
   push:
@@ -119,7 +120,7 @@ jobs:
           path: diffoscope.html
 
   fdroid:
-    if: github.event_name != 'push' || startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v')
     needs: [release, compare]
     runs-on: ubuntu-24.04
     timeout-minutes: 90
@@ -188,9 +189,24 @@ jobs:
           path: fdroid-out/
           if-no-files-found: ignore
 
+  # The emulator end-to-end tests run on the PC, not here (scripts/e2e/pc.py --release). The tag
+  # must carry their passing results for the commit it points to, or for one that differs only
+  # in files the APK and the tests never read (docs/, fastlane/, top-level *.md).
+  pc-e2e:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: PC end-to-end results committed for this release
+        run: scripts/e2e/check-results.sh "${GITHUB_REF_NAME#v}"
+
   draft-release:
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [release, compare, fdroid]
+    needs: [release, compare, fdroid, pc-e2e]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
