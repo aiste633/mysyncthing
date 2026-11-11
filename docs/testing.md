@@ -135,8 +135,10 @@ through a relay, offline and paused by the user) and a folder offer. No real dev
   and none runs into the screen below).
 
 Both checks were tried on purpose against a broken screen, and both failed as they should.
-Dialogs with a text field are left out: on Robolectric they never settle. The end-to-end
-tests cover them on the emulators.
+Dialogs with a text field are left out upright: at the platform's default width Robolectric never
+gets them idle. On a phone on its side they fill the screen (`EntryDialog`), and `DialogScreenshotTest`
+compares all six in light, dark and German at the largest font; `EntryDialogTest` checks their bar.
+The end-to-end tests cover the upright ones and the rotation between the two on the emulators.
 
 ## End-to-end tests
 

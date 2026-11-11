@@ -112,7 +112,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /**
      * Runs a write that a screen waits for in the ViewModel's scope, so leaving the
-     * screen (Back, another tab, rotation) stops only the waiting: a restore is
+     * screen (Back, another tab, the activity recreated) stops only the waiting: a restore is
      * still dated and rescanned, and a save still completes and reports.
      */
     private suspend fun <T> write(block: suspend () -> T): T = viewModelScope.async { block() }.await()

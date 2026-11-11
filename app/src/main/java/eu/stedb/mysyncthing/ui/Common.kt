@@ -552,20 +552,14 @@ fun TextDialog(
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
     val problem = error(text)?.asString()
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                text, { text = it }, label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = singleLine,
-                minLines = if (singleLine) 1 else 6, isError = problem != null,
-                supportingText = (problem ?: supporting)?.let { { Text(it) } },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-        confirmButton = { TextButton(onClick = { onSave(text) }, enabled = problem == null) { Text(stringResource(R.string.action_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+    EntryDialog(title, stringResource(R.string.action_save), problem == null, onConfirm = { onSave(text) }, onDismiss = onDismiss) {
+        OutlinedTextField(
+            text, { text = it }, label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = singleLine,
+            minLines = if (singleLine) 1 else 6, isError = problem != null,
+            supportingText = (problem ?: supporting)?.let { { Text(it) } },
+            modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+        )
+    }
 }
 
 /**
@@ -620,30 +614,26 @@ fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (L
     var unit by rememberSaveable { mutableStateOf(u0) }
     val units = listOf("kB/s", "MB/s")
     val error = amountError(value, unit, emptyOk = true)?.asString()
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value, { value = it }, label = { Text(stringResource(R.string.limit_label)) },
-                    singleLine = true, isError = error != null, supportingText = error?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
-                )
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    units.forEachIndexed { i, u ->
-                        SegmentedButton(
-                            selected = unit == u, onClick = { unit = u }, icon = {},
-                            shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
-                        ) { Text(u) }
-                    }
+    EntryDialog(
+        title, stringResource(R.string.action_save), error == null, onConfirm = { onSave(limitKib(decimal(value) ?: 0.0, unit)) }, onDismiss = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            OutlinedTextField(
+                value, { value = it }, label = { Text(stringResource(R.string.limit_label)) },
+                singleLine = true, isError = error != null, supportingText = error?.let { { Text(it) } },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+            )
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                units.forEachIndexed { i, u ->
+                    SegmentedButton(
+                        selected = unit == u, onClick = { unit = u }, icon = {},
+                        shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
+                    ) { Text(u) }
                 }
-                Text(stringResource(R.string.limit_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
-        },
-        confirmButton = { TextButton(onClick = { onSave(limitKib(decimal(value) ?: 0.0, unit)) }, enabled = error == null) { Text(stringResource(R.string.action_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+            Text(stringResource(R.string.limit_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
 }
 
 /**
@@ -673,48 +663,44 @@ fun ListEditDialog(
     val draftValid = valid(next)
     // A typed but not yet added entry counts too, so it is not lost.
     val all = (if (auto) listOf(token) else emptyList()) + (own + listOfNotNull(next.takeIf { draftValid })).distinct()
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Row(
-                    verticalAlignment = Alignment.Top,
-                    modifier = Modifier.fillMaxWidth().toggleable(auto, role = Role.Checkbox) { auto = it },
-                ) {
-                    // Beside the name, not the middle of a hint that wraps to several lines at large fonts.
-                    val firstLine = with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.lineHeight.toDp() }
-                    Box(Modifier.heightIn(min = firstLine), contentAlignment = Alignment.Center) { Checkbox(auto, onCheckedChange = null) }
-                    Column(Modifier.weight(1f)) {
-                        Text(tokenTitle, style = MaterialTheme.typography.bodyLarge)
-                        Text(tokenHint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
+    EntryDialog(
+        title, stringResource(R.string.action_save), all.isNotEmpty() && (draft.isBlank() || draftValid), onConfirm = { onSave(all) }, onDismiss = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Row(
+                verticalAlignment = Alignment.Top,
+                modifier = Modifier.fillMaxWidth().toggleable(auto, role = Role.Checkbox) { auto = it },
+            ) {
+                // Beside the name, not the middle of a hint that wraps to several lines at large fonts.
+                val firstLine = with(LocalDensity.current) { MaterialTheme.typography.bodyLarge.lineHeight.toDp() }
+                Box(Modifier.heightIn(min = firstLine), contentAlignment = Alignment.Center) { Checkbox(auto, onCheckedChange = null) }
+                Column(Modifier.weight(1f)) {
+                    Text(tokenTitle, style = MaterialTheme.typography.bodyLarge)
+                    Text(tokenHint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                own.forEach { a ->
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-                        Text(a, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 12.dp))
-                        IconButton(onClick = { own = own - a }) { Icon(Icons.Default.Close, stringResource(R.string.action_remove_item, a)) }
-                    }
-                }
-                OutlinedTextField(
-                    draft, { draft = it }, singleLine = true,
-                    // One line, shrunk to fit: "?" and "+" share the width, and "Hinzufügen" at the largest font wrapped.
-                    label = { Text(stringResource(R.string.action_add), maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = LocalTextStyle.current.fontSize)) },
-                    isError = (draft.isNotBlank() && !draftValid) || all.isEmpty(),
-                    // Save is off with nothing in the list, so say why instead of the format hint.
-                    supportingText = { Text(if (all.isEmpty()) stringResource(R.string.list_add_or_tick, tokenTitle) else addHint) },
-                    // Right at the field: the forms it takes.
-                    leadingIcon = { SyntaxButton { help = true } },
-                    trailingIcon = {
-                        IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
-                    },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth(),
-                )
             }
-        },
-        confirmButton = { TextButton(onClick = { onSave(all) }, enabled = all.isNotEmpty() && (draft.isBlank() || draftValid)) { Text(stringResource(R.string.action_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+            own.forEach { a ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                    Text(a, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f).padding(start = 12.dp))
+                    IconButton(onClick = { own = own - a }) { Icon(Icons.Default.Close, stringResource(R.string.action_remove_item, a)) }
+                }
+            }
+            OutlinedTextField(
+                draft, { draft = it }, singleLine = true,
+                // One line, shrunk to fit: "?" and "+" share the width, and "Hinzufügen" at the largest font wrapped.
+                label = { Text(stringResource(R.string.action_add), maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = LocalTextStyle.current.fontSize)) },
+                isError = (draft.isNotBlank() && !draftValid) || all.isEmpty(),
+                // Save is off with nothing in the list, so say why instead of the format hint.
+                supportingText = { Text(if (all.isEmpty()) stringResource(R.string.list_add_or_tick, tokenTitle) else addHint) },
+                // Right at the field: the forms it takes.
+                leadingIcon = { SyntaxButton { help = true } },
+                trailingIcon = {
+                    IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
+                },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+            )
+        }
+    }
     if (help) SyntaxDialog(syntax, token to stringResource(R.string.label_and_hint, tokenTitle, tokenHint)) { help = false }
 }
 
@@ -747,7 +733,9 @@ internal fun SyntaxList(syntax: AddressSyntax, lead: Pair<String, String>? = nul
 
 /**
  * The show/hide button of a password field. While the password shows as plain text, its window
- * (the screen's, or a dialog's) is kept out of screenshots, screen recordings and Recents.
+ * (the screen's, or a dialog's) is kept out of screenshots, screen recordings and Recents. A dialog
+ * must also say so in its properties (EntryDialog's secure): Compose's Dialog sets the flag from
+ * them at each update, a rotation included, and so cleared the one set here.
  */
 @Composable
 fun PasswordVisibilityButton(show: Boolean, onToggle: () -> Unit) {

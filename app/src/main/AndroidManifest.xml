@@ -17,8 +17,10 @@
         <meta-data android:name="android.webkit.WebView.MetricsOptOut" android:value="true" />
         <meta-data android:name="android.webkit.WebView.EnableSafeBrowsing" android:value="false" />
 
+        <!-- Rotation and resizes don't relaunch it: Android 15 detaches a dialog window re-added during the rotation transition, so input never reaches it (#68); Compose relays out itself. -->
         <activity
             android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
             android:exported="true"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>

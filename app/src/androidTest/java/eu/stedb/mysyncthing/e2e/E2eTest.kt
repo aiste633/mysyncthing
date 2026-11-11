@@ -1,15 +1,22 @@
 package eu.stedb.mysyncthing.e2e
 
+import android.app.Activity
+import android.app.Application
+import android.content.res.Configuration
 import android.net.ConnectivityManager
+import android.os.Bundle
 import android.net.NetworkCapabilities
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -26,6 +33,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -46,6 +54,7 @@ import eu.stedb.mysyncthing.core.SyncStatus
 import eu.stedb.mysyncthing.core.SyncthingCore
 import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.resolve
+import eu.stedb.mysyncthing.ui.SHORT_WINDOW_DP
 import eu.stedb.mysyncthing.ui.lastSeenText
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -541,6 +550,81 @@ class E2eTest {
             activities() == 1
         }
     }
+
+    /**
+     * A rotation with a text dialog open keeps the activity and the dialog's window (#68). On Android 15
+     * a dialog window that a relaunched activity re-added during the rotation's transition could end up
+     * outside SurfaceFlinger's hierarchy: focused for the window manager, never for input, so every key
+     * waited 5 s and was dropped. MainActivity now handles rotation itself: no onDestroy, the same
+     * windows before and after, and the typed text, keyboard focus and all, stays. Turned with
+     * `wm user-rotation`, as a person turning the phone with auto-rotate on; restored after.
+     */
+    @Test
+    fun rotationKeepsActivityAndDialog() {
+        val destroyed = mutableListOf<String>()
+        val callbacks = object : Application.ActivityLifecycleCallbacks {
+            override fun onActivityCreated(a: Activity, b: Bundle?) {}
+            override fun onActivityStarted(a: Activity) {}
+            override fun onActivityResumed(a: Activity) {}
+            override fun onActivityPaused(a: Activity) {}
+            override fun onActivityStopped(a: Activity) {}
+            override fun onActivitySaveInstanceState(a: Activity, b: Bundle) {}
+            override fun onActivityDestroyed(a: Activity) { synchronized(destroyed) { destroyed += a.toString() } }
+        }
+        val rotation = shell("wm user-rotation").trim()
+        val application = app.applicationContext as Application
+        application.registerActivityLifecycleCallbacks(callbacks)
+        try {
+            tap(FOLDER_LABEL)
+            tap(str(R.string.name))
+            // Typed at the end, where people type. With the cursor at the start of a word, Android 15's AOSP
+            // keyboard commits the word it composes there when it restarts for the new orientation
+            // (commitText(word, 1), seen in the PC run of 09/11/2026), which moves the cursor behind that word:
+            // the keyboard's doing, with the field and its state kept. At the end it finishes the word in place.
+            val field = rule.onNode(hasSetTextAction())
+            field.performClick()
+            field.performTextInputSelection(TextRange(FOLDER_LABEL.length))
+            field.performTextInput("1")
+            val typed = rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.EditableText].text
+            val cursor = rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange]
+            rule.onNode(hasSetTextAction()).assertIsFocused()
+            val activity = rule.activity
+            eventually("main window and the dialog's", 10_000) { appWindows().size == 2 }
+            val windows = appWindows()
+            for ((turn, orientation) in listOf(1 to Configuration.ORIENTATION_LANDSCAPE, 0 to Configuration.ORIENTATION_PORTRAIT)) {
+                shell("wm user-rotation lock $turn")
+                eventually("activity turned to rotation $turn", 20_000) { activity.resources.configuration.orientation == orientation }
+                assertTrue("activity destroyed by rotation $turn: $destroyed", synchronized(destroyed) { destroyed.isEmpty() })
+                assertTrue("the same MainActivity after rotation $turn", rule.activity === activity && !activity.isDestroyed)
+                try {
+                    eventually("the same windows after rotation $turn", 10_000) { appWindows() == windows }
+                } catch (e: IllegalStateException) {
+                    throw IllegalStateException("${e.message}: before $windows, now ${appWindows()}", e)
+                }
+                // The text, its cursor and the keyboard's focus stay; on its side the dialog fills the screen
+                // with Cancel (✕) and Save on a bar at the top, upright it has them as buttons at the end.
+                rule.onNode(hasSetTextAction()).assert(hasText(typed)).assertIsFocused()
+                assertEquals("cursor after rotation $turn", cursor, rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+                val short = activity.window.decorView.height / activity.resources.displayMetrics.density < SHORT_WINDOW_DP
+                assertEquals("short window after rotation $turn", turn == 1, short)
+                rule.onNode(hasContentDescription(str(R.string.action_cancel)) and hasClickAction()).apply { if (short) assertIsDisplayed() else assertDoesNotExist() }
+                rule.onNode(hasText(str(R.string.action_cancel)) and hasClickAction()).apply { if (short) assertDoesNotExist() else assertIsDisplayed() }
+                rule.onNode(hasText(str(R.string.action_save)) and hasClickAction()).assertIsDisplayed()
+            }
+            // Cancelled: the dialog is gone (the folder's screen has no text field) and the name is as it was.
+            tap(str(R.string.action_cancel))
+            rule.waitUntil(5_000) { rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isEmpty() }
+            assertEquals(FOLDER_LABEL, SyncStatus.snapshot.value.folders.first { it.id == FOLDER }.label)
+        } finally {
+            application.unregisterActivityLifecycleCallbacks(callbacks)
+            shell(if (rotation.startsWith("lock")) "wm user-rotation $rotation" else "wm user-rotation free")
+        }
+    }
+
+    /** The app's windows (main and dialogs), as `dumpsys window windows` names them: `Window{hash u0 package/…}`. */
+    private fun appWindows(): Set<String> =
+        Regex("""^\s*Window #\d+ (Window\{\S+ \S+ ${Regex.escape(app.packageName)}/[^}]*\})""", RegexOption.MULTILINE)
+            .findAll(shell("dumpsys window windows")).map { it.groupValues[1] }.toSet()
 
     /**
      * The app's own folder browser on a real storage: Download, which Android's picker
