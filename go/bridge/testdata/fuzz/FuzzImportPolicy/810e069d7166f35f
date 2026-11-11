@@ -1,0 +1,2 @@
+go test fuzz v1
+[]byte("<configuration versioV=\"52\"><folder id=\"a\" path=\"/sdcard/ /\"><versioning A000=\"000000000\"><fsPath>0</fsPath></versioning></folder></configuration>")

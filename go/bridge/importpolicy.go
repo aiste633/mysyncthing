@@ -372,7 +372,8 @@ const (
 // folderPath is a path as the app saves it: trimmed, without a trailing "/",
 // and /sdcard, the old name of internal storage, spelled out.
 func folderPath(path string) string {
-	p := strings.TrimRight(strings.TrimSpace(path), "/")
+	// Spaces and "/" together: "/sdcard/ /" left "/sdcard/ ", which a second pass made "/sdcard" (fuzzer).
+	p := strings.TrimRightFunc(strings.TrimSpace(path), func(r rune) bool { return r == '/' || unicode.IsSpace(r) })
 	for _, alias := range []string{"/sdcard", "/storage/self/primary"} {
 		if p == alias || strings.HasPrefix(p, alias+"/") {
 			return internalStorage.Load().(string) + strings.TrimPrefix(p, alias)

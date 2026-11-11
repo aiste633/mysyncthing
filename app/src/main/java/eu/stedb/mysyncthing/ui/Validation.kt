@@ -181,7 +181,8 @@ internal val BIDI_CONTROLS = setOf('\u061C', '\u200E', '\u200F') + ('\u202A'..'\
 /** A folder path as saved: trimmed, without a trailing "/", and /sdcard, the old name of internal storage, spelled out. */
 @Suppress("SdCardPath") // recognises the aliases a user may type; it doesn't build paths from them
 fun folderPath(path: String): String {
-    val p = path.trim().trimEnd('/')
+    // Spaces and "/" together: "/sdcard/ /" left "/sdcard/ ", which a second pass made "/sdcard".
+    val p = path.trim().trimEnd { it == '/' || it.isWhitespace() }
     val alias = listOf("/sdcard", "/storage/self/primary").find { p == it || p.startsWith("$it/") } ?: return p
     return internalStorage + p.removePrefix(alias)
 }

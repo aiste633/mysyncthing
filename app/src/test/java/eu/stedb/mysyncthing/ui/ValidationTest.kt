@@ -370,4 +370,14 @@ class ValidationTest {
         assertEquals("/storage/emulated/0/Syncthing/abcde-12345", suggestedPath("..", "/storage/emulated/0/Syncthing", "abcde-12345"))
         assertEquals("/storage/emulated/0/Syncthing/Folder", suggestedPath("..", "/storage/emulated/0/Syncthing", ".."))
     }
+
+    /** A saved path reads back the same: "/sdcard/ /" once became "/sdcard/ " and then "/sdcard" (bridge fuzzer). */
+    @Test
+    fun folderPathIsStable() {
+        val r = Random(11)
+        repeat(20_000) {
+            val p = r.chars("/ abc\t", 0, 12).let { if (r.nextBoolean()) "/sdcard$it" else "/storage/emulated/0$it" }
+            assertEquals(p, folderPath(p), folderPath(folderPath(p)))
+        }
+    }
 }
