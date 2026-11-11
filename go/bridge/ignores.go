@@ -4,6 +4,7 @@
 package stbridge
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/syncthing/syncthing/lib/fs"
@@ -15,8 +16,12 @@ import (
 // given and only then finds them invalid, which stops the folder; checking
 // first keeps a typo such as a lone "!" from breaking it. #include files are
 // looked up in folderPath; for the defaults (folderPath "") there are none,
-// as in a new folder.
+// as in a new folder. Patterns over maxIgnores bytes are refused: the app's
+// editor takes no more.
 func CheckIgnores(folderPath, patterns string) string {
+	if len(patterns) > maxIgnores {
+		return fmt.Sprintf("more than %d bytes of ignore patterns", maxIgnores)
+	}
 	filesystem := fs.NewFilesystem(fs.FilesystemTypeFake, "checkignores?files=0")
 	if folderPath != "" {
 		filesystem = fs.NewFilesystem(fs.FilesystemTypeBasic, folderPath)

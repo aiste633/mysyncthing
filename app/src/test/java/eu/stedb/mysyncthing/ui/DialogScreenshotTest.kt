@@ -66,7 +66,7 @@ class DialogScreenshotTest(private val dialog: Case, private val variant: Varian
         const val DISK = "/storage/emulated/0/Photos"
 
         val cases = listOf(
-            Case("text") { TextDialog(stringResource(R.string.folder_name), "Photos", stringResource(R.string.name), onDismiss = {}) {} },
+            Case("text") { TextDialog(stringResource(R.string.folder_name), "Photos", stringResource(R.string.name), Limits.TEXT, onDismiss = {}) {} },
             Case("speed") { SpeedLimitDialog(stringResource(R.string.download_limit), 2_000, onDismiss = {}) {} },
             Case("addresses") { AddressesDialog(listOf("dynamic", "tcp://192.0.2.10:22000"), onDismiss = {}) {} },
             Case("password") { PasswordDialog("Photos", "Laptop", "", shared = true, onDismiss = {}, onUnshare = {}) {} },

@@ -45,7 +45,7 @@ class EntryDialogTest : ScreenTest() {
     }
 
     private fun nameDialog(initial: String = "Photos") = show {
-        TextDialog(str(R.string.folder_name), initial, str(R.string.name), onDismiss = { dismissed++ }) { saved = it }
+        TextDialog(str(R.string.folder_name), initial, str(R.string.name), Limits.TEXT, onDismiss = { dismissed++ }) { saved = it }
     }
 
     private val save get() = compose.onNode(hasText(str(R.string.action_save)) and hasClickAction())
@@ -119,5 +119,29 @@ class EntryDialogTest : ScreenTest() {
         compose.onNodeWithContentDescription(str(R.string.password_hide)).performClick()
         compose.waitForIdle()
         assertFalse(secure())
+    }
+
+    // Length limits: over the limit the field says so and Save stays off; at the limit it saves.
+
+    @Test
+    fun textDialogTakesItsLimit() {
+        nameDialog("")
+        val field = compose.onNode(hasSetTextAction())
+        field.performTextReplacement("😀".repeat(1025))
+        compose.onNode(hasText("At most 1,024 characters")).assertExists()
+        save.assertIsNotEnabled()
+        field.performTextReplacement("😀".repeat(1024))
+        save.assertIsEnabled().performClick()
+        assertEquals(2048, saved?.length)
+    }
+
+    @Test
+    fun addressListTakesSixteenEntries() {
+        show { ListEditDialog("Addresses", List(16) { "tcp" + "://192.0.2.${it + 1}:22000" }, "dynamic", "Find", "hint", "add", ADDRESS_SYNTAX, ::isDeviceAddress, onDismiss = {}, onSave = {}) }
+        // "dynamic" is not ticked: 16 entries.
+        save.assertIsEnabled()
+        compose.onNode(hasSetTextAction()).performTextReplacement("tcp://192.0.2.99:22000")
+        compose.onNode(hasText("At most 16 entries")).assertExists()
+        save.assertIsNotEnabled()
     }
 }

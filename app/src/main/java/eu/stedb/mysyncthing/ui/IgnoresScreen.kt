@@ -19,7 +19,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -28,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.text as uiText
 import kotlinx.coroutines.launch
 
 /**
@@ -50,9 +51,15 @@ import kotlinx.coroutines.launch
 @Composable
 fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewModel, onBack: () -> Unit) {
     val f = id?.let { s.folders.find { f -> f.id == it } }
-    var text by rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue()) }
-    var original by rememberSaveable { mutableStateOf("") }
-    var loaded by rememberSaveable { mutableStateOf(false) }
+    // The file as loaded and as edited, null until loaded. Kept over a recreated activity only while
+    // small (EDIT_SAVER): a large text in saved state would crash the app as it goes to the background.
+    var edit by rememberSaveable(stateSaver = EDIT_SAVER) { mutableStateOf<IgnoresEdit?>(null) }
+    val loaded = edit != null
+    val text = edit?.text ?: TextFieldValue()
+    val original = edit?.original.orEmpty()
+    // A file larger than the editor takes (written elsewhere) is shown, not edited: saving part of it would change it.
+    val tooBig = lengthOf(original, Limits.IGNORES) > Limits.IGNORES.n
+    val setText = { t: TextFieldValue -> edit = edit?.copy(text = t) }
     // Not saved: a recreated screen is no longer waiting for the save, which still finishes in the ViewModel.
     var saving by remember { mutableStateOf(false) }
     var help by rememberSaveable { mutableStateOf(false) }
@@ -64,7 +71,7 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
         // A new folder has no patterns yet; with "patterns first" it starts from the defaults.
         val lines = if (id == null) vm.defaultIgnores.load()
         else vm.ignores(id)?.let { own -> if (own.isEmpty() && firstSync) vm.defaultIgnores.load() ?: own else own }
-        lines?.let { original = it.joinToString("\n"); text = TextFieldValue(original); loaded = true }
+        lines?.let { val o = it.joinToString("\n"); edit = IgnoresEdit(o, TextFieldValue(o)) }
     }
     val ask = firstSync || (loaded && text.text != original)
     BackHandler(enabled = ask) { leaving = true }
@@ -74,7 +81,7 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
         onBack = { if (ask) leaving = true else onBack() },
         actions = {
             IconButton(onClick = { help = true }) { Icon(Icons.AutoMirrored.Filled.HelpOutline, stringResource(R.string.ignores_help_title)) }
-            TextButton(enabled = loaded && !saving, onClick = {
+            TextButton(enabled = loaded && !saving && !tooBig && lengthError(text.text, Limits.IGNORES) == null, onClick = {
                 saving = true
                 scope.launch {
                     val lines = text.text.lines().map { it.trimEnd() }.dropLastWhile { it.isEmpty() }
@@ -93,15 +100,15 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
             )
             Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 LINE_PREFIXES.forEach { (prefix, @StringRes label) ->
-                    AssistChip(onClick = { text = text.prefixLine(prefix) }, enabled = loaded, label = { Text("$prefix  ${stringResource(label)}") }, shape = ButtonShape)
+                    AssistChip(onClick = { setText(text.prefixLine(prefix)) }, enabled = loaded && !tooBig, label = { Text("$prefix  ${stringResource(label)}") }, shape = ButtonShape)
                 }
-                AssistChip(onClick = { text = text.insert("**") }, enabled = loaded, label = { Text("**  ${stringResource(R.string.ignores_chip_any_path)}") }, shape = ButtonShape)
+                AssistChip(onClick = { setText(text.insert("**")) }, enabled = loaded && !tooBig, label = { Text("**  ${stringResource(R.string.ignores_chip_any_path)}") }, shape = ButtonShape)
             }
-            OutlinedTextField(
-                text, { text = it }, enabled = loaded,
-                placeholder = { Text(stringResource(if (loaded) R.string.ignores_placeholder else R.string.loading)) },
+            TextInput(
+                text, setText, Limits.IGNORES, Modifier.fillMaxWidth().weight(1f).padding(bottom = 16.dp), enabled = loaded, readOnly = tooBig,
+                placeholder = stringResource(if (loaded) R.string.ignores_placeholder else R.string.loading),
+                error = if (tooBig) uiText(R.string.ignores_too_big, bytesText(Limits.IGNORES.n.toLong())) else null,
                 textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
-                modifier = Modifier.fillMaxWidth().weight(1f).padding(bottom = 16.dp),
             )
         }
     }
@@ -115,6 +122,21 @@ fun IgnoresScreen(s: Snapshot, id: String?, firstSync: Boolean, vm: MainViewMode
         ) { leaving = false; onBack() }
     }
 }
+
+/** The ignore file as loaded ([original]) and as being edited. */
+internal data class IgnoresEdit(val original: String, val text: TextFieldValue)
+
+/** Characters of saved state the editor may take (UTF-16, 2 bytes each): far below Android's 1 MB for all of it. */
+internal const val SAVED_CHARS = 64_000
+
+/** Saves the edit only while small; a larger one is loaded again from the core (unsaved edits are lost only if Android ends the app). */
+internal val EDIT_SAVER = Saver<IgnoresEdit?, List<Any>>(
+    save = { e ->
+        if (e == null || e.original.length + e.text.text.length > SAVED_CHARS) null
+        else listOf(e.original, e.text.text, e.text.selection.start, e.text.selection.end)
+    },
+    restore = { (o, t, a, b) -> IgnoresEdit(o as String, TextFieldValue(t as String, TextRange(a as Int, b as Int))) },
+)
 
 private val LINE_PREFIXES = listOf(
     "!" to R.string.ignores_chip_keep, "(?i)" to R.string.ignores_chip_any_case,

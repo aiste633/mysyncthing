@@ -438,7 +438,6 @@
     <string name="error_path_app_private">Android hält diesen Ordner für Apps frei</string>
     <string name="error_path_other_user">Gehört einem anderen Nutzer oder Profil auf diesem Smartphone</string>
     <string name="error_path_holds_app_private">Enthält Ordner, die Android für Apps freihält (Android/data, obb)</string>
-    <string name="error_name_long">Höchstens 255 Byte</string>
     <string name="error_name_removable">Nicht auf einer SD-Karte oder einem USB-Stick: %1$s, oder ein . am Ende</string>
     <string name="error_name_taken">Hier gibt es bereits einen Ordner mit diesem Namen</string>
     <plurals name="browse_synced_inside">
@@ -479,8 +478,6 @@
     <string name="error_host_brackets">Ohne Klammern, zum Beispiel ::1</string>
     <string name="error_host">Eine IP-Adresse oder ein Hostname</string>
     <string name="error_port">Ein Port von 1 bis 65535</string>
-    <string name="error_too_long_255">Zu lang: höchstens 255 Byte</string>
-    <string name="error_too_long">Zu lang</string>
     <string name="error_user_needed">Mit einem Passwort erforderlich</string>
     <string name="error_proxy_type">Unbekannter Proxy-Typ</string>
     <plurals name="error_password_short">
@@ -752,8 +749,8 @@
     <string name="error_password_wrong">Falsches Passwort</string>
     <string name="error_password_backup_empty">Geben Sie das Passwort der Sicherung ein</string>
     <plurals name="error_too_long_chars">
-        <item quantity="one">Höchstens %1$d Zeichen</item>
-        <item quantity="other">Höchstens %1$d Zeichen</item>
+        <item quantity="one">Höchstens %1$s Zeichen</item>
+        <item quantity="other">Höchstens %1$s Zeichen</item>
     </plurals>
     <string name="import_folder_found">%1$s: gefunden, wird erneut geprüft</string>
     <string name="import_folder_found_new">%1$s: gefunden, wird ein Syncthing-Ordner und geprüft</string>
@@ -789,7 +786,7 @@
     <string name="not_imported_folder_conditions">Eigene Synchronisierungsbedingungen von Ordner %1$s</string>
     <string name="not_imported_folder_script">Skript nach dem Synchronisieren von Ordner %1$s</string>
     <string name="not_imported_device_conditions">Eigene Synchronisierungsbedingungen von Gerät %1$s</string>
-    <string name="not_imported_folder_id">Ordner %1$s: Die ID enthält Steuerzeichen</string>
+    <string name="not_imported_folder_id">Ordner %1$s: Die ID enthält Steuerzeichen oder mehr als 1024 Zeichen</string>
     <string name="not_imported_folder_filesystem">Ordner %1$s: nicht auf einem normalen Dateisystem</string>
     <string name="not_imported_folder_path">Ordner %1$s: nicht im Speicher des Smartphones oder auf einer SD-Karte</string>
     <string name="not_imported_folder_overlap">Ordner %1$s: gleich, innerhalb oder um einen anderen Ordner</string>
@@ -800,11 +797,15 @@
     <string name="not_imported_default_folder_versioning">Vorgaben für neue Ordner: externe Dateiversionierung</string>
     <string name="not_imported_default_folder_versions_path">Vorgaben für neue Ordner: eigener Ort für alte Versionen</string>
     <string name="not_imported_default_folder_marker">Vorgaben für neue Ordner: eigene Ordnermarkierung</string>
-    <string name="not_imported_device_addresses">Gerät %1$s: Weiterleitungsadressen oder ungültige Adressen und Netzwerke</string>
+    <string name="not_imported_device_addresses">Gerät %1$s: Weiterleitungsadressen, ungültige Adressen und Netzwerke oder mehr als 16 Adressen</string>
     <string name="not_imported_default_device_addresses">Vorgaben für neue Geräte: Weiterleitungsadressen oder ungültige Adressen und Netzwerke</string>
     <string name="not_imported_discovery_servers">Eigene Gerätesuchserver; die von Syncthing werden verwendet</string>
     <string name="not_imported_stun_servers">Eigene STUN-Server; die von Syncthing werden verwendet</string>
-    <string name="not_imported_listen_addresses">Empfangsadressen über Weiterleitung oder ungültige Empfangsadressen</string>
+    <string name="not_imported_listen_addresses">Empfangsadressen über Weiterleitung, ungültige oder zu viele Empfangsadressen</string>
+    <string name="not_imported_text_too_long">%1$s: ein Name oder eine Gruppe mit mehr als 1024 Zeichen, leer gelassen</string>
+    <string name="not_imported_folder_password_long">Ordner %1$s: ein Verschlüsselungspasswort mit mehr als 1024 Zeichen</string>
+    <string name="not_imported_default_ignores">Vorgegebene Ignoriermuster: größer als 256 kB</string>
+    <string name="not_imported_other_too_long">Andere Einstellungen mit mehr als 1024 Zeichen, leer gelassen</string>
     <string name="not_imported_local_networks">Ungültige stets lokale Netzwerke</string>
     <string name="not_imported_local_discovery">Eigene Adresse oder eigener Port für die lokale Gerätesuche</string>
     <string name="not_imported_feature_flags">Experimentelle Funktionsschalter</string>
@@ -921,4 +922,21 @@
         <item quantity="one">und %1$d weiteres</item>
         <item quantity="other">und %1$d weitere</item>
     </plurals>
+    <plurals name="error_too_long_bytes">
+        <item quantity="one">Höchstens %1$s Byte</item>
+        <item quantity="other">Höchstens %1$s Byte</item>
+    </plurals>
+    <plurals name="error_path_part_long">
+        <item quantity="one">Jeder Ordnername im Pfad: höchstens %1$s Byte</item>
+        <item quantity="other">Jeder Ordnername im Pfad: höchstens %1$s Byte</item>
+    </plurals>
+    <plurals name="error_too_many_entries">
+        <item quantity="one">Höchstens %1$s Eintrag</item>
+        <item quantity="other">Höchstens %1$s Einträge</item>
+    </plurals>
+    <plurals name="error_too_long_together">
+        <item quantity="one">Zusammen höchstens %1$s Byte</item>
+        <item quantity="other">Zusammen höchstens %1$s Byte</item>
+    </plurals>
+    <string name="ignores_too_big">Diese Datei ist größer als %1$s. Bearbeiten Sie sie in der Web-GUI.</string>
 </resources>

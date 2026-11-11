@@ -27,8 +27,8 @@ class ImportTextTest {
         assertNotNull(backupPasswordError("", wrong = false).en())
         assertNull(backupPasswordError("x", wrong = false).en())
         assertNull(backupPasswordError("   ", wrong = false).en()) // spaces are a valid password, used as typed
-        assertNull(backupPasswordError("x".repeat(MAX_BACKUP_PASSWORD), wrong = false).en())
-        assertNotNull(backupPasswordError("x".repeat(MAX_BACKUP_PASSWORD + 1), wrong = false).en())
+        assertNull(backupPasswordError("x".repeat(Limits.BACKUP_PASSWORD.n), wrong = false).en())
+        assertNotNull(backupPasswordError("x".repeat(Limits.BACKUP_PASSWORD.n + 1), wrong = false).en())
         assertEquals("Wrong password", backupPasswordError("x", wrong = true).en())
         // A failed attempt is reported whatever the field holds (the emulator check found it hidden behind "empty").
         assertEquals("Wrong password", backupPasswordError("", wrong = true).en())
@@ -39,10 +39,10 @@ class ImportTextTest {
     fun passwordFieldProperty() {
         val r = Random(42)
         repeat(20_000) {
-            val p = r.text(if (r.nextInt(10) == 0) MAX_BACKUP_PASSWORD + 50 else 40)
+            val p = r.text(if (r.nextInt(10) == 0) Limits.BACKUP_PASSWORD.n + 50 else 40)
             val wrong = r.nextBoolean()
-            val ok = p.isNotEmpty() && p.length <= MAX_BACKUP_PASSWORD && !wrong
-            assertEquals("for ${p.length} chars, wrong=$wrong", ok, backupPasswordError(p, wrong).en() == null)
+            val ok = p.isNotEmpty() && p.codePointCount(0, p.length) <= Limits.BACKUP_PASSWORD.n && !wrong
+            assertEquals("for ${p.codePointCount(0, p.length)} characters, wrong=$wrong", ok, backupPasswordError(p, wrong).en() == null)
             if (wrong) assertEquals("Wrong password", backupPasswordError(p, true).en())
         }
     }
@@ -95,13 +95,13 @@ class ImportTextTest {
             // go/bridge/importpolicy.go
             "default_folder_path", "default_folder_versioning", "default_folder_versions_path", "default_folder_marker",
             "default_device_addresses", "discovery_servers", "stun_servers", "listen_addresses", "local_networks",
-            "local_discovery", "feature_flags",
+            "local_discovery", "feature_flags", "default_ignores", "other_too_long",
         )
         keys.forEach { assertFalse("$it has no text", notImportedText(ForkNotImported(it)).en().contains('_')) }
         listOf(
             "folder_conditions", "folder_script", "device_conditions",
             "folder_id", "folder_filesystem", "folder_path", "folder_overlap", "folder_versioning", "folder_versions_path",
-            "folder_marker", "device_addresses",
+            "folder_marker", "device_addresses", "text_too_long", "folder_password_long",
         ).forEach {
             val text = notImportedText(ForkNotImported(it, "Photos")).en()
             assertTrue(text, "Photos" in text && '_' !in text.replace("Photos", ""))

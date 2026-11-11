@@ -44,6 +44,39 @@ forms they take; `everySyntaxExampleIsAccepted` keeps each example passing the f
 | Search (Restore versions, Failed items) | Any text | None needed: plain substring match | Not sent |
 | Switches (run conditions, watcher, introducer, ...) | On or off | n/a | n/a |
 
+## Length limits
+
+Every text input has a length limit (user rule since 2026-11-11). Characters are Unicode code
+points, as Go and the sync protocol count them (an emoji is one, not two); bytes are UTF-8. The
+limit is what the rest of Syncthing takes, so the app never refuses what another device accepts.
+Over it the field says "At most N characters" (or bytes) and Save stays off; nothing is cut.
+
+Each field is a `TextInput` (`ui/TextInput.kt`), which takes its limit as a required argument;
+`InputLimitTest` fails on a text field anywhere else and checks that the bridge has the same
+numbers (`go/bridge/limits.go`). What reaches the core by other ways is held to the same limits:
+the bridge's `lengthGuard` refuses a config change that brings in a longer value (the web GUI's
+Save), and the import policy clears or leaves out longer values of a backup and lists them.
+
+| Input | Limit | Why |
+|---|---|---|
+| This phone's name, device names, folder names, folder IDs | 1024 characters | The sync protocol carries them up to 1024 (`bep.proto`): a device drops the connection of a peer that sends more, on every retry. A Hello over 32,767 bytes (this phone's name in it) makes the sending core panic. `TestMaxTextIsTheProtocolLimit` fails if a Syncthing update changes it |
+| Groups, device and listen addresses, discovery servers, encryption password, searches | 1024 characters | One limit for all other text: far above any real value |
+| Device ID field | 256 characters | 56, with room for dashes, spaces and a pasted line |
+| Numbers (speed limits, Keep free, versioning, proxy port) | 32 characters | The largest valid number has 16 digits; the rest is leading zeros. Keep free in MB or GB also at most 1 PB |
+| Proxy host | 253 characters | DNS name (RFC 1035) |
+| Proxy user name and password | 255 bytes each | SOCKS5 (RFC 1929) |
+| Export password | 1024 bytes | `ExportPasswordError` |
+| Backup password | 1024 characters | The bridge refuses more than 3072 bytes |
+| New folder, each folder name in a path | 255 bytes | NAME_MAX of Android's file systems |
+| Folder path | 4095 bytes | PATH_MAX less the closing NUL |
+| Address and server lists | 16 entries | Far above any real list |
+| Listen addresses together | 4096 bytes | The global discovery server takes announcements of at most 8 KiB |
+| Ignore patterns | 256 kB | Far above any real file. A larger one (written elsewhere) opens read-only with a pointer to the web GUI, as saving part of it would change it. The editor keeps its text over a recreated screen only up to 64,000 characters: more in saved state would crash the app as it goes to the background (Android takes about 1 MB); it is then loaded again |
+
+Not held by the guard: a device's address list, which the core copies from an introducer as it
+adds the device (the protocol sets no limit there); the forms and the import still limit it.
+Ignore patterns saved in the web GUI go to the core directly, not through the bridge.
+
 ## Other inputs
 
 | Input | Check |

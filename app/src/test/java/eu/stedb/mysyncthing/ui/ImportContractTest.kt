@@ -32,6 +32,13 @@ class ImportContractTest {
         assertEquals(c.toString(), c.ok, folderPathError(c.str("path"), others).en() == null)
     }
 
+    /** Text limits count characters as the bridge does (TestTextLengthContract). */
+    @Test
+    fun textLimitsAgreeWithTheBridge() = cases("text").forEach { c ->
+        val t = c.str("text")
+        assertEquals("${t.codePointCount(0, t.length)} characters", c.ok, textError(t).en() == null)
+    }
+
     /**
      * Every address an import keeps can be edited in the forms. The import is
      * stricter: relays name a server of the backup's choosing.

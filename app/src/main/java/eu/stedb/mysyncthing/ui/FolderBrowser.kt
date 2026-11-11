@@ -191,7 +191,7 @@ fun newFolderNameError(name: String, existing: Collection<String>, removable: Bo
         n.any { it.isISOControl() || it in BIDI_CONTROLS } -> text(R.string.error_control_characters)
         '/' in n -> text(R.string.error_id_slash)
         n == "." || n == ".." -> text(R.string.error_id_dots)
-        n.toByteArray().size > 255 -> text(R.string.error_name_long)
+        lengthError(n, Limits.FILE_NAME) != null -> lengthError(n, Limits.FILE_NAME)
         removable && (n.any { it in NOT_ON_REMOVABLE } || n.endsWith('.')) -> text(R.string.error_name_removable, NOT_ON_REMOVABLE.toList().joinToString(" "))
         existing.any { it.equals(n, ignoreCase = true) } -> text(R.string.error_name_taken)
         else -> null
@@ -366,7 +366,7 @@ private fun BrowserContent(
 
     when (dialog) {
         BrowseDialog.NewFolder -> TextDialog(
-            stringResource(R.string.browse_new_folder), "", stringResource(R.string.name),
+            stringResource(R.string.browse_new_folder), "", stringResource(R.string.name), Limits.FILE_NAME,
             error = { newFolderNameError(it, entries.orEmpty().map(DirEntry::name), root.name != null) },
             onDismiss = { dialog = null },
         ) { name ->
@@ -382,7 +382,7 @@ private fun BrowserContent(
             }
         }
         BrowseDialog.TypePath -> TextDialog(
-            stringResource(R.string.browse_type_path), dir, stringResource(R.string.browse_path),
+            stringResource(R.string.browse_type_path), dir, stringResource(R.string.browse_path), Limits.PATH,
             error = { pickProblem(it, folders, base) },
             onDismiss = { dialog = null },
         ) { typed ->

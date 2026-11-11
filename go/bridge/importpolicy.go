@@ -7,6 +7,7 @@ import (
 	"cmp"
 	"fmt"
 	"net/netip"
+	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
@@ -33,7 +34,9 @@ import (
 //   - report and upgrade URLs, discovery, STUN and relay servers send this
 //     phone's address and data to whoever runs them;
 //   - control and bidi characters make the preview read differently from
-//     what is imported.
+//     what is imported;
+//   - text over its length limit (limits.go) makes peers drop the connection,
+//     or the core panic.
 //
 // What it takes out is reset to the core's default and listed as not
 // imported; the user can set it again on the phone. Applied to the config
@@ -49,10 +52,18 @@ func importPolicy(cfg *config.Configuration) []notImported {
 	var kept []config.FolderConfiguration
 	for _, f := range cfg.Folders {
 		f.Label = cleanText(f.Label)
-		name := cmp.Or(f.Label, cleanText(f.ID))
+		name := brief(cmp.Or(f.Label, cleanText(f.ID)))
+		if textTooLong(f.Label) || textTooLong(f.Group) {
+			f.Label, f.Group = clipLong(f.Label), clipLong(f.Group)
+			note("text_too_long", name)
+		}
 		switch {
-		case hasUnsafeText(f.ID):
+		case hasUnsafeText(f.ID) || textTooLong(f.ID):
 			note("folder_id", name)
+			continue
+		case slices.ContainsFunc(f.Devices, func(d config.FolderDeviceConfiguration) bool { return textTooLong(d.EncryptionPassword) }):
+			// Shared encrypted: without the password it would go out unencrypted.
+			note("folder_password_long", name)
 			continue
 		case f.FilesystemType != config.FilesystemTypeBasic:
 			note("folder_filesystem", name)
@@ -100,7 +111,11 @@ func importPolicy(cfg *config.Configuration) []notImported {
 	for i := range cfg.Devices {
 		d := &cfg.Devices[i]
 		d.Name = cleanText(d.Name)
-		name := cmp.Or(d.Name, d.DeviceID.Short().String())
+		if textTooLong(d.Name) || textTooLong(d.Group) {
+			d.Name, d.Group = clipLong(d.Name), clipLong(d.Group)
+			note("text_too_long", d.DeviceID.Short().String())
+		}
+		name := brief(cmp.Or(d.Name, d.DeviceID.Short().String()))
 		if dropped := safeDevice(d); dropped != "" {
 			note(dropped, name)
 		}
@@ -127,9 +142,17 @@ func importPolicy(cfg *config.Configuration) []notImported {
 		o.RawStunServers = def.RawStunServers
 		note("stun_servers", "")
 	}
-	if listen, ok := keepIf(o.RawListenAddresses, func(a string) bool { return a == "default" || isImportListenAddress(a) }); !ok {
+	if listen, ok := keepIf(o.RawListenAddresses, func(a string) bool { return a == "default" || isImportListenAddress(a) }); !ok || len(listen) > maxEntries || len(strings.Join(listen, "")) > maxListenTotal {
+		listen = listen[:min(len(listen), maxEntries)]
+		for len(strings.Join(listen, "")) > maxListenTotal {
+			listen = listen[:len(listen)-1]
+		}
 		o.RawListenAddresses = orIfEmpty(listen, def.RawListenAddresses)
 		note("listen_addresses", "")
+	}
+	if lines := cfg.Defaults.Ignores.Lines; len(strings.Join(lines, "\n")) > maxIgnores {
+		cfg.Defaults.Ignores.Lines = nil
+		note("default_ignores", "")
 	}
 	if nets, ok := keepIf(o.AlwaysLocalNets, isNetwork); !ok {
 		o.AlwaysLocalNets = nets
@@ -154,7 +177,59 @@ func importPolicy(cfg *config.Configuration) []notImported {
 		cfg.GUI.Theme = defaults.GUI.Theme
 	}
 	cfg.LDAP = config.LDAPConfiguration{}
+
+	// Text over the limit left in fields the app doesn't show (a backup can
+	// set any field) is cleared: none of them decides what is shared or with whom.
+	if clearLongText(reflect.ValueOf(cfg).Elem()) {
+		note("other_too_long", "")
+	}
 	return out
+}
+
+// brief shortens a name for the list of what was not imported.
+func brief(s string) string {
+	if utf8.RuneCountInString(s) <= 64 {
+		return s
+	}
+	return string([]rune(s)[:63]) + "…"
+}
+
+// clipLong empties text over maxText.
+func clipLong(s string) string {
+	if textTooLong(s) {
+		return ""
+	}
+	return s
+}
+
+// clearLongText empties every string over maxText in v, except paths, ignore
+// lines and versioning parameters (their own rules, applied above), and says
+// whether it did.
+func clearLongText(v reflect.Value) bool {
+	cleared := false
+	switch v.Kind() {
+	case reflect.String:
+		if textTooLong(v.String()) {
+			v.SetString("")
+			cleared = true
+		}
+	case reflect.Struct:
+		for i := range v.NumField() {
+			f := v.Type().Field(i)
+			if f.IsExported() && f.Name != "Path" && f.Name != "FSPath" && f.Name != "Lines" && f.Name != "Params" {
+				cleared = clearLongText(v.Field(i)) || cleared
+			}
+		}
+	case reflect.Slice, reflect.Array:
+		for i := range v.Len() {
+			cleared = clearLongText(v.Index(i)) || cleared
+		}
+	case reflect.Pointer, reflect.Interface:
+		if !v.IsNil() {
+			cleared = clearLongText(v.Elem()) || cleared
+		}
+	}
+	return cleared
 }
 
 var themeName = regexp.MustCompile(`^[a-z]{1,32}$`)
@@ -164,8 +239,15 @@ var themeName = regexp.MustCompile(`^[a-z]{1,32}$`)
 func safeFolderOptions(f *config.FolderConfiguration) []string {
 	var keys []string
 	v := &f.Versioning
-	switch v.Type {
-	case "", "simple", "staggered", "trashcan":
+	longParam := false
+	for k, p := range v.Params {
+		longParam = longParam || textTooLong(k) || textTooLong(p)
+	}
+	switch {
+	case longParam: // the forms take numbers of at most 32 characters
+		v.Type, v.Params = "", nil
+		keys = append(keys, "folder_versioning")
+	case v.Type == "", v.Type == "simple", v.Type == "staggered", v.Type == "trashcan":
 	default: // "external" runs a command; anything else the core can't run
 		v.Type, v.Params = "", nil
 		keys = append(keys, "folder_versioning")
@@ -187,6 +269,9 @@ func safeFolderOptions(f *config.FolderConfiguration) []string {
 // discovery ("dynamic").
 func safeDevice(d *config.DeviceConfiguration) string {
 	addrs, okAddrs := keepIf(d.Addresses, func(a string) bool { return a == "dynamic" || isImportDeviceAddress(a) })
+	if len(addrs) > maxEntries {
+		addrs, okAddrs = addrs[:maxEntries], false
+	}
 	nets, okNets := keepIf(d.AllowedNetworks, isNetwork)
 	d.Addresses, d.AllowedNetworks = orIfEmpty(addrs, []string{"dynamic"}), nets
 	if !okAddrs || !okNets {
@@ -351,6 +436,8 @@ func folderPathError(p string, others []string) error {
 		return errPathControl
 	case slices.ContainsFunc(strings.Split(p, "/")[1:], func(s string) bool { return s == "" || s == "." || s == ".." }):
 		return errPathParts
+	case pathLengthError(p) != nil:
+		return errPathLong
 	case !inside(p, sharedStorage) || p == sharedStorage || p == sharedStorage+"/emulated":
 		return errPathStorage
 	case isAppPrivate(p):
@@ -426,10 +513,10 @@ var tcpQuic = map[string]bool{"tcp": true, "tcp4": true, "tcp6": true, "quic": t
 
 func isImportDeviceAddress(s string) bool {
 	a, ok := splitHostPort(s)
-	return ok && tcpQuic[a.scheme] && a.host != "" && a.port != 0 && (a.rest == "" || a.rest == "/")
+	return ok && !textTooLong(s) && tcpQuic[a.scheme] && a.host != "" && a.port != 0 && (a.rest == "" || a.rest == "/")
 }
 
 func isImportListenAddress(s string) bool {
 	a, ok := splitHostPort(s)
-	return ok && tcpQuic[a.scheme] && (a.host != "" || strings.Contains(s, "://:")) && (a.rest == "" || a.rest == "/")
+	return ok && !textTooLong(s) && tcpQuic[a.scheme] && (a.host != "" || strings.Contains(s, "://:")) && (a.rest == "" || a.rest == "/")
 }

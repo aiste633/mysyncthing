@@ -195,9 +195,9 @@ fun DeviceScreen(
 
     val close = { dialog = null }
     when (dialog) {
-        DeviceDialog.Name -> TextDialog(stringResource(R.string.settings_device_name), d.name, stringResource(R.string.name), onDismiss = close) { vm.renameDevice(id, it); close() }
+        DeviceDialog.Name -> TextDialog(stringResource(R.string.settings_device_name), d.name, stringResource(R.string.name), Limits.TEXT, onDismiss = close) { vm.renameDevice(id, it); close() }
         DeviceDialog.Group -> TextDialog(
-            stringResource(R.string.device_group), d.group, stringResource(R.string.group), supporting = stringResource(R.string.device_group_hint),
+            stringResource(R.string.device_group), d.group, stringResource(R.string.group), Limits.TEXT, supporting = stringResource(R.string.device_group_hint),
             error = { null }, onDismiss = close,
         ) { vm.setDeviceGroup(id, it); close() }
         DeviceDialog.Addresses -> AddressesDialog(d.addresses, onDismiss = close) { vm.setAddresses(id, it); close() }

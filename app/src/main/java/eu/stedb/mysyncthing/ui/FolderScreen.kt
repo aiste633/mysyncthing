@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -226,14 +225,14 @@ fun FolderScreen(
     }
 
     when (dialog) {
-        FolderDialog.Name -> TextDialog(stringResource(R.string.folder_name), f.label, stringResource(R.string.name), onDismiss = { dialog = null }) {
+        FolderDialog.Name -> TextDialog(stringResource(R.string.folder_name), f.label, stringResource(R.string.name), Limits.TEXT, onDismiss = { dialog = null }) {
             vm.setFolderLabel(id, it); dialog = null
         }
         FolderDialog.Type -> ChoiceDialog(stringResource(R.string.folder_type), FOLDER_TYPES, f.type, ::folderTypeHint, onDismiss = { dialog = null }) {
             vm.setFolderType(id, it); dialog = null
         }
         FolderDialog.Group -> TextDialog(
-            stringResource(R.string.folder_group), f.group, stringResource(R.string.group), supporting = stringResource(R.string.folder_group_hint),
+            stringResource(R.string.folder_group), f.group, stringResource(R.string.group), Limits.TEXT, supporting = stringResource(R.string.folder_group_hint),
             error = { null }, onDismiss = { dialog = null },
         ) { vm.setFolderGroup(id, it); dialog = null }
         FolderDialog.Rescan -> ChoiceDialog(stringResource(R.string.full_rescan), rescanChoices(f.rescanIntervalS), f.rescanIntervalS, ::rescanHint, onDismiss = { dialog = null }) {
@@ -286,16 +285,15 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
     val free by produceState<Pair<Long, Long>?>(null, path) {
         this.value = withContext(Dispatchers.IO) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
     }
-    val error = amountError(value, unit)?.asString()
+    val error = amountError(value, unit)
     EntryDialog(
         stringResource(R.string.keep_free), stringResource(R.string.action_save), error == null,
         onConfirm = { onSave(DiskSize(decimal(value)!!, unit)) }, onDismiss = onDismiss,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value, { value = it }, label = { Text(stringResource(R.string.amount)) }, singleLine = true, isError = error != null,
-                supportingText = error?.let { { Text(it) } },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+            TextInput(
+                value, { value = it }, Limits.NUMBER, Modifier.fillMaxWidth().inViewWhenFocused(), label = stringResource(R.string.amount),
+                error = error, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 units.forEachIndexed { i, u ->

@@ -453,7 +453,6 @@
     <string name="error_path_app_private">Android reserva esta carpeta para las apps</string>
     <string name="error_path_other_user">Pertenece a otro usuario o perfil del teléfono</string>
     <string name="error_path_holds_app_private">Contiene carpetas que Android reserva para las apps (Android/data, obb)</string>
-    <string name="error_name_long">Como máximo 255 bytes</string>
     <string name="error_name_removable">No en una tarjeta SD o memoria USB: %1$s, ni un . al final</string>
     <string name="error_name_taken">Ya hay una carpeta con este nombre aquí</string>
     <plurals name="browse_synced_inside">
@@ -495,8 +494,6 @@
     <string name="error_host_brackets">Sin corchetes, por ejemplo ::1</string>
     <string name="error_host">Una dirección IP o un nombre de host</string>
     <string name="error_port">Un puerto del 1 al 65535</string>
-    <string name="error_too_long_255">Demasiado largo: como máximo 255 bytes</string>
-    <string name="error_too_long">Demasiado largo</string>
     <string name="error_user_needed">Necesario con una contraseña</string>
     <string name="error_proxy_type">Tipo de proxy desconocido</string>
     <plurals name="error_password_short">
@@ -776,9 +773,9 @@
     <string name="error_password_wrong">Contraseña incorrecta</string>
     <string name="error_password_backup_empty">Introduce la contraseña de la copia de seguridad</string>
     <plurals name="error_too_long_chars">
-        <item quantity="one">Como máximo %1$d carácter</item>
-        <item quantity="many">Como máximo %1$d caracteres</item>
-        <item quantity="other">Como máximo %1$d caracteres</item>
+        <item quantity="one">Como máximo %1$s carácter</item>
+        <item quantity="many">Como máximo %1$s caracteres</item>
+        <item quantity="other">Como máximo %1$s caracteres</item>
     </plurals>
     <string name="import_folder_found">%1$s: encontrada, se volverá a comprobar</string>
     <string name="import_folder_found_new">%1$s: encontrada, se convertirá en carpeta de Syncthing y se comprobará</string>
@@ -814,7 +811,7 @@
     <string name="not_imported_folder_conditions">Condiciones de sincronización propias de la carpeta %1$s</string>
     <string name="not_imported_folder_script">Script tras sincronizar la carpeta %1$s</string>
     <string name="not_imported_device_conditions">Condiciones de sincronización propias del dispositivo %1$s</string>
-    <string name="not_imported_folder_id">Carpeta %1$s: su ID tiene caracteres de control</string>
+    <string name="not_imported_folder_id">Carpeta %1$s: su ID tiene caracteres de control o más de 1024 caracteres</string>
     <string name="not_imported_folder_filesystem">Carpeta %1$s: no está en un sistema de archivos normal</string>
     <string name="not_imported_folder_path">Carpeta %1$s: no está en el almacenamiento del teléfono ni en una tarjeta SD</string>
     <string name="not_imported_folder_overlap">Carpeta %1$s: igual que otra carpeta, dentro de ella o alrededor de ella</string>
@@ -825,11 +822,15 @@
     <string name="not_imported_default_folder_versioning">Ajustes predeterminados de carpetas nuevas: control de versiones externo</string>
     <string name="not_imported_default_folder_versions_path">Ajustes predeterminados de carpetas nuevas: lugar propio para versiones antiguas</string>
     <string name="not_imported_default_folder_marker">Ajustes predeterminados de carpetas nuevas: marcador de carpeta propio</string>
-    <string name="not_imported_device_addresses">Dispositivo %1$s: direcciones de retransmisión, o direcciones y redes no válidas</string>
+    <string name="not_imported_device_addresses">Dispositivo %1$s: direcciones de retransmisión, direcciones y redes no válidas, o más de 16 direcciones</string>
     <string name="not_imported_default_device_addresses">Ajustes predeterminados de dispositivos nuevos: direcciones de retransmisión, o direcciones y redes no válidas</string>
     <string name="not_imported_discovery_servers">Servidores de descubrimiento propios; se usan los de Syncthing</string>
     <string name="not_imported_stun_servers">Servidores STUN propios; se usan los de Syncthing</string>
-    <string name="not_imported_listen_addresses">Direcciones de escucha por retransmisión, o no válidas</string>
+    <string name="not_imported_listen_addresses">Direcciones de escucha por retransmisión, no válidas o demasiadas</string>
+    <string name="not_imported_text_too_long">%1$s: un nombre o grupo de más de 1024 caracteres, dejado vacío</string>
+    <string name="not_imported_folder_password_long">Carpeta %1$s: una contraseña de cifrado de más de 1024 caracteres</string>
+    <string name="not_imported_default_ignores">Patrones de exclusión predeterminados: más de 256 kB</string>
+    <string name="not_imported_other_too_long">Otros ajustes de más de 1024 caracteres, dejados vacíos</string>
     <string name="not_imported_local_networks">Redes siempre locales no válidas</string>
     <string name="not_imported_local_discovery">Dirección o puerto propios para el descubrimiento local</string>
     <string name="not_imported_feature_flags">Funciones experimentales</string>
@@ -949,4 +950,25 @@
         <item quantity="many">y %1$d más</item>
         <item quantity="other">y %1$d más</item>
     </plurals>
+    <plurals name="error_too_long_bytes">
+        <item quantity="one">Como máximo %1$s byte</item>
+        <item quantity="many">Como máximo %1$s bytes</item>
+        <item quantity="other">Como máximo %1$s bytes</item>
+    </plurals>
+    <plurals name="error_path_part_long">
+        <item quantity="one">Cada nombre de carpeta de la ruta: como máximo %1$s byte</item>
+        <item quantity="many">Cada nombre de carpeta de la ruta: como máximo %1$s bytes</item>
+        <item quantity="other">Cada nombre de carpeta de la ruta: como máximo %1$s bytes</item>
+    </plurals>
+    <plurals name="error_too_many_entries">
+        <item quantity="one">Como máximo %1$s entrada</item>
+        <item quantity="many">Como máximo %1$s entradas</item>
+        <item quantity="other">Como máximo %1$s entradas</item>
+    </plurals>
+    <plurals name="error_too_long_together">
+        <item quantity="one">En total como máximo %1$s byte</item>
+        <item quantity="many">En total como máximo %1$s bytes</item>
+        <item quantity="other">En total como máximo %1$s bytes</item>
+    </plurals>
+    <string name="ignores_too_big">Este archivo ocupa más de %1$s. Edítelo en la interfaz web.</string>
 </resources>

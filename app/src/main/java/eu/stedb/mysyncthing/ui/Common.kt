@@ -67,7 +67,6 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -120,6 +119,8 @@ import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.SystemError
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.problemText
+import eu.stedb.mysyncthing.core.raw
+import eu.stedb.mysyncthing.core.text
 import eu.stedb.mysyncthing.core.santaHat
 import java.time.LocalDateTime
 
@@ -536,14 +537,15 @@ fun <T> ChoiceList(
 }
 
 /**
- * Edits one text value. [error] says why a value can't be saved; it then
- * replaces [supporting] under the field and Save is off.
+ * Edits one text value of at most [limit]. [error] says why a value can't be
+ * saved; it then replaces [supporting] under the field and Save is off.
  */
 @Composable
 fun TextDialog(
     title: String,
     initial: String,
     label: String,
+    limit: Limit,
     singleLine: Boolean = true,
     supporting: String? = null,
     error: (String) -> UiText? = ::requiredError,
@@ -551,13 +553,11 @@ fun TextDialog(
     onSave: (String) -> Unit,
 ) {
     var text by rememberSaveable { mutableStateOf(initial) }
-    val problem = error(text)?.asString()
+    val problem = lengthError(text, limit) ?: error(text)
     EntryDialog(title, stringResource(R.string.action_save), problem == null, onConfirm = { onSave(text) }, onDismiss = onDismiss) {
-        OutlinedTextField(
-            text, { text = it }, label = { Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis) }, singleLine = singleLine,
-            minLines = if (singleLine) 1 else 6, isError = problem != null,
-            supportingText = (problem ?: supporting)?.let { { Text(it) } },
-            modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+        TextInput(
+            text, { text = it }, limit, Modifier.fillMaxWidth().inViewWhenFocused(), label = label, singleLine = singleLine,
+            minLines = if (singleLine) 1 else 6, error = problem, hint = supporting,
         )
     }
 }
@@ -613,15 +613,14 @@ fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (L
     var value by rememberSaveable { mutableStateOf(fieldNumber(v0, locale)) }
     var unit by rememberSaveable { mutableStateOf(u0) }
     val units = listOf("kB/s", "MB/s")
-    val error = amountError(value, unit, emptyOk = true)?.asString()
+    val error = amountError(value, unit, emptyOk = true)
     EntryDialog(
         title, stringResource(R.string.action_save), error == null, onConfirm = { onSave(limitKib(decimal(value) ?: 0.0, unit)) }, onDismiss = onDismiss,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            OutlinedTextField(
-                value, { value = it }, label = { Text(stringResource(R.string.limit_label)) },
-                singleLine = true, isError = error != null, supportingText = error?.let { { Text(it) } },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+            TextInput(
+                value, { value = it }, Limits.NUMBER, Modifier.fillMaxWidth().inViewWhenFocused(), label = stringResource(R.string.limit_label),
+                error = error, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 units.forEachIndexed { i, u ->
@@ -639,7 +638,8 @@ fun SpeedLimitDialog(title: String, kib: Long, onDismiss: () -> Unit, onSave: (L
 /**
  * A list setting where one [token] ("dynamic", "default") stands for
  * Syncthing's automatic choice, shown as a checkbox, plus entries of the
- * user's own. Saving needs at least one of them.
+ * user's own. Saving needs at least one of them, at most [Limits.LIST_ENTRIES]
+ * in all, each of at most [Limits.TEXT], and with a [total] all together.
  */
 @Composable
 fun ListEditDialog(
@@ -652,6 +652,7 @@ fun ListEditDialog(
     syntax: AddressSyntax,
     valid: (String) -> Boolean,
     normalize: (String) -> String = { it.trim() },
+    total: Limit? = null,
     onDismiss: () -> Unit,
     onSave: (List<String>) -> Unit,
 ) {
@@ -660,11 +661,19 @@ fun ListEditDialog(
     var own by rememberSaveable { mutableStateOf(initial.filter { it != token }) }
     var draft by rememberSaveable { mutableStateOf("") }
     val next = normalize(draft)
-    val draftValid = valid(next)
+    val draftValid = lengthError(next, Limits.TEXT) == null && valid(next)
     // A typed but not yet added entry counts too, so it is not lost.
     val all = (if (auto) listOf(token) else emptyList()) + (own + listOfNotNull(next.takeIf { draftValid })).distinct()
+    val listError = listError(all, total)
+    // Save is off with nothing in the list, so say why instead of the format hint.
+    val fieldError = when {
+        all.isEmpty() -> text(R.string.list_add_or_tick, tokenTitle)
+        listError != null -> listError
+        draft.isNotBlank() && !draftValid -> raw(addHint)
+        else -> null
+    }
     EntryDialog(
-        title, stringResource(R.string.action_save), all.isNotEmpty() && (draft.isBlank() || draftValid), onConfirm = { onSave(all) }, onDismiss = onDismiss,
+        title, stringResource(R.string.action_save), all.isNotEmpty() && listError == null && (draft.isBlank() || draftValid), onConfirm = { onSave(all) }, onDismiss = onDismiss,
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
@@ -685,23 +694,28 @@ fun ListEditDialog(
                     IconButton(onClick = { own = own - a }) { Icon(Icons.Default.Close, stringResource(R.string.action_remove_item, a)) }
                 }
             }
-            OutlinedTextField(
-                draft, { draft = it }, singleLine = true,
+            TextInput(
+                draft, { draft = it }, Limits.TEXT, Modifier.fillMaxWidth().inViewWhenFocused(),
                 // One line, shrunk to fit: "?" and "+" share the width, and "Hinzufügen" at the largest font wrapped.
-                label = { Text(stringResource(R.string.action_add), maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = LocalTextStyle.current.fontSize)) },
-                isError = (draft.isNotBlank() && !draftValid) || all.isEmpty(),
-                // Save is off with nothing in the list, so say why instead of the format hint.
-                supportingText = { Text(if (all.isEmpty()) stringResource(R.string.list_add_or_tick, tokenTitle) else addHint) },
+                labelContent = { Text(stringResource(R.string.action_add), maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 8.sp, maxFontSize = LocalTextStyle.current.fontSize)) },
+                error = fieldError, hint = addHint,
                 // Right at the field: the forms it takes.
                 leadingIcon = { SyntaxButton { help = true } },
                 trailingIcon = {
-                    IconButton(enabled = draftValid, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
+                    IconButton(enabled = draftValid && listError(all, total) == null, onClick = { own = (own + next).distinct(); draft = "" }) { Icon(Icons.Default.Add, stringResource(R.string.action_add)) }
                 },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), modifier = Modifier.fillMaxWidth().inViewWhenFocused(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             )
         }
     }
     if (help) SyntaxDialog(syntax, token to stringResource(R.string.label_and_hint, tokenTitle, tokenHint)) { help = false }
+}
+
+/** Why a whole address list can't be saved: too many entries, or more than [total] together. */
+fun listError(all: List<String>, total: Limit?): UiText? = when {
+    all.size > Limits.LIST_ENTRIES -> count(R.plurals.error_too_many_entries, Limits.LIST_ENTRIES)
+    total != null && all.sumOf { lengthOf(it, total) } > total.n -> count(R.plurals.error_too_long_together, total.n)
+    else -> null
 }
 
 /** The "?" at the start of an input field: opens the forms the field takes. */

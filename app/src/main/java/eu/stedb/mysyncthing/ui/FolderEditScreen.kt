@@ -25,7 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -140,7 +139,7 @@ fun FolderEditScreen(
     val pathError = pickProblem(d.path, s.folders, pathBase)
     // An offer's ID is the other device's; only a typed one must also work in REST paths.
     val idError = if (isOffer) text(R.string.folder_already_added).takeIf { s.folders.any { it.id == d.id } } else folderIdError(d.id, s.folders.map { it.id })
-    val valid = pathError == null && idError == null
+    val valid = pathError == null && idError == null && textError(d.label) == null
 
     val back = rememberDiscardGuard(d != initial, onBack)
     if (browsing) {
@@ -165,7 +164,7 @@ fun FolderEditScreen(
             }
             SettingsGroup(stringResource(R.string.folder)) {
                 Column(Modifier.padding(16.dp)) {
-                    OutlinedTextField(
+                    TextInput(
                         name,
                         { v ->
                             if (v.text != name.text) nameTyped = true
@@ -174,7 +173,7 @@ fun FolderEditScreen(
                             nameTapped = true
                             if (v.text != d.label) d = d.copy(label = v.text, path = if (pathTouched) d.path else suggestedPath(v.text, pathBase, d.id))
                         },
-                        label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("folderName"),
+                        Limits.TEXT, Modifier.fillMaxWidth().testTag("folderName"), label = stringResource(R.string.name), singleLine = true,
                     )
                     // An empty path on a new form is not yet a mistake: no red, but say it's needed.
                     val error = d.path.isNotBlank() && pathError != null
@@ -205,10 +204,9 @@ fun FolderEditScreen(
                         Text(stringResource(R.string.folder_browse), Modifier.padding(start = 8.dp))
                     }
                     if (!isOffer) {
-                        OutlinedTextField(
-                            d.id, { d = d.copy(id = it) }, label = { Text(stringResource(R.string.folder_id)) }, singleLine = true, isError = idError != null,
-                            supportingText = { Text(idError?.asString() ?: stringResource(R.string.folder_id_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
+                        TextInput(
+                            d.id, { d = d.copy(id = it) }, Limits.TEXT, Modifier.fillMaxWidth(), label = stringResource(R.string.folder_id),
+                            error = idError, hint = stringResource(R.string.folder_id_hint),
                         )
                     }
                 }
@@ -270,6 +268,7 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
             stringResource(param.label), versioningShown(v.type, v.params[param.key]),
             stringResource(if (param.days) R.string.versioning_unit_days else R.string.versioning_unit_versions),
             supporting = if (param.days) stringResource(R.string.versioning_days_hint) else null,
+            limit = Limits.NUMBER,
             error = { wholeNumberError(it, param.min) },
             onDismiss = { editParam = false },
         ) {

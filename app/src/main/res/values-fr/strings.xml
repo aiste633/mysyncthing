@@ -455,7 +455,6 @@
     <string name="error_path_app_private">Android réserve ce dossier aux applications</string>
     <string name="error_path_other_user">Appartient à un autre utilisateur ou profil du téléphone</string>
     <string name="error_path_holds_app_private">Contient des dossiers qu\'Android réserve aux applications (Android/data, obb)</string>
-    <string name="error_name_long">255 octets au maximum</string>
     <string name="error_name_removable">Pas sur une carte SD ou une clé USB : %1$s, ni un . à la fin</string>
     <string name="error_name_taken">Un dossier de ce nom existe déjà ici</string>
     <plurals name="browse_synced_inside">
@@ -497,8 +496,6 @@
     <string name="error_host_brackets">Sans crochets, par exemple ::1</string>
     <string name="error_host">Une adresse IP ou un nom d’hôte</string>
     <string name="error_port">Un port de 1 à 65535</string>
-    <string name="error_too_long_255">Trop long : 255 octets au maximum</string>
-    <string name="error_too_long">Trop long</string>
     <string name="error_user_needed">Nécessaire avec un mot de passe</string>
     <string name="error_proxy_type">Type de proxy inconnu</string>
     <plurals name="error_password_short">
@@ -779,9 +776,9 @@
     <string name="error_password_wrong">Mot de passe incorrect</string>
     <string name="error_password_backup_empty">Saisissez le mot de passe de la sauvegarde</string>
     <plurals name="error_too_long_chars">
-        <item quantity="one">%1$d caractère au maximum</item>
-        <item quantity="many">%1$d de caractères au maximum</item>
-        <item quantity="other">%1$d caractères au maximum</item>
+        <item quantity="one">%1$s caractère au maximum</item>
+        <item quantity="many">%1$s de caractères au maximum</item>
+        <item quantity="other">%1$s caractères au maximum</item>
     </plurals>
     <string name="import_folder_found">%1$s : trouvé, sera réanalysé</string>
     <string name="import_folder_found_new">%1$s : trouvé, deviendra un partage Syncthing et sera analysé</string>
@@ -817,7 +814,7 @@
     <string name="not_imported_folder_conditions">Conditions de synchronisation propres au partage %1$s</string>
     <string name="not_imported_folder_script">Script après la synchronisation du partage %1$s</string>
     <string name="not_imported_device_conditions">Conditions de synchronisation propres à l’appareil %1$s</string>
-    <string name="not_imported_folder_id">Partage %1$s : son ID contient des caractères de contrôle</string>
+    <string name="not_imported_folder_id">Partage %1$s : son ID contient des caractères de contrôle ou plus de 1024 caractères</string>
     <string name="not_imported_folder_filesystem">Partage %1$s : pas sur un système de fichiers normal</string>
     <string name="not_imported_folder_path">Partage %1$s : ni dans la mémoire du téléphone ni sur une carte SD</string>
     <string name="not_imported_folder_overlap">Partage %1$s : identique à un autre partage, à l’intérieur ou autour de lui</string>
@@ -828,11 +825,15 @@
     <string name="not_imported_default_folder_versioning">Configuration par défaut des nouveaux partages : gestion externe des versions</string>
     <string name="not_imported_default_folder_versions_path">Configuration par défaut des nouveaux partages : emplacement propre pour les anciennes versions</string>
     <string name="not_imported_default_folder_marker">Configuration par défaut des nouveaux partages : marqueur propre</string>
-    <string name="not_imported_device_addresses">Appareil %1$s : adresses de relais, ou adresses et réseaux non valides</string>
+    <string name="not_imported_device_addresses">Appareil %1$s : adresses de relais, adresses et réseaux non valides, ou plus de 16 adresses</string>
     <string name="not_imported_default_device_addresses">Configuration par défaut des nouveaux appareils : adresses de relais, ou adresses et réseaux non valides</string>
     <string name="not_imported_discovery_servers">Serveurs de découverte globale propres ; ceux de Syncthing sont utilisés</string>
     <string name="not_imported_stun_servers">Serveurs STUN propres ; ceux de Syncthing sont utilisés</string>
-    <string name="not_imported_listen_addresses">Adresses d’écoute par relais, ou non valides</string>
+    <string name="not_imported_listen_addresses">Adresses d’écoute par relais, non valides ou trop nombreuses</string>
+    <string name="not_imported_text_too_long">%1$s : un nom ou un groupe de plus de 1024 caractères, laissé vide</string>
+    <string name="not_imported_folder_password_long">Partage %1$s : un mot de passe de chiffrement de plus de 1024 caractères</string>
+    <string name="not_imported_default_ignores">Motifs d’exclusion par défaut : plus de 256 ko</string>
+    <string name="not_imported_other_too_long">Autres réglages de plus de 1024 caractères, laissés vides</string>
     <string name="not_imported_local_networks">Réseaux toujours locaux non valides</string>
     <string name="not_imported_local_discovery">Adresse ou port propre pour la découverte locale</string>
     <string name="not_imported_feature_flags">Fonctions expérimentales</string>
@@ -952,4 +953,25 @@
         <item quantity="many">et %1$d de plus</item>
         <item quantity="other">et %1$d de plus</item>
     </plurals>
+    <plurals name="error_too_long_bytes">
+        <item quantity="one">%1$s octet au maximum</item>
+        <item quantity="many">%1$s d’octets au maximum</item>
+        <item quantity="other">%1$s octets au maximum</item>
+    </plurals>
+    <plurals name="error_path_part_long">
+        <item quantity="one">Chaque nom de dossier du chemin : %1$s octet au maximum</item>
+        <item quantity="many">Chaque nom de dossier du chemin : %1$s d’octets au maximum</item>
+        <item quantity="other">Chaque nom de dossier du chemin : %1$s octets au maximum</item>
+    </plurals>
+    <plurals name="error_too_many_entries">
+        <item quantity="one">%1$s entrée au maximum</item>
+        <item quantity="many">%1$s d’entrées au maximum</item>
+        <item quantity="other">%1$s entrées au maximum</item>
+    </plurals>
+    <plurals name="error_too_long_together">
+        <item quantity="one">%1$s octet au maximum au total</item>
+        <item quantity="many">%1$s d’octets au maximum au total</item>
+        <item quantity="other">%1$s octets au maximum au total</item>
+    </plurals>
+    <string name="ignores_too_big">Ce fichier dépasse %1$s. Modifiez-le dans l’interface web.</string>
 </resources>

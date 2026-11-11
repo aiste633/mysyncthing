@@ -17,6 +17,7 @@ import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -51,6 +52,7 @@ import eu.stedb.mysyncthing.core.NO_DEVICE_LIMIT
 import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.SyncStatus
+import eu.stedb.mysyncthing.core.ApiException
 import eu.stedb.mysyncthing.core.SyncthingCore
 import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.resolve
@@ -549,6 +551,63 @@ class E2eTest {
             Runtime.getRuntime().gc()
             activities() == 1
         }
+    }
+
+    /**
+     * Length limits (docs/input-validation.md, column Length). A name over 1024 characters is
+     * refused in the form (Save off) and by the core's config guard, as from the web GUI, and the
+     * core keeps running. A name of exactly 1024 characters, 4 bytes each, keeps the peer connected:
+     * the sync protocol takes that much, and the app's own Hello is far below the core's 32,767
+     * bytes. An ignore file over 256 kB, written on disk, opens read-only.
+     */
+    @Test
+    fun lengthLimits() {
+        val core = (SyncthingCore.state.value as CoreState.Running).client
+        val me = phoneId()
+        val name = runBlocking { core.device(me) }.name
+        val save = hasText(str(R.string.action_save)) and hasClickAction()
+
+        // The form: Save stays off over the limit.
+        tap(FOLDER_LABEL)
+        tap(str(R.string.name))
+        rule.onNode(hasSetTextAction()).performTextReplacement("😀".repeat(1025))
+        rule.onNode(save).assertIsNotEnabled()
+        rule.onNode(hasSetTextAction()).performTextReplacement("😀".repeat(1024))
+        rule.onNode(save).assertIsEnabled()
+        tap(str(R.string.action_cancel))
+
+        // The core: refused over the limit, still running, name unchanged.
+        val refused = runCatching { runBlocking { core.setDeviceName(me, "😀".repeat(1025)) } }.exceptionOrNull()
+        assertTrue("1025 characters taken: $refused", refused is ApiException)
+        assertTrue("core running", SyncthingCore.state.value is CoreState.Running)
+        assertEquals(name, runBlocking { core.device(me) }.name)
+
+        // At the limit the peer takes this phone's Hello: it connects again with the long name.
+        try {
+            runBlocking { core.setDeviceName(me, "😀".repeat(1024)) }
+            runBlocking { core.setDevicePaused(peer.id, true) }
+            eventually("peer gone", 30_000) { !peer.connected(me) }
+            runBlocking { core.setDevicePaused(peer.id, false) }
+            eventually("peer connected with a 1024-character name", 90_000) { peer.connected(me) }
+        } finally {
+            runBlocking { core.setDeviceName(me, name) }
+            runBlocking { core.setDevicePaused(peer.id, false) }
+        }
+
+        // An ignore file larger than the editor takes is shown, not edited.
+        val stignore = File(runBlocking { core.folders() }.first { it.id == FOLDER }.path, ".stignore")
+        val before = stignore.takeIf { it.exists() }?.readText()
+        try {
+            stignore.writeText("// e2e\n" + ("a".repeat(999) + "\n").repeat(257))
+            tap(str(R.string.ignore_patterns))
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText("256", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+            rule.onNode(save).assertIsNotEnabled()
+            tap(str(R.string.action_back))
+        } finally {
+            if (before == null) stignore.delete() else stignore.writeText(before)
+            runBlocking { core.scan(FOLDER) }
+        }
+        tap(str(R.string.action_back))
     }
 
     /**

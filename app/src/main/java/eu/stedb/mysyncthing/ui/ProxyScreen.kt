@@ -10,7 +10,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -92,36 +91,29 @@ private fun ProxyForm(initial: ProxySettings, running: Boolean, save: suspend (P
             if (type != ProxyType.None) {
                 SettingsGroup(stringResource(R.string.proxy)) {
                     Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            host, { host = it }, label = { Text(stringResource(R.string.proxy_host)) }, singleLine = true, isError = hostError != null,
-                            supportingText = { Text(hostError?.asString() ?: stringResource(R.string.proxy_host_hint)) },
+                        TextInput(
+                            host, { host = it }, Limits.HOST, Modifier.fillMaxWidth(), label = stringResource(R.string.proxy_host),
+                            error = hostError, hint = stringResource(R.string.proxy_host_hint),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false),
                             leadingIcon = { SyntaxButton { hostHelp = true } },
-                            modifier = Modifier.fillMaxWidth(),
                         )
                         if (hostHelp) SyntaxDialog(PROXY_SYNTAX) { hostHelp = false }
-                        OutlinedTextField(
-                            port, { port = it }, label = { Text(stringResource(R.string.proxy_port)) }, singleLine = true, isError = portError != null,
-                            supportingText = portError?.let { { Text(it.asString()) } },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            modifier = Modifier.fillMaxWidth(),
+                        TextInput(
+                            port, { port = it }, Limits.NUMBER, Modifier.fillMaxWidth(), label = stringResource(R.string.proxy_port),
+                            error = portError, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         )
-                        OutlinedTextField(
-                            user, { user = it }, label = { Text(stringResource(R.string.proxy_user)) }, singleLine = true, isError = userError != null,
-                            supportingText = userError?.let { { Text(it.asString()) } },
-                            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
-                            modifier = Modifier.fillMaxWidth(),
+                        TextInput(
+                            user, { user = it }, Limits.PROXY_CREDENTIAL, Modifier.fillMaxWidth(), label = stringResource(R.string.proxy_user),
+                            error = userError, keyboardOptions = KeyboardOptions(autoCorrectEnabled = false),
                         )
-                        OutlinedTextField(
-                            password, { password = it }, label = { Text(stringResource(R.string.password_optional)) }, singleLine = true,
-                            isError = passwordError != null,
-                            supportingText = (passwordError ?: httpPasswordNote(type, password))?.let { { Text(it.asString()) } },
+                        TextInput(
+                            password, { password = it }, Limits.PROXY_CREDENTIAL, Modifier.fillMaxWidth(), label = stringResource(R.string.password_optional),
+                            error = passwordError, hint = httpPasswordNote(type, password)?.asString(),
                             visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
                             trailingIcon = {
                                 PasswordVisibilityButton(show) { show = !show }
                             },
-                            modifier = Modifier.fillMaxWidth(),
                         )
                     }
                     SwitchRow(

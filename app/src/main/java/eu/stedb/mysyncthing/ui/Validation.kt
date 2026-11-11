@@ -16,6 +16,61 @@ import eu.stedb.mysyncthing.core.text
 fun requiredError(s: String): UiText? = if (s.isBlank()) text(R.string.error_required) else null
 
 /**
+ * A length limit: [n] characters, counted as Unicode code points as Go and
+ * protobuf count them, or with [bytes] UTF-8 bytes. Every text input has one
+ * (docs/input-validation.md, column Length); go/bridge/limits.go holds the same
+ * numbers for what reaches the core by other ways (web GUI, imports).
+ */
+data class Limit(val n: Int, val bytes: Boolean = false)
+
+object Limits {
+    /**
+     * Names, folder IDs, groups, addresses, the encryption password and searches. The
+     * sync protocol carries device names, folder IDs and folder names up to 1024
+     * characters (bep.proto), and a device drops the connection of a peer that sends more.
+     */
+    val TEXT = Limit(1024)
+    /** Typed numbers: the longest valid one has 16 digits; the rest of 32 is for leading zeros and a separator. */
+    val NUMBER = Limit(32)
+    /** The Device ID field: 56 characters, with room for dashes, spaces and a pasted line around them. */
+    val DEVICE_ID = Limit(256)
+    /** A DNS name (RFC 1035). */
+    val HOST = Limit(253)
+    /** SOCKS5 user name and password (RFC 1929). */
+    val PROXY_CREDENTIAL = Limit(255, bytes = true)
+    /** Export password: go/bridge ExportPasswordError. */
+    val EXPORT_PASSWORD = Limit(1024, bytes = true)
+    /** Backup password: the bridge refuses more than 3072 bytes, 1024 characters of up to 3 bytes. */
+    val BACKUP_PASSWORD = Limit(1024)
+    /** One file or folder name: the longest Android's file systems take (NAME_MAX). */
+    val FILE_NAME = Limit(255, bytes = true)
+    /** A whole path: Linux PATH_MAX (4096) less the closing NUL. */
+    val PATH = Limit(4095, bytes = true)
+    /** An ignore file: far beyond any real one, and small enough to keep in the screen's state. */
+    val IGNORES = Limit(256_000, bytes = true)
+    /** Entries in an address or server list. */
+    const val LIST_ENTRIES = 16
+    /** All listen addresses together: the global discovery server takes announcements of at most 8 KiB. */
+    val LISTEN_TOTAL = Limit(4096, bytes = true)
+}
+
+/** The length of [s] as [limit] counts it. */
+fun lengthOf(s: String, limit: Limit): Int = if (limit.bytes) s.utf8Size() else s.codePointCount(0, s.length)
+
+/** "At most N characters" (or bytes) when [s] is longer than [limit]. */
+fun lengthError(s: String, limit: Limit): UiText? = when {
+    lengthOf(s, limit) <= limit.n -> null
+    limit.bytes -> count(R.plurals.error_too_long_bytes, limit.n)
+    else -> count(R.plurals.error_too_long_chars, limit.n)
+}
+
+/** Required text of at most [limit]: names when renaming. */
+fun requiredTextError(s: String, limit: Limit = Limits.TEXT): UiText? = requiredError(s) ?: lengthError(s, limit)
+
+/** Optional text of at most [limit]: groups, a device's name when adding it. */
+fun textError(s: String, limit: Limit = Limits.TEXT): UiText? = lengthError(s, limit)
+
+/**
  * Digits other than 0-9, as keyboards for some languages type them (٣, ۳, ३).
  * The core reads numbers with Go's strconv, which takes only 0-9; Kotlin would
  * read these too, so they are refused, not converted behind the user's back.
@@ -29,7 +84,7 @@ fun wholeNumber(s: String): Int? = s.trim().takeIf { WHOLE.matches(it) }?.toIntO
 
 private val WHOLE = Regex("[0-9]+")
 
-fun wholeNumberError(s: String, min: Int = 0): UiText? = when {
+fun wholeNumberError(s: String, min: Int = 0): UiText? = lengthError(s, Limits.NUMBER) ?: when {
     otherDigits(s) -> USE_ASCII_DIGITS
     (wholeNumber(s) ?: Int.MIN_VALUE) >= min -> null
     else -> text(R.string.error_whole_number, min)
@@ -44,15 +99,21 @@ private val DECIMAL = Regex("[0-9]+([.,][0-9]*)?|[.,][0-9]+")
 /** The largest speed limit taken, 2 TB/s: far beyond any link, and still exact as KiB/s in a Long. */
 const val MAX_LIMIT_BYTES = 2e12
 
+/** The most free space a folder can ask to keep, 1 PB: beyond any phone's storage. */
+const val MAX_DISK_BYTES = 1e15
+
 /** An amount in [unit]; [emptyOk] when empty means none, as for speed limits. */
 fun amountError(s: String, unit: String, emptyOk: Boolean = false): UiText? {
     if (emptyOk && s.isBlank()) return null
+    lengthError(s, Limits.NUMBER)?.let { return it }
     if (otherDigits(s)) return USE_ASCII_DIGITS
     val v = decimal(s) ?: return text(if (s.trim().startsWith("-")) R.string.error_not_negative else R.string.error_number)
     return when {
         unit == "%" && v > 100 -> text(R.string.error_up_to, withUnit(num(100), "%"))
         unit == "kB/s" && v * 1e3 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(numberText(MAX_LIMIT_BYTES / 1e3), "kB/s"))
         unit == "MB/s" && v * 1e6 > MAX_LIMIT_BYTES -> text(R.string.error_up_to, withUnit(numberText(MAX_LIMIT_BYTES / 1e6), "MB/s"))
+        unit == "MB" && v * 1e6 > MAX_DISK_BYTES -> text(R.string.error_up_to, withUnit(numberText(MAX_DISK_BYTES / 1e6), "MB"))
+        unit == "GB" && v * 1e9 > MAX_DISK_BYTES -> text(R.string.error_up_to, withUnit(numberText(MAX_DISK_BYTES / 1e9), "GB"))
         else -> null
     }
 }
@@ -71,6 +132,8 @@ fun folderPathError(path: String, others: Collection<String> = emptyList()): UiT
         !p.startsWith("/") -> text(R.string.error_path_absolute)
         p.any { it.isISOControl() || it in BIDI_CONTROLS } -> text(R.string.error_control_characters)
         p.split('/').drop(1).any { it.isEmpty() || it == "." || it == ".." } -> text(R.string.error_path_parts)
+        p.split('/').any { lengthOf(it, Limits.FILE_NAME) > Limits.FILE_NAME.n } -> count(R.plurals.error_path_part_long, Limits.FILE_NAME.n)
+        lengthOf(p, Limits.PATH) > Limits.PATH.n -> lengthError(p, Limits.PATH)
         !inside(p, "/storage") || p == "/storage" || p == "/storage/emulated" -> text(R.string.error_path_storage)
         isAppPrivate(p) -> text(R.string.error_path_app_private)
         isOtherUsers(p) -> text(R.string.error_path_other_user)
@@ -159,6 +222,7 @@ fun folderIdError(id: String, existing: Collection<String>): UiText? {
     val t = id.trim()
     return when {
         t.isEmpty() -> text(R.string.error_required)
+        lengthError(t, Limits.TEXT) != null -> lengthError(t, Limits.TEXT)
         '/' in t -> text(R.string.error_id_slash)
         t == "." || t == ".." -> text(R.string.error_id_dots)
         t.any { it.isISOControl() } -> text(R.string.error_id_control)
@@ -185,7 +249,7 @@ fun safeName(s: String): String? {
     }
     var name = b.toString().trim()
     if (name.substringBefore('.').uppercase() in RESERVED) name = "-$name"
-    while (name.toByteArray().size > 255) name = name.dropLast(if (name.last().isLowSurrogate()) 2 else 1).trimEnd()
+    while (lengthOf(name, Limits.FILE_NAME) > Limits.FILE_NAME.n) name = name.dropLast(if (name.last().isLowSurrogate()) 2 else 1).trimEnd()
     return name.takeIf { it.isNotEmpty() && it != "." && it != ".." }
 }
 
@@ -232,7 +296,7 @@ private fun idCharacters(s: String): String =
     s.trim().trim('=').uppercase().replace('0', 'O').replace('1', 'I').replace('8', 'B').replace("-", "").replace(" ", "")
 
 /** Why [s] is not a device ID, or null when it is one. */
-fun deviceIdError(s: String): UiText? = when {
+fun deviceIdError(s: String): UiText? = lengthError(s, Limits.DEVICE_ID) ?: when {
     deviceId(s) != null -> null
     idCharacters(s).length != 56 -> text(R.string.error_device_id_length)
     else -> text(R.string.error_device_id)
@@ -460,12 +524,13 @@ private fun isHostName(s: String): Boolean {
 
 fun proxyHostError(host: String): UiText? = when {
     host.isEmpty() -> text(R.string.error_required)
+    lengthError(host, Limits.HOST) != null -> lengthError(host, Limits.HOST)
     host.startsWith("[") -> text(R.string.error_host_brackets)
     isIPv4(host) || isIPv6(host) || isHostName(host) -> null
     else -> text(R.string.error_host)
 }
 
-fun proxyPortError(s: String): UiText? = when {
+fun proxyPortError(s: String): UiText? = lengthError(s, Limits.NUMBER) ?: when {
     otherDigits(s) -> USE_ASCII_DIGITS
     s.isBlank() -> text(R.string.error_required)
     (wholeNumber(s) ?: 0) in 1..65535 -> null
@@ -482,12 +547,27 @@ private fun String.validUnicode(): Boolean = indices.all { i ->
     }
 }
 
-private fun String.utf8Size(): Int = toByteArray(Charsets.UTF_8).size
+/** UTF-8 bytes as Go receives the text: a lone surrogate arrives as U+FFFD, 3 bytes. */
+internal fun String.utf8Size(): Int {
+    var n = 0
+    var i = 0
+    while (i < length) {
+        val cp = codePointAt(i)
+        i += Character.charCount(cp)
+        n += when {
+            cp < 0x80 -> 1
+            cp < 0x800 -> 2
+            cp < 0x10000 -> 3
+            else -> 4
+        }
+    }
+    return n
+}
 
 /** User name or password for the proxy; SOCKS5 (RFC 1929) carries at most 255 bytes each. */
 fun proxyCredentialError(s: String): UiText? = when {
     !s.validUnicode() || s.any { it.isISOControl() } -> text(R.string.error_control_characters)
-    s.utf8Size() > 255 -> text(R.string.error_too_long_255)
+    lengthError(s, Limits.PROXY_CREDENTIAL) != null -> lengthError(s, Limits.PROXY_CREDENTIAL)
     else -> null
 }
 
@@ -511,7 +591,7 @@ fun exportPasswordError(password: String): UiText? = when {
     password.isEmpty() -> null
     !password.validUnicode() || password.any { it.isISOControl() } -> text(R.string.error_control_characters)
     password.codePointCount(0, password.length) < MIN_EXPORT_PASSWORD -> plural(R.plurals.error_password_short, MIN_EXPORT_PASSWORD)
-    password.utf8Size() > 1024 -> text(R.string.error_too_long)
+    lengthError(password, Limits.EXPORT_PASSWORD) != null -> lengthError(password, Limits.EXPORT_PASSWORD)
     else -> null
 }
 

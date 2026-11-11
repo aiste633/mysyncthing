@@ -167,6 +167,7 @@ func prepare(early *suture.Supervisor, p params) (tls.Certificate, config.Wrappe
 		return tls.Certificate{}, nil, nil, fmt.Errorf("config defaults: %w", err)
 	}
 	cfg.Subscribe(guiGuard{})
+	cfg.Subscribe(lengthGuard{})
 	return cert, cfg, evLogger, nil
 }
 

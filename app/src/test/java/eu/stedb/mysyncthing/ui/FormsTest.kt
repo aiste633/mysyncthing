@@ -298,4 +298,17 @@ class FormsTest : ScreenTest() {
         compose.waitForIdle()
         assertTrue(!secure())
     }
+
+    // Length limits: over the limit the field says so and Save stays off (dialogs: EntryDialogTest).
+
+    @Test
+    fun addDeviceRefusesALongName() {
+        show { DeviceEditScreen(snapshot, "", "", vm, onBack = {}, onSave = { _, _, _ -> }) }
+        field(str(R.string.device_id)).performTextReplacement(idFromData("NEWDEVICENEWDEVICENEWDEVICENEWDEVICENEWDEVICENEWDEVA"))
+        field(str(R.string.name_optional)).performTextReplacement("a".repeat(1025))
+        compose.onNodeWithText("At most 1,024 characters").assertExists()
+        save.assertIsNotEnabled()
+        field(str(R.string.name_optional)).performTextReplacement("a".repeat(1024))
+        save.assertIsEnabled()
+    }
 }

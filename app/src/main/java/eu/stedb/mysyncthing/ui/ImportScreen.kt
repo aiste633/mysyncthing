@@ -23,7 +23,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -155,17 +154,15 @@ private fun PasswordStep(tried: String, wrong: Boolean, password: String, onChan
     val problem = backupPasswordError(password, wrong && password == tried)
     Note(stringResource(R.string.import_password_title), stringResource(R.string.import_password_text))
     Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        OutlinedTextField(
-            password, { onChange(it); edited = true },
-            label = { Text(stringResource(R.string.import_password_label)) }, singleLine = true,
-            isError = problem != null && (edited || wrong),
-            supportingText = problem?.takeIf { edited || wrong }?.let { { Text(it.asString()) } },
+        TextInput(
+            password, { onChange(it); edited = true }, Limits.BACKUP_PASSWORD, Modifier.fillMaxWidth(),
+            label = stringResource(R.string.import_password_label),
+            error = problem?.takeIf { edited || wrong },
             visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
             trailingIcon = {
                 PasswordVisibilityButton(show) { show = !show }
             },
-            modifier = Modifier.fillMaxWidth(),
         )
         Button(shape = ButtonShape, enabled = backupPasswordError(password, false) == null, onClick = onContinue) {
             Text(stringResource(R.string.action_continue))
@@ -244,9 +241,6 @@ private fun Note(title: String, text: String) {
     }
 }
 
-/** Longest password accepted; zip4j itself sets none. */
-const val MAX_BACKUP_PASSWORD = 1024
-
 /**
  * Why [password] can't be tried, or null. It is used exactly as typed: spaces
  * count, as they did when Fork encrypted the backup.
@@ -254,8 +248,7 @@ const val MAX_BACKUP_PASSWORD = 1024
 fun backupPasswordError(password: String, wrong: Boolean): UiText? = when {
     wrong -> text(R.string.error_password_wrong)
     password.isEmpty() -> text(R.string.error_password_backup_empty)
-    password.length > MAX_BACKUP_PASSWORD -> plural(R.plurals.error_too_long_chars, MAX_BACKUP_PASSWORD)
-    else -> null
+    else -> lengthError(password, Limits.BACKUP_PASSWORD)
 }
 
 /** What happens to an imported folder on this phone (design: the core creates what is missing). */
@@ -335,6 +328,10 @@ fun notImportedText(n: ForkNotImported): UiText = when (n.key) {
     "discovery_servers" -> text(R.string.not_imported_discovery_servers)
     "stun_servers" -> text(R.string.not_imported_stun_servers)
     "listen_addresses" -> text(R.string.not_imported_listen_addresses)
+    "text_too_long" -> text(R.string.not_imported_text_too_long, n.subject)
+    "folder_password_long" -> text(R.string.not_imported_folder_password_long, n.subject)
+    "default_ignores" -> text(R.string.not_imported_default_ignores)
+    "other_too_long" -> text(R.string.not_imported_other_too_long)
     "local_networks" -> text(R.string.not_imported_local_networks)
     "local_discovery" -> text(R.string.not_imported_local_discovery)
     "feature_flags" -> text(R.string.not_imported_feature_flags)
