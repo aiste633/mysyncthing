@@ -9,7 +9,7 @@ API (upgrade.PhoneCore), the app's screens through uiautomator (by visible Engli
 through theirs. Each scenario sets its devices apart, changes files on more than one side, brings them
 together, waits until all agree, and then checks the files on every side and what the app shows.
 
-  fast (also in CI's e2e, about 5 min):
+  fast (also in scripts/e2e/pc.py, about 5 min):
     edit_edit        both edit a file: one copy, both edits kept
     edit_delete      edited on one side, deleted on the other, both orders and both ways: the newer
                      change wins; a deletion that wins keeps the edit as a copy
@@ -20,7 +20,7 @@ together, waits until all agree, and then checks the files on every side and wha
                      phone's Trash can keeps its own and the count leaves it out
     copy_conflict    both edit the same copy: the core keeps no copy of a copy
     login_rotates    a new web GUI login at every start, and the old one refused
-  slow (PC only):
+  slow (by hand, not in pc.py):
     max_conflicts    12 conflicts in a row on one file, the phone's watcher off: the core keeps 10
                      (upstream's default maxConflicts) and the count follows its deletions
     seeded_copies    12, then 120 copies arriving from the peer: the folder card's count

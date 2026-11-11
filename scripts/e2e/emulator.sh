@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Starts a headless emulator for scripts/e2e/run.py: Pixel 7, Android <api> (35 or 36),
-# the plain AOSP image (no Google apps), and waits until it has booted.
-# CI (e2e job in build.yml) runs it on a Linux runner with KVM; on a PC with Android Studio
-# an existing AVD started with -no-snapshot does the same.
+# the plain AOSP image (no Google apps), and waits until it has booted. scripts/e2e/pc.py runs it
+# for each API; GitHub CI ran it until 11/2026. Needs KVM; on a PC with Android Studio an existing
+# AVD started with -no-snapshot does the same.
+# E2E_PORT=<even port>: the emulator's console port, so it is emulator-<port> to adb. Set
+# ANDROID_SERIAL to that, as pc.py does, so adb never talks to another emulator or a phone.
 set -euo pipefail
 
 api="${1:?usage: emulator.sh <api level>}"
@@ -12,15 +14,15 @@ avd="e2e-$api"
 bin="$ANDROID_HOME/cmdline-tools/latest/bin"
 
 [ -e /dev/kvm ] || { echo "no /dev/kvm: the x86_64 emulator needs KVM" >&2; exit 1; }
-# GitHub's Linux runners have KVM, but only root may open it.
-if [ -e /dev/kvm ] && [ ! -w /dev/kvm ]; then
-  echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm.rules >/dev/null
-  sudo udevadm control --reload-rules
-  sudo udevadm trigger --name-match=kvm
+[ -w /dev/kvm ] || { echo "/dev/kvm is not writable for $(id -un): add it to the kvm group" >&2; exit 1; }
+port=()
+if [ -n "${E2E_PORT:-}" ]; then
+  [ "${ANDROID_SERIAL:-}" = "emulator-$E2E_PORT" ] || { echo "E2E_PORT=$E2E_PORT needs ANDROID_SERIAL=emulator-$E2E_PORT" >&2; exit 1; }
+  port=(-port "$E2E_PORT")
 fi
 
 # Only what is missing: on a PC the emulator and platform tools are shared with other AVDs.
-# E2E_SDK_UPDATE=1 (CI) installs the current emulator instead of whatever the runner image has.
+# E2E_SDK_UPDATE=1 installs the current emulator instead of the one already there (CI used it).
 missing=()
 [ -x "$ANDROID_HOME/emulator/emulator" ] && [ "${E2E_SDK_UPDATE:-0}" != 1 ] || missing+=(emulator)
 [ -x "$ANDROID_HOME/platform-tools/adb" ] || missing+=(platform-tools)
@@ -62,7 +64,7 @@ log="${E2E_EMULATOR_LOG:-$(mktemp)}"
 # names the signal). Twice on CI it vanished mid-run with nothing in its log (issue #78).
 (
   "$ANDROID_HOME/emulator/emulator" -avd "$avd" -no-window -no-audio -no-boot-anim -no-snapshot \
-    -gpu swiftshader_indirect -memory 4096 "${dns[@]}"
+    -gpu swiftshader_indirect -memory 4096 "${port[@]}" "${dns[@]}"
   status=$?
   echo "emulator ended at $(date -u +%H:%M:%S) UTC with status $status"
 ) >"$log" 2>&1 &
