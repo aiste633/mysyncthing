@@ -25,8 +25,10 @@ private val names = snapshot.devices.associate { it.deviceID to it.name }
 val screens = listOf(
     ScreenCase("setup") { SetupScreen(PermissionState(LocalContext.current), mobileData = false, onMobileData = {}, onDone = {}) },
     ScreenCase("folders") { FoldersScreen(snapshot, summary, it, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = { _ -> }) },
+    // 121 copies: the longest badge ("99+") beside the history icon.
     ScreenCase("folders-conflicts") {
-        FoldersScreen(Fixtures.withConflicts, Fixtures.conflictsSummary, it, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = { _ -> })
+        val many = Fixtures.withConflicts.copy(conflicts = mapOf("docs" to (1..121).map { "f$it.sync-conflict-20251003-184200-EUYDWRS.txt" }))
+        FoldersScreen(many, Fixtures.conflictsSummary, it, onOpen = {}, onAdd = {}, onAccept = { _, _ -> }, onOpenRecent = { _ -> })
     },
     // Without a core the changes stay "Loading"; the conflicts come from the snapshot.
     ScreenCase("recent-conflicts") { RecentChangesScreen(Fixtures.withConflicts, "docs", it, onBack = {}) },

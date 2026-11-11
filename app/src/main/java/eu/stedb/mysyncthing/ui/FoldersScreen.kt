@@ -1,6 +1,9 @@
 package eu.stedb.mysyncthing.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,10 +12,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -41,6 +46,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
@@ -186,20 +192,32 @@ private fun FolderCard(f: Folder, st: FolderStatus?, s: Snapshot, onRecent: () -
                 }
                 // The 48 dp touch target overlaps the card's padding, so the icon lines up with the status text above.
                 // Not an IconButton with a BadgedBox: the button clips its content to a 40 dp circle, and the badge
-                // grows to the right past the card's edge. Here the badge's right edge stays in the button's circle
-                // and a longer count grows it to the left, over the icon. The badge is the button's sibling, not
-                // its child: a child would make Compose move the button's label onto a stand-in child node.
-                // It takes no touches, so a tap on it still reaches the button.
+                // grows to the right past the card's edge. Here the badge sits on the icon's top end corner: its right
+                // edge 8 dp past the icon, its bottom [BADGE_INTO_ICON] into the icon's 24 dp box. A longer count or a
+                // larger font grows it to the left and upwards, never further down over the icon (at 1.3x its text
+                // the badge reaches 3 dp above the target, inside the 4 dp gap to the title row).
+                // The badge is the button's sibling, not its child: a child would make Compose move the button's
+                // label onto a stand-in child node. From 1.3x font its top reaches above the 48 dp target, over the
+                // card, so the badge takes taps itself: they open Recent changes and press the button (its ripple
+                // shows), without adding a node for screen readers.
                 val recentLabel = stringResource(R.string.recent_changes)
+                val press = remember { MutableInteractionSource() }
                 Box(Modifier.offset(x = 12.dp)) {
                     Box(
                         Modifier.testTag("recent-${f.id}").minimumInteractiveComponentSize().size(40.dp)
-                            .clickable(onClick = onRecent, role = Role.Button, interactionSource = null, indication = ripple(bounded = false, radius = 20.dp))
+                            .clickable(onClick = onRecent, role = Role.Button, interactionSource = press, indication = ripple(bounded = false, radius = 20.dp))
                             .semantics { contentDescription = recentLabel },
                         contentAlignment = Alignment.Center,
                     ) { Icon(Icons.Default.History, null) }
-                    // 4 dp in from the 48 dp target: the top end of the 40 dp circle.
-                    if (conflicts > 0) ConflictBadge(conflicts, busy, Modifier.align(Alignment.TopEnd).padding(4.dp).testTag("badge-${f.id}"))
+                    // The icon's box starts 12 dp down the 48 dp target.
+                    if (conflicts > 0) {
+                        ConflictBadge(
+                            conflicts, busy,
+                            Modifier.align(Alignment.TopEnd).padding(end = 4.dp).height(12.dp + BADGE_INTO_ICON)
+                                .wrapContentHeight(Alignment.Bottom, unbounded = true).testTag("badge-${f.id}")
+                                .pressing(press, onRecent),
+                        )
+                    }
                 }
             }
             status.progress?.let {
@@ -216,7 +234,22 @@ internal fun badgeCount(n: Int): String = if (n > 99) grouped(99) + "+" else gro
 /** Between a card's details: the no-break space keeps the dot at the end of a line, never starting the next. */
 private const val DETAILS_SEPARATOR = "\u00A0· "
 
-/** Text in the badge grows with the font only up to this: past it the badge would hide the icon it marks. */
+/** Taps here act as taps on the button that [source] belongs to: its pressed state and ripple, then [onTap]. */
+private fun Modifier.pressing(source: MutableInteractionSource, onTap: () -> Unit) = pointerInput(source, onTap) {
+    detectTapGestures(
+        onPress = { at ->
+            val p = PressInteraction.Press(at)
+            source.emit(p)
+            source.emit(if (tryAwaitRelease()) PressInteraction.Release(p) else PressInteraction.Cancel(p))
+        },
+        onTap = { onTap() },
+    )
+}
+
+/** How far the conflict badge reaches down into the history icon's box, at any count and font size. */
+private val BADGE_INTO_ICON = 6.dp
+
+/** Text in the badge grows with the font only up to this: past it the badge would grow too far above the button. */
 private const val BADGE_MAX_FONT_SCALE = 1.3f
 
 /**
