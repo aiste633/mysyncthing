@@ -147,8 +147,10 @@ only, with discovery, relays and NAT off, so it never meets a real device; it re
 emulator through `adb`. `scripts/e2e/run.py` runs the steps in order, and refuses to run on a
 real phone.
 
-They run on the PC, not on GitHub (since 11/2026: GitHub's emulators doubled the PC's runs, took
-most of CI's time, and twice died halfway, issue #78). `scripts/e2e/pc.py` does a whole run for one
+They run on the PC, not on GitHub, since 11/2026. In November 2026 GitHub temporarily suspended the
+maintainer's account, so CI was slimmed down to light checks to prevent further suspensions. The
+emulator runs were the heaviest part of it, duplicated the PC's own runs, and twice died halfway
+(issue #78). `scripts/e2e/pc.py` does a whole run for one
 commit: from a clean checkout it builds the app, the test APK and the peer, then on a fresh Android 15
 and then a fresh Android 16 emulator runs run.py and the fast [sync scenarios](#sync-scenarios), and
 writes `build/e2e-pc/summary.md` with the commit, the emulator images and each step's result and time.
