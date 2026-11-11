@@ -562,8 +562,8 @@ class E2eTest {
      */
     @Test
     fun lengthLimits() {
+        val me = phoneId() // waits for the core: each phase starts a fresh process
         val core = (SyncthingCore.state.value as CoreState.Running).client
-        val me = phoneId()
         val name = runBlocking { core.device(me) }.name
         val save = hasText(str(R.string.action_save)) and hasClickAction()
 
