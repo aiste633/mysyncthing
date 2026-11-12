@@ -16,7 +16,12 @@ import eu.stedb.mysyncthing.core.UiText
 // length limit: [limit] has no default, and InputLimitTest fails on an
 // OutlinedTextField anywhere else. The field's own check must refuse the
 // same length (Save stays off); here it is also shown, ahead of [error], so
-// "At most N characters" is what a too long value says.
+// "At most N characters" is what a too long value says. A read-only field
+// can't be shortened, so there the caller's [error] (why it is read-only) wins.
+
+/** The problem a field shows: see the note above. */
+internal fun shownProblem(text: String, limit: Limit, error: UiText?, readOnly: Boolean): UiText? =
+    if (readOnly) error ?: lengthError(text, limit) else lengthError(text, limit) ?: error
 
 /**
  * A text field with its length [limit]. [error] is the field's own problem to
@@ -43,7 +48,7 @@ fun TextInput(
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
 ) {
-    val shown = (lengthError(value, limit) ?: error)?.asString()
+    val shown = shownProblem(value, limit, error, readOnly)?.asString()
     OutlinedTextField(
         value, onValueChange, modifier, enabled = enabled, readOnly = readOnly, label = labelContent,
         placeholder = placeholder?.let { { Text(it) } },
@@ -69,7 +74,7 @@ fun TextInput(
     enabled: Boolean = true,
     textStyle: TextStyle = LocalTextStyle.current,
 ) {
-    val shown = (lengthError(value.text, limit) ?: error)?.asString()
+    val shown = shownProblem(value.text, limit, error, readOnly)?.asString()
     OutlinedTextField(
         value, onValueChange, modifier, enabled = enabled, readOnly = readOnly, textStyle = textStyle,
         label = label?.let { { Text(it, maxLines = 1, overflow = TextOverflow.Ellipsis) } }, singleLine = singleLine,

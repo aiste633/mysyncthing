@@ -52,6 +52,18 @@ class InputLimitTest {
         assertEquals("At most 255 bytes", lengthError("é".repeat(128), Limits.FILE_NAME).en())
     }
 
+    /** A read-only field can't be shortened: it says why it is read-only (the oversized ignore file), not "At most". */
+    @Test
+    fun readOnlyFieldShowsItsReason() {
+        val big = "a".repeat(Limits.IGNORES.n + 1)
+        val why = eu.stedb.mysyncthing.core.text(eu.stedb.mysyncthing.R.string.ignores_too_big, bytesText(Limits.IGNORES.n.toLong()))
+        assertEquals(why.en(), shownProblem(big, Limits.IGNORES, why, readOnly = true).en())
+        assertTrue(why.en().startsWith("This file is larger than 256.0"))
+        assertEquals("At most 256,000 bytes", shownProblem(big, Limits.IGNORES, why, readOnly = false).en())
+        assertEquals("At most 256,000 bytes", shownProblem(big, Limits.IGNORES, null, readOnly = true).en())
+        assertNull(shownProblem("a", Limits.IGNORES, null, readOnly = true))
+    }
+
     @Test
     fun lengthErrorProperty() {
         val r = Random(7)

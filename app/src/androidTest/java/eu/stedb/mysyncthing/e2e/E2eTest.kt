@@ -600,7 +600,8 @@ class E2eTest {
         try {
             stignore.writeText("// e2e\n" + ("a".repeat(999) + "\n").repeat(257))
             tap(str(R.string.ignore_patterns))
-            rule.waitUntil(20_000) { rule.onAllNodes(hasText("256", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+            val tooBig = app.getString(R.string.ignores_too_big, "")
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(tooBig.substringBefore(" ."), substring = true)).fetchSemanticsNodes().isNotEmpty() }
             rule.onNode(save).assertIsNotEnabled()
             tap(str(R.string.action_back))
         } finally {
