@@ -3,16 +3,19 @@ package eu.stedb.mysyncthing.ui
 import android.view.WindowManager
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.test.assert
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsSelected
-import androidx.compose.ui.test.onChild
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.StateRestorationTester
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onChild
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
@@ -20,6 +23,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToKey
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Folder
@@ -84,7 +88,9 @@ class FormsTest : ScreenTest() {
     private fun folderForm(disk: MapDisk, offer: String? = "holiday", onSave: (FolderDraft) -> Unit = {}) = show {
         CompositionLocalProvider(LocalDisk provides disk) {
             val from = offer?.let { Fixtures.laptop }
-            FolderEditScreen(snapshot, draftFor(snapshot, offer, from, Folder()), from, pathBase(Folder()), onBack = {}, onSave = onSave)
+            // As the app does: a new folder starts as the first free "New folder".
+            val name = if (offer == null) newFolderName(str(R.string.folder_new_name), pathBase(Folder()), snapshot.folders, disk::isDirectory) else ""
+            FolderEditScreen(snapshot, draftFor(snapshot, offer, from, Folder(), name), from, pathBase(Folder()), onBack = {}, onSave = onSave)
         }
     }
 
@@ -111,18 +117,55 @@ class FormsTest : ScreenTest() {
     fun browserPicksDownload() {
         var saved: FolderDraft? = null
         folderForm(fixtureDisk(), offer = null) { saved = it }
-        compose.onNodeWithText(str(R.string.folder_path_needed)).assertExists()
-        save.assertIsNotEnabled()
+        // Ready to save as it opens: "New folder" in Syncthing/, which the quick picks don't repeat.
+        field(str(R.string.name)).assert(hasText("New folder"))
+        pathRow.assert(hasText("Syncthing/New folder", substring = true))
+        compose.onNodeWithText(str(R.string.folder_path_suggested)).assertExists()
+        quickPick("Syncthing/New folder").assertCountEquals(0)
+        compose.onNodeWithText(str(R.string.folder_quick_picks)).assertExists()
+        save.assertIsEnabled()
         compose.onNodeWithTag("browse").performClick()
-        // Opens in Syncthing/; the top of internal storage is one tap away.
-        compose.onNodeWithTag("browseUse").assertIsEnabled()
+        // Opens in Syncthing/, the default location, which is not a folder itself; the top of internal storage is one tap away.
+        compose.onNodeWithText(str(R.string.error_path_default_location)).assertExists()
+        compose.onNodeWithTag("browseUse").assertIsNotEnabled()
         compose.onAllNodesWithText(str(R.string.internal_storage)).onFirst().performClick()
+        compose.onNodeWithText(str(R.string.browse_default_location)).assertExists()
         compose.onNodeWithText("Download").performClick()
         compose.onNodeWithTag("browseUse").assertIsEnabled().performClick()
         pathRow.assert(hasText("Download", substring = true))
+        // The name was never typed, so the picked place names the folder; Syncthing/<name> is a quick pick again.
         field(str(R.string.name)).assert(hasText("Download"))
+        quickPick("Syncthing/Download").assertCountEquals(1)
         save.assertIsEnabled().performClick()
         assertEquals("$root/Download", saved?.path)
+        assertEquals("Download", saved?.label)
+    }
+
+    private fun quickPick(name: String) = compose.onAllNodes(hasText(name) and hasAnyAncestor(hasTestTag("quickPicks")))
+
+    @Test
+    fun typingANewNameReplacesNewFolder() {
+        var saved: FolderDraft? = null
+        folderForm(fixtureDisk(), offer = null) { saved = it }
+        field(str(R.string.name)).performClick()
+        field(str(R.string.name)).performTextInput("Recipes")
+        field(str(R.string.name)).assert(hasText("Recipes"))
+        pathRow.assert(hasText("Syncthing/Recipes", substring = true))
+        // A typed name stays when a place is picked, and Syncthing/Recipes comes back as a quick pick.
+        quickPick("Download").onFirst().performClick()
+        field(str(R.string.name)).assert(hasText("Recipes"))
+        pathRow.assert(hasText("Download", substring = true))
+        quickPick("Syncthing/Recipes").onFirst().performClick()
+        save.assertIsEnabled().performClick()
+        assertEquals("$root/Syncthing/Recipes", saved?.path)
+        assertEquals("Recipes", saved?.label)
+    }
+
+    @Test
+    fun newFolderIsNumberedWhenTaken() {
+        folderForm(fixtureDisk().apply { dirs["$root/Syncthing/New folder"] = 3 }, offer = null)
+        field(str(R.string.name)).assert(hasText("New folder 2"))
+        pathRow.assert(hasText("Syncthing/New folder 2", substring = true))
     }
 
     @Test
@@ -254,5 +297,18 @@ class FormsTest : ScreenTest() {
         compose.onNodeWithContentDescription(str(R.string.password_hide)).performClick()
         compose.waitForIdle()
         assertTrue(!secure())
+    }
+
+    // Length limits: over the limit the field says so and Save stays off (dialogs: EntryDialogTest).
+
+    @Test
+    fun addDeviceRefusesALongName() {
+        show { DeviceEditScreen(snapshot, "", "", vm, onBack = {}, onSave = { _, _, _ -> }) }
+        field(str(R.string.device_id)).performTextReplacement(idFromData("NEWDEVICENEWDEVICENEWDEVICENEWDEVICENEWDEVICENEWDEVA"))
+        field(str(R.string.name_optional)).performTextReplacement("a".repeat(1025))
+        compose.onNodeWithText("At most 1,024 characters").assertExists()
+        save.assertIsNotEnabled()
+        field(str(R.string.name_optional)).performTextReplacement("a".repeat(1024))
+        save.assertIsEnabled()
     }
 }

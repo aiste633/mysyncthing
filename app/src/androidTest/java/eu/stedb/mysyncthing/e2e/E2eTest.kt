@@ -1,15 +1,23 @@
 package eu.stedb.mysyncthing.e2e
 
+import android.app.Activity
+import android.app.Application
+import android.content.res.Configuration
 import android.net.ConnectivityManager
+import android.os.Bundle
 import android.net.NetworkCapabilities
 import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import androidx.annotation.StringRes
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
@@ -26,6 +34,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTextInputSelection
 import androidx.compose.ui.test.performTextReplacement
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
@@ -43,9 +52,11 @@ import eu.stedb.mysyncthing.core.NO_DEVICE_LIMIT
 import eu.stedb.mysyncthing.core.Settings
 import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.SyncStatus
+import eu.stedb.mysyncthing.core.ApiException
 import eu.stedb.mysyncthing.core.SyncthingCore
 import eu.stedb.mysyncthing.core.SyncthingService
 import eu.stedb.mysyncthing.core.resolve
+import eu.stedb.mysyncthing.ui.SHORT_WINDOW_DP
 import eu.stedb.mysyncthing.ui.lastSeenText
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -543,17 +554,159 @@ class E2eTest {
     }
 
     /**
+     * Length limits (docs/input-validation.md, column Length). A name over 1024 characters is
+     * refused in the form (Save off) and by the core's config guard, as from the web GUI, and the
+     * core keeps running. A name of exactly 1024 characters, 4 bytes each, keeps the peer connected:
+     * the sync protocol takes that much, and the app's own Hello is far below the core's 32,767
+     * bytes. An ignore file over 256 kB, written on disk, opens read-only.
+     */
+    @Test
+    fun lengthLimits() {
+        val me = phoneId() // waits for the core: each phase starts a fresh process
+        val core = (SyncthingCore.state.value as CoreState.Running).client
+        val name = runBlocking { core.device(me) }.name
+        val save = hasText(str(R.string.action_save)) and hasClickAction()
+
+        // The form: Save stays off over the limit.
+        tap(FOLDER_LABEL)
+        tap(str(R.string.name))
+        rule.onNode(hasSetTextAction()).performTextReplacement("😀".repeat(1025))
+        rule.onNode(save).assertIsNotEnabled()
+        rule.onNode(hasSetTextAction()).performTextReplacement("😀".repeat(1024))
+        rule.onNode(save).assertIsEnabled()
+        tap(str(R.string.action_cancel))
+
+        // The core: refused over the limit, still running, name unchanged.
+        val refused = runCatching { runBlocking { core.setDeviceName(me, "😀".repeat(1025)) } }.exceptionOrNull()
+        assertTrue("1025 characters taken: $refused", refused is ApiException)
+        assertTrue("core running", SyncthingCore.state.value is CoreState.Running)
+        assertEquals(name, runBlocking { core.device(me) }.name)
+
+        // At the limit the peer takes this phone's Hello: it connects again with the long name.
+        try {
+            runBlocking { core.setDeviceName(me, "😀".repeat(1024)) }
+            runBlocking { core.setDevicePaused(peer.id, true) }
+            eventually("peer gone", 30_000) { !peer.connected(me) }
+            runBlocking { core.setDevicePaused(peer.id, false) }
+            eventually("peer connected with a 1024-character name", 90_000) { peer.connected(me) }
+        } finally {
+            runBlocking { core.setDeviceName(me, name) }
+            runBlocking { core.setDevicePaused(peer.id, false) }
+        }
+
+        // An ignore file larger than the editor takes is shown, not edited.
+        val stignore = File(runBlocking { core.folders() }.first { it.id == FOLDER }.path, ".stignore")
+        val before = stignore.takeIf { it.exists() }?.readText()
+        try {
+            stignore.writeText("// e2e\n" + ("a".repeat(999) + "\n").repeat(257))
+            tap(str(R.string.ignore_patterns))
+            val tooBig = app.getString(R.string.ignores_too_big, "")
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(tooBig.substringBefore(" ."), substring = true)).fetchSemanticsNodes().isNotEmpty() }
+            rule.onNode(save).assertIsNotEnabled()
+            tap(str(R.string.action_back))
+        } finally {
+            if (before == null) stignore.delete() else stignore.writeText(before)
+            runBlocking { core.scan(FOLDER) }
+        }
+        tap(str(R.string.action_back))
+    }
+
+    /**
+     * A rotation with a text dialog open keeps the activity and the dialog's window (#68). On Android 15
+     * a dialog window that a relaunched activity re-added during the rotation's transition could end up
+     * outside SurfaceFlinger's hierarchy: focused for the window manager, never for input, so every key
+     * waited 5 s and was dropped. MainActivity now handles rotation itself: no onDestroy, the same
+     * windows before and after, and the typed text, keyboard focus and all, stays. Turned with
+     * `wm user-rotation`, as a person turning the phone with auto-rotate on; restored after.
+     */
+    @Test
+    fun rotationKeepsActivityAndDialog() {
+        val destroyed = mutableListOf<String>()
+        val callbacks = object : Application.ActivityLifecycleCallbacks {
+            override fun onActivityCreated(a: Activity, b: Bundle?) {}
+            override fun onActivityStarted(a: Activity) {}
+            override fun onActivityResumed(a: Activity) {}
+            override fun onActivityPaused(a: Activity) {}
+            override fun onActivityStopped(a: Activity) {}
+            override fun onActivitySaveInstanceState(a: Activity, b: Bundle) {}
+            override fun onActivityDestroyed(a: Activity) { synchronized(destroyed) { destroyed += a.toString() } }
+        }
+        val rotation = shell("wm user-rotation").trim()
+        val application = app.applicationContext as Application
+        application.registerActivityLifecycleCallbacks(callbacks)
+        try {
+            tap(FOLDER_LABEL)
+            tap(str(R.string.name))
+            // Typed at the end, where people type. With the cursor at the start of a word, Android 15's AOSP
+            // keyboard commits the word it composes there when it restarts for the new orientation
+            // (commitText(word, 1), seen in the PC run of 09/11/2026), which moves the cursor behind that word:
+            // the keyboard's doing, with the field and its state kept. At the end it finishes the word in place.
+            val field = rule.onNode(hasSetTextAction())
+            field.performClick()
+            field.performTextInputSelection(TextRange(FOLDER_LABEL.length))
+            field.performTextInput("1")
+            val typed = rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.EditableText].text
+            val cursor = rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange]
+            rule.onNode(hasSetTextAction()).assertIsFocused()
+            val activity = rule.activity
+            eventually("main window and the dialog's", 10_000) { appWindows().size == 2 }
+            val windows = appWindows()
+            for ((turn, orientation) in listOf(1 to Configuration.ORIENTATION_LANDSCAPE, 0 to Configuration.ORIENTATION_PORTRAIT)) {
+                shell("wm user-rotation lock $turn")
+                eventually("activity turned to rotation $turn", 20_000) { activity.resources.configuration.orientation == orientation }
+                assertTrue("activity destroyed by rotation $turn: $destroyed", synchronized(destroyed) { destroyed.isEmpty() })
+                assertTrue("the same MainActivity after rotation $turn", rule.activity === activity && !activity.isDestroyed)
+                try {
+                    eventually("the same windows after rotation $turn", 10_000) { appWindows() == windows }
+                } catch (e: IllegalStateException) {
+                    throw IllegalStateException("${e.message}: before $windows, now ${appWindows()}", e)
+                }
+                // The text, its cursor and the keyboard's focus stay; on its side the dialog fills the screen
+                // with Cancel (✕) and Save on a bar at the top, upright it has them as buttons at the end.
+                rule.onNode(hasSetTextAction()).assert(hasText(typed)).assertIsFocused()
+                assertEquals("cursor after rotation $turn", cursor, rule.onNode(hasSetTextAction()).fetchSemanticsNode().config[SemanticsProperties.TextSelectionRange])
+                val short = activity.window.decorView.height / activity.resources.displayMetrics.density < SHORT_WINDOW_DP
+                assertEquals("short window after rotation $turn", turn == 1, short)
+                rule.onNode(hasContentDescription(str(R.string.action_cancel)) and hasClickAction()).apply { if (short) assertIsDisplayed() else assertDoesNotExist() }
+                rule.onNode(hasText(str(R.string.action_cancel)) and hasClickAction()).apply { if (short) assertDoesNotExist() else assertIsDisplayed() }
+                rule.onNode(hasText(str(R.string.action_save)) and hasClickAction()).assertIsDisplayed()
+            }
+            // Cancelled: the dialog is gone (the folder's screen has no text field) and the name is as it was.
+            tap(str(R.string.action_cancel))
+            rule.waitUntil(5_000) { rule.onAllNodes(hasSetTextAction()).fetchSemanticsNodes().isEmpty() }
+            assertEquals(FOLDER_LABEL, SyncStatus.snapshot.value.folders.first { it.id == FOLDER }.label)
+        } finally {
+            application.unregisterActivityLifecycleCallbacks(callbacks)
+            shell(if (rotation.startsWith("lock")) "wm user-rotation $rotation" else "wm user-rotation free")
+        }
+    }
+
+    /** The app's windows (main and dialogs), as `dumpsys window windows` names them: `Window{hash u0 package/…}`. */
+    private fun appWindows(): Set<String> =
+        Regex("""^\s*Window #\d+ (Window\{\S+ \S+ ${Regex.escape(app.packageName)}/[^}]*\})""", RegexOption.MULTILINE)
+            .findAll(shell("dumpsys window windows")).map { it.groupValues[1] }.toSet()
+
+    /**
      * The app's own folder browser on a real storage: Download, which Android's picker
      * refuses, a new folder in it, and the folder the core then syncs. Removed again after.
+     * On the way: the form opens as "New folder", which a tap and typing replace, and
+     * Syncthing/, the default location for new folders, opens but can't be chosen.
      */
     @Test
     fun browseFolder() {
         val storage = Environment.getExternalStorageDirectory().path
         val dir = File("$storage/${Environment.DIRECTORY_DOWNLOADS}/$BROWSED")
         dir.deleteRecursively()
+        File("$storage/Syncthing").mkdirs() // as after accepting a folder: the browser opens there
         phoneId()
         tap(str(R.string.folders_add))
+        field(str(R.string.name)).assert(hasText(str(R.string.folder_new_name), substring = true))
+        field(str(R.string.name)).performClick()
+        field(str(R.string.name)).performTextInput(BROWSED)
+        field(str(R.string.name)).assert(hasText(BROWSED))
         tap(str(R.string.folder_browse))
+        rule.waitUntil(10_000) { rule.onAllNodes(hasText(str(R.string.error_path_default_location))).fetchSemanticsNodes().isNotEmpty() }
+        rule.onNode(hasTestTag("browseUse")).assertIsNotEnabled()
         tap(str(R.string.internal_storage))
         tap(Environment.DIRECTORY_DOWNLOADS)
         tap(str(R.string.browse_new_folder))
@@ -562,7 +715,7 @@ class E2eTest {
         eventually("$BROWSED made in Download", 10_000) { dir.isDirectory }
         rule.waitUntil(10_000) { rule.onAllNodes(hasTestTag("browseUse") and isEnabled()).fetchSemanticsNodes().isNotEmpty() }
         rule.onNode(hasTestTag("browseUse")).performClick()
-        // Back in the form, named after the folder; the same name stays on the top bar's Save.
+        // Back in the form, with the name typed before; the same name stays on the top bar's Save.
         field(str(R.string.name)).assert(hasText(BROWSED))
         tap(str(R.string.action_save))
         eventually("folder at ${dir.path} in the core", 30_000) { SyncStatus.snapshot.value.folders.any { it.path == dir.path } }

@@ -175,6 +175,20 @@ func FuzzRESTConfig(f *testing.F) {
 	f.Add("PUT", "/rest/config/gui", []byte(`{"enabled": true, "address": "0.0.0.0:8384", "user": "", "password": ""}`))
 	f.Add("PATCH", "/rest/config/options", []byte(`{"startBrowser": true}`))
 	f.Add("PUT", "/rest/config", []byte(`{"gui": {"enabled": false}}`))
+	// Over the length limits (limits.go): refused by lengthGuard.
+	long := strings.Repeat("é", maxText+1)
+	f.Add("PATCH", "/rest/config/options", []byte(`{"listenAddresses": ["tcp://:1","tcp://:2","tcp://:3","tcp://:4","tcp://:5","tcp://:6","tcp://:7","tcp://:8","tcp://:9","tcp://:10","tcp://:11","tcp://:12","tcp://:13","tcp://:14","tcp://:15","tcp://:16","tcp://:17"]}`))
+	f.Add("PATCH", "/rest/config/options", []byte(`{"urUniqueId": "`+long+`"}`))
+	var named config.Configuration
+	if err := json.Unmarshal(whole, &named); err != nil {
+		f.Fatal(err)
+	}
+	named.Devices[0].Name = long
+	longName, err := json.Marshal(named)
+	if err != nil {
+		f.Fatal(err)
+	}
+	f.Add("PUT", "/rest/config", longName)
 
 	f.Fuzz(func(t *testing.T, method, path string, body []byte) {
 		switch method + " " + path {
@@ -204,6 +218,14 @@ func FuzzRESTConfig(f *testing.F) {
 		}
 		if c := do(t, http.MethodGet, "/rest/system/status", nil, false); c == http.StatusOK {
 			t.Fatalf("%s %s %q: REST open without credentials", method, path, body)
+		}
+		// Nothing over its length limit got in (the config started within them).
+		var now config.Configuration
+		if err := json.Unmarshal(mustGet(t, "/rest/config"), &now); err != nil {
+			t.Fatal(err)
+		}
+		if p := lengthProblems(now); len(p) > 0 {
+			t.Fatalf("%s %s: %d values over their length limit got in", method, path, len(p))
 		}
 	})
 }

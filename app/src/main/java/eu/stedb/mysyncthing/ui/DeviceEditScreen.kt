@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -31,6 +30,7 @@ import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.Folder
 import eu.stedb.mysyncthing.core.Snapshot
+import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.delay
 
 /**
@@ -54,7 +54,7 @@ fun DeviceEditScreen(
     val scan = rememberLauncherForActivityResult(ScanContract()) { r -> r.contents?.let { id = it.trim() } }
     val canonical = deviceId(id)
     val known = canonical != null && (s.devices.any { it.deviceID == canonical } || s.myId == canonical)
-    val valid = canonical != null && !known
+    val valid = canonical != null && !known && textError(name) == null
 
     // Local discovery announces every 30 s, so a slow refresh is enough.
     var nearby by remember { mutableStateOf<Map<String, Discovered>>(emptyMap()) }
@@ -85,19 +85,14 @@ fun DeviceEditScreen(
             }
             SettingsGroup(stringResource(R.string.device)) {
                 Column(Modifier.padding(16.dp)) {
-                    OutlinedTextField(
-                        id, { id = it }, label = { Text(stringResource(R.string.device_id)) }, readOnly = isRequest,
-                        isError = id.isNotBlank() && !valid,
-                        supportingText = {
-                            Text(
-                                when {
-                                    known -> stringResource(R.string.folder_already_added)
-                                    id.isNotBlank() && canonical == null -> deviceIdError(id)!!.asString()
-                                    isRequest -> stringResource(R.string.device_id_check)
-                                    else -> stringResource(R.string.device_id_hint)
-                                },
-                            )
+                    TextInput(
+                        id, { id = it }, Limits.DEVICE_ID, label = stringResource(R.string.device_id), readOnly = isRequest, singleLine = false,
+                        error = when {
+                            known -> text(R.string.folder_already_added)
+                            id.isNotBlank() && canonical == null -> deviceIdError(id)
+                            else -> null
                         },
+                        hint = stringResource(if (isRequest) R.string.device_id_check else R.string.device_id_hint),
                         trailingIcon = {
                             if (!isRequest) IconButton(onClick = {
                                 scan.launch(
@@ -108,9 +103,8 @@ fun DeviceEditScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    OutlinedTextField(
-                        name, { name = it }, label = { Text(stringResource(R.string.name_optional)) }, singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    TextInput(
+                        name, { name = it }, Limits.TEXT, Modifier.fillMaxWidth().padding(top = 8.dp), label = stringResource(R.string.name_optional),
                     )
                 }
             }

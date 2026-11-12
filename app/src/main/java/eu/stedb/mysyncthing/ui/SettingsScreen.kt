@@ -257,7 +257,7 @@ fun SettingsScreen(
             stringResource(R.string.listen_addresses), o.listenAddresses, token = "default", tokenTitle = stringResource(R.string.hint_default),
             tokenHint = stringResource(R.string.listen_default_hint),
             addHint = stringResource(R.string.listen_add_hint), syntax = LISTEN_SYNTAX,
-            valid = ::isListenAddress, onDismiss = close,
+            valid = ::isListenAddress, total = Limits.LISTEN_TOTAL, onDismiss = close,
         ) { list -> close(); vm.changeOptions(o.copy(listenAddresses = list), R.string.op_listen_addresses) { putStrings("listenAddresses", list) } }
         NetDialog.Servers -> ListEditDialog(
             stringResource(R.string.discovery_servers), o.globalAnnounceServers, token = "default", tokenTitle = stringResource(R.string.settings_servers_default),
@@ -276,7 +276,7 @@ fun SettingsScreen(
     }
 
     if (rename) {
-        TextDialog(stringResource(R.string.settings_device_name), s.myName, stringResource(R.string.name), supporting = stringResource(R.string.settings_device_name_hint), onDismiss = { rename = false }) {
+        TextDialog(stringResource(R.string.settings_device_name), s.myName, stringResource(R.string.name), Limits.TEXT, supporting = stringResource(R.string.settings_device_name_hint), onDismiss = { rename = false }) {
             vm.renameDevice(s.myId, it); rename = false
         }
     }

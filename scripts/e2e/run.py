@@ -752,6 +752,8 @@ def main() -> None:
             phase("devicesTab", peer, a.out)
             phase("deviceWindows", peer, a.out)
             phase("textDialogsKeepTypedText", peer, a.out)
+            phase("lengthLimits", peer, a.out)
+            phase("rotationKeepsActivityAndDialog", peer, a.out)
             phase("recentChanges", peer, a.out)
             phase("browseFolder", peer, a.out)
             phase("removeGoesBackToTheTab", peer, a.out)

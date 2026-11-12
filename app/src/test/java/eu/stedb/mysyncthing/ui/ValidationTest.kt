@@ -268,7 +268,7 @@ class ValidationTest {
     private val path: Gen<String> = {
         val root = pick("/storage/emulated/0", "/storage/emulated/10", "/storage/1234-ABCD", "/storage", "/sdcard", "/data/user/0/eu.stedb.mysyncthing/files", "", "~", "/")(this)
         val parts = (0 until nextInt(0, 4)).map {
-            pick("DCIM", "Music", "Camera", "my photos", ".", "..", "", "Ünï 😀", "a\nb", "...", "Android", "android", "data", "DATA", "obb", "media", "gpj\u202Eexe", "a\u2066b", "a\u200Fb")(this)
+            pick("DCIM", "dcim", "Music", "MUSIC", "Camera", "my photos", ".", "..", "", "Ünï 😀", "a\nb", "...", "Android", "android", "data", "DATA", "obb", "media", "gpj\u202Eexe", "a\u2066b", "a\u200Fb")(this)
         }
         root + parts.joinToString("") { "/$it" } + pick("", "/", " ")(this)
     }
@@ -288,8 +288,10 @@ class ValidationTest {
         val rest = p.split('/').drop(if (p.startsWith("/storage/emulated/")) 4 else 3).map { it.lowercase() }
         assertFalse("Android keeps it for apps", rest.size >= 2 && rest[0] == "android" && rest[1] in setOf("data", "obb"))
         assertFalse("holds what Android keeps for apps", rest.isEmpty() || rest == listOf("android"))
-        for (e in existing.map { it.trimEnd('/') }) {
-            assertFalse("overlaps $e", p == e || p.startsWith("$e/") || e.startsWith("$p/"))
+        // Case is ignored, as shared storage and SD cards do.
+        for (e in existing.map { it.trimEnd('/').lowercase() }) {
+            val l = p.lowercase()
+            assertFalse("overlaps $e", l == e || l.startsWith("$e/") || e.startsWith("$l/"))
         }
     }
 
@@ -297,6 +299,9 @@ class ValidationTest {
     fun folderPathExamples() {
         assertEquals(null, folderPathError("/storage/emulated/0/Documents/", existing).en())
         assertEquals("Another folder is already here, or inside it", folderPathError("/storage/emulated/0/DCIM/Camera", existing).en())
+        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/emulated/0/dcim", existing).en())
+        assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-abcd/music/Live", existing).en())
+        assertEquals(null, folderPathError("/storage/emulated/0/DCIM2", existing).en())
         assertEquals("Holds folders Android keeps for apps (Android/data, obb)", folderPathError("/storage/1234-ABCD", existing).en())
         assertEquals("Another folder is already here, or inside it", folderPathError("/storage/1234-ABCD/Music/Live", existing).en())
         assertEquals("In the phone's storage or on an SD card (/storage/…)", folderPathError("/data/user/0/eu.stedb.mysyncthing/files/syncthing").en())
@@ -364,5 +369,15 @@ class ValidationTest {
         assertNull(safeName(" . "))
         assertEquals("/storage/emulated/0/Syncthing/abcde-12345", suggestedPath("..", "/storage/emulated/0/Syncthing", "abcde-12345"))
         assertEquals("/storage/emulated/0/Syncthing/Folder", suggestedPath("..", "/storage/emulated/0/Syncthing", ".."))
+    }
+
+    /** A saved path reads back the same: "/sdcard/ /" once became "/sdcard/ " and then "/sdcard" (bridge fuzzer). */
+    @Test
+    fun folderPathIsStable() {
+        val r = Random(11)
+        repeat(20_000) {
+            val p = r.chars("/ abc\t", 0, 12).let { if (r.nextBoolean()) "/sdcard$it" else "/storage/emulated/0$it" }
+            assertEquals(p, folderPath(p), folderPath(folderPath(p)))
+        }
     }
 }

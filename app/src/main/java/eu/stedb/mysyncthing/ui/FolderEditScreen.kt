@@ -25,7 +25,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -36,6 +35,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Folder
@@ -63,13 +64,34 @@ data class FolderDraft(
 /** The defaults' folder location, or Syncthing/ in shared storage while it is upstream's "~". */
 fun pathBase(defaults: Folder): String = defaults.path.trimEnd('/').takeIf { it.startsWith("/") } ?: "$internalStorage/Syncthing"
 
-/** Draft for a new local folder, or for an offer when [offerId] is set, starting from the [defaults]. */
-fun draftFor(s: Snapshot, offerId: String?, offerDevice: String?, defaults: Folder): FolderDraft {
+/**
+ * Draft for a new local folder, named [newName] and placed at its suggested
+ * path, or for an offer when [offerId] is set; both start from the [defaults].
+ */
+fun draftFor(s: Snapshot, offerId: String?, offerDevice: String?, defaults: Folder, newName: String = ""): FolderDraft {
     val base = FolderDraft(newFolderId(), "", type = defaults.type, versioning = defaults.versioning)
-    if (offerId == null) return base
+    if (offerId == null) return base.copy(label = newName, path = if (newName.isEmpty()) "" else suggestedPath(newName, pathBase(defaults), base.id))
     val label = s.pendingFolders[offerId]?.offeredBy?.get(offerDevice)?.label?.ifEmpty { null } ?: offerId
     return base.copy(id = offerId, label = label, path = suggestedPath(label, pathBase(defaults), offerId), devices = setOfNotNull(offerDevice))
 }
+
+/**
+ * The name a new folder starts with: [first] ("New folder"), else "New folder 2", 3 and on, the
+ * first whose suggested place in [base] is neither a directory ([exists]) nor in, around or at a
+ * synced folder, so saving it as is starts an empty folder. [first] when all 999 are taken.
+ */
+fun newFolderName(first: String, base: String, folders: List<Folder>, exists: (String) -> Boolean): String {
+    val synced = folders.map { folderPath(it.path) }
+    return (1..999).asSequence().map { if (it == 1) first else "$first $it" }
+        .firstOrNull { n -> val p = folderPath(suggestedPath(n, base)); synced.none { overlaps(p, it) } && !exists(p) } ?: first
+}
+
+/**
+ * The quick picks shown: the [suggestion] (Syncthing/<name>) first, unless it is the [chosen]
+ * path, then the usual folders ([picks]), each once.
+ */
+fun quickPickChips(suggestion: String?, picks: List<String>, chosen: String): List<String> =
+    (listOfNotNull(suggestion?.takeUnless { folderPath(it).equals(chosen, ignoreCase = true) }) + picks).distinct()
 
 /**
  * Full-screen form for adding a folder or accepting a shared one. An offer
@@ -81,14 +103,24 @@ fun FolderEditScreen(
 ) {
     var d by rememberSaveable(stateSaver = draftSaver) { mutableStateOf(initial) }
     // Follow the label into the suggested path until the user picks a place.
-    var pathTouched by rememberSaveable { mutableStateOf(offeredBy == null) }
+    var pathTouched by rememberSaveable { mutableStateOf(false) }
+    // The name field's text and selection. A new folder's name starts as "New folder", selected,
+    // and the first tap in it selects it all again, so typing replaces it.
+    var name by rememberSaveable(stateSaver = TextFieldValue.Saver) {
+        mutableStateOf(TextFieldValue(initial.label, if (offeredBy == null) TextRange(0, initial.label.length) else TextRange(initial.label.length)))
+    }
+    var nameTapped by rememberSaveable { mutableStateOf(offeredBy != null) }
+    // Until the user types a name, a place picked by quick pick or Browse names the folder
+    // ("New folder" becomes "Camera"). An offer keeps the name the other device gave it.
+    var nameTyped by rememberSaveable { mutableStateOf(offeredBy != null) }
     var browsing by rememberSaveable { mutableStateOf(false) }
     val disk = rememberDisk()
     // Read off the main thread: storages can be slow.
     val roots by produceState(emptyList<StorageRoot>(), disk) { value = withContext(disk.reads) { disk.roots() } }
     val choose = { path: String ->
         pathTouched = true
-        d = d.copy(path = path, label = d.label.ifEmpty { path.substringAfterLast('/') })
+        if (!nameTyped || d.label.isEmpty()) name = TextFieldValue(path.substringAfterLast('/')).let { it.copy(selection = TextRange(it.text.length)) }
+        d = d.copy(path = path, label = name.text)
     }
     val picks by produceState(emptyList<String>(), disk) { value = withContext(disk.reads) { quickPicks(disk) } }
     val isOffer = offeredBy != null
@@ -104,10 +136,10 @@ fun FolderEditScreen(
         }
     }
     val who = offeredBy?.let { id -> s.devices.find { it.deviceID == id }?.name?.ifEmpty { null } ?: shortId(id) }
-    val pathError = pickProblem(d.path, s.folders)
+    val pathError = pickProblem(d.path, s.folders, pathBase)
     // An offer's ID is the other device's; only a typed one must also work in REST paths.
     val idError = if (isOffer) text(R.string.folder_already_added).takeIf { s.folders.any { it.id == d.id } } else folderIdError(d.id, s.folders.map { it.id })
-    val valid = pathError == null && idError == null
+    val valid = pathError == null && idError == null && textError(d.label) == null
 
     val back = rememberDiscardGuard(d != initial, onBack)
     if (browsing) {
@@ -132,10 +164,16 @@ fun FolderEditScreen(
             }
             SettingsGroup(stringResource(R.string.folder)) {
                 Column(Modifier.padding(16.dp)) {
-                    OutlinedTextField(
-                        d.label,
-                        { d = d.copy(label = it, path = if (pathTouched) d.path else suggestedPath(it, pathBase, d.id)) },
-                        label = { Text(stringResource(R.string.name)) }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    TextInput(
+                        name,
+                        { v ->
+                            if (v.text != name.text) nameTyped = true
+                            // The tap that puts the cursor in changes only the selection.
+                            name = if (!nameTapped && v.text == name.text) v.copy(selection = TextRange(0, v.text.length)) else v
+                            nameTapped = true
+                            if (v.text != d.label) d = d.copy(label = v.text, path = if (pathTouched) d.path else suggestedPath(v.text, pathBase, d.id))
+                        },
+                        Limits.TEXT, Modifier.fillMaxWidth().testTag("folderName"), label = stringResource(R.string.name), singleLine = true,
                     )
                     // An empty path on a new form is not yet a mistake: no red, but say it's needed.
                     val error = d.path.isNotBlank() && pathError != null
@@ -144,7 +182,7 @@ fun FolderEditScreen(
                         when {
                             d.path.isBlank() -> stringResource(R.string.folder_path_needed)
                             pathError != null -> pathError.asString()
-                            isOffer && !pathTouched -> stringResource(R.string.folder_path_suggested)
+                            !pathTouched -> stringResource(R.string.folder_path_suggested)
                             else -> stringResource(R.string.folder_path_created)
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -153,7 +191,7 @@ fun FolderEditScreen(
                     )
                     // Syncthing/<name> first, while there is a name to put there.
                     val suggestion = if (isOffer || d.label.isNotBlank()) suggestedPath(d.label, pathBase, d.id) else null
-                    QuickPicks(suggestion, picks, folderPath(d.path), s.folders, roots, Modifier.padding(top = 12.dp)) { p ->
+                    QuickPicks(suggestion, picks, folderPath(d.path), s.folders, roots, pathBase, Modifier.padding(top = 12.dp)) { p ->
                         if (p == suggestion) {
                             pathTouched = false
                             d = d.copy(path = p)
@@ -166,10 +204,9 @@ fun FolderEditScreen(
                         Text(stringResource(R.string.folder_browse), Modifier.padding(start = 8.dp))
                     }
                     if (!isOffer) {
-                        OutlinedTextField(
-                            d.id, { d = d.copy(id = it) }, label = { Text(stringResource(R.string.folder_id)) }, singleLine = true, isError = idError != null,
-                            supportingText = { Text(idError?.asString() ?: stringResource(R.string.folder_id_hint)) },
-                            modifier = Modifier.fillMaxWidth(),
+                        TextInput(
+                            d.id, { d = d.copy(id = it) }, Limits.TEXT, Modifier.fillMaxWidth(), label = stringResource(R.string.folder_id),
+                            error = idError, hint = stringResource(R.string.folder_id_hint),
                         )
                     }
                 }
@@ -231,6 +268,7 @@ fun VersioningEditor(v: Versioning, onChange: (Versioning) -> Unit) {
             stringResource(param.label), versioningShown(v.type, v.params[param.key]),
             stringResource(if (param.days) R.string.versioning_unit_days else R.string.versioning_unit_versions),
             supporting = if (param.days) stringResource(R.string.versioning_days_hint) else null,
+            limit = Limits.NUMBER,
             error = { wholeNumberError(it, param.min) },
             onDismiss = { editParam = false },
         ) {
@@ -293,11 +331,12 @@ private fun PathRow(path: String, roots: List<StorageRoot>, error: Boolean, modi
  */
 @Composable
 private fun QuickPicks(
-    suggestion: String?, picks: List<String>, chosen: String, folders: List<Folder>, roots: List<StorageRoot>,
+    suggestion: String?, picks: List<String>, chosen: String, folders: List<Folder>, roots: List<StorageRoot>, base: String,
     modifier: Modifier = Modifier, onPick: (String) -> Unit,
 ) {
     // The suggestion by where it goes in its storage ("Syncthing/Holiday 2026"), the usual folders by name.
-    val shown = (listOfNotNull(suggestion?.let { it to pathParts(it, roots).second }) + picks.map { it to it.substringAfterLast('/') }).distinctBy { it.first }
+    // The suggestion is left out while it is the chosen path, which the path row already shows.
+    val shown = quickPickChips(suggestion, picks, chosen).map { it to if (it == suggestion) pathParts(it, roots).second else it.substringAfterLast('/') }
     if (shown.isEmpty()) return
     Column(modifier) {
         Text(stringResource(R.string.folder_quick_picks), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -305,7 +344,7 @@ private fun QuickPicks(
             shown.forEach { (p, name) ->
                 val synced = folders.any { folderPath(it.path) == p }
                 FilterChip(
-                    selected = chosen == p, onClick = { onPick(p) }, enabled = chosen == p || pickProblem(p, folders) == null,
+                    selected = chosen == p, onClick = { onPick(p) }, enabled = chosen == p || pickProblem(p, folders, base) == null,
                     label = { Text(if (synced) stringResource(R.string.folder_pick_synced, name) else name) },
                     shape = ButtonShape,
                 )

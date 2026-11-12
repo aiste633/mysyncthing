@@ -136,8 +136,10 @@ through a relay, offline and paused by the user) and a folder offer. No real dev
   and none runs into the screen below).
 
 Both checks were tried on purpose against a broken screen, and both failed as they should.
-Dialogs with a text field are left out: on Robolectric they never settle. The end-to-end
-tests cover them on the emulators.
+Dialogs with a text field are left out upright: at the platform's default width Robolectric never
+gets them idle. On a phone on its side they fill the screen (`EntryDialog`), and `DialogScreenshotTest`
+compares all six in light, dark and German at the largest font; `EntryDialogTest` checks their bar.
+The end-to-end tests cover the upright ones and the rotation between the two on the emulators.
 
 ## End-to-end tests
 
@@ -171,6 +173,7 @@ they are the record of a run on the maintainer's PC, and anyone can repeat it wi
 | Devices tab | "Pause syncing" on the tab: stored, the peer loses the phone, the status says paused and the cards' toggles rest; the card says when the core last saw the peer; switched off, the peer comes back. The peer pausing the phone on its side: the status is the grey "Waiting for devices", red due 30 min after the peer was last seen. "Sync windows" opens its screen and changes nothing |
 | Own sync windows | The peer's own windows closed now: the peer loses the phone, the core holds it, the card names the next opening and its pause button rests, the device's screen says why; turned off in its editor (Save), the peer comes back and the hold is released. Own windows that miss the global ones: the peer stays away and the card says "Never syncs". The windows are set around the phone's clock, so no alarm is waited for |
 | Typed text | Text typed in a rename dialog and in list dialogs (Settings, device defaults) survives the screen being recreated. Checked at once, with no wait: dialogs on values read from Syncthing are there on the recreated screen's first frame, and Settings keeps its scroll position. Afterwards only one copy of the screen stays in memory |
+| Length limits | A folder name of 1025 characters keeps Save off, 1024 turns it on; the core refuses a 1025-character device name (as from the web GUI) and keeps running; with this phone named 1024 four-byte characters the peer connects again; a 257 kB `.stignore` written on disk opens read-only |
 | Folder browser | Add folder, Browse, Download (which Android's own picker refuses), New folder `mysyncthing-test-browse`, Use this folder: the form takes the folder's name and the core gets the folder at that path; removed again after |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Recent changes | A file written on the phone reaches the peer; the folder card's history icon opens that folder's recent changes, which list the file as changed on this phone |
@@ -273,7 +276,15 @@ found 14 bugs, all fixed, for example:
 Each form check has property tests: 20,000 generated inputs each, with a fixed seed so a
 failure can be repeated. Every bug fixed in Kotlin has a test that fails when the old code is
 put back. Later inputs got the same treatment as they were added: the proxy, the sync windows,
-the backup passwords, the Fork import.
+the backup passwords, the Fork import. Folder paths: the default location for new folders and any
+folder holding it are refused, anything inside it is not, and a path spelled with other
+case, `/sdcard` or a trailing `/` always gets the same answer (`DefaultLocationTest`).
+
+Every input has a length limit, tested at the limit and one over it (`InputLimitTest`,
+`EntryDialogTest`, `FormsTest`, `go/bridge/limits_test.go`), with the same cases for the forms and
+the bridge in `validation-contract.json` (text counted in characters, path parts and whole paths in
+bytes); `InputLimitTest` also fails on a text field without a limit. See [length
+limits](input-validation.md#length-limits).
 
 ## Fuzzing
 
@@ -285,12 +296,12 @@ was written (without network access, since a fuzzed configuration can switch on 
 |---|---|---|---|
 | `FuzzPrepare` | `config.xml`, key files, GUI login | Refused, or the GUI is locked to that login and an existing key is never replaced | 60 min, 692,536 inputs |
 | `FuzzGUIGuard` | GUI settings changes | Refused, or the login and lock are unchanged | 20 min, 383,435 inputs |
-| `FuzzRESTConfig` | Config API requests to a running core | The app's login still works, a wrong one doesn't, the API needs credentials | 45 min, 607,758 inputs |
+| `FuzzRESTConfig` | Config API requests to a running core | The app's login still works, a wrong one doesn't, the API needs credentials; nothing over its length limit gets in | 45 min, 607,758 inputs |
 | `FuzzCheckIgnores` | Ignore patterns | What the check accepts loads without error | 45 min, 1,344,638 inputs |
 | `FuzzProxyFrom` | Proxy settings | Refused, or the proxy URL reads back the same | 3 min |
 | `FuzzReadOwnSettings` | This app's backup settings, devices' own sync windows too | Refused, or they read back the same | 3 min; with own windows 90 s, 985,058 inputs |
 | `FuzzReadForkBackup` | Backup zips (Syncthing-Fork's and this app's) | Refused, or read and passing the import policy, never a crash; own sync windows only for devices the backup pairs with | 10 min, 499,258 inputs |
-| `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads, the import policy leaves nothing that runs a command, cleans out or reaches files outside shared storage, or reports elsewhere; a second run changes nothing | 15 min, 2,534,263 inputs (found a slice difference, fixed) |
+| `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads, the import policy leaves nothing that runs a command, cleans out or reaches files outside shared storage, or reports elsewhere, and nothing over its length limit; a second run changes nothing | 15 min, 2,534,263 inputs (found a slice difference, fixed) |
 | `FuzzReadJavaPrefs` | Syncthing-Fork's saved preferences (Java serialization, read by a strict allowlist parser, never deserialized) | Refused or read, never a crash | 3 min |
 
 `FuzzRESTConfig` found a bug in Syncthing itself: six GUI setting changes in a row made the

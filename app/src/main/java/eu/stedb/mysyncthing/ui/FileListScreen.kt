@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -177,10 +176,9 @@ fun FailedScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> U
     }) {
         item("header") { Header(f?.label?.ifEmpty { null } ?: folder, errors?.let { pluralStringResource(R.plurals.files_could_not_sync, it.size, grouped(it.size)) }) }
         item("search") {
-            OutlinedTextField(
-                query, { query = it }, singleLine = true, label = { Text(stringResource(R.string.search)) },
-                placeholder = { Text(stringResource(R.string.files_search_hint)) }, leadingIcon = { Icon(Icons.Default.Search, null) },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            TextInput(
+                query, { query = it }, Limits.TEXT, Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), label = stringResource(R.string.search),
+                placeholder = stringResource(R.string.files_search_hint), leadingIcon = { Icon(Icons.Default.Search, null) },
             )
         }
         if (errors == null) item("loading") { Note(stringResource(R.string.loading)) }

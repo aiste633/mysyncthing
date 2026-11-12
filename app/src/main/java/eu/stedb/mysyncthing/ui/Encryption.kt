@@ -3,9 +3,7 @@ package eu.stedb.mysyncthing.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -56,29 +54,25 @@ fun PasswordDialog(
 ) {
     var password by rememberSaveable { mutableStateOf(initial) }
     var show by rememberSaveable { mutableStateOf(false) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.encryption_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(stringResource(R.string.encryption_text, device, folder))
-                OutlinedTextField(
-                    password, { password = it }, label = { Text(stringResource(R.string.password)) }, singleLine = true,
-                    supportingText = requiredError(password)?.let { { Text(it.asString()) } },
-                    visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        PasswordVisibilityButton(show) { show = !show }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(
-                    stringResource(R.string.encryption_keep_safe, device),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                if (shared) TextButton(onClick = onUnshare) { Text(stringResource(R.string.action_stop_sharing), color = MaterialTheme.colorScheme.error) }
-            }
-        },
-        confirmButton = { TextButton(onClick = { onSave(password) }, enabled = password.isNotEmpty()) { Text(stringResource(if (shared) R.string.action_save else R.string.action_share)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+    EntryDialog(
+        stringResource(R.string.encryption_title), stringResource(if (shared) R.string.action_save else R.string.action_share), requiredTextError(password) == null,
+        onConfirm = { onSave(password) }, onDismiss = onDismiss, secure = show,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(stringResource(R.string.encryption_text, device, folder))
+            TextInput(
+                password, { password = it }, Limits.TEXT, Modifier.fillMaxWidth().inViewWhenFocused(), label = stringResource(R.string.password),
+                hint = requiredError(password)?.asString(),
+                visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    PasswordVisibilityButton(show) { show = !show }
+                },
+            )
+            Text(
+                stringResource(R.string.encryption_keep_safe, device),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (shared) TextButton(onClick = onUnshare) { Text(stringResource(R.string.action_stop_sharing), color = MaterialTheme.colorScheme.error) }
+        }
+    }
 }

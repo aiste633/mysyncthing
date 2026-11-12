@@ -427,6 +427,7 @@
     <string name="folder">Cartella</string>
     <string name="folder_path">Cartella su questo telefono</string>
     <string name="folder_path_suggested">Suggerita. Viene creata se manca.</string>
+    <string name="folder_new_name">Nuova cartella</string>
     <string name="folder_path_needed">Obbligatoria. Scegline una qui sotto, o Sfoglia</string>
     <string name="folder_path_created">Viene creata se manca.</string>
     <string name="folder_path_none">Nessuna scelta</string>
@@ -448,10 +449,10 @@
     <string name="browse_synced_already">Già sincronizzata come \"%1$s\"</string>
     <string name="browse_inside_synced">Dentro la cartella sincronizzata \"%1$s\"</string>
     <string name="browse_holds_synced">Contiene la cartella sincronizzata \"%1$s\"</string>
+    <string name="browse_default_location">Posizione predefinita delle nuove cartelle</string>
     <string name="error_path_app_private">Android riserva questa cartella alle app</string>
     <string name="error_path_other_user">Appartiene a un altro utente o profilo del telefono</string>
     <string name="error_path_holds_app_private">Contiene cartelle che Android riserva alle app (Android/data, obb)</string>
-    <string name="error_name_long">Al massimo 255 byte</string>
     <string name="error_name_removable">Non su una scheda SD o chiavetta USB: %1$s, o un . alla fine</string>
     <string name="error_name_taken">Qui c\'è già una cartella con questo nome</string>
     <plurals name="browse_synced_inside">
@@ -482,6 +483,8 @@
     <string name="error_path_parts">Niente parti vuote, . o ..</string>
     <string name="error_path_storage">Nella memoria del telefono o su una scheda SD (/storage/…)</string>
     <string name="error_path_overlap">C\'è già un\'altra cartella qui, o al suo interno</string>
+    <string name="error_path_default_location">Posizione predefinita delle nuove cartelle. Apri o crea una cartella al suo interno.</string>
+    <string name="error_path_holds_default_location">Contiene la posizione predefinita delle nuove cartelle</string>
     <string name="error_id_slash">Niente /</string>
     <string name="error_id_dots">Non . o ..</string>
     <string name="error_id_control">Niente caratteri di controllo</string>
@@ -491,8 +494,6 @@
     <string name="error_host_brackets">Senza parentesi quadre, per esempio ::1</string>
     <string name="error_host">Un indirizzo IP o un nome host</string>
     <string name="error_port">Una porta da 1 a 65535</string>
-    <string name="error_too_long_255">Troppo lungo: al massimo 255 byte</string>
-    <string name="error_too_long">Troppo lungo</string>
     <string name="error_user_needed">Necessario con una password</string>
     <string name="error_proxy_type">Tipo di proxy sconosciuto</string>
     <plurals name="error_password_short">
@@ -772,9 +773,9 @@
     <string name="error_password_wrong">Password errata</string>
     <string name="error_password_backup_empty">Inserisci la password del backup</string>
     <plurals name="error_too_long_chars">
-        <item quantity="one">Al massimo %1$d carattere</item>
-        <item quantity="many">Al massimo %1$d caratteri</item>
-        <item quantity="other">Al massimo %1$d caratteri</item>
+        <item quantity="one">Al massimo %1$s carattere</item>
+        <item quantity="many">Al massimo %1$s caratteri</item>
+        <item quantity="other">Al massimo %1$s caratteri</item>
     </plurals>
     <string name="import_folder_found">%1$s: trovata, verrà ricontrollata</string>
     <string name="import_folder_found_new">%1$s: trovata, diventerà una cartella di Syncthing e verrà controllata</string>
@@ -810,7 +811,7 @@
     <string name="not_imported_folder_conditions">Condizioni di sincronizzazione proprie della cartella %1$s</string>
     <string name="not_imported_folder_script">Script dopo la sincronizzazione della cartella %1$s</string>
     <string name="not_imported_device_conditions">Condizioni di sincronizzazione proprie del dispositivo %1$s</string>
-    <string name="not_imported_folder_id">Cartella %1$s: il suo ID contiene caratteri di controllo</string>
+    <string name="not_imported_folder_id">Cartella %1$s: il suo ID contiene caratteri di controllo o più di 1024 caratteri</string>
     <string name="not_imported_folder_filesystem">Cartella %1$s: non su un file system normale</string>
     <string name="not_imported_folder_path">Cartella %1$s: non nella memoria del telefono né su una scheda SD</string>
     <string name="not_imported_folder_overlap">Cartella %1$s: uguale a un\'altra cartella, al suo interno o intorno</string>
@@ -821,11 +822,15 @@
     <string name="not_imported_default_folder_versioning">Impostazioni predefinite per le nuove cartelle: controllo versioni esterno</string>
     <string name="not_imported_default_folder_versions_path">Impostazioni predefinite per le nuove cartelle: posizione propria per le vecchie versioni</string>
     <string name="not_imported_default_folder_marker">Impostazioni predefinite per le nuove cartelle: marcatore proprio</string>
-    <string name="not_imported_device_addresses">Dispositivo %1$s: indirizzi relay, o indirizzi e reti non validi</string>
+    <string name="not_imported_device_addresses">Dispositivo %1$s: indirizzi relay, indirizzi e reti non validi, o più di 16 indirizzi</string>
     <string name="not_imported_default_device_addresses">Impostazioni predefinite per i nuovi dispositivi: indirizzi relay, o indirizzi e reti non validi</string>
     <string name="not_imported_discovery_servers">Server di individuazione propri; si usano quelli di Syncthing</string>
     <string name="not_imported_stun_servers">Server STUN propri; si usano quelli di Syncthing</string>
-    <string name="not_imported_listen_addresses">Indirizzi di ascolto tramite relay, o non validi</string>
+    <string name="not_imported_listen_addresses">Indirizzi di ascolto tramite relay, non validi o troppi</string>
+    <string name="not_imported_text_too_long">%1$s: un nome o gruppo di più di 1024 caratteri, lasciato vuoto</string>
+    <string name="not_imported_folder_password_long">Cartella %1$s: una password di cifratura di più di 1024 caratteri</string>
+    <string name="not_imported_default_ignores">Schemi di esclusione predefiniti: più di 256 kB</string>
+    <string name="not_imported_other_too_long">Altre impostazioni di più di 1024 caratteri, lasciate vuote</string>
     <string name="not_imported_local_networks">Reti sempre locali non valide</string>
     <string name="not_imported_local_discovery">Indirizzo o porta propri per l\'individuazione locale</string>
     <string name="not_imported_feature_flags">Funzioni sperimentali</string>
@@ -945,4 +950,25 @@
         <item quantity="many">e %1$d altri</item>
         <item quantity="other">e %1$d altri</item>
     </plurals>
+    <plurals name="error_too_long_bytes">
+        <item quantity="one">Al massimo %1$s byte</item>
+        <item quantity="many">Al massimo %1$s byte</item>
+        <item quantity="other">Al massimo %1$s byte</item>
+    </plurals>
+    <plurals name="error_path_part_long">
+        <item quantity="one">Ogni nome di cartella nel percorso: al massimo %1$s byte</item>
+        <item quantity="many">Ogni nome di cartella nel percorso: al massimo %1$s byte</item>
+        <item quantity="other">Ogni nome di cartella nel percorso: al massimo %1$s byte</item>
+    </plurals>
+    <plurals name="error_too_many_entries">
+        <item quantity="one">Al massimo %1$s voce</item>
+        <item quantity="many">Al massimo %1$s voci</item>
+        <item quantity="other">Al massimo %1$s voci</item>
+    </plurals>
+    <plurals name="error_too_long_together">
+        <item quantity="one">In tutto al massimo %1$s byte</item>
+        <item quantity="many">In tutto al massimo %1$s byte</item>
+        <item quantity="other">In tutto al massimo %1$s byte</item>
+    </plurals>
+    <string name="ignores_too_big">Questo file supera %1$s. Modificalo nell’interfaccia web.</string>
 </resources>

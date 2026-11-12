@@ -4,6 +4,7 @@
 package stbridge
 
 import (
+	"maps"
 	"archive/zip"
 	"bytes"
 	"encoding/json"
@@ -144,6 +145,9 @@ func hostileBackup(t testing.TB, root string) backupFixture {
 
 // checkPolicy is what importPolicy promises about a config; nil if it holds.
 func checkPolicy(cfg config.Configuration) error {
+	if p := lengthProblems(cfg); len(p) > 0 {
+		return fmt.Errorf("%d values over their length limit: %q", len(p), slices.Collect(maps.Keys(p))[0][:min(80, len(slices.Collect(maps.Keys(p))[0]))])
+	}
 	def := config.New(protocol.EmptyDeviceID)
 	var paths []string
 	for _, f := range cfg.Folders {
@@ -172,8 +176,8 @@ func checkPolicy(cfg config.Configuration) error {
 		if hasUnsafeText(d.Name) {
 			return fmt.Errorf("device %s: unsafe name", d.DeviceID)
 		}
-		if len(d.Addresses) == 0 {
-			return fmt.Errorf("device %s: no address", d.DeviceID)
+		if len(d.Addresses) == 0 || len(d.Addresses) > maxEntries {
+			return fmt.Errorf("device %s: %d addresses", d.DeviceID, len(d.Addresses))
 		}
 		for _, a := range d.Addresses {
 			if a != "dynamic" && !isImportDeviceAddress(a) {

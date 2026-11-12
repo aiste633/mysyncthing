@@ -20,11 +20,9 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -227,14 +225,14 @@ fun FolderScreen(
     }
 
     when (dialog) {
-        FolderDialog.Name -> TextDialog(stringResource(R.string.folder_name), f.label, stringResource(R.string.name), onDismiss = { dialog = null }) {
+        FolderDialog.Name -> TextDialog(stringResource(R.string.folder_name), f.label, stringResource(R.string.name), Limits.TEXT, onDismiss = { dialog = null }) {
             vm.setFolderLabel(id, it); dialog = null
         }
         FolderDialog.Type -> ChoiceDialog(stringResource(R.string.folder_type), FOLDER_TYPES, f.type, ::folderTypeHint, onDismiss = { dialog = null }) {
             vm.setFolderType(id, it); dialog = null
         }
         FolderDialog.Group -> TextDialog(
-            stringResource(R.string.folder_group), f.group, stringResource(R.string.group), supporting = stringResource(R.string.folder_group_hint),
+            stringResource(R.string.folder_group), f.group, stringResource(R.string.group), Limits.TEXT, supporting = stringResource(R.string.folder_group_hint),
             error = { null }, onDismiss = { dialog = null },
         ) { vm.setFolderGroup(id, it); dialog = null }
         FolderDialog.Rescan -> ChoiceDialog(stringResource(R.string.full_rescan), rescanChoices(f.rescanIntervalS), f.rescanIntervalS, ::rescanHint, onDismiss = { dialog = null }) {
@@ -287,32 +285,28 @@ internal fun DiskFreeDialog(initial: DiskSize, path: String, onDismiss: () -> Un
     val free by produceState<Pair<Long, Long>?>(null, path) {
         this.value = withContext(Dispatchers.IO) { runCatching { StatFs(path).let { it.availableBytes to it.totalBytes } }.getOrNull() }
     }
-    val error = amountError(value, unit)?.asString()
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.keep_free)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value, { value = it }, label = { Text(stringResource(R.string.amount)) }, singleLine = true, isError = error != null,
-                    supportingText = error?.let { { Text(it) } },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal), modifier = Modifier.fillMaxWidth(),
-                )
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    units.forEachIndexed { i, u ->
-                        SegmentedButton(
-                            selected = unit == u, onClick = { unit = u }, icon = {},
-                            shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
-                        ) { Text(u) }
-                    }
+    val error = amountError(value, unit)
+    EntryDialog(
+        stringResource(R.string.keep_free), stringResource(R.string.action_save), error == null,
+        onConfirm = { onSave(DiskSize(decimal(value)!!, unit)) }, onDismiss = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            TextInput(
+                value, { value = it }, Limits.NUMBER, Modifier.fillMaxWidth().inViewWhenFocused(), label = stringResource(R.string.amount),
+                error = error, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+            SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                units.forEachIndexed { i, u ->
+                    SegmentedButton(
+                        selected = unit == u, onClick = { unit = u }, icon = {},
+                        shape = SegmentedButtonDefaults.itemShape(i, units.size, MaterialTheme.shapes.extraSmall),
+                    ) { Text(u) }
                 }
-                Text(
-                    free?.let { (a, t) -> stringResource(R.string.keep_free_text_now, bytes(a), bytes(t)) } ?: stringResource(R.string.keep_free_text),
-                    style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
-        },
-        confirmButton = { TextButton(onClick = { onSave(DiskSize(decimal(value)!!, unit)) }, enabled = error == null) { Text(stringResource(R.string.action_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) } },
-    )
+            Text(
+                free?.let { (a, t) -> stringResource(R.string.keep_free_text_now, bytes(a), bytes(t)) } ?: stringResource(R.string.keep_free_text),
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }

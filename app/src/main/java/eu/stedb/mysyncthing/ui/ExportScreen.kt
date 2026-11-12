@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -160,22 +159,18 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val transformation = if (show) VisualTransformation.None else PasswordVisualTransformation()
                 val keyboard = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)
-                OutlinedTextField(
-                    vm.password, { vm.password = it }, label = { Text(stringResource(R.string.password)) }, singleLine = true,
-                    isError = passwordError != null,
-                    supportingText = { Text(passwordError?.asString() ?: pluralStringResource(R.plurals.export_password_hint, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD)) },
+                TextInput(
+                    vm.password, { vm.password = it }, Limits.EXPORT_PASSWORD, Modifier.fillMaxWidth(), label = stringResource(R.string.password),
+                    error = passwordError, hint = pluralStringResource(R.plurals.export_password_hint, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD),
                     visualTransformation = transformation, keyboardOptions = keyboard,
                     trailingIcon = {
                         PasswordVisibilityButton(show) { show = !show }
                     },
-                    modifier = Modifier.fillMaxWidth(),
                 )
-                OutlinedTextField(
-                    vm.repeat, { vm.repeat = it }, label = { Text(stringResource(R.string.password_again)) }, singleLine = true,
-                    isError = vm.repeat.isNotEmpty() && repeatError != null,
-                    supportingText = repeatError?.takeIf { vm.repeat.isNotEmpty() }?.let { { Text(it.asString()) } },
+                TextInput(
+                    vm.repeat, { vm.repeat = it }, Limits.EXPORT_PASSWORD, Modifier.fillMaxWidth(), label = stringResource(R.string.password_again),
+                    error = repeatError?.takeIf { vm.repeat.isNotEmpty() },
                     visualTransformation = transformation, keyboardOptions = keyboard,
-                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

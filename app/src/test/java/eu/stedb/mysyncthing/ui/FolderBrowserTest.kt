@@ -1,5 +1,6 @@
 package eu.stedb.mysyncthing.ui
 
+import eu.stedb.mysyncthing.core.Folder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -12,8 +13,9 @@ class FolderBrowserTest {
     private val disk = fixtureDisk()
     private val roots = disk.roots()
     private val folders = Fixtures.snapshot.folders // Photos at DCIM/Camera, Documents, Music
+    private val base = "$root/Syncthing"
 
-    private fun rows(dir: String, hidden: Boolean = false) = browseRows(dir, disk.directories(dir)!!, folders, hidden)
+    private fun rows(dir: String, hidden: Boolean = false) = browseRows(dir, disk.directories(dir)!!, folders, hidden, base)
 
     @Test
     fun topOfInternalStorage() {
@@ -24,6 +26,44 @@ class FolderBrowserTest {
         assertEquals("Documents", r.first { it.name == "Documents" }.syncedAs)
         assertEquals(31, r.first { it.name == "Download" }.items)
         assertEquals(".thumbnails", rows(root, hidden = true).first().name)
+        assertEquals(listOf("Syncthing"), r.filter { it.isDefault }.map { it.name })
+    }
+
+    @Test
+    fun defaultLocationOpensButIsNotChosen() {
+        val reason = "Default location for new folders. Open or create a folder inside it."
+        assertEquals(reason, pickProblem(base, emptyList(), base).en())
+        assertEquals(reason, pickProblem("/sdcard/syncthing/", emptyList(), base).en())
+        assertEquals(reason, pickProblem("/storage/self/primary/SYNCTHING", folders, base).en())
+        assertNull(pickProblem("$base/Recipes", emptyList(), base))
+        assertNull(pickProblem("$base/Laptop", folders, base))
+        // With an accepted offer inside, the default location still says so, not that it holds that folder.
+        val offer = folders + Folder("lap", "Laptop", "$base/Laptop")
+        assertEquals(reason, pickProblem(base, offer, base).en())
+        assertEquals(reason, pickProblem("/sdcard/syncthing", offer, base).en())
+        assertEquals("Already synced as \"Laptop\"", pickProblem("$base/laptop", offer, base).en())
+        assertEquals("Inside the synced folder \"Laptop\"", pickProblem("$base/Laptop/Notes", offer, base).en())
+        assertEquals("Holds the synced folder \"Photos\"", pickProblem(root, offer, base).en())
+        assertNull(pickProblem("$root/Syncthing2", folders, base))
+        // A default set deeper by an imported backup: the folder holding it is refused too.
+        val deep = "$root/Sync/Phone"
+        assertEquals("Holds the default location for new folders", pickProblem("$root/sync", emptyList(), deep).en())
+        assertNull(pickProblem("$root/Sync/Phone/Notes", emptyList(), deep))
+        assertNull(pickProblem("$root/Sync/Laptop", emptyList(), deep))
+        // On an SD card.
+        assertEquals(reason, pickProblem("/storage/1234-abcd/syncthing", emptyList(), "/storage/1234-ABCD/Syncthing").en())
+        // The synced folder is named first; rules Android sets come before the default location.
+        assertEquals("Holds folders Android keeps for apps (Android/data, obb)", pickProblem(root, emptyList(), base).en())
+    }
+
+    @Test
+    fun caseDoesNotMakeAnotherFolder() {
+        assertEquals("Already synced as \"Documents\"", pickProblem("$root/documents", folders, base).en())
+        assertEquals("Inside the synced folder \"Photos\"", pickProblem("$root/dcim/camera/2026", folders, base).en())
+        assertEquals("Holds the synced folder \"Photos\"", pickProblem("/sdcard/Dcim", folders, base).en())
+        assertEquals("Documents", browseRows(root, listOf(DirEntry("documents", 1)), folders, false, base).single().syncedAs)
+        assertEquals(1, browseRows(root, listOf(DirEntry("dcim", 1)), folders, false, base).single().syncedInside)
+        assertTrue(browseRows(root, listOf(DirEntry("syncthing", 1)), folders, false, base).single().isDefault)
     }
 
     @Test
@@ -32,30 +72,56 @@ class FolderBrowserTest {
         assertTrue(r.getValue("data").locked)
         assertTrue(r.getValue("obb").locked)
         assertFalse(r.getValue("media").locked)
-        assertEquals("Android keeps this folder for apps", pickProblem("$root/Android/data", folders).en())
+        assertEquals("Android keeps this folder for apps", pickProblem("$root/Android/data", folders, base).en())
     }
 
     @Test
     fun whatCanBeChosen() {
-        assertNull(pickProblem("$root/Download", folders))
-        assertNull(pickProblem("$root/Pictures", folders))
-        assertEquals("Already synced as \"Documents\"", pickProblem("$root/Documents", folders).en())
-        assertEquals("Inside the synced folder \"Photos\"", pickProblem("$root/DCIM/Camera/2026", folders).en())
-        assertEquals("Holds the synced folder \"Photos\"", pickProblem("$root/DCIM", folders).en())
-        assertEquals("Holds the synced folder \"Photos\"", pickProblem(root, folders).en())
-        assertNull(pickProblem("/storage/1234-ABCD/Films", folders))
+        assertNull(pickProblem("$root/Download", folders, base))
+        assertNull(pickProblem("$root/Pictures", folders, base))
+        assertEquals("Already synced as \"Documents\"", pickProblem("$root/Documents", folders, base).en())
+        assertEquals("Inside the synced folder \"Photos\"", pickProblem("$root/DCIM/Camera/2026", folders, base).en())
+        assertEquals("Holds the synced folder \"Photos\"", pickProblem("$root/DCIM", folders, base).en())
+        assertEquals("Holds the synced folder \"Photos\"", pickProblem(root, folders, base).en())
+        assertNull(pickProblem("/storage/1234-ABCD/Films", folders, base))
         // The top of a storage and its Android folder hold Android/data and obb, which the core can't read.
         val holds = "Holds folders Android keeps for apps (Android/data, obb)"
-        assertEquals(holds, pickProblem("/storage/1234-ABCD", folders).en())
-        assertEquals(holds, pickProblem("$root/Android", folders).en())
-        assertNull(pickProblem("$root/Android/media", folders))
-        assertEquals("Holds the synced folder \"Photos\"", pickProblem("/sdcard/DCIM/", folders).en())
+        assertEquals(holds, pickProblem("/storage/1234-ABCD", folders, base).en())
+        assertEquals(holds, pickProblem("$root/Android", folders, base).en())
+        assertNull(pickProblem("$root/Android/media", folders, base))
+        assertEquals("Holds the synced folder \"Photos\"", pickProblem("/sdcard/DCIM/", folders, base).en())
     }
 
     /** Whatever the browser lets through, the form takes too. */
     @Test
     fun aChosenPlaceIsAValidFolder() = forAll({ pick(*disk.dirs.keys.toTypedArray(), "/storage", "/storage/emulated", "/data/user/0")(this) }) { p ->
-        if (pickProblem(p, folders) == null) assertNull(folderPathError(p, folders.map { it.path }))
+        if (pickProblem(p, folders, base) == null) assertNull(folderPathError(p, folders.map { it.path }))
+    }
+
+    /** A typed path is saved as the disk spells it, as far as its directories exist. */
+    @Test
+    fun typedPathsTakeTheDisksSpelling() {
+        assertEquals("$root/DCIM/Camera", diskSpelling("/sdcard/dcim/camera/", roots, disk))
+        assertEquals("$root/DCIM/new one", diskSpelling("/storage/self/primary/Dcim/new one", roots, disk))
+        assertEquals("$root/Syncthing/a/Music", diskSpelling("$root/syncthing/a/Music", roots, disk))
+        assertEquals("/storage/1234-ABCD/Music", diskSpelling("/storage/1234-abcd/MUSIC", roots, disk))
+        assertEquals(root, diskSpelling("/sdcard", roots, disk))
+        assertEquals("/storage/9999-0000/x", diskSpelling("/storage/9999-0000/x", roots, disk))
+        // An exact match wins where both spellings exist (a case-sensitive USB stick).
+        val usb = MapDisk(listOf(StorageRoot("/storage/USB", "USB")), mapOf("/storage/USB/a" to 1, "/storage/USB/A" to 1))
+        assertEquals("/storage/USB/A", diskSpelling("/storage/USB/A", usb.roots(), usb))
+        assertEquals("/storage/USB/a", diskSpelling("/storage/USB/a", usb.roots(), usb))
+    }
+
+    /** Respelling never changes what the browser allows. */
+    @Test
+    fun respellingKeepsTheVerdict() = forAll({
+        pick(*disk.dirs.keys.toTypedArray())(this).map { if (nextBoolean()) it.uppercaseChar() else it.lowercaseChar() }.joinToString("")
+            .replace(Regex("^/STORAGE", RegexOption.IGNORE_CASE), "/storage").replace(Regex("^/storage/EMULATED", RegexOption.IGNORE_CASE), "/storage/emulated")
+    }) { p ->
+        val spelled = diskSpelling(p, roots, disk)
+        assertTrue(spelled.equals(folderPath(p), ignoreCase = true))
+        assertEquals(pickProblem(p, folders, base)?.en(), pickProblem(spelled, folders, base)?.en())
     }
 
     @Test

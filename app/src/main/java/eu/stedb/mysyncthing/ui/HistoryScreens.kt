@@ -31,7 +31,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -224,9 +223,9 @@ fun VersionsScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () ->
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Range.entries.forEach { r -> FilterChip(range == r, { range = r }, { Text(stringResource(r.label)) }, shape = ButtonShape) }
                     }
-                    OutlinedTextField(
-                        query, { query = it }, singleLine = true, label = { Text(stringResource(R.string.search)) },
-                        leadingIcon = { Icon(Icons.Default.Search, null) }, modifier = Modifier.fillMaxWidth(),
+                    TextInput(
+                        query, { query = it }, Limits.TEXT, Modifier.fillMaxWidth(), label = stringResource(R.string.search),
+                        leadingIcon = { Icon(Icons.Default.Search, null) },
                     )
                 }
             }

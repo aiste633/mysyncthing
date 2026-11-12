@@ -510,6 +510,7 @@
     <string name="folder">Folder</string>
     <string name="folder_path">Folder on this phone</string>
     <string name="folder_path_suggested">Suggested. It is created if missing.</string>
+    <string name="folder_new_name">New folder</string>
     <string name="folder_path_needed">Required. Pick one below, or Browse</string>
     <string name="folder_path_created">It is created if missing.</string>
     <!-- Add folder: no folder on the phone chosen yet -->
@@ -537,11 +538,11 @@
     <string name="browse_synced_already">Already synced as \"%1$s\"</string>
     <string name="browse_inside_synced">Inside the synced folder \"%1$s\"</string>
     <string name="browse_holds_synced">Holds the synced folder \"%1$s\"</string>
+    <string name="browse_default_location">Default location for new folders</string>
     <!-- Android/data and Android/obb: closed to other apps even with All files access -->
     <string name="error_path_app_private">Android keeps this folder for apps</string>
     <string name="error_path_other_user">Belongs to another user or profile on this phone</string>
     <string name="error_path_holds_app_private">Holds folders Android keeps for apps (Android/data, obb)</string>
-    <string name="error_name_long">At most 255 bytes</string>
     <!-- %1$s: the characters FAT file systems refuse, e.g. \ : * ? " < > | -->
     <string name="error_name_removable">Not on an SD card or USB stick: %1$s, or a . at the end</string>
     <string name="error_name_taken">A folder with this name is already here</string>
@@ -581,6 +582,8 @@
     <!-- Keep /storage/… as it is -->
     <string name="error_path_storage">In the phone\'s storage or on an SD card (/storage/…)</string>
     <string name="error_path_overlap">Another folder is already here, or inside it</string>
+    <string name="error_path_default_location">Default location for new folders. Open or create a folder inside it.</string>
+    <string name="error_path_holds_default_location">Holds the default location for new folders</string>
     <string name="error_id_slash">No /</string>
     <string name="error_id_dots">Not . or ..</string>
     <string name="error_id_control">No control characters</string>
@@ -591,8 +594,6 @@
     <string name="error_host_brackets">Without brackets, for example ::1</string>
     <string name="error_host">An IP address or a host name</string>
     <string name="error_port">A port from 1 to 65535</string>
-    <string name="error_too_long_255">Too long: at most 255 bytes</string>
-    <string name="error_too_long">Too long</string>
     <!-- A proxy user name is needed when a password is set -->
     <string name="error_user_needed">Needed with a password</string>
     <string name="error_proxy_type">Unknown proxy type</string>
@@ -941,8 +942,8 @@
     <string name="error_password_wrong">Wrong password</string>
     <string name="error_password_backup_empty">Enter the backup\'s password</string>
     <plurals name="error_too_long_chars">
-        <item quantity="one">At most %1$d character</item>
-        <item quantity="other">At most %1$d characters</item>
+        <item quantity="one">At most %1$s character</item>
+        <item quantity="other">At most %1$s characters</item>
     </plurals>
     <!-- What happens to a folder from the backup. %1$s: its path -->
     <string name="import_folder_found">%1$s: found, will be checked again</string>
@@ -994,7 +995,7 @@
     <string name="not_imported_device_conditions">Own sync conditions of device %1$s</string>
     <!-- Settings a backup's config.xml may hold that could act beyond what the preview shows: reset, and listed -->
     <!-- %1$s: folder name -->
-    <string name="not_imported_folder_id">Folder %1$s: its ID has control characters</string>
+    <string name="not_imported_folder_id">Folder %1$s: its ID has control characters or more than 1024 characters</string>
     <!-- %1$s: folder name -->
     <string name="not_imported_folder_filesystem">Folder %1$s: not on a normal file system</string>
     <!-- %1$s: folder name -->
@@ -1012,11 +1013,15 @@
     <string name="not_imported_default_folder_versions_path">Default settings for new folders: own place for old versions</string>
     <string name="not_imported_default_folder_marker">Default settings for new folders: own folder marker</string>
     <!-- %1$s: device name -->
-    <string name="not_imported_device_addresses">Device %1$s: relay addresses, or addresses and networks that are not valid</string>
+    <string name="not_imported_device_addresses">Device %1$s: relay addresses, addresses and networks that are not valid, or more than 16 addresses</string>
     <string name="not_imported_default_device_addresses">Default settings for new devices: relay addresses, or addresses and networks that are not valid</string>
     <string name="not_imported_discovery_servers">Own discovery servers; Syncthing\'s are used</string>
     <string name="not_imported_stun_servers">Own STUN servers; Syncthing\'s are used</string>
-    <string name="not_imported_listen_addresses">Listen addresses through relays, or that are not valid</string>
+    <string name="not_imported_listen_addresses">Listen addresses through relays, that are not valid, or too many</string>
+    <string name="not_imported_text_too_long">%1$s: a name or group longer than 1024 characters, left empty</string>
+    <string name="not_imported_folder_password_long">Folder %1$s: an encryption password longer than 1024 characters</string>
+    <string name="not_imported_default_ignores">Default ignore patterns: larger than 256 kB</string>
+    <string name="not_imported_other_too_long">Other settings longer than 1024 characters, left empty</string>
     <string name="not_imported_local_networks">Always-local networks that are not valid</string>
     <string name="not_imported_local_discovery">Own address or port for local discovery</string>
     <string name="not_imported_feature_flags">Experimental feature flags</string>
@@ -1163,4 +1168,21 @@
         <item quantity="one">and %1$d more</item>
         <item quantity="other">and %1$d more</item>
     </plurals>
+    <plurals name="error_too_long_bytes">
+        <item quantity="one">At most %1$s byte</item>
+        <item quantity="other">At most %1$s bytes</item>
+    </plurals>
+    <plurals name="error_path_part_long">
+        <item quantity="one">Each folder name in the path: at most %1$s byte</item>
+        <item quantity="other">Each folder name in the path: at most %1$s bytes</item>
+    </plurals>
+    <plurals name="error_too_many_entries">
+        <item quantity="one">At most %1$s entry</item>
+        <item quantity="other">At most %1$s entries</item>
+    </plurals>
+    <plurals name="error_too_long_together">
+        <item quantity="one">All together at most %1$s byte</item>
+        <item quantity="other">All together at most %1$s bytes</item>
+    </plurals>
+    <string name="ignores_too_big">This file is larger than %1$s. Edit it in the web GUI.</string>
 </resources>
