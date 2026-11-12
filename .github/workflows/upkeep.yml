@@ -51,9 +51,14 @@ jobs:
             | diff scripts/upkeep/testdata/versions.expected -
       - name: Self-test, F-Droid out of step is reported
         run: |
-          # fdroiddata's recipe with another NDK and older versions; F-Droid without our latest
+          # fdroiddata's recipe: ours with another NDK and older versions, made here so it follows
+          # every other change to ours (Go, licence, build steps); F-Droid without our latest
           # release (testdata/bin/gh dates it 2026-01-01).
-          python3 -m http.server -b 127.0.0.1 -d scripts/upkeep/testdata/fdroid 8765 > /dev/null 2>&1 &
+          site="$RUNNER_TEMP/fdroid" && mkdir -p "$site" && cp scripts/upkeep/testdata/fdroid/api.json "$site/"
+          yq '.Builds[-1].ndk = "0.0.1" | .Builds[-1].versionName = "0.1.1" | .Builds[-1].versionCode = 2
+            | .Builds[-1].commit = "v0.1.1" | .CurrentVersion = "0.0.9" | .CurrentVersionCode = 2' \
+            fdroid/eu.stedb.mysyncthing.yml > "$site/eu.stedb.mysyncthing.yml"
+          python3 -m http.server -b 127.0.0.1 -d "$site" 8765 > /dev/null 2>&1 &
           trap 'kill $!' EXIT
           sleep 1
           rc=0
