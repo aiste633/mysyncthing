@@ -15,7 +15,7 @@ uses anyone's real folders, devices or backups.
 |---|---|---|
 | Every pull request | On GitHub: build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical. On the PC: the emulator end-to-end tests, with their results in the pull request | Required to merge |
 | Screen tests | 27 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 135 reference images, 4 contrast checks per screen, on every pull request |
-| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15 and 16 on the PC (`scripts/e2e/pc.py`), before every merge; each release commits its results in [`docs/e2e/`](e2e/) |
+| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15, 16 and 17 on the PC (`scripts/e2e/pc.py`), before every merge; each release commits its results in [`docs/e2e/`](e2e/) |
 | App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15 and 16, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 9 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
@@ -143,7 +143,7 @@ The end-to-end tests cover the upright ones and the rotation between the two on 
 
 ## End-to-end tests
 
-The debug app runs on an emulator (plain Android 15 and 16 images, Pixel 7) against a real
+The debug app runs on an emulator (plain Android 15, 16 and 17 images, Pixel 7) against a real
 Syncthing peer built from the same patched core. The peer runs on the build machine's loopback
 only, with discovery, relays and NAT off, so it never meets a real device; it reaches the
 emulator through `adb`. `scripts/e2e/run.py` runs the steps in order, and refuses to run on a

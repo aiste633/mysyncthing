@@ -13,9 +13,9 @@ Needs ANDROID_HOME with the SDK and NDK, and Go and JDK 21 on PATH (on the PC: s
 toolchain/env.sh). Its emulators use port 5580 and every adb call goes to them (ANDROID_SERIAL),
 so it never touches another emulator or a phone. It refuses to start while any syncthing process
 runs. Offline by default: the emulator gets no DNS and the phone core leaves Syncthing's public
-servers once paired (E2E_OFFLINE=1, --offline); --online runs as CI did. About 1 h (55 min on 07/11/2026).
+servers once paired (E2E_OFFLINE=1, --offline); --online runs as CI did. About 1.5 h for three APIs (55 min for two on 07/11/2026).
 
-  scripts/e2e/pc.py [--release] [--online] [--apis 35,36] [--out build/e2e-pc]
+  scripts/e2e/pc.py [--release] [--online] [--apis 35,36,37] [--out build/e2e-pc]
 """
 import argparse
 import os
@@ -34,7 +34,7 @@ sys.dont_write_bytecode = True
 ROOT = Path(__file__).resolve().parents[2]
 PORT = 5580
 SERIAL = f"emulator-{PORT}"
-ANDROID = {35: "Android 15", 36: "Android 16"}
+ANDROID = {35: "Android 15", 36: "Android 16", 37: "Android 17"}
 PEER = "go/build/e2e-peer"
 APKS = ["--peer", PEER, "--apk", "app/build/outputs/apk/debug/app-debug.apk",
         "--test-apk", "app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk"]
@@ -191,7 +191,7 @@ def embedded(summary: Path, title: str) -> list[str]:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--apis", default="35,36", help="API levels, in order (a release needs 35 and 36)")
+    ap.add_argument("--apis", default="35,36,37", help="API levels, in order (a release needs 35, 36 and 37)")
     ap.add_argument("--online", action="store_true", help="keep the emulator's DNS and the phone core's public servers, as CI did")
     ap.add_argument("--release", action="store_true", help="a passing summary also goes to docs/e2e/<versionName>.md")
     ap.add_argument("--out", type=Path, default=Path("build/e2e-pc"))
@@ -256,9 +256,10 @@ def main() -> None:
         "",
     ]
     for api in apis:
-        image = pkg_revision(Path(os.environ["ANDROID_HOME"]) / f"system-images/android-{api}/default/x86_64")
+        pkg_api = f"{api}.0" if api >= 37 else str(api)  # as emulator.sh: android-37.0 from API 37 on
+        image = pkg_revision(Path(os.environ["ANDROID_HOME"]) / f"system-images/android-{pkg_api}/default/x86_64")
         lines += [f"## {ANDROID[api]} (API {api}): {'PASS' if api_ok(api) else 'FAIL'}", "",
-                  f"Image: system-images;android-{api};default;x86_64, revision {image}; Pixel 7.", ""]
+                  f"Image: system-images;android-{pkg_api};default;x86_64, revision {image}; Pixel 7.", ""]
         if api not in runs:
             lines += ["Not run: the build failed.", ""]
             continue
