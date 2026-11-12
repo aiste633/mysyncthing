@@ -56,6 +56,9 @@ Each field is a `TextInput` (`ui/TextInput.kt`), which takes its limit as a requ
 numbers (`go/bridge/limits.go`). What reaches the core by other ways is held to the same limits:
 the bridge's `lengthGuard` refuses a config change that brings in a longer value (the web GUI's
 Save), and the import policy clears or leaves out longer values of a backup and lists them.
+The web GUI is upstream's, unpatched, and what is done in it is the user's responsibility: when
+the guard refuses its Save, it shows its own generic "Connection Error" box (it never shows the
+reason), the old value stays and the core keeps running; reloading the page recovers.
 
 | Input | Limit | Why |
 |---|---|---|
