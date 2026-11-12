@@ -15,8 +15,8 @@ uses anyone's real folders, devices or backups.
 |---|---|---|
 | Every pull request | On GitHub: build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical. On the PC: the emulator end-to-end tests, with their results in the pull request | Required to merge |
 | Screen tests | 27 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 135 reference images, 4 contrast checks per screen, on every pull request |
-| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access taken away, monkey | Android 15, 16 and 17 on the PC (`scripts/e2e/pc.py`), before every merge; each release commits its results in [`docs/e2e/`](e2e/) |
-| App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15 and 16, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
+| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access and (Android 17) the local network taken away, monkey | Android 15, 16 and 17 on the PC (`scripts/e2e/pc.py`), before every merge; each release commits its results in [`docs/e2e/`](e2e/) |
+| App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15, 16 and 17, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
 | Fuzzing | 9 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
@@ -153,12 +153,12 @@ They run on the PC, not on GitHub, since 11/2026. In November 2026 GitHub tempor
 maintainer's account, so CI was slimmed down to light checks to prevent further suspensions. The
 emulator runs were the heaviest part of it, duplicated the PC's own runs, and twice died halfway
 (issue #78). `scripts/e2e/pc.py` does a whole run for one
-commit: from a clean checkout it builds the app, the test APK and the peer, then on a fresh Android 15
-and then a fresh Android 16 emulator runs run.py and the fast [sync scenarios](#sync-scenarios), and
+commit: from a clean checkout it builds the app, the test APK and the peer, then on a fresh Android 15,
+16 and 17 emulator in turn runs run.py and the fast [sync scenarios](#sync-scenarios), and
 writes `build/e2e-pc/summary.md` with the commit, the emulator images and each step's result and time.
 That summary goes into the pull request. For a release, `pc.py --release` also writes it to
 `docs/e2e/<version>.md`, which is committed before the tag; CI refuses a tag whose file is missing,
-did not pass on both versions, or names a commit that differs from the tag in anything but `docs/`,
+did not pass on all three versions, or names a commit that differs from the tag in anything but `docs/`,
 `fastlane/` and top-level `*.md`. Unlike the GitHub runs these results are not publicly reproduced:
 they are the record of a run on the maintainer's PC, and anyone can repeat it with the same commands.
 
@@ -180,6 +180,7 @@ they are the record of a run on the maintainer's PC, and anyone can repeat it wi
 | Stop and start | The user's stop: the main thread answers within 1 s throughout (the core's shutdown runs in the background), the stop ends within 20 s (it does not wait for the 60 s event long-poll), the peer loses the phone; started again, it comes back. A start right after a stop starts the core once the stop is done. A stop with the web GUI open shows "Syncthing is stopped" with Start there (it was blank), and Start brings the core and the peer back |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
+| Local network taken away (Android 17 only) | The permission revoked: the service comes back by itself and posts "Syncing stopped", the core does not start, the app shows the checklist with the Local network row; granted again and the app opened, the phone reconnects and the notice goes |
 | Launcher starts | Opened first by an intent other than the launcher's, then three times from the launcher: one copy of the main screen stays, not four |
 | Remove goes back to the tab | A folder and a device removed on their screens: the Folders and Devices lists show, not a blank screen or the wrong tab |
 | Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze, no blank screen |

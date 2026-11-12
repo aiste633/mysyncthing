@@ -168,8 +168,8 @@ fun App(target: LaunchTarget? = null, onTargetShown: () -> Unit = {}, vm: MainVi
     AppTheme {
         val permissions = rememberPermissionState()
         val setupDone by vm.setupDone.collectAsStateWithLifecycle()
-        // All files access is required, so losing it brings the checklist back.
-        if (!permissions.storage || setupDone == false) {
+        // All files access (and on Android 17 the local network) is required, so losing it brings the checklist back.
+        if (!permissions.required || setupDone == false) {
             val rc by vm.runConditions.collectAsStateWithLifecycle()
             SetupScreen(
                 permissions, rc.mobileData, onMobileData = { v -> vm.setRunConditions { it.copy(mobileData = v) } }, onDone = vm::finishSetup,

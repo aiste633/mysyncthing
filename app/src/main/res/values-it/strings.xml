@@ -971,4 +971,7 @@
         <item quantity="other">In tutto al massimo %1$s byte</item>
     </plurals>
     <string name="ignores_too_big">Questo file supera %1$s. Modificalo nell’interfaccia web.</string>
+    <string name="setup_intro_two">MySyncthing ha bisogno di due autorizzazioni per sincronizzare. Le altre lo rendono più affidabile.</string>
+    <string name="permission_local_network">Rete locale</string>
+    <string name="permission_local_network_hint">Android 17 chiede il permesso prima che un\'app possa raggiungere i dispositivi della tua rete Wi-Fi o cablata. Syncthing ne ha bisogno per trovare gli altri tuoi dispositivi a casa o al lavoro e sincronizzarsi direttamente con loro. Senza, i dati passerebbero solo dai relay su Internet, e i trasferimenti rallenterebbero molto; per questo la sincronizzazione resta spenta finché non lo consenti. Android lo elenca sotto “Dispositivi nelle vicinanze”.</string>
 </resources>

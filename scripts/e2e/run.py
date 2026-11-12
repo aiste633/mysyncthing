@@ -417,6 +417,49 @@ def storage_revoked(peer: Peer, phone: str) -> None:
     eventually("phone reconnected with All files access back", 120, lambda: peer.connected(phone))
 
 
+LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"
+NO_LOCAL_NETWORK_ID = 5  # ProblemNotifications.NO_LOCAL_NETWORK_ID
+
+
+def api_level() -> int:
+    return int(sh("getprop ro.build.version.sdk"))
+
+
+def problem_shown(nid: int) -> bool:
+    return re.search(rf"key=0\|{re.escape(APP)}\|{nid}\|", sh("dumpsys notification --noredact", check=False)) is not None
+
+
+def screen_texts() -> list[str]:
+    for _ in range(5):
+        if "dumped to" in sh("uiautomator dump /sdcard/run-ui.xml", check=False):
+            xml = adb("exec-out", "cat", "/sdcard/run-ui.xml")
+            return [t for n in ET.fromstring(xml).iter("node") for t in (n.get("text", ""), n.get("content-desc", "")) if t]
+        time.sleep(1)
+    return []
+
+
+def local_network_revoked(peer: Peer, phone: str) -> None:
+    """Android 17: without the local network permission the core must not run (it would meet devices on
+    the same Wi-Fi only over relays). Taking it away ends the process; the sticky service comes back,
+    refuses to start the core and posts the notice; the app shows the checklist until it is granted."""
+    log("local network permission revoked")
+    revoked = time.time()
+    sh(f"pm revoke {APP} {LOCAL_NETWORK}")
+    if not eventually("notice: syncing stopped without the local network", 120, lambda: problem_shown(NO_LOCAL_NETWORK_ID)):
+        return
+    time.sleep(30)
+    if peer.connected(phone, since=revoked):
+        fail("the phone's core runs without the local network permission")
+    open_app()
+    eventually("checklist with the Local network row", 30, lambda: "Local network" in screen_texts())
+    granted = time.time()
+    sh(f"pm grant {APP} {LOCAL_NETWORK}")
+    go_home()
+    open_app()
+    eventually("phone reconnected with the local network back", 120, lambda: peer.connected(phone, since=granted))
+    eventually("notice gone with the local network back", 30, lambda: not problem_shown(NO_LOCAL_NETWORK_ID))
+
+
 class Device:
     """System settings the monkey runs change: read first, put back by restore()."""
 
@@ -762,6 +805,9 @@ def main() -> None:
                 process_death(peer, phone)
             with step("All files access revoked"):
                 storage_revoked(peer, phone)
+            if api_level() >= 37:
+                with step("local network revoked (Android 17)"):
+                    local_network_revoked(peer, phone)
             with step("launcher starts"):
                 launcher_starts()
             with step("monkey"):

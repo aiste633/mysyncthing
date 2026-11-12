@@ -194,4 +194,8 @@
     <string name="import_settings_not_saved">The sync settings could not all be saved, probably because the storage is full. Check them in Settings.</string>
     <string name="import_backup_not_deleted">The backup file could not be deleted. Delete it yourself: it holds the device\'s private key.</string>
     <string name="export_cannot_write">Cannot write the file</string>
+    <string name="status_stopped_no_local_network">Stopped: no local network access</string>
+    <string name="problem_no_local_network">Android 17 now asks before MySyncthing may use your local network. Without it, transfers could only go through slow relays. Tap to allow it and sync again.</string>
+    <string name="problem_memory_limit_title">Android stopped Syncthing</string>
+    <string name="problem_memory_limit">It used %1$s MB, more memory than Android allows on this phone, at %2$s. Syncthing started again by itself. If this repeats, sync fewer or smaller folders.</string>
 </resources>

@@ -88,7 +88,7 @@ fun SettingsScreen(
     val rc by vm.runConditions.collectAsStateWithLifecycle()
     val proxy by vm.proxy.collectAsStateWithLifecycle()
     var powerDialog by rememberSaveable { mutableStateOf(false) }
-    val requestNotifications = rememberNotificationRequest(permissions)
+    val requests = rememberPermissionRequests(permissions)
     var rename by rememberSaveable { mutableStateOf(false) }
     val running = core is CoreState.Running
     // Kept in the view model, so a recreated screen has them, and the dialog open on them, on its first frame.
@@ -217,7 +217,7 @@ fun SettingsScreen(
             }
 
             SettingsGroup(stringResource(R.string.settings_group_permissions)) {
-                PermissionRows(permissions, requestNotifications)
+                PermissionRows(permissions, requests)
             }
 
             SettingsGroup(stringResource(R.string.settings_group_advanced)) {

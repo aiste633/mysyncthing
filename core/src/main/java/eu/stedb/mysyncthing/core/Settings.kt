@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -214,6 +215,11 @@ class Settings internal constructor(
     /** Writes only once a boot: it is asked on every start. */
     suspend fun setStartedThisBoot(): Boolean = startedThisBoot.first() || write { it[STARTED_AT_BOOT] = bootCount() }
 
+    /** Until when Android's records of process ends were read for the memory notice; null before the first read. */
+    suspend fun memoryExitsSeenUntil(): Long? = store.data.first()[MEMORY_EXITS_SEEN]
+
+    suspend fun setMemoryExitsSeenUntil(at: Long): Boolean = write { it[MEMORY_EXITS_SEEN] = at }
+
     /** True after a phone migration brought the identity along, until the user has seen the note. */
     val movedFromOtherPhone: Flow<Boolean> = store.data.map { it[MOVED] ?: false }
 
@@ -306,6 +312,7 @@ class Settings internal constructor(
         val FRESH_DATABASE = booleanPreferencesKey("fresh_database_expected")
         val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
         val STARTED_AT_BOOT = intPreferencesKey("started_at_boot")
+        val MEMORY_EXITS_SEEN = longPreferencesKey("memory_exits_seen_until")
         val PROXY = stringPreferencesKey("proxy")
         val TIME_SCHEDULE = booleanPreferencesKey("time_schedule")
         val WINDOWS = stringPreferencesKey("sync_windows")

@@ -974,4 +974,7 @@
         <item quantity="other">%1$s octets au maximum au total</item>
     </plurals>
     <string name="ignores_too_big">Ce fichier dépasse %1$s. Modifiez-le dans l’interface web.</string>
+    <string name="setup_intro_two">MySyncthing a besoin de deux autorisations pour synchroniser. Les autres la rendent plus fiable.</string>
+    <string name="permission_local_network">Réseau local</string>
+    <string name="permission_local_network_hint">Android 17 demande l’autorisation avant qu’une app puisse joindre les appareils de votre réseau Wi-Fi ou filaire. Syncthing en a besoin pour trouver vos autres appareils à la maison ou au travail et se synchroniser directement avec eux. Sans elle, les données ne passeraient que par des relais sur Internet, ce qui ralentit fortement les transferts ; la synchronisation reste donc arrêtée tant que vous ne l’autorisez pas. Android la range sous « Appareils à proximité ».</string>
 </resources>
