@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Starts a headless emulator for scripts/e2e/run.py: Pixel 7, Android <api> (35 or 36),
+# Starts a headless emulator for scripts/e2e/run.py: Pixel 7, Android <api> (35, 36 or 37),
 # the plain AOSP image (no Google apps), and waits until it has booted. scripts/e2e/pc.py runs it
 # for each API; GitHub CI ran it until 11/2026. Needs KVM; on a PC with Android Studio an existing
 # AVD started with -no-snapshot does the same.
@@ -9,7 +9,9 @@ set -euo pipefail
 
 api="${1:?usage: emulator.sh <api level>}"
 : "${ANDROID_HOME:?set ANDROID_HOME}"
-image="system-images;android-$api;default;x86_64"
+# From API 37 on, the SDK names the image by platform version: android-37.0, not android-37.
+pkg_api="$api"; [ "$api" -lt 37 ] || pkg_api="$api.0"
+image="system-images;android-$pkg_api;default;x86_64"
 avd="e2e-$api"
 bin="$ANDROID_HOME/cmdline-tools/latest/bin"
 
@@ -26,7 +28,7 @@ fi
 missing=()
 [ -x "$ANDROID_HOME/emulator/emulator" ] && [ "${E2E_SDK_UPDATE:-0}" != 1 ] || missing+=(emulator)
 [ -x "$ANDROID_HOME/platform-tools/adb" ] || missing+=(platform-tools)
-[ -d "$ANDROID_HOME/system-images/android-$api/default/x86_64" ] || missing+=("$image")
+[ -d "$ANDROID_HOME/system-images/android-$pkg_api/default/x86_64" ] || missing+=("$image")
 if [ ${#missing[@]} -gt 0 ]; then
   yes | "$bin/sdkmanager" --licenses >/dev/null || true
   "$bin/sdkmanager" --install "${missing[@]}" >/dev/null

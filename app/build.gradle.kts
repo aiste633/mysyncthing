@@ -112,6 +112,7 @@ dependencies {
     androidTestImplementation(libs.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.espresso.core)
 }
 
 // Robolectric's Android jar is a Gradle dependency, so gradle/verification-metadata.xml checks
