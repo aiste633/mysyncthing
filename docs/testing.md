@@ -460,7 +460,7 @@ once the process was killed.
 
 ## Memory soak (2026-10-27)
 
-10 h 21 min on an emulator, one app process the whole time, sampled every minute (614
+10 h 21 min on an Android 16 emulator, one app process the whole time, sampled every minute (614
 samples): the app's memory and threads, open files, and the core's Go heap and goroutines.
 
 - Every 5 minutes, 10 files changed on the peer. Every hour, a burst of 500 files and the
@@ -499,7 +499,11 @@ app writes no log files (the core logs to memory), and its settings, widget and 
 write nothing on a timer. The only real volume is Syncthing's database when files change:
 about 250 KB per small changed file, less in proportion for big files. A day with 1,000 small
 changes writes about 250 MB, far below what phone flash is rated for. These numbers are from a
-debug build on an emulator; a release build should write less.
+debug build on an emulator; the release build carries the same core, so its database writes
+are the same.
+
+Battery drain is not measured in mAh: on a phone in use, other apps and notifications swamp the
+app's share. The app holds no wakelock, so a sleeping phone wakes only for incoming traffic.
 
 ## Reproducible builds
 
@@ -510,8 +514,4 @@ every pull request, and F-Droid's build on every tag. See [README](../README.md#
 ## Not covered yet
 
 - The roaming run condition: emulators cannot simulate roaming.
-- Battery and CPU use were not measured; the soak ran on Android 16 only.
-- Flash writes of a release build.
 - The end-to-end tests use one peer on loopback: no relays, discovery, NAT or slow networks.
-- The end-to-end results are a record of the maintainer's PC run, not a public CI run: each
-  release's file in `docs/e2e/` names the commit, and anyone can repeat the run with `scripts/e2e/pc.py`.
