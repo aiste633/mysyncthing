@@ -8,8 +8,9 @@ the old debug build, lets its own E2eTest#pairAndSync pair it with the test peer
 API (which every version has), then installs this build over it while a transfer
 runs. Without opening the app it checks that sync comes back by itself, and that
 the identity, the whole core config, ignore patterns and database, the app's
-settings and the permissions are all as they were; then E2eTest#afterUpgrade checks the rest from
-inside the app. It also checks that a user's Stop holds through an update, that
+settings and the permissions are all as they were; then E2eTest#afterUpgrade checks the
+rest from inside the app. On Android 17 an update from a build for Android 16 must stop
+syncing and post the notice until the local network is allowed. It also checks that a user's Stop holds through an update, that
 an update with Start at boot off starts again what ran, and that Android refuses
 the old build back.
 
@@ -241,7 +242,34 @@ def permissions() -> dict[str, bool]:
         "All files access": "MANAGE_EXTERNAL_STORAGE: allow" in sh(f"appops get {APP} MANAGE_EXTERNAL_STORAGE"),
         "notifications": "android.permission.POST_NOTIFICATIONS: granted=true" in pkg,
         "battery optimisation off": APP in sh("dumpsys deviceidle whitelist"),
+        "local network": local_network_granted(pkg),
     }
+
+
+def local_network_granted(pkg: str | None = None) -> bool:
+    """Android 15 and 16 grant it with INTERNET; Android 17 asks for it."""
+    if run.api_level() < 37:
+        return True
+    return f"{run.LOCAL_NETWORK}: granted=true" in (pkg or sh(f"dumpsys package {APP}"))
+
+
+def local_network_after_update(peer: Peer, phone: str, updated: float) -> None:
+    """
+    An update from a build that targets Android 16 arrives on Android 17 without the local network
+    permission: the service, started again by the update, must not start the core and must post the
+    notice. Then the user grants it and opens the app, as the notice's tap leads them to.
+    """
+    if local_network_granted():
+        log("local network granted after the update (no notice needed)")
+        return
+    log("local network not granted after the update, as for a user")
+    if eventually("notice after the update: syncing stopped without the local network", 120,
+                  lambda: run.problem_shown(run.NO_LOCAL_NETWORK_ID)):
+        time.sleep(15)
+        if peer.connected(phone, since=updated):
+            fail("the core ran after the update without the local network permission")
+    sh(f"pm grant {APP} {run.LOCAL_NETWORK}")
+    run.open_app()
 
 
 def phone_ls() -> list[str]:
@@ -270,9 +298,11 @@ def update_mid_transfer(peer: Peer, phone: str, apk: Path) -> None:
 
     pid = app_pid()
     log(f"update over the running app (pid {pid}), {BIG} partly downloaded")
+    updated = time.time()
     r = install(apk)
     if "Success" not in r.stdout:
         raise RuntimeError(f"update refused: {r.stdout}{r.stderr}")
+    local_network_after_update(peer, phone, updated)
     comes_back(peer, phone, pid, "the update")
     peer.call("PATCH", "rest/config/options", {"maxSendKbps": 0, "limitBandwidthInLan": False})
     if eventually(f"{BIG} complete on the phone", 300, lambda: BIG in phone_ls() and tmp not in phone_ls()):

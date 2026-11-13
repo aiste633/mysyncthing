@@ -7,10 +7,13 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
 
 /** A folder that stopped syncing: the core puts it in state "error" (marker missing, path gone, below "keep free"). */
 data class FolderProblem(val id: String, val name: String, val error: String)
@@ -32,6 +35,8 @@ object ProblemNotifications {
     private const val NOTIFICATION_ID = 3
     private const val FOLDER_TAG = "folder"
     private const val NO_ACCESS_ID = 4
+    private const val NO_LOCAL_NETWORK_ID = 5
+    private const val MEMORY_LIMIT_ID = 6
 
     /** Extra on the launch intent that opens one folder's screen. */
     const val EXTRA_OPEN_FOLDER = "eu.stedb.mysyncthing.OPEN_FOLDER"
@@ -91,22 +96,49 @@ object ProblemNotifications {
      * Syncing stopped because All files access is off; tapping opens the app,
      * whose setup checklist asks for it again. Cleared once the service starts with it.
      */
-    fun noFileAccess(base: Context, show: Boolean) {
+    fun noFileAccess(base: Context, show: Boolean) =
+        stopped(base, NO_ACCESS_ID, show, R.string.problem_no_file_access_title, R.string.problem_no_file_access)
+
+    /**
+     * Syncing stopped because Android 17 asks for the local network and it is not allowed: right after an
+     * update to a version that targets Android 17 (Android restarts the app), or after the user took it
+     * away. Tapping opens the setup checklist. Cleared once the service starts with it.
+     */
+    fun noLocalNetwork(base: Context, show: Boolean) =
+        stopped(base, NO_LOCAL_NETWORK_ID, show, R.string.problem_no_file_access_title, R.string.problem_no_local_network)
+
+    private fun stopped(base: Context, id: Int, show: Boolean, @StringRes title: Int, @StringRes text: Int) {
         val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
         if (!show) {
-            nm.cancel(NO_ACCESS_ID)
+            nm.cancel(id)
             return
         }
+        notify(context, id, context.getString(title), context.getString(text))
+    }
+
+    /**
+     * Android's memory limit ended the app (Android 17); the sticky service has started it again. Shown
+     * once per end (MemoryLimit.kt), with the memory it used and when.
+     */
+    fun memoryLimit(base: Context, end: ProcessExit) {
+        val context = base.inAppLanguage()
+        val at = time(Instant.ofEpochMilli(end.timestamp).atZone(ZoneId.systemDefault()), "jm")
+        // SI megabytes, as every size in the app; Android counts the resident set in KiB.
+        val text = text(R.string.problem_memory_limit, num(end.rssKb * 1024 / 1_000_000), at).resolve(context)
+        notify(context, MEMORY_LIMIT_ID, context.getString(R.string.problem_memory_limit_title), text)
+    }
+
+    /** A notice that opens the app; the app shows what to do. */
+    private fun notify(context: Context, id: Int, title: String, text: String) {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-        val open = PendingIntent.getActivity(context, NO_ACCESS_ID, launch, PendingIntent.FLAG_IMMUTABLE)
-        val text = context.getString(R.string.problem_no_file_access)
-        nm.notify(
-            NO_ACCESS_ID,
+        val open = PendingIntent.getActivity(context, id, launch, PendingIntent.FLAG_IMMUTABLE)
+        context.getSystemService(NotificationManager::class.java).notify(
+            id,
             NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(R.drawable.widget_ic_problem)
-                .setContentTitle(context.getString(R.string.problem_no_file_access_title))
+                .setContentTitle(title)
                 .setContentText(text)
                 .setStyle(NotificationCompat.BigTextStyle().bigText(text))
                 .setContentIntent(open)

@@ -111,6 +111,7 @@ example Tor with Orbot. The proxy's operator sees the connections the proxy carr
 | All files access | Syncing folders anywhere on shared storage |
 | Notifications | The sync service's notification, and notices of new devices, shared folders and errors |
 | Internet, network state | Connecting to your devices, and the run conditions (Wi-Fi, mobile data, roaming) |
+| Local network (Android 17, under Nearby devices) | Reaching your devices on the same Wi-Fi or Ethernet directly, and local discovery. Required: without it they would meet only through relays, which are much slower, so syncing stays stopped until it is allowed |
 | Foreground service, start at boot, ignore battery optimisation | Syncing in the background, as you set it up |
 | Wi-Fi multicast | Hearing local discovery from devices on the same Wi-Fi over IPv6. Held only while syncing on Wi-Fi with local discovery on |
 

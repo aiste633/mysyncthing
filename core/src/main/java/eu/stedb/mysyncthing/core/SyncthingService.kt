@@ -63,6 +63,8 @@ class SyncthingService : LifecycleService() {
         createChannel(this)
         RequestNotifications.createChannel(this)
         ProblemNotifications.createChannel(this)
+        // A new process: an end by Android's memory limit (Android 17) restarts the sticky service here.
+        lifecycleScope.launch(Dispatchers.IO) { reportMemoryLimitEnd(this@SyncthingService, settings) }
         // An unloaded snapshot (no core) passes as null, so what a new run loads is always posted,
         // also when it equals what was shown before failed() cleared it.
         lifecycleScope.launch {
@@ -128,6 +130,15 @@ class SyncthingService : LifecycleService() {
             return
         }
         ProblemNotifications.noFileAccess(this, false)
+        // Android 17: without the local network the devices on the same Wi-Fi would meet only over relays, which
+        // slows transfers down a lot, so Syncthing waits for it as for All files access (user, 11/11/2026). Taking it
+        // away kills the app too; an update to this version restarts it (BootReceiver), and both show the notice.
+        if (!hasLocalNetwork()) {
+            ProblemNotifications.noLocalNetwork(this, true)
+            stopSelf()
+            return
+        }
+        ProblemNotifications.noLocalNetwork(this, false)
         updateNotification(text(R.string.status_starting))
 
         val home = withContext(Dispatchers.IO) { File(filesDir, "syncthing") }
@@ -229,12 +240,20 @@ class SyncthingService : LifecycleService() {
         // Only through shutDown() is the core already stopped; if not (a destroy no command asked for), it is
         // stopped without blocking the main thread, which only risks the flush the process may not outlive.
         if (SyncthingCore.state.value !is CoreState.Stopped) SyncthingCore.stopInBackground()
-        Summary(SyncState.Stopped, text(if (Environment.isExternalStorageManager()) R.string.status_stopped else R.string.status_stopped_no_access)).let {
+        Summary(SyncState.Stopped, text(stoppedText())).let {
             SyncStatus.publish(it)
             StatusWidget.render(this, it) // the collector above is already cancelled
         }
         clearCoreNotices()
         super.onDestroy()
+    }
+
+    /** Why the service stopped, when the phone took away what it needs. */
+    @StringRes
+    private fun stoppedText(): Int = when {
+        !Environment.isExternalStorageManager() -> R.string.status_stopped_no_access
+        !hasLocalNetwork() -> R.string.status_stopped_no_local_network
+        else -> R.string.status_stopped
     }
 
     /**

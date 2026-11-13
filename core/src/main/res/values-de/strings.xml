@@ -138,4 +138,8 @@
     <string name="import_settings_not_saved">Die Synchronisierungseinstellungen konnten nicht alle gespeichert werden, wahrscheinlich weil der Speicher voll ist. Prüfen Sie sie in den Einstellungen.</string>
     <string name="import_backup_not_deleted">Die Sicherungsdatei konnte nicht gelöscht werden. Löschen Sie sie selbst: Sie enthält den privaten Schlüssel des Geräts.</string>
     <string name="export_cannot_write">Die Datei kann nicht geschrieben werden</string>
+    <string name="status_stopped_no_local_network">Gestoppt: kein Zugriff auf das lokale Netzwerk</string>
+    <string name="problem_no_local_network">Android 17 fragt jetzt, bevor MySyncthing Ihr lokales Netzwerk nutzen darf. Ohne diesen Zugriff liefen Übertragungen nur über langsame Relays. Tippen Sie, um ihn zu erlauben und wieder zu synchronisieren.</string>
+    <string name="problem_memory_limit_title">Android hat Syncthing gestoppt</string>
+    <string name="problem_memory_limit">Es belegte %1$s MB, mehr Arbeitsspeicher, als Android auf diesem Smartphone erlaubt (um %2$s). Syncthing ist von selbst wieder gestartet. Wenn das öfter passiert, synchronisieren Sie weniger oder kleinere Ordner.</string>
 </resources>

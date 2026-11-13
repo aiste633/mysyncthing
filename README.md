@@ -1,6 +1,6 @@
 # MySyncthing
 
-A Syncthing client for Android 15 and 16 (API 35/36), written in Kotlin and Jetpack Compose. It is a new app, not a fork of syncthing-android. It will be published on F-Droid once F-Droid accepts it; until then, signed releases are on the [releases page](https://github.com/aiste633/mysyncthing/releases).
+A Syncthing client for Android 15, 16 and 17 (API 35–37), written in Kotlin and Jetpack Compose. It is a new app, not a fork of syncthing-android. It will be published on F-Droid once F-Droid accepts it; until then, signed releases are on the [releases page](https://github.com/aiste633/mysyncthing/releases).
 
 MySyncthing is vibecoded: an AI coding assistant (Claude) wrote nearly all of its code, directed and tested by one person. It is tested hard (see [Testing](docs/testing.md)), but it comes with no guarantees: if something breaks or goes wrong, including lost or damaged files, that is on you, as the AGPL-3.0 (sections 15 and 16) says. Keep backups of anything that matters.
 
@@ -29,9 +29,9 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Notifies you of new devices and shared folders (with Review and Ignore) and of folders that stop syncing.
 - Syncthing's own web GUI is built in for the few things the app does not cover, signed in automatically and private to the app.
 
-### Made for Android 15 and 16
+### Made for Android 15, 16 and 17
 
-- Only Android 15 and 16, so nothing is held back by older versions. It runs as a foreground service of the kind Android allows to run all day, without the 6-hour daily limit of data-sync services.
+- Only Android 15, 16 and 17, so nothing is held back by older versions. It runs as a foreground service of the kind Android allows to run all day, without the 6-hour daily limit of data-sync services.
 - Native Material 3 screens in your wallpaper's colours (Material You), with dark mode and the home-screen widget.
 - Works with TalkBack: every button is named and every switch and checkbox reads as on or off. Text stays readable (4.5:1) with Android's Colour contrast setting too.
 - In English, Italian, Spanish, German and French, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. The text is in standard Android string files, ready for a translation platform such as Weblate: see [Translations](#translations).
@@ -60,7 +60,7 @@ What each test covers, with its numbers: [testing and hardening](docs/testing.md
 - Imported backups are untrusted input: settings that could run a command, delete files outside the folder, reach the app's own files or report to other servers are taken out and listed before you import, and a backup changed after its preview is refused.
 - A security audit and a gap analysis against common practice: the built-in web view is locked to the core's own address, the web GUI login is random and locked, a shown password hides the screen from screenshots, StrictMode checks debug builds. [Security policy](SECURITY.md).
 - Stress tests (50,000 files, full storage, random UI events), a 10-hour memory soak with no leak, flash-write tracing, and interruption tests (rotation, Android reclaiming the app, permissions taken away).
-- Emulator end-to-end tests on Android 15 and 16 against a real Syncthing peer run on the maintainer's PC before every merge; each release commits their results in [`docs/e2e/`](docs/e2e/), and CI refuses a release tag without them.
+- Emulator end-to-end tests on Android 15, 16 and 17 against a real Syncthing peer run on the maintainer's PC before every merge; each release commits their results in [`docs/e2e/`](docs/e2e/), and CI refuses a release tag without them.
 - CI checks every pull request, and `main` after each merge: unit tests, lint, a leak check that keeps personal details out of the repository and its history, a guard on the app's permissions, an audit of the workflows, and a twin build that must be byte-identical. CodeQL analyses the app and the core. A daily scan opens an issue when a vulnerability is published that affects the app: in its Go code, its libraries (the SBOM) or the pinned actions. A monthly check lists newer releases of everything the build pins and watches that F-Droid keeps up with each release. GitHub Actions are pinned by commit hash, and releases carry a signed build provenance attestation.
 
 ### Free and verifiable
@@ -112,7 +112,7 @@ End-to-end tests run the debug app on an emulator against a real Syncthing peer 
 scripts/e2e/pc.py             # --release also writes docs/e2e/<version>.md; --online keeps the public servers
 ```
 
-It needs a clean checkout, `ANDROID_HOME`, Go and JDK 21. It builds the APKs and the peer, starts a fresh Android 15 and then Android 16 emulator on port 5580 (every adb call goes to it, never to another emulator or a phone), runs run.py and the fast scenarios on each, and writes `build/e2e-pc/summary.md` with every step's result and time, for the pull request; the logs, logcat and the peer's logs are next to it. It refuses to start while a Syncthing runs on the machine. To run one script by hand on an emulator that is already up (the scripts refuse a real phone, as they wipe the app's data):
+It needs a clean checkout, `ANDROID_HOME`, Go and JDK 21. It builds the APKs and the peer, starts a fresh Android 15, then 16, then 17 emulator on port 5580 (every adb call goes to it, never to another emulator or a phone), runs run.py and the fast scenarios on each, and writes `build/e2e-pc/summary.md` with every step's result and time, for the pull request; the logs, logcat and the peer's logs are next to it. It refuses to start while a Syncthing runs on the machine. To run one script by hand on an emulator that is already up (the scripts refuse a real phone, as they wipe the app's data):
 
 ```sh
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
@@ -161,8 +161,8 @@ Every build of a commit gives a byte-identical unsigned release APK (arm64 only;
 Releasing:
 
 1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
-2. Run `scripts/e2e/upgrade.py` (see [Build](#build)) on an Android 15 and an Android 16 emulator, from the last release's tag to this commit, and again from the oldest release still in use; all builds made on the same machine. It is not in CI, so this is where a change that breaks updates is caught, our own or upstream's (a core update migrates the old config and database).
-3. Commit the version bump, then run `scripts/e2e/pc.py --release` on that commit (see [Build](#build)). When it passes it writes `docs/e2e/<version>.md`; commit that file. `scripts/e2e/check-results.sh <version>` checks it as CI will: a tag fails if the file is missing, did not pass on Android 15 and 16, or names a commit that differs from the tag outside `docs/`, `fastlane/` and top-level `*.md`.
+2. Run `scripts/e2e/upgrade.py` (see [Build](#build)) on Android 15, 16 and 17 emulators, from the last release's tag to this commit, and again from the oldest release still in use; all builds made on the same machine. It is not in CI, so this is where a change that breaks updates is caught, our own or upstream's (a core update migrates the old config and database).
+3. Commit the version bump, then run `scripts/e2e/pc.py --release` on that commit (see [Build](#build)). When it passes it writes `docs/e2e/<version>.md`; commit that file. `scripts/e2e/check-results.sh <version>` checks it as CI will: a tag fails if the file is missing, did not pass on Android 15, 16 and 17, or names a commit that differs from the tag outside `docs/`, `fastlane/` and top-level `*.md`.
 4. If the F-Droid recipe's build steps changed (NDK, JDK, Go bootstrap, a new step), fdroiddata must have them first: F-Droid builds a new tag from its own copy, with only the version changed. The upkeep check runs on the tag and reports a recipe out of step.
 5. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk` and its SBOM, `mysyncthing-0.1.0-sbom.cdx.json`, and signed build provenance (SLSA) for both: which workflow run, commit and runner made them. Anyone can check a file with `gh attestation verify <file> --repo aiste633/mysyncthing`, the unsigned APK included once it is rebuilt (see [Verify a release](#verify-a-release)).
 6. On your machine, with the key's encrypted storage open: `KEYSTORE=/path/to/mysyncthing-release.p12 scripts/sign-release.sh v0.1.0`. It signs the APK (signature only: no v1 files, alignment kept), checks with apksigcopier that the result is the build plus a signature, as F-Droid does, refuses a key other than the recipe's `AllowedAPKSigningKeys`, uploads `mysyncthing-0.1.0.apk` and removes the unsigned APK, so the release offers only the APK to install. It keeps a copy of the latest signed APK with its SHA-256 in `release/` (ignored by git; older ones are removed). Then publish the draft. The release notes come from the changelog.

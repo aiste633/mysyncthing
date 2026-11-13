@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Router
 import androidx.compose.material.icons.filled.SignalCellularAlt
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
@@ -38,6 +40,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -53,12 +56,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -68,18 +73,27 @@ import androidx.core.net.toUri
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.ACCESS_LOCAL_NETWORK
 import eu.stedb.mysyncthing.core.SyncthingService
+import eu.stedb.mysyncthing.core.asksForLocalNetwork
+import eu.stedb.mysyncthing.core.hasLocalNetwork
 import eu.stedb.mysyncthing.core.R as CoreR
 
 /** Permissions the app depends on, re-read whenever the activity resumes. */
 @Stable
 class PermissionState(private val context: Context) {
     var storage by mutableStateOf(false); private set
+    /** Always true before Android 17, which grants it with INTERNET. */
+    var localNetwork by mutableStateOf(false); private set
     var notifications by mutableStateOf(false); private set
     var batteryExempt by mutableStateOf(false); private set
 
+    /** What Syncthing can't run without: the checklist comes back while one is missing. */
+    val required: Boolean get() = storage && localNetwork
+
     fun refresh() {
         storage = Environment.isExternalStorageManager()
+        localNetwork = context.hasLocalNetwork()
         notifications = ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
             PackageManager.PERMISSION_GRANTED
         batteryExempt = context.getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(context.packageName)
@@ -106,27 +120,46 @@ fun rememberPermissionState(): PermissionState {
     return state
 }
 
+/** The runtime permission prompts of the permission rows. */
+class PermissionRequests(val notifications: () -> Unit, val localNetwork: () -> Unit)
+
 @Composable
-fun rememberNotificationRequest(state: PermissionState): () -> Unit {
+fun rememberPermissionRequests(state: PermissionState): PermissionRequests {
+    val context = LocalContext.current
+    val notifications = rememberRuntimeRequest(
+        Manifest.permission.POST_NOTIFICATIONS, state,
+        settings = {
+            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+        },
+        // A notification posted while denied stays hidden until it is posted again.
+        onGranted = { SyncthingService.refreshNotification() },
+    )
+    val localNetwork = rememberRuntimeRequest(
+        ACCESS_LOCAL_NETWORK, state,
+        settings = { Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri()) },
+        // The app starts Syncthing once the checklist is gone (App), as after All files access.
+        onGranted = {},
+    )
+    return remember(notifications, localNetwork) { PermissionRequests(notifications, localNetwork) }
+}
+
+/** Asks for [permission]; once Android no longer asks (refused twice), opens the system page from [settings] instead. */
+@Composable
+private fun rememberRuntimeRequest(permission: String, state: PermissionState, settings: () -> Intent, onGranted: () -> Unit): () -> Unit {
     val context = LocalContext.current
     val activity = LocalActivity.current
-    fun rationale() = activity?.shouldShowRequestPermissionRationale(Manifest.permission.POST_NOTIFICATIONS) == true
+    fun rationale() = activity?.shouldShowRequestPermissionRationale(permission) == true
     var rationaleBefore by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         state.refresh()
-        // A notification posted while denied stays hidden until it is posted again.
-        if (granted) SyncthingService.refreshNotification()
+        if (granted) onGranted()
         // No rationale before or after a refusal: Android did not show its prompt,
-        // because it was refused twice before. Only the app's notification settings can grant it now.
-        else if (!rationaleBefore && !rationale()) context.startActivity(
-            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        )
+        // because it was refused twice before. Only the system page can grant it now.
+        else if (!rationaleBefore && !rationale()) context.startActivity(settings().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
     }
     return {
         rationaleBefore = rationale()
-        launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        launcher.launch(permission)
     }
 }
 
@@ -136,7 +169,7 @@ fun rememberNotificationRequest(state: PermissionState): () -> Unit {
  */
 @Composable
 fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Boolean) -> Unit, onDone: () -> Unit) {
-    val requestNotifications = rememberNotificationRequest(state)
+    val requests = rememberPermissionRequests(state)
     // Surface sets the text colour for dark mode; there is no Scaffold here.
     Surface(Modifier.fillMaxSize(), color = AppColors.background) {
         Column(
@@ -146,11 +179,11 @@ fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Bool
         ) {
             Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.headlineMedium)
             Text(
-                stringResource(R.string.setup_intro),
+                stringResource(if (asksForLocalNetwork()) R.string.setup_intro_two else R.string.setup_intro),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Card(colors = AppColors.card(), border = AppColors.cardBorder()) {
-                PermissionRows(state, requestNotifications, checklist = true)
+                PermissionRows(state, requests, checklist = true)
             }
             Card(colors = AppColors.card(), border = AppColors.cardBorder()) {
                 SwitchRow(
@@ -159,32 +192,55 @@ fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Bool
                     mobileData, Icons.Default.SignalCellularAlt, onMobileData,
                 )
             }
-            Button(onClick = onDone, enabled = state.storage, shape = ButtonShape, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_done)) }
+            Button(onClick = onDone, enabled = state.required, shape = ButtonShape, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.action_done)) }
         }
     }
 }
 
-/** The three permission rows; the checklist adds tags and dividers, Settings matches its other groups. */
+/**
+ * The permission rows, Local network only on Android 17 and later; the checklist adds tags and dividers,
+ * Settings matches its other groups.
+ */
 @Composable
-fun PermissionRows(state: PermissionState, requestNotifications: () -> Unit, checklist: Boolean = false) {
-    PermissionRow(
-        Icons.Default.Folder, stringResource(R.string.permission_files), stringResource(R.string.permission_required).takeIf { checklist },
-        stringResource(R.string.permission_files_hint),
-        state.storage, stringResource(R.string.permission_grant), state::requestStorage,
-    )
-    if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    PermissionRow(
-        Icons.Default.Notifications, stringResource(R.string.permission_notifications), stringResource(R.string.permission_optional).takeIf { checklist },
-        stringResource(R.string.permission_notifications_hint, stringResource(CoreR.string.channel_service)),
-        state.notifications, stringResource(R.string.permission_allow), requestNotifications,
-    )
-    if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    PermissionRow(
-        Icons.Default.BatteryFull, stringResource(R.string.permission_background), stringResource(R.string.permission_recommended).takeIf { checklist },
-        stringResource(R.string.permission_background_hint),
-        state.batteryExempt, stringResource(R.string.permission_allow), state::requestBatteryExemption,
-    )
-    BrandBatteryWarning()
+fun PermissionRows(state: PermissionState, requests: PermissionRequests, checklist: Boolean = false) {
+    // Beside the text, a button or badge leaves it too little room at the largest font sizes: German words broke
+    // mid-word ("Erforderlic/h"). There it goes below the text and long words take a hyphen (the top bar's measure).
+    BoxWithConstraints {
+        val roomy = maxWidth.value / LocalDensity.current.fontScale >= 300
+        Column {
+            PermissionRow(
+                roomy,
+                Icons.Default.Folder, stringResource(R.string.permission_files), stringResource(R.string.permission_required).takeIf { checklist },
+                stringResource(R.string.permission_files_hint),
+                state.storage, stringResource(R.string.permission_grant), state::requestStorage,
+            )
+            if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            if (asksForLocalNetwork()) {
+                PermissionRow(
+                    roomy,
+                    Icons.Default.Router, stringResource(R.string.permission_local_network),
+                    stringResource(R.string.permission_required).takeIf { checklist },
+                    stringResource(R.string.permission_local_network_hint),
+                    state.localNetwork, stringResource(R.string.permission_allow), requests.localNetwork,
+                )
+                if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            PermissionRow(
+                roomy,
+                Icons.Default.Notifications, stringResource(R.string.permission_notifications), stringResource(R.string.permission_optional).takeIf { checklist },
+                stringResource(R.string.permission_notifications_hint, stringResource(CoreR.string.channel_service)),
+                state.notifications, stringResource(R.string.permission_allow), requests.notifications,
+            )
+            if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            PermissionRow(
+                roomy,
+                Icons.Default.BatteryFull, stringResource(R.string.permission_background), stringResource(R.string.permission_recommended).takeIf { checklist },
+                stringResource(R.string.permission_background_hint),
+                state.batteryExempt, stringResource(R.string.permission_allow), state::requestBatteryExemption,
+            )
+            BrandBatteryWarning(roomy)
+        }
+    }
 }
 
 private const val DONT_KILL = "https://dontkillmyapp.com"
@@ -194,7 +250,7 @@ private const val DONT_KILL = "https://dontkillmyapp.com"
  * that still stop the app, granted or not. Opens the per-brand steps in the browser.
  */
 @Composable
-private fun BrandBatteryWarning() {
+private fun BrandBatteryWarning(roomy: Boolean) {
     val uri = LocalUriHandler.current
     val error = MaterialTheme.colorScheme.error
     val site = DONT_KILL.removePrefix("https://")
@@ -227,7 +283,8 @@ private fun BrandBatteryWarning() {
                     Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.fillMaxSize(), tint = error)
                 },
             ),
-            style = MaterialTheme.typography.bodyMedium, color = error, modifier = Modifier.weight(1f),
+            // "Smartphone-Hersteller" is wider than the line at the largest German font: a hyphen, not "Herstelle/r".
+            style = MaterialTheme.typography.bodyMedium.copy(hyphens = if (roomy) Hyphens.None else Hyphens.Auto), color = error, modifier = Modifier.weight(1f),
         )
     }
 }
@@ -236,6 +293,7 @@ private const val LINK_ICON = "link"
 
 @Composable
 private fun PermissionRow(
+    roomy: Boolean,
     icon: ImageVector,
     title: String,
     tag: String?,
@@ -244,22 +302,35 @@ private fun PermissionRow(
     action: String,
     onAction: () -> Unit,
 ) {
+    val button: @Composable () -> Unit = { OutlinedButton(onClick = onAction, shape = ButtonShape) { Text(action) } }
+    val badge: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp), tint = AppColors.ok)
+            Text(stringResource(R.string.permission_granted), color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
+        }
+    }
+    val status = if (granted) badge else button
     ListItem(
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         leadingContent = { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
         // Above the title, so a long tag never wraps beside it on a narrow phone.
         overlineContent = tag?.let { { Text(it) } },
-        headlineContent = { Text(title) },
-        supportingContent = { Text(description) },
-        trailingContent = {
-            if (granted) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp), tint = AppColors.ok)
-                    Text(stringResource(R.string.permission_granted), color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
-                }
-            } else {
-                OutlinedButton(onClick = onAction, shape = ButtonShape) { Text(action) }
+        headlineContent = { if (roomy) Text(title) else HyphenatedText(title) },
+        supportingContent = {
+            if (roomy) Text(description)
+            else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HyphenatedText(description)
+                status()
             }
         },
+        trailingContent = status.takeIf { roomy },
     )
 }
+
+/**
+ * A word wider than the whole line (German at the largest font: "„Synchronisierungsdienst“") breaks with a
+ * hyphen by the language's rules, as titles do (Theme.kt), not anywhere. Only where the row is cramped, so body
+ * text at usual sizes keeps Android's default breaking.
+ */
+@Composable
+private fun HyphenatedText(text: String) = Text(text, style = LocalTextStyle.current.copy(hyphens = Hyphens.Auto))
