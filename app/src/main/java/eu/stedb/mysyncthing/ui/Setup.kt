@@ -40,6 +40,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -62,6 +63,7 @@ import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.Hyphens
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -201,33 +203,44 @@ fun SetupScreen(state: PermissionState, mobileData: Boolean, onMobileData: (Bool
  */
 @Composable
 fun PermissionRows(state: PermissionState, requests: PermissionRequests, checklist: Boolean = false) {
-    PermissionRow(
-        Icons.Default.Folder, stringResource(R.string.permission_files), stringResource(R.string.permission_required).takeIf { checklist },
-        stringResource(R.string.permission_files_hint),
-        state.storage, stringResource(R.string.permission_grant), state::requestStorage,
-    )
-    if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    if (asksForLocalNetwork()) {
-        PermissionRow(
-            Icons.Default.Router, stringResource(R.string.permission_local_network),
-            stringResource(R.string.permission_required).takeIf { checklist },
-            stringResource(R.string.permission_local_network_hint),
-            state.localNetwork, stringResource(R.string.permission_allow), requests.localNetwork,
-        )
-        if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+    // Beside the text, a button or badge leaves it too little room at the largest font sizes: German words broke
+    // mid-word ("Erforderlic/h"). There it goes below the text and long words take a hyphen (the top bar's measure).
+    BoxWithConstraints {
+        val roomy = maxWidth.value / LocalDensity.current.fontScale >= 300
+        Column {
+            PermissionRow(
+                roomy,
+                Icons.Default.Folder, stringResource(R.string.permission_files), stringResource(R.string.permission_required).takeIf { checklist },
+                stringResource(R.string.permission_files_hint),
+                state.storage, stringResource(R.string.permission_grant), state::requestStorage,
+            )
+            if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            if (asksForLocalNetwork()) {
+                PermissionRow(
+                    roomy,
+                    Icons.Default.Router, stringResource(R.string.permission_local_network),
+                    stringResource(R.string.permission_required).takeIf { checklist },
+                    stringResource(R.string.permission_local_network_hint),
+                    state.localNetwork, stringResource(R.string.permission_allow), requests.localNetwork,
+                )
+                if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            }
+            PermissionRow(
+                roomy,
+                Icons.Default.Notifications, stringResource(R.string.permission_notifications), stringResource(R.string.permission_optional).takeIf { checklist },
+                stringResource(R.string.permission_notifications_hint, stringResource(CoreR.string.channel_service)),
+                state.notifications, stringResource(R.string.permission_allow), requests.notifications,
+            )
+            if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            PermissionRow(
+                roomy,
+                Icons.Default.BatteryFull, stringResource(R.string.permission_background), stringResource(R.string.permission_recommended).takeIf { checklist },
+                stringResource(R.string.permission_background_hint),
+                state.batteryExempt, stringResource(R.string.permission_allow), state::requestBatteryExemption,
+            )
+            BrandBatteryWarning(roomy)
+        }
     }
-    PermissionRow(
-        Icons.Default.Notifications, stringResource(R.string.permission_notifications), stringResource(R.string.permission_optional).takeIf { checklist },
-        stringResource(R.string.permission_notifications_hint, stringResource(CoreR.string.channel_service)),
-        state.notifications, stringResource(R.string.permission_allow), requests.notifications,
-    )
-    if (checklist) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-    PermissionRow(
-        Icons.Default.BatteryFull, stringResource(R.string.permission_background), stringResource(R.string.permission_recommended).takeIf { checklist },
-        stringResource(R.string.permission_background_hint),
-        state.batteryExempt, stringResource(R.string.permission_allow), state::requestBatteryExemption,
-    )
-    BrandBatteryWarning()
 }
 
 private const val DONT_KILL = "https://dontkillmyapp.com"
@@ -237,7 +250,7 @@ private const val DONT_KILL = "https://dontkillmyapp.com"
  * that still stop the app, granted or not. Opens the per-brand steps in the browser.
  */
 @Composable
-private fun BrandBatteryWarning() {
+private fun BrandBatteryWarning(roomy: Boolean) {
     val uri = LocalUriHandler.current
     val error = MaterialTheme.colorScheme.error
     val site = DONT_KILL.removePrefix("https://")
@@ -270,7 +283,8 @@ private fun BrandBatteryWarning() {
                     Icon(Icons.AutoMirrored.Filled.OpenInNew, null, Modifier.fillMaxSize(), tint = error)
                 },
             ),
-            style = MaterialTheme.typography.bodyMedium, color = error, modifier = Modifier.weight(1f),
+            // "Smartphone-Hersteller" is wider than the line at the largest German font: a hyphen, not "Herstelle/r".
+            style = MaterialTheme.typography.bodyMedium.copy(hyphens = if (roomy) Hyphens.None else Hyphens.Auto), color = error, modifier = Modifier.weight(1f),
         )
     }
 }
@@ -279,6 +293,7 @@ private const val LINK_ICON = "link"
 
 @Composable
 private fun PermissionRow(
+    roomy: Boolean,
     icon: ImageVector,
     title: String,
     tag: String?,
@@ -287,31 +302,35 @@ private fun PermissionRow(
     action: String,
     onAction: () -> Unit,
 ) {
-    BoxWithConstraints {
-        // Beside the text, the button leaves it too little room at the largest font sizes: German words
-        // broke mid-word ("Erforderlic/h"). There it goes below the text (the same measure as the top bar's).
-        val roomy = maxWidth.value / LocalDensity.current.fontScale >= 300
-        val button: @Composable () -> Unit = { OutlinedButton(onClick = onAction, shape = ButtonShape) { Text(action) } }
-        val badge: @Composable () -> Unit = {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp), tint = AppColors.ok)
-                Text(stringResource(R.string.permission_granted), color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
-            }
+    val button: @Composable () -> Unit = { OutlinedButton(onClick = onAction, shape = ButtonShape) { Text(action) } }
+    val badge: @Composable () -> Unit = {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp), tint = AppColors.ok)
+            Text(stringResource(R.string.permission_granted), color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
         }
-        ListItem(
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-            leadingContent = { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-            // Above the title, so a long tag never wraps beside it on a narrow phone.
-            overlineContent = tag?.let { { Text(it) } },
-            headlineContent = { Text(title) },
-            supportingContent = {
-                if (granted || roomy) Text(description)
-                else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(description)
-                    button()
-                }
-            },
-            trailingContent = if (granted) badge else button.takeIf { roomy },
-        )
     }
+    val status = if (granted) badge else button
+    ListItem(
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        leadingContent = { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+        // Above the title, so a long tag never wraps beside it on a narrow phone.
+        overlineContent = tag?.let { { Text(it) } },
+        headlineContent = { if (roomy) Text(title) else HyphenatedText(title) },
+        supportingContent = {
+            if (roomy) Text(description)
+            else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                HyphenatedText(description)
+                status()
+            }
+        },
+        trailingContent = status.takeIf { roomy },
+    )
 }
+
+/**
+ * A word wider than the whole line (German at the largest font: "„Synchronisierungsdienst“") breaks with a
+ * hyphen by the language's rules, as titles do (Theme.kt), not anywhere. Only where the row is cramped, so body
+ * text at usual sizes keeps Android's default breaking.
+ */
+@Composable
+private fun HyphenatedText(text: String) = Text(text, style = LocalTextStyle.current.copy(hyphens = Hyphens.Auto))
