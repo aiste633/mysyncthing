@@ -1,4 +1,4 @@
-<p>MySyncthing esegue <a href="https://syncthing.net">Syncthing</a> su Android 15 e 16. Syncthing mantiene sincronizzate le cartelle tra i tuoi dispositivi, in modo diretto e crittografato, senza un servizio cloud in mezzo.</p>
+<p>MySyncthing esegue <a href="https://syncthing.net">Syncthing</a> su Android 15, 16 e 17. Syncthing mantiene sincronizzate le cartelle tra i tuoi dispositivi, in modo diretto e crittografato, senza un servizio cloud in mezzo.</p>
 <p><b>Widget per la schermata Home:</b> una sola riga sottile mostra se è tutto sincronizzato, se la sincronizzazione è in corso (con l'avanzamento), in pausa o richiede la tua attenzione, e quali dispositivi sono connessi. Il suo pulsante mette in pausa e riprende la sincronizzazione.</p>
 <ul>
 <li>Associa i dispositivi con il codice QR o l'ID dispositivo, e accetta le cartelle condivise con te, con posizione, tipo di cartella e controllo versione suggeriti</li>

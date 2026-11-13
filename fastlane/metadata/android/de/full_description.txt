@@ -1,4 +1,4 @@
-<p>MySyncthing führt <a href="https://syncthing.net">Syncthing</a> auf Android 15 und 16 aus. Syncthing hält Ordner zwischen Ihren Geräten synchron, direkt und verschlüsselt, ohne Cloud-Dienst dazwischen.</p>
+<p>MySyncthing führt <a href="https://syncthing.net">Syncthing</a> auf Android 15, 16 und 17 aus. Syncthing hält Ordner zwischen Ihren Geräten synchron, direkt und verschlüsselt, ohne Cloud-Dienst dazwischen.</p>
 <p><b>Startbildschirm-Widget:</b> Eine schmale Zeile zeigt, ob alles aktuell ist, synchronisiert wird (mit Fortschritt), pausiert ist oder Ihre Aufmerksamkeit braucht, und welche Geräte verbunden sind. Seine Taste pausiert die Synchronisierung und setzt sie fort.</p>
 <ul>
 <li>Geräte per QR-Code oder Gerätekennung koppeln und mit Ihnen geteilte Ordner annehmen, mit vorgeschlagenem Speicherort, Ordnertyp und Dateiversionierung</li>
