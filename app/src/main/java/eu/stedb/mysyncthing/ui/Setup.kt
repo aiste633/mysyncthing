@@ -13,6 +13,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -54,6 +55,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.Placeholder
@@ -285,22 +287,31 @@ private fun PermissionRow(
     action: String,
     onAction: () -> Unit,
 ) {
-    ListItem(
-        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
-        leadingContent = { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
-        // Above the title, so a long tag never wraps beside it on a narrow phone.
-        overlineContent = tag?.let { { Text(it) } },
-        headlineContent = { Text(title) },
-        supportingContent = { Text(description) },
-        trailingContent = {
-            if (granted) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp), tint = AppColors.ok)
-                    Text(stringResource(R.string.permission_granted), color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
-                }
-            } else {
-                OutlinedButton(onClick = onAction, shape = ButtonShape) { Text(action) }
+    BoxWithConstraints {
+        // Beside the text, the button leaves it too little room at the largest font sizes: German words
+        // broke mid-word ("Erforderlic/h"). There it goes below the text (the same measure as the top bar's).
+        val roomy = maxWidth.value / LocalDensity.current.fontScale >= 300
+        val button: @Composable () -> Unit = { OutlinedButton(onClick = onAction, shape = ButtonShape) { Text(action) } }
+        val badge: @Composable () -> Unit = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp), tint = AppColors.ok)
+                Text(stringResource(R.string.permission_granted), color = AppColors.ok, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(start = 4.dp))
             }
-        },
-    )
+        }
+        ListItem(
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            leadingContent = { Icon(icon, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+            // Above the title, so a long tag never wraps beside it on a narrow phone.
+            overlineContent = tag?.let { { Text(it) } },
+            headlineContent = { Text(title) },
+            supportingContent = {
+                if (granted || roomy) Text(description)
+                else Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(description)
+                    button()
+                }
+            },
+            trailingContent = if (granted) badge else button.takeIf { roomy },
+        )
+    }
 }

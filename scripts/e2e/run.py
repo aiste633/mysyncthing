@@ -451,7 +451,7 @@ def local_network_revoked(peer: Peer, phone: str) -> None:
     if peer.connected(phone, since=revoked):
         fail("the phone's core runs without the local network permission")
     open_app()
-    eventually("checklist with the Local network row", 30, lambda: "Local network" in screen_texts())
+    eventually("checklist with the Local network access row", 30, lambda: "Local network access" in screen_texts())
     granted = time.time()
     sh(f"pm grant {APP} {LOCAL_NETWORK}")
     go_home()

@@ -1186,6 +1186,6 @@
     </plurals>
     <string name="ignores_too_big">This file is larger than %1$s. Edit it in the web GUI.</string>
     <string name="setup_intro_two">MySyncthing needs two permissions to sync. The others make it more reliable.</string>
-    <string name="permission_local_network">Local network</string>
+    <string name="permission_local_network">Local network access</string>
     <string name="permission_local_network_hint">Android 17 asks before an app may reach devices on your Wi-Fi or wired network. Syncthing needs this to find your other devices at home or at work and sync with them directly. Without it, data could only go through relays on the internet, which slows transfers down a lot, so syncing stays off until you allow it. Android lists it under Nearby devices.</string>
 </resources>
