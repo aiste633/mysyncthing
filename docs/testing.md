@@ -24,6 +24,7 @@ uses anyone's real folders, devices or backups.
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
 | Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 2 ANRs found and fixed; no app crash of its own |
 | Sync scenarios | Conflicts of every kind, three devices, send- and receive-only, copy limits, 5,000 files, a 1 GB file, 200 conflicts, flaps, the count after a kill and a reboot | All pass on Android 15 and 16 (0.3.0); 1 upstream data-loss bug found (#80) |
+| Networks | The app finds a peer through a discovery server, reaches it through NAT and through a relay, on a slow link and across a 2- and an 8-minute cut; all servers are local test copies | Android 15, 16 and 17 on the PC (`scripts/e2e/net.py`), after big releases or about every three months |
 | Memory soak | 10 h 21 min of syncing and GUI use, sampled every minute | No leak |
 | Flash writes | Every write of the app traced while idle and while syncing | 0.02–0.14 MB/h when idle |
 | Reproducible builds | Three independent builds of the release APK | Byte-identical |
@@ -146,7 +147,8 @@ The end-to-end tests cover the upright ones and the rotation between the two on 
 The debug app runs on an emulator (plain Android 15, 16 and 17 images, Pixel 7) against a real
 Syncthing peer built from the same patched core. The peer runs on the build machine's loopback
 only, with discovery, relays and NAT off, so it never meets a real device; it reaches the
-emulator through `adb`. `scripts/e2e/run.py` runs the steps in order, and refuses to run on a
+emulator through `adb`. Discovery, relays, NAT and slow links have their own run, the
+[network tests](#network-tests-2026-11-13). `scripts/e2e/run.py` runs the steps in order, and refuses to run on a
 real phone.
 
 They run on the PC, not on GitHub, since 11/2026. In November 2026 GitHub temporarily suspended the
@@ -506,6 +508,35 @@ are the same.
 Battery drain is not measured in mAh: on a phone in use, other apps and notifications swamp the
 app's share. The app holds no wakelock, so a sleeping phone wakes only for incoming traffic.
 
+## Network tests (2026-11-13)
+
+The end-to-end tests run their peer on loopback, which says nothing about how the app finds a
+device and reaches it across networks. `scripts/e2e/net.py` covers that on the PC, with no real
+peer and nothing reached outside the machine. A network namespace (`scripts/e2e/netns.sh`, run as
+root before and after) holds a test discovery server, a relay and the peer, all built from the
+pinned core, at a TEST-NET-2 address. The emulator reaches them through its own NAT; a firewall
+rule in the namespace refuses every connection towards the host, so the peer can never dial the
+phone and every connection is opened by the phone, as from a phone on mobile data. The phone core
+uses only these servers, and the emulator has no DNS. The app is paired with the peer over loopback
+as in the end-to-end tests; then the peer moves into the namespace, known on both sides only by
+its ID ("dynamic").
+
+| Scenario | What must hold | Android 15 / 16 / 17 |
+|---|---|---|
+| Discovery | The peer listens on TCP and QUIC only; the phone finds it through the discovery server and connects itself; 20 MB from the peer and 5 MB from the phone arrive identical | Pass: TCP from the phone; 20 MB in 2 s |
+| Slow link | 150±30 ms each way, 1 % loss, 2 Mbit/s: 5 MB arrives identical | Pass: 24–25 s (1.6 Mbit/s) |
+| Short cut | 2 minutes of 100 % loss in the middle of a 10 MB transfer, as a real cut: no error reaches either side | Pass: the same connection survived; complete 14–41 s after the cut |
+| Relay | The peer listens on the relay only; after an app restart the phone connects through it; 20 MB and 5 MB as above | Pass: relay from the phone; 20 MB in 2 s |
+| Long cut over the relay | 8 minutes of 100 % loss: the connection drops (the core notices a silent cut only through its receive timeout, 300 s, checked every 150 s), comes back through discovery and the relay, and the transfer ends identical | Pass: dropped during the cut, back through the relay 22 s after it, file complete |
+
+Run after big releases or about every three months, not on every pull request. Local discovery
+and UPnP/NAT-PMP port mapping are not covered: an emulator shares no LAN with another device and
+has no router.
+
+The 2026-11-13 run on commit 69a758f took 40 minutes for the three emulators, with no app
+crash. `scripts/e2e/net.py` writes `build/e2e-net/summary.md`; the two scripts say how to set up
+and take down the namespace.
+
 ## Reproducible builds
 
 The same commit gave a byte-identical unsigned release APK, with the same SHA-256, from a local
@@ -515,4 +546,5 @@ every pull request, and F-Droid's build on every tag. See [README](../README.md#
 ## Not covered yet
 
 - The roaming run condition: emulators cannot simulate roaming.
-- The end-to-end tests use one peer on loopback: no relays, discovery, NAT or slow networks.
+- Local discovery and UPnP/NAT-PMP port mapping: an emulator shares no LAN with another device
+  and has no router (see [network tests](#network-tests-2026-11-13)).
