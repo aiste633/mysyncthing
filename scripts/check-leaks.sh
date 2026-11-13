@@ -31,7 +31,8 @@ public_hosts=(
 allowed_ip='^(127\.0\.0\.1|0\.0\.0\.0|192\.0\.2\.[0-9]+|198\.51\.100\.[0-9]+|203\.0\.113\.[0-9]+|::1?|2001:db8:.*)$'
 # Also Kotlin's labelled this (this@SomeClass.member), which looks like an address.
 allowed_email='^(noreply@[a-z.]+|[0-9]+\+[A-Za-z0-9-]+@users\.noreply\.github\.com|[^@]+@example\.(com|org|net)|this@[A-Z][A-Za-z0-9]*\.[a-z][A-Za-z0-9]*)$'
-allowed_host='^(localhost|127\.0\.0\.1|\$\{.*\}|<.*>)$'
+# Placeholders: shell ${...}, <...>, and a name in a Python or Kotlin template ({NS_IP}; hosts are compared in lower case).
+allowed_host='^(localhost|127\.0\.0\.1|\$\{.*\}|<.*>|\{[A-Za-z_][A-Za-z0-9_]*\})$'
 
 # --- What counts as a personal detail.
 ipv4='\b([0-9]{1,3}\.){3}[0-9]{1,3}\b'
