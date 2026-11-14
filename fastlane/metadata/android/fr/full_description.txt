@@ -1,4 +1,4 @@
-<p>MySyncthing fait tourner <a href="https://syncthing.net">Syncthing</a> sur Android 15 et 16. Syncthing garde des dossiers, appelés partages, synchronisés entre vos appareils, directement et de façon chiffrée, sans service cloud entre les deux.</p>
+<p>MySyncthing fait tourner <a href="https://syncthing.net">Syncthing</a> sur Android 15, 16 et 17. Syncthing garde des dossiers, appelés partages, synchronisés entre vos appareils, directement et de façon chiffrée, sans service cloud entre les deux.</p>
 <p><b>Widget d’écran d’accueil :</b> une seule ligne fine indique si tout est à jour, en cours de synchronisation (avec la progression), en pause ou demande votre attention, et quels appareils sont connectés. Son bouton suspend et reprend la synchronisation.</p>
 <ul>
 <li>Associez des appareils par code QR ou ID d’appareil, et acceptez les partages qui vous sont proposés, avec un emplacement, un type de partage et une préservation des fichiers suggérés</li>
