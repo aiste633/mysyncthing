@@ -40,13 +40,18 @@ data class Snapshot(
     val systemErrors: List<SystemError> = emptyList(),
     /** The core's local discovery setting (options.localAnnounceEnabled). */
     val localDiscovery: Boolean = false,
+    /** The core's global discovery setting (options.globalAnnounceEnabled). */
+    val globalDiscovery: Boolean = false,
     /** Who paused the devices; from the service, not the core. */
     val pause: DevicePause = DevicePause(),
     /** When each device was last connected; missing for one never connected. */
     val lastSeen: Map<String, Instant> = emptyMap(),
     /** Conflict copies on this phone by folder ID, as sorted paths in the folder; only folders that have some. */
     val conflicts: Map<String, List<String>> = emptyMap(),
-)
+) {
+    /** Off only once loaded with both off; the core then reports no discovery (system status discoveryEnabled). */
+    val discoveryOff get() = loaded && !localDiscovery && !globalDiscovery
+}
 
 /**
  * Process-wide view of the running core. [SyncthingService] follows the event
@@ -189,6 +194,7 @@ object SyncStatus {
             pendingFolders = pendingFolders.await(),
             systemErrors = errors.await(),
             localDiscovery = options.await().localAnnounceEnabled,
+            globalDiscovery = options.await().globalAnnounceEnabled,
             lastSeen = stats.await().mapNotNull { (id, st) -> instantOf(st.lastSeen)?.let { id to it } }.toMap(),
         )
     }

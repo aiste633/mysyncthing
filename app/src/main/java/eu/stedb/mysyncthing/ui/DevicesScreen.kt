@@ -158,13 +158,15 @@ internal fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, o
             // The health line is there from the first frame, with dashes until the first poll: the
             // poll stops 5 s after the tab is left and starts again on return, and a line appearing
             // a moment later pushed "All devices" and the list down. The same words as the result,
-            // so it wraps the same at any font size. The card's own colour: grey on this card's
-            // high-contrast colour is unreadable.
+            // so it wraps the same at any font size: "Discovery off" when the settings have both
+            // discovery methods off, as the poll will then say. The card's own colour: grey on this
+            // card's high-contrast colour is unreadable.
             val look = live?.health?.look() ?: StatusLook(SyncState.Waiting.look().icon, on)
             Row(Modifier.testTag("health"), verticalAlignment = Alignment.CenterVertically) {
                 Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
                 Spacer(Modifier.width(6.dp))
-                Text(live?.healthText?.asString() ?: stringResource(R.string.health_pending), style = MaterialTheme.typography.bodySmall)
+                val pending = if (s.discoveryOff) R.string.health_pending_discovery_off else R.string.health_pending
+                Text(live?.healthText?.asString() ?: stringResource(pending), style = MaterialTheme.typography.bodySmall)
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
                 FilledTonalButton(shape = ButtonShape, colors = buttons, onClick = onShowQr) {

@@ -16,10 +16,10 @@ import androidx.test.core.app.ApplicationProvider
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Connections
 import eu.stedb.mysyncthing.core.ServiceStatus
+import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.SystemStatus
 import eu.stedb.mysyncthing.core.resolve
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -42,12 +42,12 @@ class ThisDeviceCardTest(private val language: String, private val width: Int, p
 
     private var live by mutableStateOf<LiveStats?>(null)
 
-    private fun open() {
+    private fun open(snapshot: Snapshot = Fixtures.snapshot) {
         RuntimeEnvironment.setQualifiers("+$language-w${width}dp-h800dp-notnight")
         RuntimeEnvironment.setFontScale(fontScale)
         compose.activityRule.scenario.recreate()
         compose.setContent {
-            AppTheme { Box(Modifier.testTag("card")) { ThisDeviceCard(Fixtures.snapshot, live, onOpen = {}, onShowQr = {}) } }
+            AppTheme { Box(Modifier.testTag("card")) { ThisDeviceCard(snapshot, live, onOpen = {}, onShowQr = {}) } }
         }
         compose.waitForIdle()
     }
@@ -70,14 +70,20 @@ class ThisDeviceCardTest(private val language: String, private val width: Int, p
         }
     }
 
-    /** "Discovery off" is shorter: the card may lose a line at the largest font, never gain one. */
+    /**
+     * With both discovery methods off in the settings the dashes take the "Discovery off" words,
+     * which are longer than "Discovery – of –" in Italian and Spanish (a line more at the largest font).
+     */
     @Test
-    fun discoveryOffNeverGrowsTheCard() {
-        open()
+    fun theCardKeepsItsHeightWithDiscoveryOff() {
+        open(Fixtures.snapshot.copy(localDiscovery = false, globalDiscovery = false))
+        healthShows(app.getString(R.string.health_pending_discovery_off))
         val before = height()
-        live = stats(3, 3, 0, 0).copy(status = stats(3, 3, 0, 0).status.copy(discoveryEnabled = false))
+        val off = stats(3, 3, 0, 0).let { it.copy(status = it.status.copy(discoveryEnabled = false)) }
+        live = off
         compose.waitForIdle()
-        assertTrue("$language, $width dp, ×$fontScale", height() <= before + 0.5f)
+        healthShows(off.healthText.resolve(app))
+        assertEquals("${off.healthText.resolve(app)} ($language, $width dp, ×$fontScale)", before, height(), 0.5f)
     }
 
     companion object {

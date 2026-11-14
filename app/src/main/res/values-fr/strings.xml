@@ -228,6 +228,7 @@
     <string name="health">Écoute %1$d sur %2$d · Découverte %3$d sur %4$d</string>
     <string name="health_discovery_off">Écoute %1$d sur %2$d · Découverte désactivée</string>
     <string name="health_pending">Écoute – sur – · Découverte – sur –</string>
+    <string name="health_pending_discovery_off">Écoute – sur – · Découverte désactivée</string>
     <string name="unused_no_ipv6">Inutilisé : ce réseau n’a pas d’IPv6</string>
     <string name="unused_no_route">Inutilisé : aucune route sur ce réseau</string>
 
