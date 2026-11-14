@@ -4,12 +4,12 @@
 package stbridge
 
 import (
-	"maps"
 	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"

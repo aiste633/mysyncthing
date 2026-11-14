@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Signs the unsigned APK that CI attached to a draft GitHub release, uploads the signed
 # APK and removes the unsigned one, so the release offers only the APK to install.
+# Signs only what CI built from the tag as this checkout has it (see the check below).
 # A copy of the signed APK and its SHA-256 stays in release/ (ignored by git): only the
 # latest release, the release page has them all.
 # The key never leaves this machine. F-Droid builds the same tag, checks that its APK
@@ -8,7 +9,8 @@
 # Anyone can do the same check: README, "Verify a release".
 #
 # Usage:  KEYSTORE=/mnt/mskey/mysyncthing-release.p12 scripts/sign-release.sh v0.1.0
-# Needs:  gh (logged in, or GH_TOKEN set); apksigcopier (Debian: apt install apksigcopier);
+# Needs:  the tag in this checkout (git fetch --tags, if it was made elsewhere);
+#         gh (logged in, or GH_TOKEN set); apksigcopier (Debian: apt install apksigcopier);
 #         apksigner from Android build-tools: on PATH, APKSIGNER=..., or the newest in
 #         $ANDROID_HOME/build-tools. KEY_ALIAS defaults to mysyncthing. apksigner asks for
 #         the keystore password.
@@ -30,11 +32,23 @@ unsigned="mysyncthing-$version-unsigned.apk"
 signed="mysyncthing-$version.apk"
 recipe="$(dirname "$0")/../fdroid/eu.stedb.mysyncthing.yml"
 keep="$(dirname "$0")/../release"
+repo=aiste633/mysyncthing
+commit="$(git -C "$(dirname "$0")" rev-parse --verify --quiet "refs/tags/$tag^{commit}")" \
+  || { echo "no tag $tag in this checkout: git fetch --tags" >&2; exit 1; }
 
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
 gh release download "$tag" --pattern "$unsigned" --dir "$work"
+# A draft's files can be replaced by anyone and anything that may write to the repository,
+# and whatever is there would get our signature. So the file must carry GitHub's build
+# provenance: built by the release workflow, on GitHub's own runners, from this tag, at the
+# commit the tag has in this checkout (a tag moved on GitHub fails too). Write access to
+# the repository cannot forge it: the workflow run signs it with its own identity.
+gh attestation verify "$work/$unsigned" --repo "$repo" \
+  --signer-workflow "$repo/.github/workflows/reproducible.yml" \
+  --source-ref "refs/tags/$tag" --source-digest "$commit" --deny-self-hosted-runners \
+  || { echo "$unsigned on the draft is not what CI built from $tag ($commit): nothing signed." >&2; exit 1; }
 # Only the signature block may be added, or the signed APK no longer matches anyone's build:
 # by default apksigner adds JAR signature files (v1; Android 6 and older need them, our
 # minSdk is 35) and moves files to its own alignment (the build already aligns them).

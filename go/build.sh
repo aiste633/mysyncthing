@@ -36,11 +36,21 @@ export SOURCE_DATE_EPOCH="$(git -C "$st" log -1 --format=%ct)"
 # gomobile writes the absolute paths of go/bridge and go/syncthing into the binary's build
 # info, and -trimpath leaves them in. Building through a fixed symlink makes them the same
 # on every machine. The lock serialises builds of different checkouts on one machine.
+# /tmp is shared, so the link and the lock live in a directory that only this user can
+# write: nobody else can point the build at other source or make the lock lead elsewhere.
 fixed=/tmp/mysyncthing-go
-exec 9>"$fixed.lock"
+me="$(id -u)"
+# Up to 0.4.0 this script made the link itself there.
+if [ -L "$fixed" ] && [ "$(stat -c %u "$fixed")" = "$me" ]; then rm "$fixed"; fi
+mkdir -m 700 "$fixed" 2>/dev/null || true
+if [ -L "$fixed" ] || [ ! -d "$fixed" ] || [ "$(stat -c %u "$fixed")" != "$me" ] || [ "$(stat -c %a "$fixed")" != 700 ]; then
+  echo "$fixed must be a directory that only you can use (mode 700): remove it and build again" >&2
+  exit 1
+fi
+exec 9>"$fixed/lock"
 flock 9
-ln -sfn "$here" "$fixed"
-cd "$fixed/bridge"
+ln -sfn "$here" "$fixed/go"
+cd "$fixed/go/bridge"
 go install golang.org/x/mobile/cmd/gomobile golang.org/x/mobile/cmd/gobind
 gopath="$(go env GOPATH)"
 export PATH="$gopath/bin:$PATH"

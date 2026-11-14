@@ -8,3 +8,10 @@ captures/
 /go/build/
 /release/
 __pycache__/
+# Key material never belongs here; scripts/check-leaks.sh fails on the same names.
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.pem
+*.key

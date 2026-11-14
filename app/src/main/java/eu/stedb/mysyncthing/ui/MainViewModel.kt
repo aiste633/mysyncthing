@@ -39,6 +39,7 @@ import eu.stedb.mysyncthing.core.Versioning
 import eu.stedb.mysyncthing.core.messageText
 import eu.stedb.mysyncthing.core.plural
 import eu.stedb.mysyncthing.core.restoreDatedNow
+import eu.stedb.mysyncthing.core.runSuspendCatching
 import eu.stedb.mysyncthing.core.setDevicePausedByUser
 import eu.stedb.mysyncthing.core.withDeviceWindows
 import eu.stedb.mysyncthing.core.text
@@ -102,7 +103,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private fun act(@StringRes label: Int, done: UiText? = null, block: suspend RestClient.() -> Unit) {
         val c = client ?: return
         viewModelScope.launch {
-            runCatching { c.block() }
+            runSuspendCatching { c.block() }
                 .onSuccess { done?.let { _message.send(it) } }
                 .onFailure { _message.send(failed(label, it)) }
         }
@@ -118,18 +119,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun <T> write(block: suspend () -> T): T = viewModelScope.async { block() }.await()
 
     /** One-off reads for detail screens; null when the core is not running or the call fails. */
-    suspend fun ignores(folder: String): List<String>? = runCatching { client?.ignores(folder) }.getOrNull()
+    suspend fun ignores(folder: String): List<String>? = runSuspendCatching { client?.ignores(folder) }.getOrNull()
     suspend fun folderErrors(folder: String): List<FileError> =
-        runCatching { client?.folderErrors(folder)?.errors }.getOrNull().orEmpty()
-    suspend fun folderStats(folder: String): FolderStats? = runCatching { client?.folderStats()?.get(folder) }.getOrNull()
-    suspend fun need(folder: String, perPage: Int): NeedPage? = runCatching { client?.need(folder, 1, perPage) }.getOrNull()
+        runSuspendCatching { client?.folderErrors(folder)?.errors }.getOrNull().orEmpty()
+    suspend fun folderStats(folder: String): FolderStats? = runSuspendCatching { client?.folderStats()?.get(folder) }.getOrNull()
+    suspend fun need(folder: String, perPage: Int): NeedPage? = runSuspendCatching { client?.need(folder, 1, perPage) }.getOrNull()
     suspend fun remoteNeed(folder: String, device: String, perPage: Int): List<FileEntry>? =
-        runCatching { client?.remoteNeed(folder, device, 1, perPage)?.files.orEmpty() }.getOrNull()
+        runSuspendCatching { client?.remoteNeed(folder, device, 1, perPage)?.files.orEmpty() }.getOrNull()
     suspend fun localChanged(folder: String, perPage: Int): List<FileEntry>? =
-        runCatching { client?.localChanged(folder, 1, perPage)?.files.orEmpty() }.getOrNull()
+        runSuspendCatching { client?.localChanged(folder, 1, perPage)?.files.orEmpty() }.getOrNull()
 
     /** What [device] still needs from this phone, per folder, for the folders that need anything. */
-    suspend fun remoteCompletion(device: String, folders: List<String>): Map<String, Completion> = runCatching {
+    suspend fun remoteCompletion(device: String, folders: List<String>): Map<String, Completion> = runSuspendCatching {
         val c = client ?: return emptyMap()
         coroutineScope {
             folders.map { f -> async { f to c.completion(device, f) } }.awaitAll()
@@ -150,7 +151,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         var prev: Pair<Long, Connections>? = null
         while (true) {
             val c = client
-            val sample = if (c == null) null else runCatching {
+            val sample = if (c == null) null else runSuspendCatching {
                 coroutineScope {
                     val conns = async { c.connections() }
                     c.status() to conns.await()
@@ -176,7 +177,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         return UsageConsent(needsPrompt = o.urAccepted > -1 && o.urSeen < max && o.urAccepted < max, enabled = o.urAccepted > 0)
     }
 
-    suspend fun usageReport(): String? = runCatching { client?.usageReport() }.getOrNull()
+    suspend fun usageReport(): String? = runSuspendCatching { client?.usageReport() }.getOrNull()
 
     /** Hides the question at once; then shows what the core has. */
     fun answerUsagePrompt(accept: Boolean) {
@@ -218,7 +219,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun setNumConnections(id: String, n: Int) = patchDevice(id, R.string.op_connections) { put("numConnections", n) }
 
     /** The core's latest file changes, newest first; nothing is stored by the app. */
-    suspend fun recentChanges(limit: Int): List<RecentChange>? = runCatching {
+    suspend fun recentChanges(limit: Int): List<RecentChange>? = runSuspendCatching {
         val c = client ?: return null
         c.diskEvents(limit).mapNotNull { e ->
             val d = e.data?.let { runCatching { c.json.decodeFromJsonElement<DiskChange>(it) }.getOrNull() } ?: return@mapNotNull null
@@ -226,12 +227,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }.asReversed()
     }.getOrNull()
 
-    suspend fun versions(folder: String): Map<String, List<FileVersion>>? = runCatching { client?.versions(folder) }.getOrNull()
+    suspend fun versions(folder: String): Map<String, List<FileVersion>>? = runSuspendCatching { client?.versions(folder) }.getOrNull()
 
     /** Restores files to the given version times; false when anything failed (the reason goes to the snackbar). */
     suspend fun restoreVersions(folder: String, versions: Map<String, String>): Boolean = write {
         val c = client ?: return@write false
-        val result = runCatching {
+        val result = runSuspendCatching {
             val f = c.folders().first { it.id == folder }
             c.restoreDatedNow(f, versions)
         }.getOrElse { RestoreResult(mapOf("" to (it.message ?: it.toString())), emptyList()) }
@@ -265,7 +266,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun saveDefaultIgnores(lines: List<String>): Boolean = write {
         val c = client ?: return@write false
-        runCatching { checked("", lines); c.setDefaultIgnores(lines) }
+        runSuspendCatching { checked("", lines); c.setDefaultIgnores(lines) }
             .onSuccess { defaultIgnores.show(lines) }
             .onFailure { _message.send(failed(R.string.op_ignore_patterns, it)) }.isSuccess
     }
@@ -294,7 +295,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         val body = buildJsonObject(fields)
         value.show(new)
         viewModelScope.launch {
-            runCatching { c.patch(body) }
+            runSuspendCatching { c.patch(body) }
                 .onSuccess { then() }
                 .onFailure { _message.send(failed(label, it)); value.load() }
         }
@@ -305,13 +306,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         act(R.string.op_restart, done = text(R.string.done_restarting)) { restart() }
     }
 
-    suspend fun discovery(): Map<String, Discovered> = runCatching { client?.discovery() }.getOrNull().orEmpty()
-    suspend fun ignoredRequests(): IgnoredRequests? = runCatching { client?.ignoredRequests() }.getOrNull()
+    suspend fun discovery(): Map<String, Discovered> = runSuspendCatching { client?.discovery() }.getOrNull().orEmpty()
+    suspend fun ignoredRequests(): IgnoredRequests? = runSuspendCatching { client?.ignoredRequests() }.getOrNull()
 
     /** Undoes an Ignore; false when it failed (the reason goes to the snackbar). */
     suspend fun unignore(device: String, folder: String? = null): Boolean = write {
         val c = client ?: return@write false
-        runCatching { if (folder == null) c.unignoreDevice(device) else c.unignoreFolder(folder, device) }
+        runSuspendCatching { if (folder == null) c.unignoreDevice(device) else c.unignoreFolder(folder, device) }
             .onFailure { _message.send(failed(R.string.op_unignore, it)) }.isSuccess
     }
     /** Its own sync windows go too: a device added again starts with the global ones. */
@@ -332,13 +333,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     fun addFolder(d: FolderDraft, paused: Boolean = false) = act(R.string.op_add_folder, done = text(R.string.done_added, d.label.ifBlank { d.id })) {
         val id = d.id.trim()
-        val ignores = if (paused) emptyList() else runCatching { defaultIgnores() }.getOrDefault(emptyList())
+        val ignores = if (paused) emptyList() else runSuspendCatching { defaultIgnores() }.getOrDefault(emptyList())
         val devices = d.devices.map { FolderDevice(it, encryptionPassword = d.passwords[it].orEmpty()) }
         addFolder(id, d.label.trim(), folderPath(d.path), devices, d.type, d.versioning, paused || ignores.isNotEmpty())
         if (paused || ignores.isEmpty()) return@act
         // The folder may take a moment to start after the config change.
         repeat(5) { attempt ->
-            val failure = runCatching { setIgnores(id, ignores) }.exceptionOrNull()
+            val failure = runSuspendCatching { setIgnores(id, ignores) }.exceptionOrNull()
             if (failure == null) {
                 setFolderPaused(id, false)
                 return@act
@@ -373,7 +374,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Saves ignore patterns; [resume] unpauses a folder that waited for them. False when it failed. */
     suspend fun saveIgnores(id: String, lines: List<String>, resume: Boolean): Boolean = write {
         val c = client ?: return@write false
-        runCatching {
+        runSuspendCatching {
             checked(snapshot.value.folders.find { it.id == id }?.path.orEmpty(), lines)
             c.setIgnores(id, lines)
             if (resume) c.setFolderPaused(id, false)
@@ -419,13 +420,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
      */
     suspend fun setProxy(p: ProxySettings): Boolean {
         // The bridge waits for a start or stop in progress.
-        runCatching { withContext(Dispatchers.IO) { SyncthingCore.setProxy(p) } }.onFailure {
+        runSuspendCatching { withContext(Dispatchers.IO) { SyncthingCore.setProxy(p) } }.onFailure {
             _message.send(text(R.string.proxy_not_saved, it.messageText()))
             return false
         }
         if (!settings.setProxy(p)) {
             // Back to the stored proxy, so the next start or restart doesn't use one the app forgot.
-            runCatching { withContext(Dispatchers.IO) { SyncthingCore.setProxy(settings.proxy.first()) } }
+            runSuspendCatching { withContext(Dispatchers.IO) { SyncthingCore.setProxy(settings.proxy.first()) } }
             _message.send(NOT_SAVED)
             return false
         }

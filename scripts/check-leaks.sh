@@ -4,7 +4,8 @@
 # every address, host, path, ID and e-mail found must be a known public host or a
 # placeholder, so new or renamed machines are caught without updating anything.
 # Scans every commit (added lines and messages) and every commit identity, so a leak
-# that was added and removed again is found too.
+# that was added and removed again is found too. Key material fails as well: private keys
+# by content, key and keystore files by name (.gitignore names the same files).
 #
 # Usage: scripts/check-leaks.sh [<rev-range>]     (default: all of HEAD's history)
 # Findings are masked and named by commit, so a public CI log does not repeat the leak.
@@ -41,6 +42,11 @@ home='(/home/|/Users/|/root/|[A-Za-z]:\\Users\\)[A-Za-z0-9._-]+'
 device_id='\b([A-Z2-7]{7}-){7}[A-Z2-7]{7}\b'
 # The one fake ID tests may use (the unit tests' "laptop"); no real device has it. Any other ID fails.
 allowed_device_id='^EUYDWRS-RLRTXET-7MISOPK-TNF7ZLL-K6B27WA-EGBOIRY-NHBBU4W-LEN55AT$'
+# Network card (MAC) addresses, with colons or dashes. A longer run of hex pairs is a
+# fingerprint, not an address, and is matched whole so that no part of it reads as one.
+mac='\b([0-9A-Fa-f]{2}[:-]){5,}[0-9A-Fa-f]{2}\b'
+# The documentation range of RFC 7042, none and broadcast.
+allowed_mac='^(00[:-]00[:-]5[Ee][:-]00[:-]53[:-][0-9A-Fa-f]{2}|(00[:-]){5}00|([Ff]{2}[:-]){5}[Ff]{2})$'
 email='[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
 url_host='\b[a-zA-Z][a-zA-Z0-9+.-]*://[^/ "'"'"'<>()`]+'
 host_port='\b[a-zA-Z][a-zA-Z0-9-]*(\.[a-zA-Z0-9-]+)*:[0-9]{2,5}\b'
@@ -50,6 +56,9 @@ unc='\\\\[A-Za-z0-9._-]+\\[A-Za-z0-9$._-]+'
 user_at_host='\b[a-z_][a-z0-9_-]*@[A-Za-z][A-Za-z0-9-]*\b[^.]'
 # Kotlin labels, GitHub Actions pinned by commit (action@<40 hex>), and the placeholder itself.
 user_at_host_ok='^((return|this|break|continue|super)@|[a-z0-9_-]+@[0-9a-f]{40}\b|user@host\b)'
+# Key material: a private key in any text file, and the files that hold keys (keystores are binary).
+private_key='[-]{5}BEGIN [A-Z ]*PRIVATE KEY[-]{5}'
+key_file='\.(p12|pfx|jks|keystore|pem|key)$'
 
 found=0
 report() { echo "::error::$1"; found=1; }
@@ -67,7 +76,7 @@ is_public_host() {
 added="$(git log --format='commit %h%n%B' -p --no-color --no-ext-diff "$range" -- "${pathspec[@]}" \
   | awk '/^commit [0-9a-f]+$/ { c = $2; next } /^\+\+\+ / { next } /^\+/ || !/^[-@ ]|^diff |^index |^new |^deleted / { print c ": " $0 }')"
 
-any="$ipv4|$ipv6|$home|$device_id|$email|$url_host|$host_port|$lan_name|$unc|$user_at_host"
+any="$ipv4|$ipv6|$home|$device_id|$mac|$email|$url_host|$host_port|$lan_name|$unc|$user_at_host|$private_key"
 candidates="$(grep -E "$any" <<<"$added" || true)"
 
 while IFS= read -r line; do
@@ -83,6 +92,11 @@ while IFS= read -r line; do
   for id in $(matches "$device_id"); do
     [[ "$id" =~ $allowed_device_id ]] || report "$commit: Syncthing device ID"
   done
+  for m in $(matches "$mac"); do
+    [ "${#m}" -eq 17 ] || continue # more than six pairs: a fingerprint
+    [[ "$m" =~ $allowed_mac ]] || report "$commit: network card (MAC) address"
+  done
+  [ -z "$(matches "$private_key")" ] || report "$commit: private key"
   for e in $(matches "$email"); do
     [[ "$e" =~ $allowed_email ]] || report "$commit: e-mail address …@${e#*@}"
   done
@@ -111,6 +125,12 @@ while IFS= read -r line; do
     [[ "$ua" =~ $user_at_host_ok ]] || report "$commit: user@host"
   done
 done <<<"$candidates"
+
+# Files added under a name that holds keys, in any commit.
+while IFS= read -r line; do
+  [[ "$line" =~ $key_file ]] && report "${line%%:*}: key or keystore file (.${line##*.})"
+done < <(git log --format='commit %h' --name-only --no-renames --diff-filter=A "$range" \
+  | awk '/^commit [0-9a-f]+$/ { c = $2; next } NF { print c ": " tolower($0) }')
 
 while read -r commit author committer; do
   for e in "$author" "$committer"; do

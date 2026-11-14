@@ -9,5 +9,7 @@ coreKtx (androidx.core:core-ktx)
 okhttp (com.squareup.okhttp3:okhttp)
 robolectric (org.robolectric:robolectric)
 actions/checkout
+govulncheck
+GitHub runner image (Ubuntu)
 zizmor
 osv-scanner

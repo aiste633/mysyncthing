@@ -322,7 +322,7 @@ func FuzzCheckIgnores(f *testing.F) {
 
 // client gives up on a GUI that stops answering, so a hang is reported as a
 // failure with its input instead of killing the fuzz worker.
-var client = &http.Client{Timeout: 2 * time.Second}
+var client = &http.Client{Timeout: raceSlowdown * 2 * time.Second}
 
 // stacks writes every goroutine's stack to a file, for a stall, and names it.
 func stacks() string {

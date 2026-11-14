@@ -31,7 +31,7 @@ permissions:
 jobs:
   upkeep:
     if: github.event.schedule != '47 5 * * 1'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency: upkeep-issue
     permissions:
@@ -104,7 +104,7 @@ jobs:
 
   quiet:
     if: github.event_name != 'schedule' || github.event.schedule == '47 5 * * 1'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     concurrency: upkeep-quiet-issue
     permissions:

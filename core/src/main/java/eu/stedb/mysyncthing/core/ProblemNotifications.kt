@@ -198,7 +198,7 @@ class ClearProblemsReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                runCatching { SyncStatus.clearErrors(client) }
+                runSuspendCatching { SyncStatus.clearErrors(client) }
             } finally {
                 pending.finish()
             }
