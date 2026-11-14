@@ -225,6 +225,7 @@
 
     <string name="health">In ascolto %1$d di %2$d · Individuazione %3$d di %4$d</string>
     <string name="health_discovery_off">In ascolto %1$d di %2$d · Individuazione disattivata</string>
+    <string name="health_pending">In ascolto – di – · Individuazione – di –</string>
     <string name="unused_no_ipv6">Non usato: questa rete non ha IPv6</string>
     <string name="unused_no_route">Non usato: nessun percorso su questa rete</string>
 

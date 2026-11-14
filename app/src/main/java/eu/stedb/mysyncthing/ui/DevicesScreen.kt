@@ -71,6 +71,7 @@ import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Device
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
+import eu.stedb.mysyncthing.core.SyncState
 import eu.stedb.mysyncthing.core.R as CoreR
 
 @Composable
@@ -132,7 +133,7 @@ fun DevicesScreen(
 
 /** This phone, in its own colour so it is never taken for one of the remote devices below. */
 @Composable
-private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, onShowQr: () -> Unit) {
+internal fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, onShowQr: () -> Unit) {
     val context = LocalContext.current
     val on = MaterialTheme.colorScheme.onSecondaryContainer
     // Tonal buttons are secondaryContainer too: on this card they take the other cards' colour,
@@ -154,13 +155,16 @@ private fun ThisDeviceCard(s: Snapshot, live: LiveStats?, onOpen: () -> Unit, on
                 }
             }
             Text(speedText(live?.total ?: Speed.Zero).asString(), style = MaterialTheme.typography.bodySmall)
-            live?.let { l ->
-                val look = l.health.look()
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
-                    Spacer(Modifier.width(6.dp))
-                    Text(l.healthText.asString(), style = MaterialTheme.typography.bodySmall)
-                }
+            // The health line is there from the first frame, with dashes until the first poll: the
+            // poll stops 5 s after the tab is left and starts again on return, and a line appearing
+            // a moment later pushed "All devices" and the list down. The same words as the result,
+            // so it wraps the same at any font size. The card's own colour: grey on this card's
+            // high-contrast colour is unreadable.
+            val look = live?.health?.look() ?: StatusLook(SyncState.Waiting.look().icon, on)
+            Row(Modifier.testTag("health"), verticalAlignment = Alignment.CenterVertically) {
+                Icon(look.icon, null, Modifier.size(16.dp), tint = look.color)
+                Spacer(Modifier.width(6.dp))
+                Text(live?.healthText?.asString() ?: stringResource(R.string.health_pending), style = MaterialTheme.typography.bodySmall)
             }
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 8.dp)) {
                 FilledTonalButton(shape = ButtonShape, colors = buttons, onClick = onShowQr) {

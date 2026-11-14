@@ -211,6 +211,7 @@
 
     <string name="health">Empfang %1$d von %2$d · Gerätesuche %3$d von %4$d</string>
     <string name="health_discovery_off">Empfang %1$d von %2$d · Gerätesuche aus</string>
+    <string name="health_pending">Empfang – von – · Gerätesuche – von –</string>
     <string name="unused_no_ipv6">Nicht genutzt: Dieses Netzwerk hat kein IPv6</string>
     <string name="unused_no_route">Nicht genutzt: Keine Route in diesem Netzwerk</string>
 
