@@ -291,7 +291,7 @@ class SyncthingService : LifecycleService() {
             this, 1, Intent(this, SyncthingService::class.java).setAction(ACTION_STOP), PendingIntent.FLAG_IMMUTABLE,
         )
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_sync)
+            .setSmallIcon(R.drawable.notify_ic_app)
             .setContentTitle(context.getString(R.string.syncthing))
             .setContentText(text.resolve(context))
             .setContentIntent(content)
@@ -305,7 +305,7 @@ class SyncthingService : LifecycleService() {
             .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setPublicVersion(
                 NotificationCompat.Builder(this, CHANNEL_ID)
-                    .setSmallIcon(android.R.drawable.stat_notify_sync)
+                    .setSmallIcon(R.drawable.notify_ic_app)
                     .setContentTitle(context.getString(R.string.syncthing))
                     .setContentText(publicText.resolve(context))
                     .setGroup(SERVICE_GROUP)

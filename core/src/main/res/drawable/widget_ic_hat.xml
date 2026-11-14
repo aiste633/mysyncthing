@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The Santa hat over the app mark (widget_ic_app), see santaHat(). In the mark's coordinates; its box is
-     66/62 of the mark's size, centred on the mark and moved up by 6/62 of it, so the hat sits on the top node. -->
+<!-- The Santa hat over the app mark (widget_ic_app), see santaHat(). Same size, viewport and coordinates as
+     the mark, and it lies wholly inside that box (on the right-hand curve, which is lower than the up arrow's
+     tip): it is drawn straight over the mark with no size or offset of its own, so it cannot move or resize
+     anything around it. Keep it inside the box. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="17dp" android:height="17dp"
-    android:viewportWidth="66" android:viewportHeight="66">
-    <group android:translateX="-21" android:translateY="-9">
+    android:width="16dp" android:height="16dp"
+    android:viewportWidth="54" android:viewportHeight="54">
+    <group android:translateX="-27" android:translateY="-27">
         <path android:fillColor="#FFD32F2F"
-            android:pathData="M44,25 C44,15 52,9 62,9 C71,9 78,13 81,20 C77,17 72,16 69,18 L65,25 Z" />
+            android:pathData="M53,40C53,32 57,27.5 63,27.5C70,27.5 76,30 78.5,36C75.5,33.5 72.5,33 70.5,34.5L69,40Z" />
         <path android:fillColor="#FFFFFFFF" android:strokeColor="#FFBDBDBD" android:strokeWidth="0.8"
-            android:pathData="M44.5,22 h20 a3.5,3.5 0,0 1,0 7 h-20 a3.5,3.5 0,0 1,0 -7z" />
+            android:pathData="M55.25,37.75h14.5a3.25,3.25 0,0 1,0 6.5h-14.5a3.25,3.25 0,0 1,0 -6.5z" />
         <path android:fillColor="#FFFFFFFF" android:strokeColor="#FFBDBDBD" android:strokeWidth="0.8"
-            android:pathData="M82,17.5 a4.5,4.5 0,1 1,-0.01 0z" />
+            android:pathData="M77.3,34.1a3.2,3.2 0,1 1,-0.01 0z" />
     </group>
 </vector>

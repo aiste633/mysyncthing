@@ -13,16 +13,16 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - CI on GitHub runs the light jobs (build, tests, lint, SBOM, leak check, strings, workflow audit, reproducible twin build, CodeQL, govulncheck, daily vulnerability scan, monthly upkeep). Emulator tests run on a PC with `scripts/e2e/pc.py`; a release commits its results.
 - F-Droid: not submitted yet. F-Droid asks for three months of active development, reached on 2027-01-24. The recipe is in `fdroid/`.
 - Known upstream bugs, tracked here: #80 (three devices, one edit lost in a same-second conflict), #15 and #23 (trash can versioning).
+- On `main`, not released yet: the app's own mark (one line with an arrow up and an arrow down, white on #0891D1) as launcher icon, themed icon, widget and top bar mark, store icon, and as the small icon of the service notification; the widget preview in dark mode. See "App mark" in docs/dev-notes.md.
 - A whole-project review on 2026-11-14 found no serious defect; its fixes are the first items under Next.
 - On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps.
 
 ## Next
 1. Hardening batch from the 2026-11-14 review, one pull request: race detector and staticcheck for the Go bridge, pinned runner images, password keyboard options on the folder encryption password, a private build directory under `/tmp`, keystore patterns in `.gitignore`, Gradle repository content filters, `runCatching` around suspend calls, `STVERSIONEXTRA`, `hasFragileUserData`, MAC addresses in the leak check, small docs corrections.
-2. The app's own mark (launcher icon, notification icon, widget preview).
-3. README reworked around features, screenshots in dark mode, a Caveats section.
-4. Under consideration: TLS on the loopback API with the core's own certificate pinned; a soft memory limit for the Go core as an advanced setting; CameraX instead of the old barcode scanner library.
-5. F-Droid inclusion request on or after 2027-01-24.
-6. Later: action major bumps and Go 1.27 (issue #92), OpenSSF Scorecard, crash capture, issue forms.
+2. README reworked around features, screenshots in dark mode, a Caveats section.
+3. Under consideration: TLS on the loopback API with the core's own certificate pinned; a soft memory limit for the Go core as an advanced setting; CameraX instead of the old barcode scanner library.
+4. F-Droid inclusion request on or after 2027-01-24.
+5. Later: action major bumps and Go 1.27 (issue #92), OpenSSF Scorecard, crash capture, issue forms.
 
 ## Decisions (confirmed 2026-10-24)
 - App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0-or-later (was -only until 2026-10-31, user decision). Free software only: every shipped component must have an FSF-free licence (`knownLicenses` in scripts/sbom/main.go is the gate). Distribution: the app will be published on F-Droid (no Play constraints, no proprietary deps, reproducible builds). Releases on GitHub: v0.1.0 (2026-10-29), v0.1.2 (2026-10-30; 0.1.1 never tagged, versionCode 2 unused), v0.1.3 (2026-10-31, versionCode 4: backup import hardening), v0.2.0 (2026-11-05, versionCode 5: per-device pause and sync windows, explicit defaults, widget language, monkey fixes), v0.3.0 (2026-11-12, versionCode 6: folder browser, conflict copies, strong export encryption, new web GUI login per start, input length limits, default-location block, freeze fix), v0.4.0 prepared 2026-11-13 (versionCode 7: Android 17, targetSdk 37, local network access required there, memory-limit notice); the recipe is ready (2026-10-30) and the user submits it to fdroiddata. Don't describe the app as on F-Droid until F-Droid has accepted it.
