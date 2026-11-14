@@ -1374,5 +1374,61 @@
    "text": "",
    "ok": true
   }
+ ],
+ "memoryLimit": [
+  {
+   "note": "no limit",
+   "mb": 0,
+   "ramBytes": 4000000000,
+   "ok": true
+  },
+  {
+   "note": "under the minimum",
+   "mb": 1,
+   "ramBytes": 4000000000,
+   "ok": false
+  },
+  {
+   "note": "under the minimum",
+   "mb": 255,
+   "ramBytes": 4000000000,
+   "ok": false
+  },
+  {
+   "note": "the minimum",
+   "mb": 256,
+   "ramBytes": 4000000000,
+   "ok": true
+  },
+  {
+   "note": "automatic on a 4 GB phone",
+   "mb": 773,
+   "ramBytes": 4000000000,
+   "ok": true
+  },
+  {
+   "note": "the phone's memory",
+   "mb": 4000,
+   "ramBytes": 4000000000,
+   "ok": true
+  },
+  {
+   "note": "over the phone's memory",
+   "mb": 4001,
+   "ramBytes": 4000000000,
+   "ok": false
+  },
+  {
+   "note": "6 digits, over",
+   "mb": 999999,
+   "ramBytes": 4000000000,
+   "ok": false
+  },
+  {
+   "note": "negative",
+   "mb": -1,
+   "ramBytes": 4000000000,
+   "ok": false
+  }
  ]
 }

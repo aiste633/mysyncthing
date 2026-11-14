@@ -22,7 +22,7 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.shadows.ShadowStatFs
 
 /**
- * The six dialogs with a text field on a phone turned on its side (a window under 480 dp tall), where
+ * The seven dialogs with a text field on a phone turned on its side (a window under 480 dp tall), where
  * [EntryDialog] fills the screen with Cancel and Save in a top bar: whole screen with the dialog window,
  * compared with the reference images in src/test/screenshots like [ScreenshotTest]. Upright they are
  * Material's centred dialog at the platform's default width, which Robolectric never gets idle with
@@ -71,6 +71,9 @@ class DialogScreenshotTest(private val dialog: Case, private val variant: Varian
             Case("addresses") { AddressesDialog(listOf("dynamic", "tcp://192.0.2.10:22000"), onDismiss = {}) {} },
             Case("password") { PasswordDialog("Photos", "Laptop", "", shared = true, onDismiss = {}, onUnshare = {}) {} },
             Case("diskfree", ready = "GB") { DiskFreeDialog(DiskSize(1.0, "%"), DISK, onDismiss = {}) {} },
+            Case("memory", ready = "212") {
+                MemoryLimitDialog(null, MemoryLimitDialogTest.phone, onDismiss = {}, read = { MemoryUse(24_000_000, 212_000_000) }) {}
+            },
             Case("time") { TimeDialog(stringResource(R.string.schedule_from_title), 22 * 60, onDismiss = {}) {} },
         )
 

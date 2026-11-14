@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentCallbacks2
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
@@ -53,6 +54,12 @@ class SyncthingService : LifecycleService() {
         StatusWidget.redrawIfStale(this)
     }
 
+    /** The app's screens are gone: what the core freed goes back to Android now, not over the next minutes. */
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) lifecycleScope.launch(Dispatchers.IO) { SyncthingCore.freeMemory() }
+    }
+
     override fun onCreate() {
         super.onCreate()
         settings = Settings(this)
@@ -65,6 +72,16 @@ class SyncthingService : LifecycleService() {
         ProblemNotifications.createChannel(this)
         // A new process: an end by Android's memory limit (Android 17) restarts the sticky service here.
         lifecycleScope.launch(Dispatchers.IO) { reportMemoryLimitEnd(this@SyncthingService, settings) }
+        // Process-wide in Go, so it holds from before the first start and changes at once, without a restart.
+        lifecycleScope.launch(Dispatchers.IO) {
+            val total = totalMemoryBytes(this@SyncthingService)
+            settings.coreMemoryLimit.collect { own ->
+                val mb = CoreMemoryLimit.effectiveMb(own?.takeIf { CoreMemoryLimit.valid(it, total) }, Build.VERSION.SDK_INT, total)
+                // Refused only if Go reads the phone's memory differently: then the automatic limit, which always fits.
+                runCatching { SyncthingCore.setMemoryLimit(mb) }
+                    .onFailure { runCatching { SyncthingCore.setMemoryLimit(CoreMemoryLimit.automaticMb(Build.VERSION.SDK_INT, total)) } }
+            }
+        }
         // An unloaded snapshot (no core) passes as null, so what a new run loads is always posted,
         // also when it equals what was shown before failed() cleared it.
         lifecycleScope.launch {

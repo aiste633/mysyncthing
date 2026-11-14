@@ -1192,4 +1192,19 @@
     <string name="setup_intro_two">MySyncthing needs two permissions to sync. The others make it more reliable.</string>
     <string name="permission_local_network">Local network access</string>
     <string name="permission_local_network_hint">Android 17 asks before an app may reach devices on your Wi-Fi or wired network. Syncthing needs this to find your other devices at home or at work and sync with them directly. Without it, data could only go through relays on the internet, which slows transfers down a lot, so syncing stays off until you allow it. Android lists it under Nearby devices.</string>
+
+    <!-- Core memory limit (Settings > Advanced) -->
+    <string name="memory_limit">Core memory limit</string>
+    <string name="memory_limit_automatic">Automatic (%1$s)</string>
+    <string name="memory_limit_automatic_none">Automatic (no limit)</string>
+    <string name="memory_limit_none">No limit</string>
+    <string name="memory_limit_automatic_hint">Android 17’s limit for this phone’s memory, less %1$s for the rest of the app</string>
+    <string name="memory_limit_automatic_off_hint">Android sets no limit on this phone</string>
+    <string name="memory_limit_hint">Near the limit the core frees memory more often: syncing gets slower, it does not stop. At least %1$s; 0 = no limit.</string>
+    <string name="memory_core_now">Core uses now</string>
+    <string name="memory_app_now">Whole app uses now</string>
+    <string name="memory_android_limit">Android 17’s limit for this phone: %1$s</string>
+    <string name="memory_android_none">No limit from Android on this phone</string>
+    <string name="memory_refresh">refreshes every %1$d s</string>
+    <string name="error_memory_limit">From %1$s to %2$s, or 0 for no limit</string>
 </resources>

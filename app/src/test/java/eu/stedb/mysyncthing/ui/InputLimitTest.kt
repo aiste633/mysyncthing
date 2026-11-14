@@ -89,6 +89,7 @@ class InputLimitTest {
         atAndOver("folder ID", 1024, text) { folderIdError(it, emptyList()).en() }
         atAndOver("number", 32, { "0".repeat(it - 1) + "5" }) { wholeNumberError(it).en() }
         atAndOver("amount", 32, { "0".repeat(it - 1) + "5" }) { amountError(it, "kB/s").en() }
+        atAndOver("memory limit", 6, { "0".repeat(it - 3) + "256" }) { memoryLimitError(it, 4_000_000_000).en() }
         atAndOver("port", 32, { "0".repeat(it - 4) + "1080" }) { proxyPortError(it).en() }
         atAndOver("proxy host", 253, { n -> ("a".repeat(63) + ".").repeat(n / 64) + "b".repeat(n % 64) }) { proxyHostError(it).en() }
         atAndOver("proxy user", 255, { "é".repeat(it / 2) + "a".repeat(it % 2) }) { proxyCredentialError(it).en() }

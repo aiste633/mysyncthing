@@ -14,13 +14,13 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - F-Droid: not submitted yet. F-Droid asks for three months of active development, reached on 2027-01-24. The recipe is in `fdroid/`.
 - Known upstream bugs, tracked here: #80 (three devices, one edit lost in a same-second conflict), #15 and #23 (trash can versioning).
 - A whole-project review on 2026-11-14 found no serious defect; its fixes are the first items under Next.
-- On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps.
+- On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps. A soft memory limit for the Go core (Settings > Advanced > Core memory limit): automatic = Android 17's limit for the phone's memory less 300 MB (none before Android 17), or the user's own in MB; applied at once, no restart; the dialog shows the core's and the whole app's memory every 5 s; memory the core freed goes back to Android when the app's screens close.
 
 ## Next
 1. Hardening batch from the 2026-11-14 review, one pull request: race detector and staticcheck for the Go bridge, pinned runner images, password keyboard options on the folder encryption password, a private build directory under `/tmp`, keystore patterns in `.gitignore`, Gradle repository content filters, `runCatching` around suspend calls, `STVERSIONEXTRA`, `hasFragileUserData`, MAC addresses in the leak check, small docs corrections.
 2. The app's own mark (launcher icon, notification icon, widget preview).
 3. README reworked around features, screenshots in dark mode, a Caveats section.
-4. Under consideration: TLS on the loopback API with the core's own certificate pinned; a soft memory limit for the Go core as an advanced setting; CameraX instead of the old barcode scanner library.
+4. Under consideration: TLS on the loopback API with the core's own certificate pinned; CameraX instead of the old barcode scanner library. The memory limit's 300 MB margin and 256 MB minimum wait for a large-folder measurement on the PC.
 5. F-Droid inclusion request on or after 2027-01-24.
 6. Later: action major bumps and Go 1.27 (issue #92), OpenSSF Scorecard, crash capture, issue forms.
 
@@ -99,3 +99,4 @@ The long notes are in [docs/dev-notes.md](docs/dev-notes.md):
 - Android 17, targetSdk 37 (2026-11-12)
 - Network tests (2026-11-13)
 - This phone card keeps its height (2026-11-14, for the release after 0.4.0)
+- Core memory limit (2026-11-15, for the release after 0.4.0)
