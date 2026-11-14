@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Placeholder mark: a ring with three nodes. -->
+<!-- The app's own mark: one line with an arrow up and an arrow down (data goes both ways).
+     Drawn inside the adaptive icon's 66 dp safe zone. widget_ic_app and notify_ic_app in :core are
+     the same path, cropped. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <path android:strokeColor="#FFFFFF" android:strokeWidth="5"
-        android:pathData="M54,32a22,22 0,1 1,-0.01 0z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M54,25a7,7 0,1 1,-0.01 0z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M35,65a7,7 0,1 1,-0.01 0z" />
-    <path android:fillColor="#FFFFFF" android:pathData="M73,65a7,7 0,1 1,-0.01 0z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="7"
+        android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M70,74V51A8,8 0,0 0,54 51V57A8,8 0,0 1,38 57V34M76.4,67.6L70,74L63.6,67.6M31.6,40.4L38,34L44.4,40.4" />
 </vector>

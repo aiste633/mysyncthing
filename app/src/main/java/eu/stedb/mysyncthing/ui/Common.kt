@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -227,8 +226,8 @@ fun AppScreen(
                             // The app mark on the tabs, where Back would be on the screens below them.
                             Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) {
                                 Icon(painterResource(CoreR.drawable.widget_ic_app), null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.primary)
-                                // Drawn over the mark, so it takes no room (sizes: see widget_ic_hat).
-                                if (santaHat(LocalNow.current().toLocalDate())) Image(painterResource(CoreR.drawable.widget_ic_hat), null, Modifier.size(24.dp * 66 / 62).offset(y = -(24.dp * 6 / 62)))
+                                // Drawn over the mark in the mark's own box, so it takes no room (see widget_ic_hat).
+                                if (santaHat(LocalNow.current().toLocalDate())) Image(painterResource(CoreR.drawable.widget_ic_hat), null, Modifier.size(24.dp))
                             }
                         }
                     },

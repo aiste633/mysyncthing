@@ -241,7 +241,7 @@ Keep it useful: when a part changes, edit its section in place instead of append
 - Cause found from CI on PR #48 (API 35 e2e, `textDialogsKeepTypedText`): the check right after `recreate()` ran before the HTTP reload. The test keeps checking at once (no wait), which is what proves the fix.
 
 ## Santa hat easter egg (2026-10-30)
-- From 22 December to 6 January (phone date, `santaHat()` in core `SantaHat.kt`) the app mark on the widget and on the tabs' top bar wears a red Santa hat: `widget_ic_hat`, an untinted overlay drawn over the mark and a little above it, so no layout changes (widget: `clipChildren="false"` on the mark's frame and the bar).
+- From 22 December to 6 January (phone date, `santaHat()` in core `SantaHat.kt`) the app mark on the widget and on the tabs' top bar wears a red Santa hat: `widget_ic_hat`, an untinted overlay drawn over the mark in the mark's own box, so no layout changes. Since the new mark (2026-11-14) the hat has the mark's size and viewport and no offset; see "App mark".
 - The widget is drawn again on the day the hat comes or goes: one inexact, non-waking RTC alarm per process (`StatusWidget.scheduleHatChange`), since an idle phone may not render for days.
 - Screenshot tests fix the date through `LocalNow` (Friday 2026-10-30 12:00, outside the season), so their images don't change in December. No screenshot of the hat on purpose (user: it's an easter egg); `SantaHatTest` checks the dates.
 
@@ -306,3 +306,12 @@ Keep it useful: when a part changes, edit its section in place instead of append
 ## Network tests (2026-11-13)
 - `scripts/e2e/netns.sh up|down` (root) + `scripts/e2e/net.py` (repo owner): local discovery server, relay and peer in netns `mst-net` (TEST-NET-2), emulator NAT, netem slow/cut. Run after big releases or every ~3 months, not per PR. Results in docs/testing.md.
 - Gotchas: a 404 discovery lookup is cached 60 s then backed off ~20 min, so the peer must announce before the phone looks up; stdiscosrv drops loopback addresses (hence the namespace); a silent cut is noticed only after up to 450 s (receive timeout 300 s, checked every 150 s), so the long cut is 480 s; an `HTTPS_PROXY` in the environment breaks the core's connections.
+
+## App mark (2026-11-14)
+- The mark is the app's own (review finding A13; the earlier ring with three nodes was a placeholder close to upstream's logo). User's pick after three rounds of mockups: one rounded line with an arrow up on the left and an arrow down on the right, white on #0891D1 (the user kept the blue, knowing white on it has 3.5:1 contrast). Drawn from plain geometry; no trademark search was done.
+- One path, three crops: `ic_launcher_fg` (108 viewport, inside the 66 dp safe zone, also the monochrome layer for themed icons), `widget_ic_app` (the mark's box 27..81, for the widget at 16 dp and the tabs' top bar at 24 dp), `notify_ic_app` (24..84, the margin status bar icons have). Change the path in all three.
+- Service notification (A22): `notify_ic_app` instead of Android's `stat_notify_sync`, which looked different on each brand. Problem and request notifications keep their own icons.
+- Santa hat: `widget_ic_hat` has the mark's size, viewport and coordinates and lies wholly inside that box (on the right-hand curve, which is lower than the up arrow's tip). It fills the mark's frame with no offset or scale, in the widget and in the top bar. A drawable cannot draw outside its bounds, so the hat cannot move, resize or reach anything around it (user's requirement); `WidgetHatTest` holds the layout to that. The old hat was 66/62 of the mark and shifted up, drawn outside the box.
+- Store icon `fastlane/metadata/android/en-US/images/icon.png`: the foreground path on the background colour, viewport 12..96 of the 108, 512 px, RGB, rendered with a headless browser from the vector's path (same framing as the icon before it).
+- Widget preview `widget_preview.png` (A12): a crop of the widget on the emulator in dark mode with a peer named "Laptop", as in the README image; it showed the e2e peer's name before.
+- The reference screenshots of the tab screens show the mark, so they were recorded again.
