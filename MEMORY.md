@@ -14,6 +14,7 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - F-Droid: not submitted yet. F-Droid asks for three months of active development, reached on 2027-01-24. The recipe is in `fdroid/`.
 - Known upstream bugs, tracked here: #80 (three devices, one edit lost in a same-second conflict), #15 and #23 (trash can versioning).
 - A whole-project review on 2026-11-14 found no serious defect; its fixes are the first items under Next.
+- On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps.
 
 ## Next
 1. Hardening batch from the 2026-11-14 review, one pull request: race detector and staticcheck for the Go bridge, pinned runner images, password keyboard options on the folder encryption password, a private build directory under `/tmp`, keystore patterns in `.gitignore`, Gradle repository content filters, `runCatching` around suspend calls, `STVERSIONEXTRA`, `hasFragileUserData`, MAC addresses in the leak check, small docs corrections.
@@ -97,3 +98,4 @@ The long notes are in [docs/dev-notes.md](docs/dev-notes.md):
 - Length limits (2026-11-11, into 0.3.0)
 - Android 17, targetSdk 37 (2026-11-12)
 - Network tests (2026-11-13)
+- This phone card keeps its height (2026-11-14, for the release after 0.4.0)

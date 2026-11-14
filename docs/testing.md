@@ -135,6 +135,9 @@ through a relay, offline and paused by the user) and a folder offer. No real dev
   up to two lines (StatusBarFitTest: every status in every language at 360 and 412 dp; on a
   Pixel 7's width all read in full but the pause outside the sync windows with its next time,
   and none runs into the screen below).
+- The "This phone" card on the Devices tab has the same height before and after the first poll
+  of the core answers, so the list below it never moves (ThisDeviceCardTest: every language, 360
+  and 412 dp, normal and largest font, discovery on and off).
 
 Both checks were tried on purpose against a broken screen, and both failed as they should.
 Dialogs with a text field are left out upright: at the platform's default width Robolectric never

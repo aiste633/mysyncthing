@@ -97,6 +97,9 @@ object Fixtures {
             server to Instant.parse("2025-10-03T17:15:00Z"),
             tablet to Instant.parse("2025-09-28T09:05:00Z"),
         ),
+        // Both discovery methods on, as the core's defaults have them.
+        localDiscovery = true,
+        globalDiscovery = true,
     )
 
     val core = CoreState.Running(RestClient("127.0.0.1:9", "test"), "127.0.0.1:9", myId, Credentials("test", "test", "test"))
