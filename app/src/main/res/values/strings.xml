@@ -270,6 +270,10 @@
     <string name="health">Listening %1$d of %2$d · Discovery %3$d of %4$d</string>
     <!-- %1$d of %2$d listening addresses work -->
     <string name="health_discovery_off">Listening %1$d of %2$d · Discovery off</string>
+    <!-- Shown in place of the line above until the first check has answered, so the card does not grow later: the same words, a dash for each number -->
+    <string name="health_pending">Listening – of – · Discovery – of –</string>
+    <!-- The same, while discovery is off in the settings -->
+    <string name="health_pending_discovery_off">Listening – of – · Discovery off</string>
     <string name="unused_no_ipv6">Not used: this network has no IPv6</string>
     <string name="unused_no_route">Not used: no route on this network</string>
 
