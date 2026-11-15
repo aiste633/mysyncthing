@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   go:
-    uses: ./.github/workflows/govulncheck.yml
+    uses: $/.github/workflows/govulncheck.yml
 
   libraries:
     runs-on: ubuntu-24.04
