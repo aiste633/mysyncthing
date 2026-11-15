@@ -57,9 +57,11 @@
             </intent-filter>
         </receiver>
 
+        <!-- Both actions are sent by the system only, which reaches a receiver that is not exported;
+             no other app can start this one. -->
         <receiver
             android:name=".BootReceiver"
-            android:exported="true">
+            android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />

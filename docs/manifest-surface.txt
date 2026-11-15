@@ -22,7 +22,7 @@ permission eu.stedb.mysyncthing.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 permission-defined eu.stedb.mysyncthing.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION protectionLevel=signature
 provider androidx.startup.InitializationProvider exported=false authorities=eu.stedb.mysyncthing.androidx-startup
 receiver androidx.profileinstaller.ProfileInstallReceiver exported=true permission=android.permission.DUMP actions=androidx.profileinstaller.action.BENCHMARK_OPERATION,androidx.profileinstaller.action.INSTALL_PROFILE,androidx.profileinstaller.action.SAVE_PROFILE,androidx.profileinstaller.action.SKIP_FILE
-receiver eu.stedb.mysyncthing.core.BootReceiver exported=true actions=android.intent.action.BOOT_COMPLETED,android.intent.action.MY_PACKAGE_REPLACED
+receiver eu.stedb.mysyncthing.core.BootReceiver exported=false actions=android.intent.action.BOOT_COMPLETED,android.intent.action.MY_PACKAGE_REPLACED
 receiver eu.stedb.mysyncthing.core.ClearProblemsReceiver exported=false
 receiver eu.stedb.mysyncthing.core.IgnoreRequestReceiver exported=false
 receiver eu.stedb.mysyncthing.core.LocaleReceiver exported=false actions=android.intent.action.LOCALE_CHANGED
