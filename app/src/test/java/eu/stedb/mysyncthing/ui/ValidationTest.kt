@@ -56,6 +56,32 @@ class ValidationTest {
         assertEquals(null, amountError("2,5", "%").en())
     }
 
+    // What the memory limit field lets through is a limit the bridge takes (CoreMemoryLimit.valid mirrors it).
+    @Test
+    fun acceptedMemoryLimitsAreWholeAndInRange() = forAll(typedNumber) { s ->
+        val ram = 4_000_000_000L
+        if (memoryLimitError(s, ram).en() != null) return@forAll
+        val mb = wholeNumber(s)!!.toLong()
+        assertTrue("$mb MB", mb == 0L || mb in 256..4000)
+        assertTrue(eu.stedb.mysyncthing.core.CoreMemoryLimit.valid(mb, ram))
+    }
+
+    @Test
+    fun memoryLimitMessages() {
+        val ram = 4_000_000_000L
+        assertNull(memoryLimitError("0", ram).en())
+        assertNull(memoryLimitError("256", ram).en())
+        assertNull(memoryLimitError("4000", ram).en())
+        assertEquals("From 256\u00A0MB to 4,000\u00A0MB, or 0 for no limit", memoryLimitError("255", ram).en())
+        assertEquals("From 256\u00A0MB to 4,000\u00A0MB, or 0 for no limit", memoryLimitError("4001", ram).en())
+        assertEquals("From 256\u00A0MB to 4,000\u00A0MB, or 0 for no limit", memoryLimitError("", ram).en())
+        assertEquals("From 256\u00A0MB to 4,000\u00A0MB, or 0 for no limit", memoryLimitError("-1", ram).en())
+        assertEquals("From 256\u00A0MB to 4,000\u00A0MB, or 0 for no limit", memoryLimitError("1.5", ram).en())
+        assertEquals("Use the digits 0-9", memoryLimitError("٣٠٠", ram).en())
+        assertEquals("At most 6 characters", memoryLimitError("1000000", ram).en())
+        assertEquals("At most 6 characters", memoryLimitError("9".repeat(100_000), ram).en())
+    }
+
     @Test
     fun wholeNumbersAreStoredAsTheCoreReadsThem() = forAll(typedNumber) { s ->
         for (type in listOf("trashcan", "simple", "staggered")) {

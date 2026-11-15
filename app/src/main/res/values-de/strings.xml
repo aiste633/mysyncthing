@@ -944,4 +944,19 @@
     <string name="setup_intro_two">MySyncthing braucht zwei Berechtigungen zum Synchronisieren. Die anderen machen sie zuverlässiger.</string>
     <string name="permission_local_network">Zugriff auf lokales Netzwerk</string>
     <string name="permission_local_network_hint">Android 17 fragt, bevor eine App Geräte in Ihrem WLAN oder kabelgebundenen Netzwerk erreichen darf. Syncthing braucht das, um Ihre anderen Geräte zu Hause oder bei der Arbeit zu finden und direkt mit ihnen zu synchronisieren. Ohne diesen Zugriff liefen die Daten nur über Relays im Internet, was Übertragungen stark verlangsamt; deshalb bleibt die Synchronisierung aus, bis Sie ihn erlauben. Android führt ihn unter „Geräte in der Nähe“.</string>
+
+    <!-- Core memory limit (Settings > Advanced) -->
+    <string name="memory_limit">Speicherlimit des Kerns</string>
+    <string name="memory_limit_automatic">Automatisch (%1$s)</string>
+    <string name="memory_limit_automatic_none">Automatisch (kein Limit)</string>
+    <string name="memory_limit_none">Kein Limit</string>
+    <string name="memory_limit_automatic_hint">Limit von Android 17 für den Speicher dieses Smartphones, abzüglich %1$s für den Rest der App</string>
+    <string name="memory_limit_automatic_off_hint">Android setzt auf diesem Smartphone kein Limit</string>
+    <string name="memory_limit_hint">Nahe am Limit gibt der Kern öfter Speicher frei: Die Synchronisierung wird langsamer, hält aber nicht an. Mindestens %1$s; 0 = kein Limit.</string>
+    <string name="memory_core_now">Kern belegt jetzt</string>
+    <string name="memory_app_now">Ganze App belegt jetzt</string>
+    <string name="memory_android_limit">Limit von Android 17 für dieses Smartphone: %1$s</string>
+    <string name="memory_android_none">Kein Limit von Android auf diesem Smartphone</string>
+    <string name="memory_refresh">alle %1$d s aktualisiert</string>
+    <string name="error_memory_limit">Von %1$s bis %2$s, oder 0 für kein Limit</string>
 </resources>

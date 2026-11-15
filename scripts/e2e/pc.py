@@ -41,8 +41,10 @@ import slot  # noqa: E402
 ROOT = Path(__file__).resolve().parents[2]
 PORT = slot.EMULATOR_PORT
 SERIAL = slot.SERIAL
-# One job at its peak (the build: Gradle's and Kotlin's 4 GiB heaps, gradle.properties; or the emulator:
-# 4 GiB of guest memory, emulator.sh, plus its own) and a margin for the other job's growth.
+# One job at its peak and a margin. Measured on a 32 GB PC (2026-11-15, two jobs at once, no swap): each
+# emulator holds about 7.3 GiB (4 GiB guest, emulator.sh, plus its own) and two jobs took MemAvailable from
+# 24.8 to 8.7 GiB at the lowest; two builds at once took less (17 GiB left). So a second job can start next to
+# one (about 16 GiB free), a third cannot (about 9).
 MIN_FREE_GIB = 10
 ANDROID = {35: "Android 15", 36: "Android 16", 37: "Android 17"}
 PEER = "go/build/e2e-peer"

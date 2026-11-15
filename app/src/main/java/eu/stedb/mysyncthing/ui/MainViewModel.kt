@@ -52,6 +52,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -412,6 +413,12 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     val proxy: StateFlow<ProxySettings?> = settings.proxy.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /** The user's own core memory limit (automatic when its mb is null); null until read. The service applies it. */
+    val coreMemoryLimit: StateFlow<OwnMemoryLimit?> =
+        settings.coreMemoryLimit.map { OwnMemoryLimit(it) }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    fun setCoreMemoryLimit(mb: Long?) = save { settings.setCoreMemoryLimit(mb) }
 
     /**
      * Stores the proxy and hands it to the bridge; a running core restarts to

@@ -31,6 +31,7 @@ forms they take; `everySyntaxExampleIsAccepted` keeps each example passing the f
 | Versioning: days to keep (Trash can, Staggered) | Whole number, 0 = forever | `wholeNumberError()`: 0-9 digits only, others refused with "Use the digits 0-9" (Staggered stored in seconds). A missing or unreadable stored value shows the core's default (Trash can 0, Staggered 365 days) | `strconv.Atoi`/`ParseInt`; an unreadable value silently becomes the default |
 | Versioning: versions to keep (Simple) | Whole number, 1 or more | `wholeNumberError(min = 1)`, as upstream's web GUI; a missing or unreadable stored value shows 5, the core's default | `strconv.Atoi`; 0 keeps no versions |
 | Keep free on this phone (Folder, Defaults) | Decimal 0-100 for %, 0 or more for MB/GB | `amountError()`, as for speed limits | None |
+| Core memory limit (Settings > Advanced) | Automatic (ticked), or a whole number of MB: 0 (no limit), or 256 up to the phone's memory | `memoryLimitError()`: 0-9 digits only, others refused with "Use the digits 0-9"; `CoreMemoryLimit.valid()` in `core/MemoryLimit.kt`; a stored value that fails it is read as automatic | `SetMemoryLimit` in `go/bridge/memory.go` refuses the same (`memoryLimitError`) |
 | Encryption password (Share encrypted) | Non-empty; kept exactly as typed, spaces included, so it matches the other devices | Required | None |
 | Proxy host (Proxy) | IP address (IPv4 or IPv6, no zone) or DNS name: RFC 1123 labels, at most 253 characters, last label not all digits | `proxyHostError()`, mirroring the bridge; "?" lists the forms | `proxyFrom` in `go/bridge/proxy.go` refuses the same; the core's dialer would fail at every dial |
 | Proxy port (Proxy) | Whole number 1-65535 | `proxyPortError()`: 0-9 digits only, others refused with "Use the digits 0-9" | `proxyFrom` |
@@ -66,6 +67,7 @@ reason), the old value stays and the core keeps running; reloading the page reco
 | Groups, device and listen addresses, discovery servers, encryption password, searches | 1024 characters | One limit for all other text: far above any real value |
 | Device ID field | 256 characters | 56, with room for dashes, spaces and a pasted line |
 | Numbers (speed limits, Keep free, versioning, proxy port) | 32 characters | The largest valid number has 16 digits; the rest is leading zeros. Keep free in MB or GB also at most 1 PB |
+| Core memory limit | 6 digits | 999,999 MB, above any phone's memory |
 | Proxy host | 253 characters | DNS name (RFC 1035) |
 | Proxy user name and password | 255 bytes each | SOCKS5 (RFC 1929) |
 | Export password | 1024 bytes | `ExportPasswordError` |

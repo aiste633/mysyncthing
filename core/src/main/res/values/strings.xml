@@ -198,4 +198,5 @@
     <string name="problem_no_local_network">Android 17 now asks before MySyncthing may use your local network. Without it, transfers could only go through slow relays. Tap to allow it and sync again.</string>
     <string name="problem_memory_limit_title">Android stopped Syncthing</string>
     <string name="problem_memory_limit">It used %1$s MB, more memory than Android allows on this phone, at %2$s. Syncthing started again by itself. If this repeats, sync fewer or smaller folders.</string>
+    <string name="problem_memory_limit_no_size">It used more memory than Android allows on this phone, at %1$s. Syncthing started again by itself. If this repeats, sync fewer or smaller folders.</string>
 </resources>
