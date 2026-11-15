@@ -38,10 +38,10 @@ export SOURCE_DATE_EPOCH="$(git -C "$st" log -1 --format=%ct)"
 # on every machine. The lock serialises builds of different checkouts on one machine.
 # /tmp is shared, so the link and the lock live in a directory that only this user can
 # write: nobody else can point the build at other source or make the lock lead elsewhere.
-fixed=/tmp/mysyncthing-go
+# Up to 0.4.0 the link was /tmp/mysyncthing-go itself: older checkouts still make it there,
+# so this directory has another name and both can build on one machine.
+fixed=/tmp/mysyncthing-build
 me="$(id -u)"
-# Up to 0.4.0 this script made the link itself there.
-if [ -L "$fixed" ] && [ "$(stat -c %u "$fixed")" = "$me" ]; then rm "$fixed"; fi
 mkdir -m 700 "$fixed" 2>/dev/null || true
 if [ -L "$fixed" ] || [ ! -d "$fixed" ] || [ "$(stat -c %u "$fixed")" != "$me" ] || [ "$(stat -c %a "$fixed")" != 700 ]; then
   echo "$fixed must be a directory that only you can use (mode 700): remove it and build again" >&2

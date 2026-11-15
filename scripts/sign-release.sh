@@ -10,7 +10,8 @@
 #
 # Usage:  KEYSTORE=/mnt/mskey/mysyncthing-release.p12 scripts/sign-release.sh v0.1.0
 # Needs:  the tag in this checkout (git fetch --tags, if it was made elsewhere);
-#         gh (logged in, or GH_TOKEN set); apksigcopier (Debian: apt install apksigcopier);
+#         gh with `gh attestation verify` (logged in, or GH_TOKEN set; Debian 13's 2.46.0 is too
+#         old, the script names what is missing); apksigcopier (Debian: apt install apksigcopier);
 #         apksigner from Android build-tools: on PATH, APKSIGNER=..., or the newest in
 #         $ANDROID_HOME/build-tools. KEY_ALIAS defaults to mysyncthing. apksigner asks for
 #         the keystore password.
@@ -28,6 +29,11 @@ version="${tag#v}"
 apksigner="${APKSIGNER:-$(command -v apksigner || ls -d "${ANDROID_HOME:-/nonexistent}"/build-tools/*/apksigner 2>/dev/null | sort -V | tail -n 1 || true)}"
 [ -x "$apksigner" ] || { echo "apksigner not found: put it on PATH, or set APKSIGNER or ANDROID_HOME" >&2; exit 1; }
 command -v apksigcopier >/dev/null || { echo "apksigcopier not found: apt install apksigcopier" >&2; exit 1; }
+# An older gh lacks the provenance check below, which would then read as a bad APK.
+help="$(gh attestation verify --help 2>&1)" || { echo "$(gh --version | head -n 1) has no 'gh attestation verify': update gh" >&2; exit 1; }
+for flag in --repo --signer-workflow --source-ref --source-digest --deny-self-hosted-runners; do
+  grep -q -- "$flag" <<<"$help" || { echo "$(gh --version | head -n 1): 'gh attestation verify' has no $flag: update gh" >&2; exit 1; }
+done
 unsigned="mysyncthing-$version-unsigned.apk"
 signed="mysyncthing-$version.apk"
 recipe="$(dirname "$0")/../fdroid/eu.stedb.mysyncthing.yml"

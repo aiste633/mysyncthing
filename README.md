@@ -143,7 +143,7 @@ Results (`summary.md`), logcat and the peer's log land in `build/e2e/`.
 Every build of a commit gives a byte-identical unsigned release APK (arm64 only; debug builds also carry x86_64). This is what lets F-Droid ship the APK signed with our key. What keeps it that way:
 
 - Toolchains are pinned in one place each: NDK in `gradle.properties`, Go in `go/bridge/go.mod` (`toolchain` line; the CI release build checks the APK was built with it), Gradle in the wrapper (with checksum), JDK 21 via `jvmToolchain`.
-- `go/build.sh` strips paths, build IDs and timestamps from the Go library, and builds through a fixed symlink in `/tmp/mysyncthing-go/` (a directory only the building user can write), because gomobile records module paths.
+- `go/build.sh` strips paths, build IDs and timestamps from the Go library, and builds through a fixed symlink in `/tmp/mysyncthing-build/` (a directory only the building user can write), because gomobile records module paths.
 - `gradle/verification-metadata.xml` holds SHA-256 checksums of every Gradle dependency. After changing a dependency or plugin version, refresh it:
 
   ```sh
