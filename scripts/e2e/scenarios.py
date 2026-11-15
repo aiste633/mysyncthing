@@ -63,7 +63,7 @@ import run  # noqa: E402
 from run import ADB, APP, FOLDER, FORWARD_PORT, PHONE_DIR, Peer, adb, eventually, fail, log, sh  # noqa: E402
 from run import PHONE_API_PORT, PhoneCore, private  # noqa: E402
 
-PEER_B_GUI, PEER_B_LISTEN = 8387, 22002
+PEER_B_GUI, PEER_B_LISTEN = run.slot.PEER_B_GUI, run.slot.PEER_B_LISTEN  # by slot (scripts/e2e/slot.py)
 CORE_DIRS = {".stfolder", ".stversions"}
 MARK = ".sync-conflict-"
 # upstream's conflictName: name.sync-conflict-YYYYMMDD-HHMMSS-<short ID>.ext (Conflicts.kt parseConflictCopy)
@@ -932,8 +932,7 @@ def count_after_reboot(w: World) -> None:
     eventually("booted", 300, lambda: sh("getprop sys.boot_completed", check=False) == "1")
     sh("svc power stayon true")
     run.Device.wake()
-    adb("reverse", f"tcp:{run.GUI_PORT}", f"tcp:{run.GUI_PORT}")
-    adb("forward", f"tcp:{FORWARD_PORT}", f"tcp:{run.PHONE_PORT}")
+    run.tunnel()
     eventually("the app's service started at boot", 180, lambda: run.app_pid() != "")
     eventually("peer connected after the reboot", 180, lambda: w.peer.connected(w.phone))
     expect_shown(n)
@@ -1021,9 +1020,7 @@ def main() -> None:
             p.stop()
         (a.out / "logcat.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
         shutil.rmtree(w.home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{run.GUI_PORT}"), ("forward", "--remove", f"tcp:{FORWARD_PORT}"),
-                     ("forward", "--remove", f"tcp:{PHONE_API_PORT}")):
-            adb(*args, check=False)
+        run.untunnel()
         sh("rm -f /sdcard/scenarios-ui.xml", check=False)
 
     before_reboot = a.out / "logcat-before-reboot.txt"

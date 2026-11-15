@@ -12,10 +12,13 @@ docs/e2e/<versionName>.md: commit it before tagging, as a tag without it fails C
 Needs ANDROID_HOME with the SDK and NDK, and Go and JDK 21 on PATH (on the PC: source
 toolchain/env.sh). Its emulators use port 5580 and every adb call goes to them (ANDROID_SERIAL),
 so it never touches another emulator or a phone. It refuses to start while any syncthing process
-runs. Offline by default: the emulator gets no DNS and the phone core leaves Syncthing's public
+runs, while its own emulator or AVDs run, while one of its host ports is taken, or with less than
+MIN_FREE_GIB of memory available. Two jobs can run at once, each from its own checkout and in its
+own slot (scripts/e2e/slot.py): E2E_SLOT=1 gives the second one port 5582, AVDs e2e-s1-NN and its
+own peer ports. Not next to a measurement or net.py, whose timing it would change. Offline by default: the emulator gets no DNS and the phone core leaves Syncthing's public
 servers once paired (E2E_OFFLINE=1, --offline); --online runs as CI did. About 1.5 h for three APIs (55 min for two on 07/11/2026).
 
-  scripts/e2e/pc.py [--release] [--online] [--apis 35,36,37] [--out build/e2e-pc]
+  [E2E_SLOT=1] scripts/e2e/pc.py [--release] [--online] [--apis 35,36,37] [--out build/e2e-pc]
 """
 import argparse
 import os
@@ -23,6 +26,7 @@ import platform
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -31,9 +35,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import slot  # noqa: E402
+
 ROOT = Path(__file__).resolve().parents[2]
-PORT = 5580
-SERIAL = f"emulator-{PORT}"
+PORT = slot.EMULATOR_PORT
+SERIAL = slot.SERIAL
+# One job at its peak (the build: Gradle's and Kotlin's 4 GiB heaps, gradle.properties; or the emulator:
+# 4 GiB of guest memory, emulator.sh, plus its own) and a margin for the other job's growth.
+MIN_FREE_GIB = 10
 ANDROID = {35: "Android 15", 36: "Android 16", 37: "Android 17"}
 PEER = "go/build/e2e-peer"
 APKS = ["--peer", PEER, "--apk", "app/build/outputs/apk/debug/app-debug.apk",
@@ -87,8 +97,33 @@ def preflight() -> None:
         sys.exit(f"a Syncthing runs on this machine; stop it first (this script never touches it):\n{r}")
     if SERIAL in serials():
         sys.exit(f"{SERIAL} already runs; stop it first (adb -s {SERIAL} emu kill)")
-    if r := subprocess.run(["pgrep", "-af", "--", r"-avd e2e-[0-9]+( |$)"], capture_output=True, text=True).stdout.strip():
-        sys.exit(f"an e2e-NN emulator already runs; stop it first:\n{r}")
+    if r := running_avds(rf"{re.escape(slot.AVD_PREFIX)}[0-9]+"):
+        sys.exit(f"an emulator of slot {slot.SLOT} ({slot.AVD_PREFIX}NN) already runs; stop it first:\n{r}")
+    if taken := [p for p in slot.HOST_PORTS if not port_free(p)]:
+        sys.exit(f"slot {slot.SLOT}: ports {taken} of 127.0.0.1 are taken; another job in this slot? (E2E_SLOT, scripts/e2e/slot.py)")
+    if (free := mem_available_gib()) < MIN_FREE_GIB:
+        sys.exit(f"only {free:.1f} GiB of memory available; a job needs {MIN_FREE_GIB} GiB (check /tmp, which is memory)")
+
+
+def running_avds(names: str) -> str:
+    """Emulators running an AVD whose name matches the regular expression [names], one per line."""
+    return subprocess.run(["pgrep", "-af", "--", rf"-avd {names}( |$)"], capture_output=True, text=True).stdout.strip()
+
+
+def port_free(port: int) -> bool:
+    """Free to listen on, as the peer (Go sets SO_REUSEADDR, so a port in TIME_WAIT counts as free) and adb would."""
+    with socket.socket() as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        try:
+            s.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
+
+
+def mem_available_gib() -> float:
+    m = re.search(r"^MemAvailable:\s+(\d+) kB$", Path("/proc/meminfo").read_text(), re.M)
+    return int(m.group(1)) / 2**20
 
 
 def shown(path: Path) -> str:
@@ -143,15 +178,16 @@ def stop_emulator(env: dict[str, str], api: int) -> None:
         time.sleep(1)
     else:
         log(f"{SERIAL} still listed a minute after 'emu kill'; stopping its process")
-    # By its AVD, which emulator.sh made afresh for this run (preflight: no e2e-NN emulator ran before).
+    # By its AVD, which emulator.sh made afresh for this run (preflight: no emulator of this slot ran before).
     # Not by port: once the launcher execs qemu, the port may be spelled another way in its arguments.
-    subprocess.run(["pkill", "-f", "--", rf"-avd e2e-{api}( |$)"], capture_output=True)
+    subprocess.run(["pkill", "-f", "--", rf"-avd {slot.avd(api)}( |$)"], capture_output=True)
 
 
 def run_api(api: int, out: Path, offline: bool) -> list[Result]:
     d = out / f"api{api}"
     d.mkdir(parents=True)
-    env = {**os.environ, "ANDROID_SERIAL": SERIAL, "E2E_PORT": str(PORT), "E2E_EMULATOR_LOG": str(d / "emulator.log")}
+    env = {**os.environ, "ANDROID_SERIAL": SERIAL, "E2E_PORT": str(PORT), "E2E_AVD": slot.avd(api),
+           "E2E_EMULATOR_LOG": str(d / "emulator.log")}
     env.pop("E2E_OFFLINE", None)
     if offline:
         env["E2E_OFFLINE"] = "1"
@@ -210,7 +246,8 @@ def main() -> None:
     subject = git("log", "-1", "--format=%s")
     version = re.search(r'^\s*versionName = "(.+)"$', (ROOT / "app/build.gradle.kts").read_text(), re.M).group(1)
     began = datetime.now(timezone.utc)
-    log(f"commit {commit[:12]} ({subject}), version {version}, APIs {apis}, {'online' if a.online else 'offline'}")
+    log(f"commit {commit[:12]} ({subject}), version {version}, APIs {apis}, {'online' if a.online else 'offline'}, "
+        f"slot {slot.SLOT} ({SERIAL}, ports {slot.HOST_PORTS[2:]})")
 
     env = dict(os.environ)
     build = [step("build: app and test APKs", ["./gradlew", "--no-daemon", ":app:assembleDebug", ":app:assembleDebugAndroidTest"],
