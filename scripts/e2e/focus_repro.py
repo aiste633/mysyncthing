@@ -138,8 +138,7 @@ def main() -> None:
         for pkg in (APP, f"{APP}.test"):
             adb("uninstall", pkg, check=False)
         shutil.rmtree(home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{run.GUI_PORT}"), ("forward", "--remove", f"tcp:{run.FORWARD_PORT}")):
-            adb(*args, check=False)
+        run.untunnel()
 
     logcat = (a.out / "logcat.txt").read_text(errors="replace")
     ours, others = run.logcat_anrs(logcat)

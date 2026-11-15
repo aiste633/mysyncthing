@@ -112,7 +112,7 @@ End-to-end tests run the debug app on an emulator against a real Syncthing peer 
 scripts/e2e/pc.py             # --release also writes docs/e2e/<version>.md; --online keeps the public servers
 ```
 
-It needs a clean checkout, `ANDROID_HOME`, Go and JDK 21. It builds the APKs and the peer, starts a fresh Android 15, then 16, then 17 emulator on port 5580 (every adb call goes to it, never to another emulator or a phone), runs run.py and the fast scenarios on each, and writes `build/e2e-pc/summary.md` with every step's result and time, for the pull request; the logs, logcat and the peer's logs are next to it. It refuses to start while a Syncthing runs on the machine. To run one script by hand on an emulator that is already up (the scripts refuse a real phone, as they wipe the app's data):
+It needs a clean checkout, `ANDROID_HOME`, Go and JDK 21. It builds the APKs and the peer, starts a fresh Android 15, then 16, then 17 emulator on port 5580 (every adb call goes to it, never to another emulator or a phone), runs run.py and the fast scenarios on each, and writes `build/e2e-pc/summary.md` with every step's result and time, for the pull request; the logs, logcat and the peer's logs are next to it. It refuses to start while a Syncthing runs on the machine. A second run can go at the same time from another checkout with `E2E_SLOT=1` (its own emulator port, AVD names and peer ports; `scripts/e2e/slot.py`). To run one script by hand on an emulator that is already up (the scripts refuse a real phone, as they wipe the app's data):
 
 ```sh
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
@@ -155,7 +155,7 @@ Every build of a commit gives a byte-identical unsigned release APK (arm64 only;
 
   `--refresh-dependencies` makes Gradle fetch every POM again: with them cached it records only the `.module` files it reads, and a clean machine, which also reads the POMs, fails verification. The `sbomRuntimeDeps` part adds the POMs the SBOM reads licences from; `scripts/sbom.sh` then updates the SBOM (see [Licence](#licence)).
 
-- GitHub Actions are pinned by full commit hash, with the version in a comment, so a moved tag cannot change what CI runs. To bump one: `git ls-remote --tags https://github.com/<owner>/<action> 'v*'`, take the commit of the new release (the `^{}` line for an annotated tag), and check that its `action.yml` says `using: node24` or later.
+- GitHub Actions are pinned by full commit hash, with the version in a comment, so a moved tag cannot change what CI runs. To bump one: `git ls-remote --tags https://github.com/<owner>/<action> 'v*'`, take the commit of the new release (the `^{}` line for an annotated tag), and check that its `action.yml` says `using: node24` or later. `setup-gradle` always runs with `cache-provider: basic`, the MIT-licensed cache: its default since v6 is a proprietary library.
 - CI (`.github/workflows/reproducible.yml`) builds the release APK twice, with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report is attached). On tags and manual runs, F-Droid's build image builds it a third time from the recipe in `fdroid/` and must match too. A pull request that changes the recipe or the build steps runs it by hand on its branch (Actions › reproducible › Run workflow).
 
 Releasing:

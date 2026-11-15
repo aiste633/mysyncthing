@@ -231,9 +231,7 @@ def one_run(name: str, setup: dict, seed: int, a, dev: Device) -> dict:
         logcat.terminate()
         logcat_file.close()
         shutil.rmtree(home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{run.GUI_PORT}"), ("forward", "--remove", f"tcp:{run.FORWARD_PORT}"),
-                     ("forward", "--remove", f"tcp:{run.PHONE_API_PORT}")):
-            adb(*args, check=False)
+        run.untunnel()
 
     text = (out / "logcat.txt").read_text(errors="replace")
     crashes, known = run.logcat_app_crashes(text)

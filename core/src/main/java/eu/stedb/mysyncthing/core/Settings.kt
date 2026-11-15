@@ -220,6 +220,11 @@ class Settings internal constructor(
 
     suspend fun setMemoryExitsSeenUntil(at: Long): Boolean = write { it[MEMORY_EXITS_SEEN] = at }
 
+    /** The user's own core memory limit in MB (0: no limit); null for the automatic one (see [CoreMemoryLimit]). */
+    val coreMemoryLimit: Flow<Long?> = store.data.map { it[CORE_MEMORY_LIMIT] }.distinctUntilChanged()
+
+    suspend fun setCoreMemoryLimit(mb: Long?): Boolean = write { if (mb == null) it.remove(CORE_MEMORY_LIMIT) else it[CORE_MEMORY_LIMIT] = mb }
+
     /** True after a phone migration brought the identity along, until the user has seen the note. */
     val movedFromOtherPhone: Flow<Boolean> = store.data.map { it[MOVED] ?: false }
 
@@ -313,6 +318,7 @@ class Settings internal constructor(
         val STOPPED_AT_BOOT = intPreferencesKey("stopped_by_user_at_boot")
         val STARTED_AT_BOOT = intPreferencesKey("started_at_boot")
         val MEMORY_EXITS_SEEN = longPreferencesKey("memory_exits_seen_until")
+        val CORE_MEMORY_LIMIT = longPreferencesKey("core_memory_limit_mb")
         val PROXY = stringPreferencesKey("proxy")
         val TIME_SCHEDULE = booleanPreferencesKey("time_schedule")
         val WINDOWS = stringPreferencesKey("sync_windows")

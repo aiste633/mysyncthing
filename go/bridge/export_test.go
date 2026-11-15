@@ -454,6 +454,10 @@ func TestValidationContract(t *testing.T) {
 			Days       []int
 			OK         bool
 		}
+		MemoryLimit []struct {
+			MB, RAMBytes int64
+			OK           bool
+		}
 	}
 	if err := json.Unmarshal(golden(t, "../validation-contract.json"), &c); err != nil {
 		t.Fatal(err)
@@ -472,6 +476,14 @@ func TestValidationContract(t *testing.T) {
 		if msg := ExportPasswordError(p.Password); (msg == "") != p.OK {
 			t.Errorf("password %q: %q, want ok=%v", p.Password, msg, p.OK)
 		}
+	}
+	for _, m := range c.MemoryLimit {
+		if err := memoryLimitError(m.MB*1_000_000, m.RAMBytes); (err == nil) != m.OK {
+			t.Errorf("memory limit %+v: %v, want ok=%v", m, err, m.OK)
+		}
+	}
+	if len(c.MemoryLimit) == 0 {
+		t.Error("no memoryLimit cases")
 	}
 }
 

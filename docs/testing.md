@@ -167,6 +167,10 @@ That summary goes into the pull request. For a release, `pc.py --release` also w
 did not pass on all three versions, or names a commit that differs from the tag in anything but `docs/`,
 `fastlane/` and top-level `*.md`. Unlike the GitHub runs these results are not publicly reproduced:
 they are the record of a run on the maintainer's PC, and anyone can repeat it with the same commands.
+Two runs can share one PC, each from its own checkout: `E2E_SLOT=1 scripts/e2e/pc.py` gives the
+second its own emulator port, AVD names and host ports (`scripts/e2e/slot.py`), and pc.py refuses
+to start when its slot's emulator, AVDs or ports are in use or less than 10 GiB of memory is free.
+The network tests and any measurement still run alone.
 
 | Step | What must hold |
 |---|---|

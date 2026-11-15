@@ -44,6 +44,15 @@ object SyncthingCore {
     /** Sets the proxy for the next start or restart; throws when the bridge refuses it (see ProxySettings). */
     fun setProxy(p: ProxySettings) = Stbridge.setProxy(p.type.scheme, p.host, p.port.toLong(), p.user, p.password, p.only)
 
+    /** Sets the core's soft memory limit at once, [mb] 0 for none; throws when the bridge refuses it (go/bridge memory.go). */
+    fun setMemoryLimit(mb: Long) = Stbridge.setMemoryLimit(CoreMemoryLimit.bytes(mb))
+
+    /** The memory the core's Go runtime holds now, in bytes: what its limit counts. */
+    fun memoryBytes(): Long = Stbridge.coreMemory()
+
+    /** Gives the memory the core no longer uses back to Android now (a garbage collection; not on the main thread). */
+    fun freeMemory() = Stbridge.freeOSMemory()
+
     /**
      * Starts the core through [proxy], with a new login (API key, GUI user and
      * password) that lives only as long as this run; any failure on the way

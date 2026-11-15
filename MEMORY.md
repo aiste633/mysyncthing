@@ -16,14 +16,15 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - On `main`, not released yet: the app's own mark (one line with an arrow up and an arrow down, white on #0891D1) as launcher icon, themed icon, widget and top bar mark, store icon, and as the small icon of the service notification; the widget preview in dark mode. See "App mark" in docs/dev-notes.md.
 - A whole-project review on 2026-11-14 found no serious defect. Its hardening batch is on `main` for the next release (see "Hardening batch" in the dev notes): REST calls never use the system proxy, the signing script checks the build provenance before it signs, masked fields always get a password keyboard, cancelled work no longer reads as failed, the core names the app as its wrapper, Android offers to keep the app's data at uninstall, a private build directory under `/tmp`, Gradle repository content filters, key material and MAC addresses in the leak check.
 - For the next release: the boot receiver is no longer exported (review item A20), so only the system can start it; start at boot and the restart after an update are unchanged. See "Boot receiver not exported" in the dev notes.
-- On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps.
+- Emulator tests: two PC runs can go at once, each from its own checkout, with `E2E_SLOT=1` for the second (own emulator port, AVDs and peer ports; slot 0 unchanged). See "Parallel PC jobs" in the dev notes.
+- On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps. A soft memory limit for the Go core (Settings > Advanced > Core memory limit): automatic = Android 17's limit for the phone's memory less 300 MB (none before Android 17), or the user's own in MB; applied at once, no restart; the dialog shows the core's and the whole app's memory every 5 s; memory the core freed goes back to Android when the app's screens close (on Android Go returns it lazily, so RSS lags: issue #99, shelved). The memory-limit notice leaves the amount out when Android recorded none (the limiter's own kills record 0).
 
 ## Next
 1. TLS on the loopback API with the core's own certificate pinned (OkHttp and the WebView), its own pull request.
 2. README reworked around features, screenshots in dark mode, a Caveats section.
-3. Each waits for the user's go: a soft memory limit for the Go core as an advanced setting; CameraX instead of the old barcode scanner library.
+3. Waits for the user's go: CameraX instead of the old barcode scanner library.
 4. F-Droid inclusion request on or after 2027-01-24.
-5. Later: action major bumps and Go 1.27 (issue #92), a newer runner image once it is out of preview (the upkeep check lists it), OpenSSF Scorecard, crash capture, issue forms. The race detector in CI once upstream has fixed #95.
+5. Later: Go 1.27 and the Gradle-side bumps of issue #92 (Gradle 9.9.1, AGP 9.5.1, kotlinx-serialization 1.13.0, Robolectric 4.18, Roborazzi 1.79.0: they change the APK or the tests, so they need the PC and go with the next release's run), a newer runner image once it is out of preview (the upkeep check lists it), OpenSSF Scorecard, crash capture, issue forms. The race detector in CI once upstream has fixed #95.
 
 ## Decisions (confirmed 2026-10-24)
 - App ID `eu.stedb.mysyncthing`. Licence AGPL-3.0-or-later (was -only until 2026-10-31, user decision). Free software only: every shipped component must have an FSF-free licence (`knownLicenses` in scripts/sbom/main.go is the gate). Distribution: the app will be published on F-Droid (no Play constraints, no proprietary deps, reproducible builds). Releases on GitHub: v0.1.0 (2026-10-29), v0.1.2 (2026-10-30; 0.1.1 never tagged, versionCode 2 unused), v0.1.3 (2026-10-31, versionCode 4: backup import hardening), v0.2.0 (2026-11-05, versionCode 5: per-device pause and sync windows, explicit defaults, widget language, monkey fixes), v0.3.0 (2026-11-12, versionCode 6: folder browser, conflict copies, strong export encryption, new web GUI login per start, input length limits, default-location block, freeze fix), v0.4.0 prepared 2026-11-13 (versionCode 7: Android 17, targetSdk 37, local network access required there, memory-limit notice); the recipe is ready (2026-10-30) and the user submits it to fdroiddata. Don't describe the app as on F-Droid until F-Droid has accepted it.
@@ -46,7 +47,7 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - Any dependency/plugin bump: regenerate `gradle/verification-metadata.xml` (command in README).
 - Syncthing v2.1.7 (submodule `go/syncthing`, commit d6d0181f7). Keep `go/syncthing.version` in sync when bumping.
 - Build via `:app:assembleDebug`; `:core:bundle*Aar` fails by design (local Go AAR dependency).
-- GitHub Actions: pinned by full commit hash with a `# vX.Y.Z` comment (user's choice 2026-10-27: a moved tag could change what CI runs). All on Node 24 (Node 20 is deprecated: runners warn and force it): checkout v5.1.0, setup-java v5.7.0, setup-go v6.5.0, setup-gradle v5.0.2, upload-artifact v7.0.2, download-artifact v8.0.2 (fails on a digest mismatch). Bump steps in README; check `using:` in the new commit's action.yml.
+- GitHub Actions: pinned by full commit hash with a `# vX.Y.Z` comment (user's choice 2026-10-27: a moved tag could change what CI runs). All on Node 24 (Node 20 is deprecated: runners warn and force it): checkout v7.0.1, setup-java v6.3.0, setup-go v7.0.0, setup-gradle v6.4.1, codeql-action v4.39.3, upload-artifact v7.0.2, download-artifact v8.0.2 (fails on a digest mismatch); bumped 2026-11-15 with zizmor 1.32.0 and osv-scanner 2.7.1. Bump steps in README; check `using:` in the new commit's action.yml. setup-gradle since v6 defaults to a proprietary cache library (`cache-provider: enhanced`): every use here sets `cache-provider: basic` (MIT; the library is then never loaded), also next to `cache-disabled: true`. The basic cache has one entry for all jobs, keyed by a hash of the Gradle build files, with no fallback: the `android` job writes it on main, the `sbom` job only reads it (`cache-read-only: true`), and a change to a build file starts from an empty cache.
 - Android link needs `-ldflags=-checklinkname=0` (wlynxg/anet uses go:linkname into net). Upstream requires Go 1.26.2.
 
 ## Working rules
@@ -101,4 +102,6 @@ The long notes are in [docs/dev-notes.md](docs/dev-notes.md):
 - Network tests (2026-11-13)
 - This phone card keeps its height (2026-11-14, for the release after 0.4.0)
 - Hardening batch (2026-11-14)
+- Core memory limit (2026-11-15, for the release after 0.4.0)
+- Parallel PC jobs (2026-11-15)
 - Boot receiver not exported (2026-11-15)
