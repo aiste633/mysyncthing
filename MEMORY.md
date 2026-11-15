@@ -15,12 +15,12 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - Known upstream bugs, tracked here: #80 (three devices, one edit lost in a same-second conflict), #15 and #23 (trash can versioning), #95 (a data race in the folder watcher; because of it CI runs the bridge tests without the race detector).
 - On `main`, not released yet: the app's own mark (one line with an arrow up and an arrow down, white on #0891D1) as launcher icon, themed icon, widget and top bar mark, store icon, and as the small icon of the service notification; the widget preview in dark mode. See "App mark" in docs/dev-notes.md.
 - A whole-project review on 2026-11-14 found no serious defect. Its hardening batch is on `main` for the next release (see "Hardening batch" in the dev notes): REST calls never use the system proxy, the signing script checks the build provenance before it signs, masked fields always get a password keyboard, cancelled work no longer reads as failed, the core names the app as its wrapper, Android offers to keep the app's data at uninstall, a private build directory under `/tmp`, Gradle repository content filters, key material and MAC addresses in the leak check.
-- On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps.
+- On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps. A soft memory limit for the Go core (Settings > Advanced > Core memory limit): automatic = Android 17's limit for the phone's memory less 300 MB (none before Android 17), or the user's own in MB; applied at once, no restart; the dialog shows the core's and the whole app's memory every 5 s; memory the core freed goes back to Android when the app's screens close (on Android Go returns it lazily, so RSS lags: issue #99, shelved). The memory-limit notice leaves the amount out when Android recorded none (the limiter's own kills record 0).
 
 ## Next
 1. TLS on the loopback API with the core's own certificate pinned (OkHttp and the WebView), its own pull request.
 2. README reworked around features, screenshots in dark mode, a Caveats section.
-3. Each waits for the user's go: `BootReceiver` not exported; a soft memory limit for the Go core as an advanced setting; CameraX instead of the old barcode scanner library.
+3. Each waits for the user's go: `BootReceiver` not exported; CameraX instead of the old barcode scanner library.
 4. F-Droid inclusion request on or after 2027-01-24.
 5. Later: Go 1.27 and the Gradle-side bumps of issue #92 (Gradle 9.9.1, AGP 9.5.1, kotlinx-serialization 1.13.0, Robolectric 4.18, Roborazzi 1.79.0: they change the APK or the tests, so they need the PC and go with the next release's run), a newer runner image once it is out of preview (the upkeep check lists it), OpenSSF Scorecard, crash capture, issue forms. The race detector in CI once upstream has fixed #95.
 
@@ -100,3 +100,4 @@ The long notes are in [docs/dev-notes.md](docs/dev-notes.md):
 - Network tests (2026-11-13)
 - This phone card keeps its height (2026-11-14, for the release after 0.4.0)
 - Hardening batch (2026-11-14)
+- Core memory limit (2026-11-15, for the release after 0.4.0)

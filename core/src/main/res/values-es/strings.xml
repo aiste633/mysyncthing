@@ -151,4 +151,5 @@
     <string name="problem_no_local_network">Android 17 ahora pregunta antes de que MySyncthing pueda usar tu red local. Sin ese acceso, las transferencias solo podrían pasar por relés lentos. Toca para permitirlo y volver a sincronizar.</string>
     <string name="problem_memory_limit_title">Android detuvo Syncthing</string>
     <string name="problem_memory_limit">A las %2$s usaba %1$s MB, más memoria de la que Android permite en este teléfono. Syncthing se ha vuelto a iniciar solo. Si se repite, sincroniza menos carpetas o carpetas más pequeñas.</string>
+    <string name="problem_memory_limit_no_size">A las %1$s usaba más memoria de la que Android permite en este teléfono. Syncthing se ha vuelto a iniciar solo. Si se repite, sincroniza menos carpetas o carpetas más pequeñas.</string>
 </resources>

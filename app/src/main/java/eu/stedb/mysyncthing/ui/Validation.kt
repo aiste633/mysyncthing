@@ -2,6 +2,7 @@ package eu.stedb.mysyncthing.ui
 
 import androidx.annotation.StringRes
 import eu.stedb.mysyncthing.R
+import eu.stedb.mysyncthing.core.CoreMemoryLimit
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.num
 import eu.stedb.mysyncthing.core.plural
@@ -32,6 +33,8 @@ object Limits {
     val TEXT = Limit(1024)
     /** Typed numbers: the longest valid one has 16 digits; the rest of 32 is for leading zeros and a separator. */
     val NUMBER = Limit(32)
+    /** The core memory limit in MB: [CoreMemoryLimit.MAX_DIGITS] digits. */
+    val MEMORY_LIMIT = Limit(CoreMemoryLimit.MAX_DIGITS)
     /** The Device ID field: 56 characters, with room for dashes, spaces and a pasted line around them. */
     val DEVICE_ID = Limit(256)
     /** A DNS name (RFC 1035). */
@@ -88,6 +91,16 @@ fun wholeNumberError(s: String, min: Int = 0): UiText? = lengthError(s, Limits.N
     otherDigits(s) -> USE_ASCII_DIGITS
     (wholeNumber(s) ?: Int.MIN_VALUE) >= min -> null
     else -> text(R.string.error_whole_number, min)
+}
+
+/** An own core memory limit in MB: 0 (no limit), or [CoreMemoryLimit.MIN_MB] up to the phone's memory ([totalBytes]). */
+fun memoryLimitError(s: String, totalBytes: Long): UiText? = lengthError(s, Limits.MEMORY_LIMIT) ?: when {
+    otherDigits(s) -> USE_ASCII_DIGITS
+    wholeNumber(s)?.let { CoreMemoryLimit.valid(it.toLong(), totalBytes) } == true -> null
+    else -> text(
+        R.string.error_memory_limit,
+        withUnit(numberText(CoreMemoryLimit.MIN_MB.toDouble()), "MB"), withUnit(numberText(CoreMemoryLimit.maxMb(totalBytes).toDouble()), "MB"),
+    )
 }
 
 /** A plain decimal in 0-9 digits, with either separator; null when it isn't one. No signs, exponents, NaN or Infinity. */

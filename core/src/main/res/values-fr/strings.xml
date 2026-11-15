@@ -152,4 +152,5 @@
     <string name="problem_no_local_network">Android 17 demande désormais l’autorisation avant que MySyncthing puisse utiliser votre réseau local. Sans elle, les transferts ne passeraient que par des relais lents. Touchez pour l’autoriser et synchroniser à nouveau.</string>
     <string name="problem_memory_limit_title">Android a arrêté Syncthing</string>
     <string name="problem_memory_limit">À %2$s, il utilisait %1$s Mo, plus de mémoire qu’Android n’en autorise sur ce téléphone. Syncthing a redémarré tout seul. Si cela se répète, synchronisez moins de partages ou des partages plus petits.</string>
+    <string name="problem_memory_limit_no_size">À %1$s, il utilisait plus de mémoire qu’Android n’en autorise sur ce téléphone. Syncthing a redémarré tout seul. Si cela se répète, synchronisez moins de partages ou des partages plus petits.</string>
 </resources>

@@ -20,6 +20,7 @@ import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.FileOpen
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lan
+import androidx.compose.material.icons.filled.Memory
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.PowerSettingsNew
@@ -46,6 +47,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -60,6 +62,7 @@ import eu.stedb.mysyncthing.core.PowerSource
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.Summary
 import eu.stedb.mysyncthing.core.SyncthingService
+import eu.stedb.mysyncthing.core.totalMemoryBytes
 import eu.stedb.mysyncthing.core.UiText
 import eu.stedb.mysyncthing.core.text
 import kotlinx.coroutines.launch
@@ -87,6 +90,9 @@ fun SettingsScreen(
     val context = LocalContext.current
     val rc by vm.runConditions.collectAsStateWithLifecycle()
     val proxy by vm.proxy.collectAsStateWithLifecycle()
+    val memoryLimit by vm.coreMemoryLimit.collectAsStateWithLifecycle()
+    val phone = remember { MemoryPhone.of(totalMemoryBytes(context)) }
+    var memoryDialog by rememberSaveable { mutableStateOf(false) }
     var powerDialog by rememberSaveable { mutableStateOf(false) }
     val requests = rememberPermissionRequests(permissions)
     var rename by rememberSaveable { mutableStateOf(false) }
@@ -235,12 +241,23 @@ fun SettingsScreen(
                         dialog = NetDialog.Servers
                     }
                 }
+                // The app's own setting: changed at once, also while the core is stopped.
+                SettingRow(stringResource(R.string.memory_limit), memoryLimit?.let { memoryLimitRowText(it.mb, phone).asString() }, Icons.Default.Memory) {
+                    memoryDialog = true
+                }
                 SettingRow(
                     stringResource(R.string.settings_web_gui), stringResource(R.string.settings_web_gui_hint),
                     Icons.Default.Language, onClick = if (running) onOpenWebGui else null,
                 )
                 SettingRow(stringResource(R.string.about), stringResource(R.string.settings_about_hint), Icons.Default.Info, onClick = onOpenAbout)
             }
+        }
+    }
+
+    memoryLimit?.let { m ->
+        if (memoryDialog) MemoryLimitDialog(m.mb, phone, onDismiss = { memoryDialog = false }) { mb ->
+            memoryDialog = false
+            vm.setCoreMemoryLimit(mb)
         }
     }
 
