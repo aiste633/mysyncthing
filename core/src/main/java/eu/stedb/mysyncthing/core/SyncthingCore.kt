@@ -84,7 +84,7 @@ object SyncthingCore {
     private suspend fun adoptFolderDefaults(client: RestClient) {
         val root = Environment.getExternalStorageDirectory().path + "/Syncthing"
         repeat(5) {
-            if (runCatching { client.adoptFolderDefaults(root) }.isSuccess) return
+            if (runSuspendCatching { client.adoptFolderDefaults(root) }.isSuccess) return
             delay(500)
         }
     }

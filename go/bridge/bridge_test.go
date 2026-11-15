@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"testing"
@@ -148,6 +149,34 @@ func TestRestartInPlace(t *testing.T) {
 
 // Credentials that can't work as an HTTP header, a Basic auth login or a
 // bcrypt password are refused before anything is written.
+// The running core says which wrapper it is in, where upstream shows it: in the
+// version the REST API gives (the web GUI's About) and in the long version (the
+// log and the reports).
+func TestVersionNamesTheWrapper(t *testing.T) {
+	home := t.TempDir()
+	if err := Start(home, "key", "user", "pass"); err != nil {
+		t.Fatal(err)
+	}
+	defer Stop()
+	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/rest/system/version", nil)
+	req.Header.Set("X-API-Key", "key")
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var version struct{ Extra, LongVersion string }
+	if err := json.NewDecoder(resp.Body).Decode(&version); err != nil {
+		t.Fatal(err)
+	}
+	if version.Extra != "mysyncthing" {
+		t.Errorf("extra = %q, want mysyncthing", version.Extra)
+	}
+	if !regexp.MustCompile(`\[(.+, )?mysyncthing(, .+)?\]$`).MatchString(version.LongVersion) {
+		t.Errorf("long version does not name the wrapper: %q", version.LongVersion)
+	}
+}
+
 func TestStartRefusesBadCredentials(t *testing.T) {
 	for _, c := range [][3]string{
 		{"", "android", "secret"},

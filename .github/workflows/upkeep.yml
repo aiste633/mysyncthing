@@ -31,14 +31,14 @@ permissions:
 jobs:
   upkeep:
     if: github.event.schedule != '47 5 * * 1'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     concurrency: upkeep-issue
     permissions:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Self-test, old pins of every kind are reported
@@ -104,14 +104,14 @@ jobs:
 
   quiet:
     if: github.event_name != 'schedule' || github.event.schedule == '47 5 * * 1'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     concurrency: upkeep-quiet-issue
     permissions:
       contents: read
       issues: write
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Warn before the scheduled workflows stop

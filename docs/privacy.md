@@ -22,7 +22,9 @@ receives no data from the app, and has no access to your files, settings or devi
 
 ## What the app keeps on the phone
 
-All of this stays in the app's private storage, until you clear the app's data or uninstall it:
+All of this stays in the app's private storage, until you clear the app's data or uninstall it.
+When you uninstall, Android offers to keep the app's data, so that installing the app again
+brings back this phone's identity and setup; leave that box unticked and everything is deleted:
 
 | What | Why |
 |---|---|
@@ -126,7 +128,8 @@ that browser's own privacy terms.
 
 The developer holds no personal data about you from the app, so there is nothing to look up,
 correct or delete on our side: everything above is on your phone and on the devices you paired,
-under your control. Clearing the app's data or uninstalling it deletes what the app keeps.
+under your control. Clearing the app's data, or uninstalling it without keeping its data,
+deletes what the app keeps.
 
 For data received by the Syncthing project's servers, contact the Syncthing project. For the
 usage report, the legal basis is your consent, which you can withdraw in Settings at any time.

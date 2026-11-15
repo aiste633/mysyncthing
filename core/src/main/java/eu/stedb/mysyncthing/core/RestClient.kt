@@ -25,6 +25,7 @@ import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.io.IOException
+import java.net.Proxy
 import java.time.Instant
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resumeWithException
@@ -37,6 +38,9 @@ class RestClient(address: String, private val apiKey: String) {
         .port(address.substringAfterLast(':').toInt()).build()
 
     private val http = OkHttpClient.Builder()
+        // Never through the phone's proxy (a Wi-Fi network's manual or PAC setting): the calls carry the
+        // API key and go to this phone. By default OkHttp asks the system, which decides per network.
+        .proxy(Proxy.NO_PROXY)
         .readTimeout(90, TimeUnit.SECONDS) // event long-poll uses 60 s
         // All calls go to one host (loopback): OkHttp's default of 5 at a time would queue them behind long-polls.
         .dispatcher(Dispatcher().apply { maxRequests = 64; maxRequestsPerHost = 64 })

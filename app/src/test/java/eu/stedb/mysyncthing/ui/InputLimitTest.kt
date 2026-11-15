@@ -28,6 +28,16 @@ class InputLimitTest {
         assertEquals("text fields outside TextInput.kt (use TextInput, which takes a length limit)", emptyList<String>(), outside)
     }
 
+    /** A masked field without a password keyboard lets the keyboard suggest and learn the password. */
+    @Test
+    fun everyMaskedFieldIsAPasswordTextInput() {
+        val outside = sources.filter { it.name != "TextInput.kt" }.flatMap { f ->
+            f.readLines().withIndex().filter { (_, line) -> "VisualTransformation" in line }.map { (i, line) -> "${f.path}:${i + 1}: ${line.trim()}" }
+        }
+        assertEquals("masking outside TextInput.kt (use TextInput's passwordShown, which also sets the password keyboard)", emptyList<String>(), outside)
+        assertTrue(File("src/main/java/eu/stedb/mysyncthing/ui/TextInput.kt").readText().contains("if (passwordShown != null) PasswordKeyboard"))
+    }
+
     /** go/bridge/limits.go holds the same numbers for the web GUI and imports. */
     @Test
     fun bridgeHasTheSameLimits() {

@@ -190,10 +190,10 @@ internal suspend fun setDevicePausedByUser(core: CorePauses, settings: Settings,
  * device, [own] the devices their own windows hold. False if a step failed.
  */
 internal suspend fun applyConditions(core: CorePauses, settings: Settings, reason: UiText?, own: Set<String> = emptySet()): Boolean = pauseLock.withLock {
-    val plan = runCatching { conditionPause(reason != null, own, settings.conditionHolds(), core.devices()) }.getOrElse { return false }
+    val plan = runSuspendCatching { conditionPause(reason != null, own, settings.conditionHolds(), core.devices()) }.getOrElse { return false }
     // Unrecorded, the pause would never be undone.
     if (plan.hold != null && !settings.setConditionHolds(plan.hold)) return false
-    runCatching {
+    runSuspendCatching {
         if (plan.pauseAll) core.setPaused(null, true)
         plan.pause.forEach { core.setPaused(it, true) }
         plan.resume.forEach { core.setPaused(it, false) }

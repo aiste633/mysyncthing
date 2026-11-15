@@ -39,6 +39,8 @@ val buildGoBridge = tasks.register<Exec>("buildGoBridge") {
     description = "Builds the Syncthing core as an AAR with gomobile"
     workingDir = goDir.asFile
     commandLine("./build.sh")
+    inputs.file(goDir.file("build.sh")) // its flags and the fixed path end up in the library
+    inputs.file(goDir.file("patch.sh"))
     inputs.dir(goDir.dir("bridge"))
     inputs.dir(goDir.dir("patches"))
     inputs.file(goDir.file("syncthing/go.mod")).optional()

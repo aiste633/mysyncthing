@@ -18,18 +18,18 @@ concurrency:
 
 jobs:
   android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           submodules: true
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: 21
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go/bridge/go.mod
           cache-dependency-path: go/bridge/go.sum
@@ -38,7 +38,11 @@ jobs:
         run: |
           ndk="$(sed -n 's/^mysyncthing\.ndkVersion=//p' gradle.properties)"
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" "build-tools;36.0.0" "ndk;$ndk" > /dev/null
-      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+      # cache-provider: basic is the MIT-licensed cache. The default since v6 ("enhanced") is a
+      # proprietary library; this project builds with free software only.
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: basic
       - name: Patch the core
         run: go/patch.sh
       - name: Generate web GUI assets
@@ -50,6 +54,12 @@ jobs:
       - name: Go bridge tests
         working-directory: go/bridge
         run: go vet . && go test .
+      # Pinned by version; go install checks it against the Go checksum database.
+      - name: Go bridge static analysis
+        working-directory: go/bridge
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
+          "$(go env GOPATH)/bin/staticcheck" .
       - name: Build, unit tests, screen tests, lint
         # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
         # verifyRoborazziDebug runs the unit tests with the screenshots compared to app/src/test/screenshots.
@@ -73,18 +83,18 @@ jobs:
   # The committed SBOM (docs/sbom.*) must match what the dependencies are now. Its own job:
   # read-only, no secrets, and the SBOM tools never run in the build that makes the APK.
   sbom:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           submodules: true
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+      - uses: actions/setup-java@d1374f8ac74474200d16ef8ecee22c7ae7a51880 # v6.3.0
         with:
           distribution: temurin
           java-version: 21
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: go/bridge/go.mod
           cache-dependency-path: |
@@ -92,15 +102,20 @@ jobs:
             scripts/sbom/go.sum
       - name: Android SDK platform
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.0" > /dev/null
-      - uses: gradle/actions/setup-gradle@0723195856401067f7a2779048b490ace7a47d7c # v5.0.2
+      # Read-only: the basic cache has one entry for all jobs, and it must be the android job's,
+      # which downloads everything; this job resolves only part of it.
+      - uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6.4.1
+        with:
+          cache-provider: basic
+          cache-read-only: true
       - name: SBOM matches the dependencies
         run: scripts/sbom.sh --check
 
   privacy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -108,10 +123,10 @@ jobs:
         run: scripts/check-leaks.sh
 
   strings:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Text for people only in strings.xml
@@ -120,10 +135,10 @@ jobs:
   # Static analysis of these workflows: injection, credentials left in the checkout, permissions,
   # and (with the token) that every pinned action commit really belongs to that action.
   workflows:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: zizmor

@@ -13,8 +13,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Device
@@ -63,7 +61,7 @@ fun PasswordDialog(
             TextInput(
                 password, { password = it }, Limits.TEXT, Modifier.fillMaxWidth().inViewWhenFocused(), label = stringResource(R.string.password),
                 hint = requiredError(password)?.asString(),
-                visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
+                passwordShown = show,
                 trailingIcon = {
                     PasswordVisibilityButton(show) { show = !show }
                 },

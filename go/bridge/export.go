@@ -288,7 +288,9 @@ func writeZipEntry(z *zip.Writer, name string, data []byte, password string, mod
 // show other times than the plain ones.
 func setModified(fh *zip.FileHeader, modified time.Time) {
 	fh.Modified = modified
+	//lint:ignore SA1019 CreateRaw writes these two as they are; only CreateHeader derives them from Modified.
 	fh.ModifiedDate = uint16(modified.Day() + int(modified.Month())<<5 + (modified.Year()-1980)<<9)
+	//lint:ignore SA1019 as above.
 	fh.ModifiedTime = uint16(modified.Second()/2 + modified.Minute()<<5 + modified.Hour()<<11)
 	ext := make([]byte, 9)
 	binary.LittleEndian.PutUint16(ext, 0x5455)

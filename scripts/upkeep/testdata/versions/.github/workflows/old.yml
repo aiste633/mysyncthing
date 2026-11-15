@@ -1,11 +1,12 @@
-# Fixture for scripts/updates/check.py: an action pinned to an old release.
+# Fixture for scripts/upkeep/versions.py: an action and a Go tool pinned to old releases, on an old runner image.
 name: old
 on: workflow_dispatch
 permissions: {}
 jobs:
   old:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@1e31de5234b9f8995739874a8ce0492dc87873e2 # v4.0.0
         with:
           persist-credentials: false
+      - run: go install golang.org/x/vuln/cmd/govulncheck@v1.0.0

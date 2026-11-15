@@ -39,9 +39,9 @@ protected: a change reaches it only through a pull request whose checks have pas
 
 | Job | What it checks |
 |---|---|
-| `android` | Builds the Go core and the app; runs the tests of the patched core package (`lib/api`), `go vet` and the Go bridge tests (which also run every fuzz target's seed inputs), the Kotlin unit tests, the screen tests (below) and Android lint of both modules. Lint and Kotlin compiler warnings fail the build; lint's settings and the few checks it skips, each with its reason, are in [`lint.xml`](../lint.xml). Then `scripts/manifest-surface.py` compares the release app's permissions and the components other apps can reach, from the merged manifest of all libraries, with the committed list ([manifest-surface.txt](manifest-surface.txt)): a library that adds a permission shows up in review, not in a release |
+| `android` | Builds the Go core and the app; runs the tests of the patched core package (`lib/api`), `go vet`, staticcheck and the Go bridge tests (which also run every fuzz target's seed inputs), the Kotlin unit tests, the screen tests (below) and Android lint of both modules. Lint and Kotlin compiler warnings fail the build; lint's settings and the few checks it skips, each with its reason, are in [`lint.xml`](../lint.xml). Then `scripts/manifest-surface.py` compares the release app's permissions and the components other apps can reach, from the merged manifest of all libraries, with the committed list ([manifest-surface.txt](manifest-surface.txt)): a library that adds a permission shows up in review, not in a release |
 | `strings` | `scripts/check-strings.py`: text for people only in string resources, so it can be translated, and every string used with the number of arguments it expects (a missing one crashes at run time) |
-| `privacy` | `scripts/check-leaks.sh`: no personal detail (addresses, host names, device IDs, home paths, e-mail addresses) in any file, commit message or commit identity in the whole history. It works by allowlist: anything that is not a known public host or a placeholder fails, so a new kind of leak is caught without updating a list |
+| `privacy` | `scripts/check-leaks.sh`: no personal detail (addresses, host names, device IDs, network card addresses, home paths, e-mail addresses) and no key material (a private key, or a key or keystore file) in any file, commit message or commit identity in the whole history. It works by allowlist: anything that is not a known public host or a placeholder fails, so a new kind of leak is caught without updating a list |
 | `sbom` | Regenerates the [software bill of materials](sbom.md) and fails if it differs from the committed one, or if a dependency has a licence it has not seen before |
 | `workflows` | zizmor audits the GitHub workflows themselves: script injection, credentials left in the checkout, permissions, unpinned actions |
 | `reproducible` | Builds the release APK twice with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report shows where). Checks that the Go modules inside the APK match the SBOM. On tags and manual runs, F-Droid's own build image builds it a third time and must match too (up to 90 min, so not on every pull request). A tag also needs the PC end-to-end results of its commit, committed as `docs/e2e/<version>.md` (`scripts/e2e/check-results.sh`) |
@@ -65,8 +65,9 @@ days. Weekly it warns before GitHub turns off these scheduled checks after 60 qu
 
 The workflows use a read-only token and leave no credentials in the checkout, and every
 GitHub Action is pinned by its full commit hash, so a moved tag cannot change what CI runs. A
-release's APK and SBOM carry a signed build provenance attestation, which anyone can check
-with `gh attestation verify` (see the [security policy](../SECURITY.md)).
+release's build and SBOM carry a signed build provenance attestation, which anyone can check
+with `gh attestation verify` (see the [security policy](../SECURITY.md)); the signing script
+checks it too, and signs nothing that CI did not build from the tag.
 
 Kotlin unit tests cover, among others: the form checks, the run conditions and sync windows (also: a device added while they block
 syncing is paused too, and only the user's own pauses stay afterwards; a property test pauses and
@@ -349,8 +350,9 @@ open-source Android apps, which gave a list of 19 items. Done so far:
 
 ## Emulators and phones
 
-Every feature is checked by hand before it is merged, on Android 15 and Android 16 emulators
-with a local test peer; the larger ones also on two real phones (Android 16 and Android 15). Screens are
+Every feature is checked by hand before it is merged, on Android 15, 16 and 17 emulators (17
+since 0.4.0) with a local test peer; the larger ones also on two real phones (Android 16 and
+Android 17; the second ran Android 15 until 2026-11-11). Screens are
 checked in light and dark mode, at the largest font size, and with TalkBack: every button is
 named, and every switch and checkbox reads as on or off. The Italian, Spanish, German and French
 translations were walked screen by screen the same way.
@@ -438,11 +440,12 @@ the same crashes System UI. The monkey runs list both and do not fail on them. A
 walk after the runs): the QR scanner closes when the app is opened again from its icon, as the scanner
 library starts it that way; coming back through Recents keeps it open.
 
-Still open ([#68](https://github.com/aiste633/mysyncthing/issues/68)): on CI's Android 15 emulator, now and then a rotation with a
-text dialog, the keyboard and the cursor handle up leaves the new dialog window without input focus, so the
-monkey's keys time out (an ANR, while the app itself is idle). It did not happen in 100 tries on the PC
-emulator; run.py saves the window and input state when it happens. Now that the end-to-end tests run on
-the PC only, it shows only if it happens there.
+Fixed in 0.3.0 ([#68](https://github.com/aiste633/mysyncthing/issues/68)): on Android 15, now and then a rotation with a
+text dialog open left the new dialog window without input focus, so the monkey's keys timed out (an ANR,
+while the app itself was idle). Android 15 detaches the window of a dialog that a relaunched activity adds
+again in the last moments of the rotation; a rotation timed right after opening a dialog froze about 1 time
+in 8 on the PC emulator. The activity now handles rotation and resizes itself instead of being relaunched,
+so no dialog is added again: 0 freezes in 400 such rotations.
 
 ## 0.3.0 test (2026-11-06)
 
