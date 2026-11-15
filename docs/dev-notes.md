@@ -241,7 +241,7 @@ Keep it useful: when a part changes, edit its section in place instead of append
 - Cause found from CI on PR #48 (API 35 e2e, `textDialogsKeepTypedText`): the check right after `recreate()` ran before the HTTP reload. The test keeps checking at once (no wait), which is what proves the fix.
 
 ## Santa hat easter egg (2026-10-30)
-- From 22 December to 6 January (phone date, `santaHat()` in core `SantaHat.kt`) the app mark on the widget and on the tabs' top bar wears a red Santa hat: `widget_ic_hat`, an untinted overlay drawn over the mark and a little above it, so no layout changes (widget: `clipChildren="false"` on the mark's frame and the bar).
+- From 22 December to 6 January (phone date, `santaHat()` in core `SantaHat.kt`) the app mark on the widget and on the tabs' top bar wears a red Santa hat: `widget_ic_hat`, an untinted overlay drawn over the mark in the mark's own box, so no layout changes. Since the new mark (2026-11-14) the hat has the mark's size and viewport and no offset; see "App mark".
 - The widget is drawn again on the day the hat comes or goes: one inexact, non-waking RTC alarm per process (`StatusWidget.scheduleHatChange`), since an idle phone may not render for days.
 - Screenshot tests fix the date through `LocalNow` (Friday 2026-10-30 12:00, outside the season), so their images don't change in December. No screenshot of the hat on purpose (user: it's an easter egg); `SantaHatTest` checks the dates.
 
@@ -313,6 +313,15 @@ Keep it useful: when a part changes, edit its section in place instead of append
 - `ThisDeviceCardTest`: equal card height before and after the first poll, 5 languages, 360/412 dp, font 1 and 2, discovery on and off. The 20 `devices-*` goldens show the dashes line (screen tests have no poll).
 - PC walk: `adb shell screenrecord` writes a frame only when the screen changes; resampling at 30 fps skips a one-frame jump, so compare the raw frames.
 
+## App mark (2026-11-14)
+- The mark is the app's own (review finding A13; the earlier ring with three nodes was a placeholder close to upstream's logo). User's pick after three rounds of mockups: one rounded line with an arrow up on the left and an arrow down on the right, white on #0891D1 (the user kept the blue, knowing white on it has 3.5:1 contrast). Drawn from plain geometry; no trademark search was done.
+- One path, three crops: `ic_launcher_fg` (108 viewport, inside the 66 dp safe zone, also the monochrome layer for themed icons), `widget_ic_app` (the mark's box 27..81, for the widget at 16 dp and the tabs' top bar at 24 dp), `notify_ic_app` (24..84, the margin status bar icons have). Change the path in all three.
+- Service notification (A22): `notify_ic_app` instead of Android's `stat_notify_sync`, which looked different on each brand. Problem and request notifications keep their own icons.
+- Santa hat: `widget_ic_hat` has the mark's size, viewport and coordinates and lies wholly inside that box (on the right-hand curve, which is lower than the up arrow's tip). It fills the mark's frame with no offset or scale, in the widget and in the top bar. A drawable cannot draw outside its bounds, so the hat cannot move, resize or reach anything around it (user's requirement); `WidgetHatTest` holds the layout to that. The old hat was 66/62 of the mark and shifted up, drawn outside the box.
+- Store icon `fastlane/metadata/android/en-US/images/icon.png`: the foreground path on the background colour, viewport 12..96 of the 108, 512 px, RGB, rendered with a headless browser from the vector's path (same framing as the icon before it).
+- Widget preview `widget_preview.png` (A12): a crop of the widget on the emulator in dark mode with a peer named "Laptop", as in the README image; it showed the e2e peer's name before.
+- The reference screenshots of the tab screens show the mark, so they were recorded again.
+
 ## Core memory limit (2026-11-15, for the release after 0.4.0)
 - Why: Android 17 kills an app over its memory limit (review item A7). The limit is a cgroup `memory.high` set by the phone's memory (source.android.com, "Memory Limiter"): a foreground service gets the "not visible" one, 1,024 MiB on 4 GB phones up to 5,120 MiB on 16 GB; none under 3,200 MiB or from 18,432 MiB of MemTotal, none before Android 17. Apps cannot read it and get no warning, so `serviceLimitMib()` in `core/MemoryLimit.kt` holds the table.
 - What: `debug.SetMemoryLimit` through `go/bridge/memory.go`, process-wide, so it holds before the first start and changes without a restart (the service collects the setting). It is soft: near it Go collects garbage more often (at most about half the CPU) and goes past it rather than fail. It covers Go's memory only: SQLite (C, one database per folder) and the app's UI are outside, hence the margin.
@@ -320,4 +329,3 @@ Keep it useful: when a part changes, edit its section in place instead of append
 - The dialog shows the core's memory (`CoreMemory`: Go's total less what it released, what the limit counts) and the whole app's as Android counts it (RssAnon + VmSwap from /proc/self/status, "MemoryLimiter:AnonSwap"), read every 5 s while it is open.
 - `onTrimMemory(TRIM_MEMORY_UI_HIDDEN)` in the service calls `debug.FreeOSMemory`, so what the core freed goes back now, not over minutes.
 - Soak of 2026-10-27 (API 36): whole app 170-250 MB, Go 20-28 MB of it. The margin and minimum wait for a measurement with 200,000 files on the PC.
-

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The app mark (ic_launcher_fg) as the small icon of the service notification: the mark's 52-unit box in a
+     60-unit viewport, which leaves the margin status bar icons have. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="60" android:viewportHeight="60">
+    <group android:translateX="-24" android:translateY="-24">
+        <path android:strokeColor="#FFFFFFFF" android:strokeWidth="7"
+            android:strokeLineCap="round" android:strokeLineJoin="round"
+            android:pathData="M70,74V51A8,8 0,0 0,54 51V57A8,8 0,0 1,38 57V34M76.4,67.6L70,74L63.6,67.6M31.6,40.4L38,34L44.4,40.4" />
+    </group>
+</vector>
