@@ -55,14 +55,22 @@ class SyncthingService : LifecycleService() {
     }
 
     /** The app's screens are gone: what the core freed goes back to Android now, not over the next minutes. */
+    private val screensGone = ScreensGone { freeMemory() }
+
+    private fun freeMemory() {
+        lifecycleScope.launch(Dispatchers.IO) { SyncthingCore.freeMemory() }
+    }
+
+    /** Reaches the app only when the service is not in the foreground; while it is, [screensGone] does this. */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) lifecycleScope.launch(Dispatchers.IO) { SyncthingCore.freeMemory() }
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN) freeMemory()
     }
 
     override fun onCreate() {
         super.onCreate()
         settings = Settings(this)
+        application.registerActivityLifecycleCallbacks(screensGone)
         lifecycleScope.launch { for (command in commands) command() }
         lifecycleScope.launch {
             refreshes.collect { lastShown?.let { (text, public) -> lastShown = null; updateNotification(text, public) } }
@@ -262,6 +270,7 @@ class SyncthingService : LifecycleService() {
             StatusWidget.render(this, it) // the collector above is already cancelled
         }
         clearCoreNotices()
+        application.unregisterActivityLifecycleCallbacks(screensGone)
         super.onDestroy()
     }
 

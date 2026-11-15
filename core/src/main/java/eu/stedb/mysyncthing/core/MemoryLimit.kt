@@ -1,8 +1,11 @@
 package eu.stedb.mysyncthing.core
 
+import android.app.Activity
 import android.app.ActivityManager
+import android.app.Application
 import android.app.ApplicationExitInfo
 import android.content.Context
+import android.os.Bundle
 
 /** One of Android's records of how the app's process ended, as far as the memory notice needs it. */
 data class ProcessExit(val reason: Int, val description: String?, val timestamp: Long, val rssKb: Long)
@@ -111,4 +114,36 @@ internal fun anonSwapBytes(status: String): Long? {
     val anon = kb("RssAnon") ?: return null
     val swap = kb("VmSwap") ?: return null
     return (anon + swap) * 1024
+}
+
+/**
+ * Calls [onGone] when the app's last screen has left the front: the moment to give the memory the core
+ * freed back to Android. Android's own signal for it, `onTrimMemory(TRIM_MEMORY_UI_HIDDEN)`, is held
+ * back until the process is in the background, which it never is while the foreground service runs
+ * (Android 16 and 17: `pendingUiClean=true` for as long as it runs), so the service watches the screens itself.
+ * Main thread only, as Android calls it.
+ */
+internal class ScreensGone(private val onGone: () -> Unit) : Application.ActivityLifecycleCallbacks {
+    private val inFront = HashSet<Any>()
+
+    fun started(screen: Any) {
+        inFront += screen
+    }
+
+    /**
+     * [recreating]: stopped for a new theme, language or font size, with its successor starting at once.
+     * A screen that started before the service did is not in the set; its stop counts all the same.
+     */
+    fun stopped(screen: Any, recreating: Boolean) {
+        inFront -= screen
+        if (inFront.isEmpty() && !recreating) onGone()
+    }
+
+    override fun onActivityStarted(activity: Activity) = started(activity)
+    override fun onActivityStopped(activity: Activity) = stopped(activity, activity.isChangingConfigurations)
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
+    override fun onActivityResumed(activity: Activity) = Unit
+    override fun onActivityPaused(activity: Activity) = Unit
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) = Unit
+    override fun onActivityDestroyed(activity: Activity) = Unit
 }

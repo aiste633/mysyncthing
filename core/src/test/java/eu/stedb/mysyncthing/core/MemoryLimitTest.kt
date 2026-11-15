@@ -92,4 +92,33 @@ class MemoryLimitTest {
         assertNull(anonSwapBytes("RssAnon:\t1 kB\n"))
         assertNull(anonSwapBytes(""))
     }
+
+    // The core's freed memory goes back when the last screen leaves the front, not when one screen covers
+    // another and not when a screen is only recreated (new theme, language or font size).
+    @Test
+    fun screensGoneOnlyWhenTheLastOneLeaves() {
+        var gone = 0
+        val screens = ScreensGone { gone++ }
+        screens.started("main")
+        screens.started("scanner")
+        screens.stopped("main", recreating = false)
+        assertEquals("covered by another screen", 0, gone)
+        screens.stopped("scanner", recreating = false)
+        assertEquals("the last screen left", 1, gone)
+
+        screens.started("main")
+        screens.stopped("main", recreating = true)
+        assertEquals("recreated", 1, gone)
+        screens.started("main again")
+        screens.stopped("main again", recreating = false)
+        assertEquals("left after the recreation", 2, gone)
+    }
+
+    // The activity starts the service, so its own start came before the service could see it.
+    @Test
+    fun aScreenStartedBeforeTheServiceCountsWhenItLeaves() {
+        var gone = 0
+        ScreensGone { gone++ }.stopped("main", recreating = false)
+        assertEquals(1, gone)
+    }
 }
