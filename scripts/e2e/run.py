@@ -23,6 +23,7 @@ import os
 import re
 import secrets
 import shutil
+import ssl
 import subprocess
 import sys
 import tempfile
@@ -218,6 +219,15 @@ def private(path: str) -> bytes:
     return r.stdout
 
 
+def core_tls() -> ssl.SSLContext:
+    """TLS that trusts only the phone core's own certificate, as the app does (core/CoreCertificate.kt).
+    The name in it is the phone's host name, so the pin, not the name, is what is checked."""
+    ctx = ssl.create_default_context(cadata=private("files/syncthing/https-cert.pem").decode())
+    ctx.check_hostname = False
+    ctx.verify_flags |= ssl.VERIFY_X509_PARTIAL_CHAIN
+    return ctx
+
+
 class PhoneCore:
     """
     The phone core's REST API, from the host: on 127.0.0.1 at a port the app picks at
@@ -226,6 +236,7 @@ class PhoneCore:
 
     def __init__(self) -> None:
         self.key = ""
+        self.tls = ssl.create_default_context()  # replaced by the core's own certificate in try_connect
 
     def connect(self, timeout: float = 60) -> None:
         """The key is new at every start and reaches config.xml with the core's own save a few seconds later."""
@@ -240,6 +251,7 @@ class PhoneCore:
 
     def try_connect(self) -> None:
         self.key = ET.fromstring(private("files/syncthing/config.xml")).findtext("gui/apikey") or ""
+        self.tls = core_tls()
         uid = sh(f"run-as {APP} id -u")
         ports = set()
         for line in sh("cat /proc/net/tcp").split("\n")[1:]:
@@ -258,11 +270,11 @@ class PhoneCore:
 
     def call(self, method: str, path: str, body=None):
         req = urllib.request.Request(
-            f"http://127.0.0.1:{PHONE_API_PORT}/{path}", method=method,
+            f"https://127.0.0.1:{PHONE_API_PORT}/{path}", method=method,
             data=None if body is None else json.dumps(body).encode(),
             headers={"X-API-Key": self.key, "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=10) as r:
+        with urllib.request.urlopen(req, timeout=10, context=self.tls) as r:
             text = r.read().decode()
         return json.loads(text) if text.strip() else None
 

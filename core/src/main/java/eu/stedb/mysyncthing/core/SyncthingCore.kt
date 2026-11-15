@@ -41,6 +41,9 @@ object SyncthingCore {
     fun checkIgnores(folderPath: String, lines: List<String>): String? =
         Stbridge.checkIgnores(folderPath, lines.joinToString("\n")).ifEmpty { null }
 
+    /** The certificate the core's REST API/GUI serves now, as its DER, or null; see [isCoreCertificate]. */
+    fun guiCertificate(): ByteArray? = Stbridge.guiCertificate()?.takeIf { it.isNotEmpty() }
+
     /** Sets the proxy for the next start or restart; throws when the bridge refuses it (see ProxySettings). */
     fun setProxy(p: ProxySettings) = Stbridge.setProxy(p.type.scheme, p.host, p.port.toLong(), p.user, p.password, p.only)
 
@@ -66,7 +69,7 @@ object SyncthingCore {
             setProxy(proxy)
             Stbridge.start(home.absolutePath, credentials.apiKey, credentials.guiUser, credentials.guiPassword)
             val address = Stbridge.guiAddress()
-            val client = RestClient(address, credentials.apiKey)
+            val client = RestClient(address, credentials.apiKey, ::guiCertificate)
             adoptFolderDefaults(client)
             CoreState.Running(client, address, Stbridge.deviceID(), credentials)
         } catch (e: Exception) {

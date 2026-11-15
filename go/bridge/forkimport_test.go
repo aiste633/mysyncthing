@@ -529,9 +529,9 @@ func TestImportAndStart(t *testing.T) {
 				t.Errorf("device ID %s, want %s", DeviceID(), wantID)
 			}
 			status := func(key string) int {
-				req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/rest/system/status", nil)
+				req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+"/rest/system/status", nil)
 				req.Header.Set("X-API-Key", key)
-				resp, err := http.DefaultClient.Do(req)
+				resp, err := guiClient.Do(req)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -591,9 +591,9 @@ func TestImportAndStart(t *testing.T) {
 
 func getJSON(t *testing.T, path string, v any) {
 	t.Helper()
-	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+path, nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+path, nil)
 	req.Header.Set("X-API-Key", "app-key")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := guiClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}

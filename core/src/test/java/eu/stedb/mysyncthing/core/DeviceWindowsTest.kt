@@ -19,7 +19,7 @@ class DeviceWindowsTest {
     private val monday = at(1, 0)
     private val nights = listOf(SyncWindow(22 * 60, 7 * 60, (1..5).toSet()))
     private val global = RunConditions(timeSchedule = true, windows = nights)
-    private val running = CoreState.Running(RestClient("127.0.0.1:1", "k"), "127.0.0.1:1", "ME", Credentials("k", "u", "p"))
+    private val running = CoreState.Running(RestClient.plain("127.0.0.1:1", "k"), "127.0.0.1:1", "ME", Credentials("k", "u", "p"))
 
     private fun randomWindows(r: Random) = List(r.nextInt(0, MAX_SYNC_WINDOWS + 1)) {
         val start = r.nextInt(MINUTES_PER_DAY)

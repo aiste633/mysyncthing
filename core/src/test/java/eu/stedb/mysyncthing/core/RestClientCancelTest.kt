@@ -23,7 +23,7 @@ class RestClientCancelTest {
     @Test
     fun cancellingTheLongPollEndsTheCallAtOnce() = runBlocking {
         ServerSocket(0, 1, InetAddress.getLoopbackAddress()).use { server ->
-            val client = RestClient("127.0.0.1:${server.localPort}", "k")
+            val client = RestClient.plain("127.0.0.1:${server.localPort}", "k")
             val poll = launch(Dispatchers.Default) { runCatching { client.events(since = 0) } }
             // The request has arrived; this server never answers, as the core does not while it has no events.
             withContext(Dispatchers.IO) { server.accept() }.use { conn ->
@@ -41,7 +41,7 @@ class RestClientCancelTest {
     @Test
     fun aCancelledWriteRunsToItsEnd() = runBlocking {
         ServerSocket(0, 1, InetAddress.getLoopbackAddress()).use { server ->
-            val client = RestClient("127.0.0.1:${server.localPort}", "k")
+            val client = RestClient.plain("127.0.0.1:${server.localPort}", "k")
             val write = launch(Dispatchers.Default) { runCatching { client.restart() } }
             withContext(Dispatchers.IO) { server.accept() }.use { conn ->
                 write.cancel()

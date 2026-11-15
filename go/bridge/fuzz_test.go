@@ -1,8 +1,12 @@
 package stbridge
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -38,10 +42,10 @@ const (
 )
 
 // requireLocked fails unless gui lets in exactly the app: its user and
-// password, static auth, no TLS, no insecure switches.
+// password, static auth, TLS, no insecure switches.
 func requireLocked(t *testing.T, gui config.GUIConfiguration, user, password string) {
 	t.Helper()
-	if !gui.Enabled || gui.RawUseTLS || gui.AuthMode != config.AuthModeStatic ||
+	if !gui.Enabled || !gui.RawUseTLS || gui.AuthMode != config.AuthModeStatic ||
 		gui.InsecureAdminAccess || gui.InsecureSkipHostCheck || gui.MetricsWithoutAuth {
 		t.Fatalf("GUI not locked: %+v", lockOf(gui))
 	}
@@ -244,7 +248,7 @@ func t0Home(tb testing.TB) string {
 }
 
 func mustGet(tb testing.TB, path string) []byte {
-	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+path, nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+path, nil)
 	req.Header.Set("X-API-Key", fuzzAPIKey)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -257,7 +261,7 @@ func mustGet(tb testing.TB, path string) []byte {
 
 // do sends a request, with the API key when auth is set, and returns the status, 0 when the listener is down.
 func do(t *testing.T, method, path string, body []byte, auth bool) int {
-	req, err := http.NewRequest(method, "http://"+GuiAddress()+path, strings.NewReader(string(body)))
+	req, err := http.NewRequest(method, "https://"+GuiAddress()+path, strings.NewReader(string(body)))
 	if err != nil {
 		return 0
 	}
@@ -276,7 +280,7 @@ func do(t *testing.T, method, path string, body []byte, auth bool) int {
 // load, and whether that started a session. "/" is served to anyone (it is
 // the login page), so only the session cookie shows the login was accepted.
 func basicAuth(t *testing.T, user, password string) (int, bool) {
-	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/", nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+"/", nil)
 	req.SetBasicAuth(user, password)
 	resp, err := client.Do(req)
 	if err != nil {
@@ -320,9 +324,25 @@ func FuzzCheckIgnores(f *testing.F) {
 	})
 }
 
-// client gives up on a GUI that stops answering, so a hang is reported as a
-// failure with its input instead of killing the fuzz worker.
-var client = &http.Client{Timeout: raceSlowdown * 2 * time.Second}
+// guiTransport trusts the GUI only with the certificate the core's home holds,
+// as the app does (GuiCertificate).
+var guiTransport = &http.Transport{TLSClientConfig: &tls.Config{
+	InsecureSkipVerify: true, // replaced by the pin below; the name in the certificate is the host's
+	VerifyPeerCertificate: func(raw [][]byte, _ [][]*x509.Certificate) error {
+		if len(raw) == 0 || !bytes.Equal(raw[0], GuiCertificate()) {
+			return errors.New("not the core's GUI certificate")
+		}
+		return nil
+	},
+}}
+
+// guiClient talks to the GUI with the pin; client also gives up on a GUI that
+// stops answering, so a hang is reported as a failure with its input instead
+// of killing the fuzz worker.
+var (
+	guiClient = &http.Client{Transport: guiTransport}
+	client    = &http.Client{Transport: guiTransport, Timeout: raceSlowdown * 2 * time.Second}
+)
 
 // stacks writes every goroutine's stack to a file, for a stall, and names it.
 func stacks() string {

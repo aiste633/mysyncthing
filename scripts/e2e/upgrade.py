@@ -55,6 +55,7 @@ MAY_CHANGE = {
     "/gui/apiKey": "a new login at every start (go/bridge Start)",
     "/gui/user": "a new login at every start (go/bridge Start)",
     "/gui/password": "a new login at every start (go/bridge Start)",
+    "/gui/useTLS": "loopback TLS: go/bridge sets it at every start; 0.4.0 and older had it off",
 }
 # The stored login of 0.2.0 and older: the app removes it at start and keeps the login in memory only.
 GONE_SETTINGS = ("api_key", "gui_user", "gui_password")

@@ -34,7 +34,7 @@ class RestClientProxyTest {
                     override fun connectFailed(uri: URI, address: SocketAddress, e: IOException) = Unit
                 })
                 try {
-                    val client = RestClient("127.0.0.1:${core.localPort}", "the-key")
+                    val client = RestClient.plain("127.0.0.1:${core.localPort}", "the-key")
                     val events = async(Dispatchers.IO) { client.events(since = 0) }
                     core.soTimeout = 5_000 // through the proxy, nothing arrives here
                     withContext(Dispatchers.IO) { core.accept() }.use { conn ->

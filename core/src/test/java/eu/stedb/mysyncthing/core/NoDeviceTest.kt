@@ -24,7 +24,7 @@ import kotlin.random.Random
  * again then, as no event says the time is up.
  */
 class NoDeviceTest {
-    private val running = CoreState.Running(RestClient("127.0.0.1:1", "k"), "127.0.0.1:1", "ME", Credentials("k", "u", "p"))
+    private val running = CoreState.Running(RestClient.plain("127.0.0.1:1", "k"), "127.0.0.1:1", "ME", Credentials("k", "u", "p"))
     private val server = Device("SERVER1-X", name = "server")
     private val laptop = Device("LAPTOP1-X", name = "laptop")
     private val photos = Folder("photos", path = "/storage/emulated/0/DCIM")

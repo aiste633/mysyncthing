@@ -7,7 +7,7 @@ import org.junit.Test
 
 class WebGuiOriginTest {
     // Split literals keep scripts/check-leaks.sh from reading them as hosts or addresses.
-    private val origin = "http://127.0.0.1:43210"
+    private val origin = "https://127.0.0.1:43210"
 
     @Test fun theGuiItself() {
         for (url in listOf(origin, "$origin/", "$origin/rest/db/status?folder=a", "$origin/#settings", "$origin?x=1")) {
@@ -18,8 +18,8 @@ class WebGuiOriginTest {
 
     @Test fun lookalikesAreNotTheGui() {
         for (url in listOf(
-            "${origin}0/", "$origin@example.com/", "$origin.example.com/", "https://127.0.0.1:43210/",
-            "http://127.0.0.1:4321/", "http://localhost:43210/", "http://127.0.0.1" + "0:43210/", "http://example.com/",
+            "${origin}0/", "$origin@example.com/", "$origin.example.com/", "http://127.0.0.1:43210/",
+            "https://127.0.0.1:4321/", "https://localhost:43210/", "https://127.0.0.1" + "0:43210/", "https://example.com/",
             "content://" + "media/external/1", "file:///sdcard/a", "javascript:alert(1)", "",
         )) {
             assertFalse(url, onGui(url, origin))
@@ -33,7 +33,7 @@ class WebGuiOriginTest {
         assertFalse(onGui(png, origin))
     }
 
-    // URLs built from parts: only plain http to the GUI's own address and port, with no user part, is the GUI.
+    // URLs built from parts: only https to the GUI's own address and port, with no user part, is the GUI.
     @Test fun onlyTheExactOriginCounts() {
         val parts: Gen<List<String>> = {
             listOf(
@@ -46,7 +46,7 @@ class WebGuiOriginTest {
         }
         forAll(parts) { (scheme, user, host, port, rest) ->
             val url = scheme + "://$user$host$port$rest"
-            val expected = scheme == "http" && user.isEmpty() && host == "127.0.0.1" && port == ":43210" && !rest.startsWith(":")
+            val expected = scheme == "https" && user.isEmpty() && host == "127.0.0.1" && port == ":43210" && !rest.startsWith(":")
             assertEquals(url, expected, onGui(url, origin))
         }
     }

@@ -140,7 +140,7 @@ class ConflictsTest {
 
     @Test
     fun theSummaryCountsCopiesWhileTheCoreRunsWithoutChangingTheState() {
-        val running = CoreState.Running(RestClient("127.0.0.1:1", "k"), "127.0.0.1:1", "ME", Credentials("k", "u", "p"))
+        val running = CoreState.Running(RestClient.plain("127.0.0.1:1", "k"), "127.0.0.1:1", "ME", Credentials("k", "u", "p"))
         val server = Device("SERVER1-X", name = "server")
         val s = Snapshot(
             loaded = true, myId = "ME", devices = listOf(server), folders = listOf(docs),
