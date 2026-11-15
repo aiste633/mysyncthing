@@ -119,14 +119,22 @@ object ProblemNotifications {
 
     /**
      * Android's memory limit ended the app (Android 17); the sticky service has started it again. Shown
-     * once per end (MemoryLimit.kt), with the memory it used and when.
+     * once per end (MemoryLimit.kt), with when and, if Android recorded it, the memory it used.
      */
     fun memoryLimit(base: Context, end: ProcessExit) {
         val context = base.inAppLanguage()
-        val at = time(Instant.ofEpochMilli(end.timestamp).atZone(ZoneId.systemDefault()), "jm")
-        // SI megabytes, as every size in the app; Android counts the resident set in KiB.
-        val text = text(R.string.problem_memory_limit, num(end.rssKb * 1024 / 1_000_000), at).resolve(context)
+        val text = memoryLimitText(end).resolve(context)
         notify(context, MEMORY_LIMIT_ID, context.getString(R.string.problem_memory_limit_title), text)
+    }
+
+    /**
+     * The memory-limit notice's text. SI megabytes, as every size in the app; Android counts the resident set
+     * in KiB. The limiter's own kills record 0 (PC run 15/11/2026, Android 17): then the text gives no amount.
+     */
+    internal fun memoryLimitText(end: ProcessExit, zone: ZoneId = ZoneId.systemDefault()): UiText {
+        val at = time(Instant.ofEpochMilli(end.timestamp).atZone(zone), "jm")
+        val mb = end.rssKb * 1024 / 1_000_000
+        return if (mb > 0) text(R.string.problem_memory_limit, num(mb), at) else text(R.string.problem_memory_limit_no_size, at)
     }
 
     /** A notice that opens the app; the app shows what to do. */

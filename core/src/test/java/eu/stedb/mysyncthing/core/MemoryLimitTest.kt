@@ -35,6 +35,18 @@ class MemoryLimitTest {
         assertNull(emptyList<ProcessExit>().newestMemoryLimitEnd(seenUntil = 0))
     }
 
+    // The notice gives the amount Android recorded; the limiter's own kills record 0, and then it gives none.
+    @Test
+    fun noticeAmountOnlyWhenRecorded() {
+        val zone = java.time.ZoneOffset.UTC
+        val at = time(java.time.Instant.ofEpochMilli(0).atZone(zone), "jm")
+        fun notice(rssKb: Long) = ProblemNotifications.memoryLimitText(ProcessExit(ApplicationExitInfo.REASON_OTHER, "MemoryLimiter:AnonSwap", 0, rssKb), zone)
+        assertEquals(text(R.string.problem_memory_limit, num(307L), at), notice(300_000))
+        assertEquals(text(R.string.problem_memory_limit_no_size, at), notice(0))
+        assertEquals(text(R.string.problem_memory_limit_no_size, at), notice(900))
+        assertEquals(text(R.string.problem_memory_limit, num(1L), at), notice(977))
+    }
+
     private val gib = 1L shl 30
 
     // Android 17's table (memory-limiter-config.xml), by MemTotal in MiB: the bounds of each tier.
