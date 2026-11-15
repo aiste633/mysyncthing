@@ -749,6 +749,10 @@
     <string name="device_id_check">Check it matches the other device</string>
     <string name="device_id_hint">Scan its QR code, paste it, or pick a nearby device</string>
     <string name="scan_qr_code">Scan QR code</string>
+    <!-- Scan QR code: under the camera picture -->
+    <string name="scan_hint">Point the camera at the QR code of the other device</string>
+    <!-- Scan QR code: over the black picture when the phone has no camera, another app holds it, or a policy turns it off -->
+    <string name="scan_failed">The camera could not be opened</string>
     <string name="name_optional">Name (optional)</string>
     <string name="device_nearby">Nearby on this network</string>
     <string name="device_nearby_tap">Tap to use</string>
@@ -1125,7 +1129,6 @@
     <string name="about_full_text">Full text</string>
     <!-- Library names: keep the names, translate only the words between them -->
     <string name="lib_androidx">AndroidX and Jetpack Compose</string>
-    <string name="lib_zxing">ZXing and ZXing Android Embedded</string>
     <string name="lib_syncthing">Syncthing and the Go libraries it uses</string>
     <string name="lib_syncthing_licence">MPL-2.0, with MIT, BSD and Apache-2.0 parts</string>
 

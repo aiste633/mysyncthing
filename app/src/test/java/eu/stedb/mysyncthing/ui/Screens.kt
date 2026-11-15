@@ -60,6 +60,9 @@ val screens = listOf(
     ScreenCase("device-own-windows") { DeviceScreen(Fixtures.heldByOwn, Fixtures.server, it, onBack = {}, onOpenNeeds = {}) },
     ScreenCase("device-never") { DeviceScreen(Fixtures.heldByOwn, Fixtures.tablet, it, onBack = {}, onOpenNeeds = {}) },
     ScreenCase("device-add") { DeviceEditScreen(snapshot, "", "", it, onBack = {}, onSave = { _, _, _ -> }) },
+    // Without a camera: the picture stays black, as on a phone whose camera another app holds.
+    ScreenCase("scan") { ScanLayout(failed = false, onBack = {}) {} },
+    ScreenCase("scan-failed") { ScanLayout(failed = true, onBack = {}) {} },
     ScreenCase("this-phone") { ThisPhoneScreen(snapshot, it, onBack = {}) },
     ScreenCase("settings") {
         SettingsScreen(it, snapshot, summary, core, PermissionState(LocalContext.current), {}, {}, {}, {}, {}, {}, {}, {})

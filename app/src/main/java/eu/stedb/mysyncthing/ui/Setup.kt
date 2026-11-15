@@ -127,7 +127,7 @@ class PermissionRequests(val notifications: () -> Unit, val localNetwork: () -> 
 fun rememberPermissionRequests(state: PermissionState): PermissionRequests {
     val context = LocalContext.current
     val notifications = rememberRuntimeRequest(
-        Manifest.permission.POST_NOTIFICATIONS, state,
+        Manifest.permission.POST_NOTIFICATIONS, onAnswer = state::refresh,
         settings = {
             Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
         },
@@ -135,7 +135,7 @@ fun rememberPermissionRequests(state: PermissionState): PermissionRequests {
         onGranted = { SyncthingService.refreshNotification() },
     )
     val localNetwork = rememberRuntimeRequest(
-        ACCESS_LOCAL_NETWORK, state,
+        ACCESS_LOCAL_NETWORK, onAnswer = state::refresh,
         settings = { Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri()) },
         // The app starts Syncthing once the checklist is gone (App), as after All files access.
         onGranted = {},
@@ -143,15 +143,18 @@ fun rememberPermissionRequests(state: PermissionState): PermissionRequests {
     return remember(notifications, localNetwork) { PermissionRequests(notifications, localNetwork) }
 }
 
-/** Asks for [permission]; once Android no longer asks (refused twice), opens the system page from [settings] instead. */
+/**
+ * Asks for [permission]; once Android no longer asks (refused twice), opens the system page from [settings] instead.
+ * [onAnswer] runs after every answer, [onGranted] after a yes (at once when it is granted already).
+ */
 @Composable
-private fun rememberRuntimeRequest(permission: String, state: PermissionState, settings: () -> Intent, onGranted: () -> Unit): () -> Unit {
+fun rememberRuntimeRequest(permission: String, settings: () -> Intent, onAnswer: () -> Unit = {}, onGranted: () -> Unit): () -> Unit {
     val context = LocalContext.current
     val activity = LocalActivity.current
     fun rationale() = activity?.shouldShowRequestPermissionRationale(permission) == true
     var rationaleBefore by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        state.refresh()
+        onAnswer()
         if (granted) onGranted()
         // No rationale before or after a refusal: Android did not show its prompt,
         // because it was refused twice before. Only the system page can grant it now.

@@ -46,7 +46,7 @@ ALLOWED = [
     (r"ui/Validation\.kt", r"Android"),
     (r"ui/FolderBrowser\.kt", r"DCIM/Camera|Pictures/Screenshots|DCIM/Screenshots|Pictures|Download|Documents|Music"),
     # Names of libraries and licences.
-    (r"ui/AboutScreen\.kt", r"Apache-2\.0|Apache License 2\.0|Kotlin, kotlinx\..*|OkHttp, Okio"),
+    (r"ui/AboutScreen\.kt", r"Apache-2\.0|Apache License 2\.0|Kotlin, kotlinx\..*|OkHttp, Okio|ZXing"),
     # Date patterns, made locale-aware separately.
     (r"ui/Format\.kt", r"d MMM( yyyy)?(, HH:mm)?"),
     # HTTP protocol words.

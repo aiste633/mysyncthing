@@ -216,6 +216,7 @@ type pom struct {
 // POM licence names (lower case) to SPDX ids.
 var pomLicenses = map[string]string{
 	"apache-2.0":                               "Apache-2.0",
+	"apache 2.0":                               "Apache-2.0",
 	"the apache license, version 2.0":          "Apache-2.0",
 	"the apache software license, version 2.0": "Apache-2.0",
 	"apache license, version 2.0":              "Apache-2.0",

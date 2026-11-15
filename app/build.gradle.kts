@@ -92,7 +92,12 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.webkit)
-    implementation(libs.zxing.embedded)
+    // The QR scanner (ui/ScanScreen.kt): CameraX shows the camera and hands over its pictures, ZXing reads
+    // them; ZXing also draws the code of Show ID (ui/Qr.kt).
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.androidx.camera.lifecycle)
+    implementation(libs.androidx.camera.compose)
+    implementation(libs.zxing.core)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
     testImplementation(platform(libs.compose.bom))

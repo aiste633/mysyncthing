@@ -595,6 +595,8 @@
     <string name="device_id_check">Prüfen Sie, ob sie mit dem anderen Gerät übereinstimmt</string>
     <string name="device_id_hint">QR-Code scannen, einfügen oder ein Gerät in der Nähe wählen</string>
     <string name="scan_qr_code">QR-Code scannen</string>
+    <string name="scan_hint">Richten Sie die Kamera auf den QR-Code des anderen Geräts</string>
+    <string name="scan_failed">Die Kamera konnte nicht geöffnet werden</string>
     <string name="name_optional">Name (optional)</string>
     <string name="device_nearby">In der Nähe in diesem Netzwerk</string>
     <string name="device_nearby_tap">Zum Verwenden tippen</string>
@@ -890,7 +892,6 @@
     <string name="about_licences_hint">Von der App genutzte Bibliotheken</string>
     <string name="about_full_text">Volltext</string>
     <string name="lib_androidx">AndroidX und Jetpack Compose</string>
-    <string name="lib_zxing">ZXing und ZXing Android Embedded</string>
     <string name="lib_syncthing">Syncthing und die von ihm genutzten Go-Bibliotheken</string>
     <string name="lib_syncthing_licence">MPL-2.0, mit Teilen unter MIT, BSD und Apache-2.0</string>
 

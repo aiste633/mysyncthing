@@ -38,7 +38,7 @@ private val LIBRARIES = listOf(
     text(R.string.lib_androidx) to raw("Apache-2.0"),
     raw("Kotlin, kotlinx.coroutines, kotlinx.serialization") to raw("Apache-2.0"),
     raw("OkHttp, Okio") to raw("Apache-2.0"),
-    text(R.string.lib_zxing) to raw("Apache-2.0"),
+    raw("ZXing") to raw("Apache-2.0"),
     text(R.string.lib_syncthing) to text(R.string.lib_syncthing_licence),
 )
 

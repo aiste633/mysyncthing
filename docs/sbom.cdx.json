@@ -205,6 +205,172 @@
     },
     {
       "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera.featurecombinationquery/featurecombinationquery@1.6.2?type=aar",
+      "group": "androidx.camera.featurecombinationquery",
+      "name": "featurecombinationquery",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "2321cfd29678e3128284d1622bb6b06e0fecd2c2e69140471ab00e8616e622c2"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera.featurecombinationquery/featurecombinationquery@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera.viewfinder/viewfinder-compose@1.6.2?type=aar",
+      "group": "androidx.camera.viewfinder",
+      "name": "viewfinder-compose",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "99380a2f0060dc8ea4964cee031da652392c72b4fe9afdc9f8e63edeaddb5bec"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera.viewfinder/viewfinder-compose@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera.viewfinder/viewfinder-core@1.6.2?type=aar",
+      "group": "androidx.camera.viewfinder",
+      "name": "viewfinder-core",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e5271d1afa8062794464655e5031fb2532275b4a7d65648a6354a8a6b958550d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera.viewfinder/viewfinder-core@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera/camera-camera2@1.6.2?type=aar",
+      "group": "androidx.camera",
+      "name": "camera-camera2",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "5a55014ed96feda81a37799faf9f96150025a4434699d55caa1cdebf2ae07e20"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera/camera-camera2@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera/camera-camera2-pipe@1.6.2?type=aar",
+      "group": "androidx.camera",
+      "name": "camera-camera2-pipe",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b357bd94fd4273ff88f453f7e712a22e100adc932324fc6b51fbe9ef9cf45515"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera/camera-camera2-pipe@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera/camera-compose@1.6.2?type=aar",
+      "group": "androidx.camera",
+      "name": "camera-compose",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "575f20d727fd25a41d984bff6ae1f5855ffb2262cfc089e06d32639c17e07654"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera/camera-compose@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera/camera-core@1.6.2?type=aar",
+      "group": "androidx.camera",
+      "name": "camera-core",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "ebd66f090414f4c12f23a55b5023aeee1b096da8a06c02a0b6fb3520c4ddadf6"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0 AND BSD-3-Clause"
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera/camera-core@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.camera/camera-lifecycle@1.6.2?type=aar",
+      "group": "androidx.camera",
+      "name": "camera-lifecycle",
+      "version": "1.6.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "b7b701a3c6838bc7c4acd1372140e889fdf9681bf833ebfc638fdbe28ed5fa32"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.camera/camera-lifecycle@1.6.2?type=aar"
+    },
+    {
+      "type": "library",
       "bom-ref": "pkg:maven/androidx.collection/collection-jvm@1.6.0",
       "group": "androidx.collection",
       "name": "collection-jvm",
@@ -667,6 +833,27 @@
     },
     {
       "type": "library",
+      "bom-ref": "pkg:maven/androidx.concurrent/concurrent-futures-ktx@1.1.0",
+      "group": "androidx.concurrent",
+      "name": "concurrent-futures-ktx",
+      "version": "1.1.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1968bf52039e38636aa6f114cd17d7256919d1e8997417716fef9d1da1f24d85"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.concurrent/concurrent-futures-ktx@1.1.0"
+    },
+    {
+      "type": "library",
       "bom-ref": "pkg:maven/androidx.core/core@1.19.1?type=aar",
       "group": "androidx.core",
       "name": "core",
@@ -685,6 +872,27 @@
         }
       ],
       "purl": "pkg:maven/androidx.core/core@1.19.1?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.core/core-backported-fixes@1.0.0?type=aar",
+      "group": "androidx.core",
+      "name": "core-backported-fixes",
+      "version": "1.0.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "874722634db5f60745ab2f64d734dd81d3ee4eb71f175263e6565dabea54713d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.core/core-backported-fixes@1.0.0?type=aar"
     },
     {
       "type": "library",
@@ -919,6 +1127,27 @@
     },
     {
       "type": "library",
+      "bom-ref": "pkg:maven/androidx.exifinterface/exifinterface@1.4.2?type=aar",
+      "group": "androidx.exifinterface",
+      "name": "exifinterface",
+      "version": "1.4.2",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "6bb2b68682a2023c55f35f941444ffea0157947b061e4fd7606ba935e2e77425"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.exifinterface/exifinterface@1.4.2?type=aar"
+    },
+    {
+      "type": "library",
       "bom-ref": "pkg:maven/androidx.graphics/graphics-path@1.0.1?type=aar",
       "group": "androidx.graphics",
       "name": "graphics-path",
@@ -1003,6 +1232,27 @@
     },
     {
       "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1bc28e40e06ff5e0478b9276ca6287ce6993415b70910745ac916b14dec9b72f"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-livedata@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
       "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
       "group": "androidx.lifecycle",
       "name": "lifecycle-livedata-core",
@@ -1021,6 +1271,27 @@
         }
       ],
       "purl": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core-ktx@2.11.0?type=aar",
+      "group": "androidx.lifecycle",
+      "name": "lifecycle-livedata-core-ktx",
+      "version": "2.11.0",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "408fac99b61a7ca9d0620f4f24891f85c14ee007cfd027abc3df759a31b0086a"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core-ktx@2.11.0?type=aar"
     },
     {
       "type": "library",
@@ -1444,6 +1715,27 @@
     },
     {
       "type": "library",
+      "bom-ref": "pkg:maven/androidx.tracing/tracing-ktx@2.0.1?type=aar",
+      "group": "androidx.tracing",
+      "name": "tracing-ktx",
+      "version": "2.0.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "65b9f5d4ebbc7c286379d0dd9d70c68b1ed68c7452c22541f501e8467c31282d"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/androidx.tracing/tracing-ktx@2.0.1?type=aar"
+    },
+    {
+      "type": "library",
       "bom-ref": "pkg:maven/androidx.versionedparcelable/versionedparcelable@1.1.1?type=aar",
       "group": "androidx.versionedparcelable",
       "name": "versionedparcelable",
@@ -1528,6 +1820,48 @@
     },
     {
       "type": "library",
+      "bom-ref": "pkg:maven/com.google.auto.value/auto-value-annotations@1.6.3",
+      "group": "com.google.auto.value",
+      "name": "auto-value-annotations",
+      "version": "1.6.3",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "0e951fee8c31f60270bc46553a8586001b7b93dbb12aec06373aa99a150392c0"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.google.auto.value/auto-value-annotations@1.6.3"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/com.google.dagger/dagger@2.59",
+      "group": "com.google.dagger",
+      "name": "dagger",
+      "version": "2.59",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "94d5b23812cc12fa903c9ac4a42978e7e7b2622e6b51c17f8b12037ceece43cd"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/com.google.dagger/dagger@2.59"
+    },
+    {
+      "type": "library",
       "bom-ref": "pkg:maven/com.google.guava/listenablefuture@1.0",
       "group": "com.google.guava",
       "name": "listenablefuture",
@@ -1549,14 +1883,14 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:maven/com.google.zxing/core@3.4.1",
+      "bom-ref": "pkg:maven/com.google.zxing/core@3.5.4",
       "group": "com.google.zxing",
       "name": "core",
-      "version": "3.4.1",
+      "version": "3.5.4",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "acfa30338c26267b6cab665509c2251bb96e8350bfcad89d59b949ba77011f8d"
+          "content": "71de5d89341b5fcf5dd89da7f44e84d825d0e084cdf3ec77c9abe26b0f0ceb13"
         }
       ],
       "licenses": [
@@ -1566,28 +1900,7 @@
           }
         }
       ],
-      "purl": "pkg:maven/com.google.zxing/core@3.4.1"
-    },
-    {
-      "type": "library",
-      "bom-ref": "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar",
-      "group": "com.journeyapps",
-      "name": "zxing-android-embedded",
-      "version": "4.3.0",
-      "hashes": [
-        {
-          "alg": "SHA-256",
-          "content": "4ab03353127c34e55cbb80fbc9a34031decbcfb1ec5e8f991944d2d494621a33"
-        }
-      ],
-      "licenses": [
-        {
-          "license": {
-            "id": "Apache-2.0"
-          }
-        }
-      ],
-      "purl": "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar"
+      "purl": "pkg:maven/com.google.zxing/core@3.5.4"
     },
     {
       "type": "library",
@@ -1630,6 +1943,48 @@
         }
       ],
       "purl": "pkg:maven/com.squareup.okio/okio-jvm@3.18.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/jakarta.inject/jakarta.inject-api@2.0.1",
+      "group": "jakarta.inject",
+      "name": "jakarta.inject-api",
+      "version": "2.0.1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "f7dc98062fccf14126abb751b64fab12c312566e8cbdc8483598bffcea93af7c"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/jakarta.inject/jakarta.inject-api@2.0.1"
+    },
+    {
+      "type": "library",
+      "bom-ref": "pkg:maven/javax.inject/javax.inject@1",
+      "group": "javax.inject",
+      "name": "javax.inject",
+      "version": "1",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "91c77044a50c481636c32d916fd89c9118a72195390452c81065080f957de7ff"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:maven/javax.inject/javax.inject@1"
     },
     {
       "type": "library",
@@ -3638,6 +3993,9 @@
         "pkg:golang/golang.org/x/sys@v0.49.0",
         "pkg:golang/stdlib@1.26.11",
         "pkg:maven/androidx.activity/activity-compose@1.13.0?type=aar",
+        "pkg:maven/androidx.camera/camera-camera2@1.6.2?type=aar",
+        "pkg:maven/androidx.camera/camera-compose@1.6.2?type=aar",
+        "pkg:maven/androidx.camera/camera-lifecycle@1.6.2?type=aar",
         "pkg:maven/androidx.compose.material/material-icons-extended-android@1.7.8?type=aar",
         "pkg:maven/androidx.compose.material3/material3-android@1.4.0?type=aar",
         "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
@@ -3649,7 +4007,7 @@
         "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-compose-android@2.11.0?type=aar",
         "pkg:maven/androidx.navigation/navigation-compose-android@2.10.2?type=aar",
         "pkg:maven/androidx.webkit/webkit@1.18.0?type=aar",
-        "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar",
+        "pkg:maven/com.google.zxing/core@3.5.4",
         "pkg:maven/com.squareup.okhttp3/okhttp-android@5.5.1?type=aar",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
         "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
@@ -4027,6 +4385,132 @@
       ]
     },
     {
+      "ref": "pkg:maven/androidx.camera.featurecombinationquery/featurecombinationquery@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/com.google.auto.value/auto-value-annotations@1.6.3",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.camera.viewfinder/viewfinder-compose@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.camera.viewfinder/viewfinder-core@1.6.2?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-geometry-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-graphics-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-unit-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-util-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.camera.viewfinder/viewfinder-core@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.tracing/tracing-ktx@2.0.1?type=aar",
+        "pkg:maven/com.google.auto.value/auto-value-annotations@1.6.3",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/atomicfu-jvm@0.28.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.camera/camera-camera2-pipe@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.camera.featurecombinationquery/featurecombinationquery@1.6.2?type=aar",
+        "pkg:maven/com.google.dagger/dagger@2.59",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/atomicfu-jvm@0.28.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.camera/camera-camera2@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.arch.core/core-common@2.2.0",
+        "pkg:maven/androidx.camera/camera-camera2-pipe@1.6.2?type=aar",
+        "pkg:maven/androidx.camera/camera-core@1.6.2?type=aar",
+        "pkg:maven/androidx.concurrent/concurrent-futures-ktx@1.1.0",
+        "pkg:maven/androidx.core/core-backported-fixes@1.0.0?type=aar",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
+        "pkg:maven/com.google.dagger/dagger@2.59",
+        "pkg:maven/com.google.guava/listenablefuture@1.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/atomicfu-jvm@0.28.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.camera/camera-compose@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.camera.viewfinder/viewfinder-compose@1.6.2?type=aar",
+        "pkg:maven/androidx.camera.viewfinder/viewfinder-core@1.6.2?type=aar",
+        "pkg:maven/androidx.camera/camera-core@1.6.2?type=aar",
+        "pkg:maven/androidx.compose.foundation/foundation-layout-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.runtime/runtime-android@1.12.1?type=aar",
+        "pkg:maven/androidx.compose.ui/ui-android@1.12.1?type=aar",
+        "pkg:maven/androidx.core/core-ktx@1.19.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.camera/camera-core@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.arch.core/core-common@2.2.0",
+        "pkg:maven/androidx.concurrent/concurrent-futures-ktx@1.1.0",
+        "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0",
+        "pkg:maven/androidx.core/core-backported-fixes@1.0.0?type=aar",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.exifinterface/exifinterface@1.4.2?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-livedata@2.11.0?type=aar",
+        "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar",
+        "pkg:maven/com.google.auto.value/auto-value-annotations@1.6.3",
+        "pkg:maven/com.google.guava/listenablefuture@1.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.camera/camera-lifecycle@1.6.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-experimental@1.4.1?type=aar",
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/androidx.arch.core/core-common@2.2.0",
+        "pkg:maven/androidx.camera/camera-core@1.6.2?type=aar",
+        "pkg:maven/androidx.concurrent/concurrent-futures-ktx@1.1.0",
+        "pkg:maven/androidx.core/core@1.19.1?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
+        "pkg:maven/androidx.tracing/tracing-ktx@2.0.1?type=aar",
+        "pkg:maven/com.google.auto.value/auto-value-annotations@1.6.3",
+        "pkg:maven/com.google.guava/listenablefuture@1.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
       "ref": "pkg:maven/androidx.collection/collection-jvm@1.6.0",
       "dependsOn": [
         "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
@@ -4287,10 +4771,25 @@
       ]
     },
     {
+      "ref": "pkg:maven/androidx.concurrent/concurrent-futures-ktx@1.1.0",
+      "dependsOn": [
+        "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0"
+      ]
+    },
+    {
       "ref": "pkg:maven/androidx.concurrent/concurrent-futures@1.1.0",
       "dependsOn": [
         "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
         "pkg:maven/com.google.guava/listenablefuture@1.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.core/core-backported-fixes@1.0.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
       ]
     },
     {
@@ -4402,6 +4901,13 @@
       ]
     },
     {
+      "ref": "pkg:maven/androidx.exifinterface/exifinterface@1.4.2?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
       "ref": "pkg:maven/androidx.graphics/graphics-path@1.0.1?type=aar",
       "dependsOn": [
         "pkg:maven/androidx.core/core@1.19.1?type=aar",
@@ -4431,12 +4937,31 @@
       ]
     },
     {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core-ktx@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
       "ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
       "dependsOn": [
         "pkg:maven/androidx.arch.core/core-common@2.2.0",
         "pkg:maven/androidx.arch.core/core-runtime@2.2.0?type=aar",
         "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
+      "ref": "pkg:maven/androidx.lifecycle/lifecycle-livedata@2.11.0?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.arch.core/core-common@2.2.0",
+        "pkg:maven/androidx.arch.core/core-runtime@2.2.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-livedata-core-ktx@2.11.0?type=aar",
+        "pkg:maven/androidx.lifecycle/lifecycle-livedata-core@2.11.0?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
         "pkg:maven/org.jspecify/jspecify@1.0.0"
       ]
     },
@@ -4681,6 +5206,13 @@
       ]
     },
     {
+      "ref": "pkg:maven/androidx.tracing/tracing-ktx@2.0.1?type=aar",
+      "dependsOn": [
+        "pkg:maven/androidx.tracing/tracing-android@2.0.1?type=aar",
+        "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
+      ]
+    },
+    {
       "ref": "pkg:maven/androidx.versionedparcelable/versionedparcelable@1.1.1?type=aar",
       "dependsOn": [
         "pkg:maven/androidx.annotation/annotation-jvm@1.10.0",
@@ -4716,16 +5248,21 @@
       ]
     },
     {
+      "ref": "pkg:maven/com.google.auto.value/auto-value-annotations@1.6.3"
+    },
+    {
+      "ref": "pkg:maven/com.google.dagger/dagger@2.59",
+      "dependsOn": [
+        "pkg:maven/jakarta.inject/jakarta.inject-api@2.0.1",
+        "pkg:maven/javax.inject/javax.inject@1",
+        "pkg:maven/org.jspecify/jspecify@1.0.0"
+      ]
+    },
+    {
       "ref": "pkg:maven/com.google.guava/listenablefuture@1.0"
     },
     {
-      "ref": "pkg:maven/com.google.zxing/core@3.4.1"
-    },
-    {
-      "ref": "pkg:maven/com.journeyapps/zxing-android-embedded@4.3.0?type=aar",
-      "dependsOn": [
-        "pkg:maven/com.google.zxing/core@3.4.1"
-      ]
+      "ref": "pkg:maven/com.google.zxing/core@3.5.4"
     },
     {
       "ref": "pkg:maven/com.squareup.okhttp3/okhttp-android@5.5.1?type=aar",
@@ -4741,6 +5278,12 @@
       "dependsOn": [
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
       ]
+    },
+    {
+      "ref": "pkg:maven/jakarta.inject/jakarta.inject-api@2.0.1"
+    },
+    {
+      "ref": "pkg:maven/javax.inject/javax.inject@1"
     },
     {
       "ref": "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",

@@ -15,12 +15,13 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - Known upstream bugs, tracked here: #80 (three devices, one edit lost in a same-second conflict), #15 and #23 (trash can versioning), #95 (a data race in the folder watcher; because of it CI runs the bridge tests without the race detector).
 - On `main`, not released yet: the app's own mark (one line with an arrow up and an arrow down, white on #0891D1) as launcher icon, themed icon, widget and top bar mark, store icon, and as the small icon of the service notification; the widget preview in dark mode. See "App mark" in docs/dev-notes.md.
 - A whole-project review on 2026-11-14 found no serious defect. Its hardening batch is on `main` for the next release (see "Hardening batch" in the dev notes): REST calls never use the system proxy, the signing script checks the build provenance before it signs, masked fields always get a password keyboard, cancelled work no longer reads as failed, the core names the app as its wrapper, Android offers to keep the app's data at uninstall, a private build directory under `/tmp`, Gradle repository content filters, key material and MAC addresses in the leak check.
+- On branch `claude/project-thread-koyr9g` (2026-11-15, not yet tested): the QR scanner is an app screen on CameraX 1.6.2 + ZXing core 3.5.4; zxing-android-embedded and its CaptureActivity are gone (review item A14). Next there: unit and screen tests (record the two new `scan` screenshots), the e2e run on API 35, 36 and 37, the manual walk with a real code on the emulator camera, then `docs/testing.md` (the old "scanner closes on reopen" note). See "QR scanner on CameraX" in the dev notes.
 - On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps.
 
 ## Next
 1. TLS on the loopback API with the core's own certificate pinned (OkHttp and the WebView), its own pull request.
 2. README reworked around features, screenshots in dark mode, a Caveats section.
-3. Each waits for the user's go: `BootReceiver` not exported; a soft memory limit for the Go core as an advanced setting; CameraX instead of the old barcode scanner library.
+3. Each waits for the user's go: `BootReceiver` not exported; a soft memory limit for the Go core as an advanced setting.
 4. F-Droid inclusion request on or after 2027-01-24.
 5. Later: action major bumps and Go 1.27 (issue #92), a newer runner image once it is out of preview (the upkeep check lists it), OpenSSF Scorecard, crash capture, issue forms. The race detector in CI once upstream has fixed #95.
 
@@ -100,3 +101,4 @@ The long notes are in [docs/dev-notes.md](docs/dev-notes.md):
 - Network tests (2026-11-13)
 - This phone card keeps its height (2026-11-14, for the release after 0.4.0)
 - Hardening batch (2026-11-14)
+- QR scanner on CameraX (2026-11-15)

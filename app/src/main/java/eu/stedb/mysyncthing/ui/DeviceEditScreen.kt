@@ -1,6 +1,8 @@
 package eu.stedb.mysyncthing.ui
 
-import androidx.activity.compose.rememberLauncherForActivityResult
+import android.Manifest
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,10 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.journeyapps.barcodescanner.ScanContract
-import com.journeyapps.barcodescanner.ScanOptions
+import androidx.core.net.toUri
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.Discovered
 import eu.stedb.mysyncthing.core.Folder
@@ -51,7 +53,13 @@ fun DeviceEditScreen(
     var name by rememberSaveable { mutableStateOf(initialName) }
     var share by rememberSaveable { mutableStateOf(emptyList<String>()) }
     val isRequest = initialId.isNotEmpty()
-    val scan = rememberLauncherForActivityResult(ScanContract()) { r -> r.contents?.let { id = it.trim() } }
+    val context = LocalContext.current
+    // The scanner takes the form's place and gives it back with what it read; the form's values stay.
+    var scanning by rememberSaveable { mutableStateOf(false) }
+    val scan = rememberRuntimeRequest(
+        Manifest.permission.CAMERA,
+        settings = { Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, "package:${context.packageName}".toUri()) },
+    ) { scanning = true }
     val canonical = deviceId(id)
     val known = canonical != null && (s.devices.any { it.deviceID == canonical } || s.myId == canonical)
     val valid = canonical != null && !known && textError(name) == null
@@ -69,7 +77,8 @@ fun DeviceEditScreen(
 
     val back = rememberDiscardGuard(id != initialId || name != initialName || share.isNotEmpty(), onBack)
 
-    AppScreen(
+    if (scanning) ScanScreen(onResult = { id = it.trim(); scanning = false }, onBack = { scanning = false })
+    else AppScreen(
         title = if (isRequest) stringResource(R.string.device_add_named, initialName.ifEmpty { shortId(initialId) }) else stringResource(R.string.devices_add),
         onBack = back,
         actions = {
@@ -94,12 +103,7 @@ fun DeviceEditScreen(
                         },
                         hint = stringResource(if (isRequest) R.string.device_id_check else R.string.device_id_hint),
                         trailingIcon = {
-                            if (!isRequest) IconButton(onClick = {
-                                scan.launch(
-                                    ScanOptions().setDesiredBarcodeFormats(ScanOptions.QR_CODE).setBeepEnabled(false).setOrientationLocked(false)
-                                        .setCaptureActivity(ScanActivity::class.java),
-                                )
-                            }) { Icon(Icons.Default.QrCodeScanner, stringResource(R.string.scan_qr_code)) }
+                            if (!isRequest) IconButton(onClick = scan) { Icon(Icons.Default.QrCodeScanner, stringResource(R.string.scan_qr_code)) }
                         },
                         modifier = Modifier.fillMaxWidth(),
                     )
