@@ -100,7 +100,7 @@ object SyncStatus {
             coroutineScope {
                 launch {
                     for (r in refresh) {
-                        runCatching { load(client) }.onSuccess { fresh ->
+                        runSuspendCatching { load(client) }.onSuccess { fresh ->
                             _snapshot.update { fresh.copy(pause = it.pause, conflicts = it.conflicts) }
                             conflictWork.trySend(ConflictWork.Folders(fresh.folders))
                         }
@@ -136,7 +136,7 @@ object SyncStatus {
                         if (SystemClock.elapsedRealtime() - errorsAt > ERRORS_EVERY_MS) {
                             errorsAt = SystemClock.elapsedRealtime()
                             // Not via the catch below: that would rewind the event cursor.
-                            runCatching { client.systemErrors() }.onSuccess { errors ->
+                            runSuspendCatching { client.systemErrors() }.onSuccess { errors ->
                                 _snapshot.update { if (it.loaded) it.copy(systemErrors = errors) else it }
                             }
                         }
@@ -172,15 +172,15 @@ object SyncStatus {
         val connections = async { c.connections().connections }
         val pendingDevices = async { c.pendingDevices() }
         val pendingFolders = async { c.pendingFolders() }
-        val errors = async { runCatching { c.systemErrors() }.getOrDefault(emptyList()) }
+        val errors = async { runSuspendCatching { c.systemErrors() }.getOrDefault(emptyList()) }
         val options = async { c.options() }
-        val stats = async { runCatching { c.deviceStats() }.getOrDefault(emptyMap()) }
+        val stats = async { runSuspendCatching { c.deviceStats() }.getOrDefault(emptyMap()) }
         val me = myId.await()
         val folderList = folders.await()
         val allDevices = devices.await()
         val deviceList = allDevices.filter { it.deviceID != me }
-        val status = folderList.map { f -> async { f.id to runCatching { c.folderStatus(f.id) }.getOrDefault(FolderStatus()) } }
-        val completion = deviceList.map { d -> async { d.deviceID to runCatching { c.completion(d.deviceID) }.getOrDefault(Completion()) } }
+        val status = folderList.map { f -> async { f.id to runSuspendCatching { c.folderStatus(f.id) }.getOrDefault(FolderStatus()) } }
+        val completion = deviceList.map { d -> async { d.deviceID to runSuspendCatching { c.completion(d.deviceID) }.getOrDefault(Completion()) } }
         Snapshot(
             loaded = true,
             myId = me,

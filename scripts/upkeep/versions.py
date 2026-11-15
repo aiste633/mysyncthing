@@ -5,7 +5,8 @@ reports those within a day. This keeps the rest from going stale.
 
 Checked: Syncthing, the Go toolchain (newest patch of our line, and a newer line), the Go
 modules the bridge chooses itself, Gradle, the NDK, every versioned entry of
-gradle/libs.versions.toml, the pinned GitHub Actions, zizmor and osv-scanner.
+gradle/libs.versions.toml, the pinned GitHub Actions and the runner image they run on, the
+tools the workflows install with go install (govulncheck, staticcheck), zizmor and osv-scanner.
 Not checked: compileSdk/targetSdk (raised by hand, with Android's behaviour changes), JDK 21
 (LTS), Go modules that come with Syncthing (bumped with it).
 
@@ -62,8 +63,8 @@ def newest(versions):
 def tags(repo, prefix="v"):
     out = subprocess.run(["git", "ls-remote", "--tags", "--refs", f"https://github.com/{repo}.git"],
                          check=True, capture_output=True, text=True).stdout
-    return [line.rsplit("/", 1)[1][len(prefix):] for line in out.splitlines()
-            if line.rsplit("/", 1)[1].startswith(prefix)]
+    names = [line.split("refs/tags/", 1)[1] for line in out.splitlines()]
+    return [name[len(prefix):] for name in names if name.startswith(prefix)]
 
 
 def maven(group, artifact):
@@ -142,6 +143,24 @@ def checks(root):
             pinned.setdefault(m.group(1), m.group(2))
     for action, version in sorted(pinned.items()):
         yield action, version, newest(tags(action)), "commit hash in `.github/workflows/` (README)"
+    tools = {}
+    for workflow in sorted((root / ".github/workflows").glob("*.yml")):
+        for module, version in re.findall(r"go install (\S+)@v(\d\S*)", workflow.read_text()):
+            tools.setdefault(module, version)
+    for module, version in sorted(tools.items()):
+        # The module is the longest prefix of the command's path that the proxy knows.
+        parts = module.split("/")
+        latest = next(v for n in range(len(parts), 0, -1)
+                      if (v := fetch(f"https://proxy.golang.org/{'/'.join(parts[:n])}/@latest", missing_ok=True)))
+        yield parts[-1], version, json.loads(latest)["Version"].removeprefix("v"), \
+            "`go install` in `.github/workflows/`"
+    # Pinned, so a new image never arrives unannounced; its tags are ubuntu24/20261105.1.
+    images = {m for w in (root / ".github/workflows").glob("*.yml")
+              for m in re.findall(r"runs-on: ubuntu-(\d+\.\d+)", w.read_text())}
+    for image in sorted(images, key=key):
+        yield "GitHub runner image (Ubuntu)", image, \
+            newest(f"{m}.04" for t in tags("actions/runner-images", "ubuntu") if (m := t.split("/")[0]).isdigit()), \
+            "`runs-on:` in every workflow, once it is out of preview"
 
     zizmor = re.search(r"^zizmor==(\S+)", (root / "scripts/zizmor-requirements.txt").read_text(), re.M).group(1)
     yield "zizmor", zizmor, json.loads(fetch("https://pypi.org/pypi/zizmor/json"))["info"]["version"], \

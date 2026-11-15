@@ -31,7 +31,9 @@ so please update before reporting.
 ## Checking a release
 
 - Builds are reproducible: building the release tag gives a byte-identical APK (see [README](README.md#reproducible-builds-and-releases)).
-- Each release APK and its SBOM carry a signed build provenance attestation: `gh attestation verify mysyncthing-<version>.apk --repo aiste633/mysyncthing`.
+- Each release's build and its SBOM carry a signed build provenance attestation. The APK you download is that build plus our signature,
+  so it is checked in two steps, as in [Verify a release](README.md#verify-a-release): `gh attestation verify` on the tag built by you, then
+  `apksigcopier compare` against the download. The SBOM is checked as it is: `gh attestation verify mysyncthing-<version>-sbom.cdx.json --repo aiste633/mysyncthing`.
 - Everything the APK contains is listed in the [software bill of materials](docs/sbom.md).
 
 How the app handles your data: [privacy](docs/privacy.md).

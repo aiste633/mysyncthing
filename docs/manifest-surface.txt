@@ -4,7 +4,7 @@
 activity com.journeyapps.barcodescanner.CaptureActivity exported=default
 activity eu.stedb.mysyncthing.MainActivity exported=true actions=android.intent.action.MAIN
 activity eu.stedb.mysyncthing.ui.ScanActivity exported=false
-application allowBackup=false dataExtractionRules=@xml/data_extraction_rules fullBackupContent=- networkSecurityConfig=@xml/network_security_config usesCleartextTraffic=- debuggable=- requestLegacyExternalStorage=-
+application allowBackup=false dataExtractionRules=@xml/data_extraction_rules fullBackupContent=- hasFragileUserData=true networkSecurityConfig=@xml/network_security_config usesCleartextTraffic=- debuggable=- requestLegacyExternalStorage=-
 application meta-data android.webkit.WebView.EnableSafeBrowsing=false
 application meta-data android.webkit.WebView.MetricsOptOut=true
 permission android.permission.ACCESS_LOCAL_NETWORK

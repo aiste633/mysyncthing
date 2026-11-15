@@ -5,6 +5,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,7 +28,10 @@ internal fun shownProblem(text: String, limit: Limit, error: UiText?, readOnly: 
 /**
  * A text field with its length [limit]. [error] is the field's own problem to
  * show now (null while there is none or it isn't shown yet), [hint] the text
- * under the field otherwise.
+ * under the field otherwise. [passwordShown] makes it a password field (null: it is
+ * none): masked unless true, and always typed on a password keyboard, which neither
+ * suggests nor learns it. Masking is only done here, so no masked field goes without
+ * that keyboard (InputLimitTest).
  */
 @Composable
 fun TextInput(
@@ -44,7 +49,7 @@ fun TextInput(
     readOnly: Boolean = false,
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
+    passwordShown: Boolean? = null,
     leadingIcon: (@Composable () -> Unit)? = null,
     trailingIcon: (@Composable () -> Unit)? = null,
 ) {
@@ -53,10 +58,14 @@ fun TextInput(
         value, onValueChange, modifier, enabled = enabled, readOnly = readOnly, label = labelContent,
         placeholder = placeholder?.let { { Text(it) } },
         isError = shown != null, supportingText = (shown ?: hint)?.let { { Text(it) } },
-        singleLine = singleLine, minLines = minLines, keyboardOptions = keyboardOptions,
-        visualTransformation = visualTransformation, leadingIcon = leadingIcon, trailingIcon = trailingIcon,
+        singleLine = singleLine, minLines = minLines,
+        keyboardOptions = if (passwordShown != null) PasswordKeyboard else keyboardOptions,
+        visualTransformation = if (passwordShown == false) PasswordVisualTransformation() else VisualTransformation.None,
+        leadingIcon = leadingIcon, trailingIcon = trailingIcon,
     )
 }
+
+private val PasswordKeyboard = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)
 
 /** [TextInput] for text edited with its selection, such as a folder's name or the ignore patterns. */
 @Composable

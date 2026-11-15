@@ -34,7 +34,7 @@ def summary(manifest):
     app = root.find("application")
     lines = []
     lines.append("application " + " ".join(f"{n}={attr(app, n)}" for n in (
-        "allowBackup", "dataExtractionRules", "fullBackupContent", "networkSecurityConfig",
+        "allowBackup", "dataExtractionRules", "fullBackupContent", "hasFragileUserData", "networkSecurityConfig",
         "usesCleartextTraffic", "debuggable", "requestLegacyExternalStorage")))
     for md in app.findall("meta-data"):
         lines.append(f"application meta-data {attr(md, 'name')}={attr(md, 'value', attr(md, 'resource'))}")

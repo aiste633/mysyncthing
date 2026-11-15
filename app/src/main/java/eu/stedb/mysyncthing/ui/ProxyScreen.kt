@@ -22,8 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import eu.stedb.mysyncthing.R
@@ -109,8 +107,7 @@ private fun ProxyForm(initial: ProxySettings, running: Boolean, save: suspend (P
                         TextInput(
                             password, { password = it }, Limits.PROXY_CREDENTIAL, Modifier.fillMaxWidth(), label = stringResource(R.string.password_optional),
                             error = passwordError, hint = httpPasswordNote(type, password)?.asString(),
-                            visualTransformation = if (show) VisualTransformation.None else PasswordVisualTransformation(),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false),
+                            passwordShown = show,
                             trailingIcon = {
                                 PasswordVisibilityButton(show) { show = !show }
                             },

@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -50,6 +50,12 @@ jobs:
       - name: Go bridge tests
         working-directory: go/bridge
         run: go vet . && go test .
+      # Pinned by version; go install checks it against the Go checksum database.
+      - name: Go bridge static analysis
+        working-directory: go/bridge
+        run: |
+          go install honnef.co/go/tools/cmd/staticcheck@v0.8.2
+          "$(go env GOPATH)/bin/staticcheck" .
       - name: Build, unit tests, screen tests, lint
         # :core is never bundled as an AAR (it embeds the local Go AAR), so build via :app.
         # verifyRoborazziDebug runs the unit tests with the screenshots compared to app/src/test/screenshots.
@@ -73,7 +79,7 @@ jobs:
   # The committed SBOM (docs/sbom.*) must match what the dependencies are now. Its own job:
   # read-only, no secrets, and the SBOM tools never run in the build that makes the APK.
   sbom:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -97,7 +103,7 @@ jobs:
         run: scripts/sbom.sh --check
 
   privacy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -108,7 +114,7 @@ jobs:
         run: scripts/check-leaks.sh
 
   strings:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -120,7 +126,7 @@ jobs:
   # Static analysis of these workflows: injection, credentials left in the checkout, permissions,
   # and (with the token) that every pinned action commit really belongs to that action.
   workflows:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0

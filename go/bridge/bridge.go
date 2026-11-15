@@ -47,6 +47,19 @@ var (
 	earlyEnd <-chan error // closed when the early supervisor (events, config) has stopped
 )
 
+// wrapper is how the core names this app in its version: in the log, the web GUI's
+// About, and the usage and failure reports if those are on. Upstream asks every
+// wrapper for it (STVERSIONEXTRA), so that a report can be told from one of its own
+// builds. It is not sent to other devices.
+const wrapper = "mysyncthing"
+
+// Upstream reads STVERSIONEXTRA when its build package is loaded, before the app can
+// set it, so the value is set here, after that and before anything reads the version.
+func init() {
+	build.Extra = wrapper
+	build.LongVersion = build.LongVersionFor("syncthing")
+}
+
 // params is what the core was started with, kept for restarts in place.
 type params struct {
 	homeDir, apiKey, guiUser, guiPassword, addr string

@@ -120,7 +120,7 @@ class IgnoreRequestReceiver : BroadcastReceiver() {
         val pending = goAsync()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                runCatching { if (folder != null) client.ignoreFolder(folder, device) else client.ignoreDevice(device) }
+                runSuspendCatching { if (folder != null) client.ignoreFolder(folder, device) else client.ignoreDevice(device) }
             } finally {
                 pending.finish()
             }

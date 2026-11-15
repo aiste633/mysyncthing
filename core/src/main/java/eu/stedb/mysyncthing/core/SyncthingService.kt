@@ -262,7 +262,7 @@ class SyncthingService : LifecycleService() {
      * Usage reporting is left to upstream's own consent prompt.
      */
     private suspend fun applyPhoneDefaults(client: RestClient) {
-        runCatching {
+        runSuspendCatching {
             val me = client.device(client.status().myID)
             if (me.name.isBlank() || me.name == "localhost") client.setDeviceName(me.deviceID, phoneName())
         }

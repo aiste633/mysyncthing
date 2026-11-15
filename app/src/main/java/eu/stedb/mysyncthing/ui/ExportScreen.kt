@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Key
@@ -39,9 +38,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -157,12 +153,10 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
     if (vm.format.encrypted) {
         SettingsGroup(stringResource(R.string.export_password_group)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                val transformation = if (show) VisualTransformation.None else PasswordVisualTransformation()
-                val keyboard = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false)
                 TextInput(
                     vm.password, { vm.password = it }, Limits.EXPORT_PASSWORD, Modifier.fillMaxWidth(), label = stringResource(R.string.password),
                     error = passwordError, hint = pluralStringResource(R.plurals.export_password_hint, MIN_EXPORT_PASSWORD, MIN_EXPORT_PASSWORD),
-                    visualTransformation = transformation, keyboardOptions = keyboard,
+                    passwordShown = show,
                     trailingIcon = {
                         PasswordVisibilityButton(show) { show = !show }
                     },
@@ -170,7 +164,7 @@ private fun ExportForm(vm: ExportViewModel, onSave: () -> Unit) {
                 TextInput(
                     vm.repeat, { vm.repeat = it }, Limits.EXPORT_PASSWORD, Modifier.fillMaxWidth(), label = stringResource(R.string.password_again),
                     error = repeatError?.takeIf { vm.repeat.isNotEmpty() },
-                    visualTransformation = transformation, keyboardOptions = keyboard,
+                    passwordShown = show,
                 )
             }
         }

@@ -239,7 +239,7 @@ func settingsString(t testing.TB, s ownSettings) string { return string(settings
 func TestExportPasswordError(t *testing.T) {
 	for pw, ok := range map[string]bool{
 		"": true, "123456789012": true, "ünïcödé-pässwörd": true, "twelve chars": true, "密码密码密码密码密码密码": true,
-		"12345678901": false, "密码密码密码密码密码": false, "tab\tinside long": false, "zero-width ​ is format, ok": true,
+		"12345678901": false, "密码密码密码密码密码": false, "tab\tinside long": false, "zero-width \u200b is format, ok": true,
 	} {
 		if got := ExportPasswordError(pw) == ""; got != ok {
 			t.Errorf("%q: accepted %v, want %v (%s)", pw, got, ok, ExportPasswordError(pw))
@@ -293,7 +293,7 @@ func TestExportRoundTripProperty(t *testing.T) {
 	home, _ := exportHome(t)
 	r := rand.New(rand.NewSource(26))
 	powers := []string{"Any", "ChargingOnly", "BatteryOnly"}
-	pwRunes := []rune("aZ09 -_.!äß€п中😀​")
+	pwRunes := []rune("aZ09 -_.!äß€п中😀\u200b")
 	prop := func(c runConditions, proxy proxyInput, pwLen uint8) bool {
 		c.Power = powers[r.Intn(len(powers))]
 		c.Windows = randomWindows(r)
