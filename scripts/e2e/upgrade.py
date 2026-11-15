@@ -40,7 +40,7 @@ from pathlib import Path
 sys.dont_write_bytecode = True  # no __pycache__ next to run.py
 import run  # noqa: E402
 from run import (  # noqa: E402
-    ADB, APP, FOLDER, PHONE_API_PORT, PHONE_DIR, Peer, PhoneCore, adb, app_pid, eventually, fail, log, phase, phone_id, private, sh,
+    ADB, APP, FOLDER, PHONE_DIR, Peer, PhoneCore, adb, app_pid, eventually, fail, log, phase, phone_id, private, sh,
 )
 
 BIG = "big.bin"
@@ -416,9 +416,7 @@ def main() -> None:
         peer.stop()
         (a.out / "logcat.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
         shutil.rmtree(home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{run.GUI_PORT}"), ("forward", "--remove", f"tcp:{run.FORWARD_PORT}"),
-                     ("forward", "--remove", f"tcp:{PHONE_API_PORT}")):
-            adb(*args, check=False)
+        run.untunnel()
 
     logcat = (a.out / "logcat.txt").read_text(errors="replace")
     if f"Process: {APP}, PID" in logcat:

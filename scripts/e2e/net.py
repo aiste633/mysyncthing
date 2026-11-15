@@ -46,6 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import pc  # noqa: E402
 import run  # noqa: E402
 import scenarios  # noqa: E402
+import slot  # noqa: E402
 from pc import ANDROID, PORT, ROOT, SERIAL, Result, git, log, step  # noqa: E402
 
 NS_IP = "198.51.100.2"
@@ -113,6 +114,11 @@ def preflight() -> None:
         helper("net clean", timeout=20)  # the helper answers, and the link starts clean
     except (RuntimeError, TimeoutError) as e:
         sys.exit(str(e))
+    # It runs alone: its namespace is one for the machine, and another job's load would change its timings.
+    if slot.SLOT != 0:
+        sys.exit("net.py runs in slot 0 only (E2E_SLOT unset), with no other emulator test job")
+    if r := pc.running_avds(r"e2e-(s[0-9]-)?[0-9]+"):
+        sys.exit(f"another emulator test job runs; net.py runs alone:\n{r}")
     pc.preflight()
 
 
@@ -180,8 +186,7 @@ class World:
             self.phone = run.phone_id(loop)
         finally:
             loop.stop()
-        for args in (("reverse", "--remove", f"tcp:{run.GUI_PORT}"), ("forward", "--remove", f"tcp:{run.FORWARD_PORT}")):
-            run.adb(*args, check=False)  # no path between phone and peer but the namespace's
+        run.untunnel()  # no path between phone and peer but the namespace's
         self.peer = NsPeer(loop)
         self.peer_config()
         helper("start peer")

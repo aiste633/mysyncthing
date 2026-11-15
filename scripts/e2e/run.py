@@ -35,13 +35,17 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from pathlib import Path
 
+import slot
+
 APP = "eu.stedb.mysyncthing"
 RUNNER = f"{APP}.test/androidx.test.runner.AndroidJUnitRunner"
-GUI_PORT = 8385         # E2eTest's Peer.PORT
-PEER_LISTEN = 22001     # the peer's own sync port, on the host
-PHONE_PORT = 22000      # the phone's sync port
-FORWARD_PORT = 22100    # host port forwarded to it
-PHONE_API_PORT = 8386   # host port forwarded to the phone core's REST API (PhoneCore)
+# Host ports by slot (scripts/e2e/slot.py, E2E_SLOT), so two jobs on one PC do not meet.
+GUI_PORT = slot.PEER_GUI           # the peer's REST API, on the host
+DEVICE_GUI_PORT = 8385             # the same on the phone, through adb reverse: E2eTest's Peer.PORT
+PEER_LISTEN = slot.PEER_LISTEN     # the peer's own sync port, on the host
+PHONE_PORT = 22000                 # the phone's sync port
+FORWARD_PORT = slot.FORWARD        # host port forwarded to it
+PHONE_API_PORT = slot.PHONE_API    # host port forwarded to the phone core's REST API (PhoneCore)
 FOLDER, LABEL = "e2e", "E2E"
 PHONE_DIR = "/sdcard/Syncthing/E2E"
 SEEDS = 20
@@ -299,8 +303,20 @@ def prepare(apk: Path, test_apk: Path) -> None:
     sh("settings put global captive_portal_mode 0")
     sh("svc wifi disable")
     sh("svc wifi enable")
-    adb("reverse", f"tcp:{GUI_PORT}", f"tcp:{GUI_PORT}")
+    tunnel()
+
+
+def tunnel() -> None:
+    """The phone reaches the peer's REST API as its own DEVICE_GUI_PORT; the peer dials the phone at FORWARD_PORT."""
+    adb("reverse", f"tcp:{DEVICE_GUI_PORT}", f"tcp:{GUI_PORT}")
     adb("forward", f"tcp:{FORWARD_PORT}", f"tcp:{PHONE_PORT}")
+
+
+def untunnel() -> None:
+    """Removes tunnel()'s tunnels and PhoneCore's, if any."""
+    for args in (("reverse", "--remove", f"tcp:{DEVICE_GUI_PORT}"), ("forward", "--remove", f"tcp:{FORWARD_PORT}"),
+                 ("forward", "--remove", f"tcp:{PHONE_API_PORT}")):
+        adb(*args, check=False)
 
 
 def phase(name: str, peer: Peer, out: Path, **extra: str) -> bool:
@@ -823,9 +839,7 @@ def main() -> None:
         peer.stop()
         (a.out / "logcat.txt").write_text(adb("logcat", "-d", check=False, timeout=300))
         shutil.rmtree(home, ignore_errors=True)
-        for args in (("reverse", "--remove", f"tcp:{GUI_PORT}"), ("forward", "--remove", f"tcp:{FORWARD_PORT}"),
-                     ("forward", "--remove", f"tcp:{PHONE_API_PORT}")):
-            adb(*args, check=False)
+        untunnel()
 
     with step("logcat: crashes, ANRs, blank screens"):
         logcat_checks(a.out)

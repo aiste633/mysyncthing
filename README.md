@@ -112,7 +112,7 @@ End-to-end tests run the debug app on an emulator against a real Syncthing peer 
 scripts/e2e/pc.py             # --release also writes docs/e2e/<version>.md; --online keeps the public servers
 ```
 
-It needs a clean checkout, `ANDROID_HOME`, Go and JDK 21. It builds the APKs and the peer, starts a fresh Android 15, then 16, then 17 emulator on port 5580 (every adb call goes to it, never to another emulator or a phone), runs run.py and the fast scenarios on each, and writes `build/e2e-pc/summary.md` with every step's result and time, for the pull request; the logs, logcat and the peer's logs are next to it. It refuses to start while a Syncthing runs on the machine. To run one script by hand on an emulator that is already up (the scripts refuse a real phone, as they wipe the app's data):
+It needs a clean checkout, `ANDROID_HOME`, Go and JDK 21. It builds the APKs and the peer, starts a fresh Android 15, then 16, then 17 emulator on port 5580 (every adb call goes to it, never to another emulator or a phone), runs run.py and the fast scenarios on each, and writes `build/e2e-pc/summary.md` with every step's result and time, for the pull request; the logs, logcat and the peer's logs are next to it. It refuses to start while a Syncthing runs on the machine. A second run can go at the same time from another checkout with `E2E_SLOT=1` (its own emulator port, AVD names and peer ports; `scripts/e2e/slot.py`). To run one script by hand on an emulator that is already up (the scripts refuse a real phone, as they wipe the app's data):
 
 ```sh
 ./gradlew :app:assembleDebug :app:assembleDebugAndroidTest

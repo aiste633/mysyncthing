@@ -5,6 +5,8 @@
 # AVD started with -no-snapshot does the same.
 # E2E_PORT=<even port>: the emulator's console port, so it is emulator-<port> to adb. Set
 # ANDROID_SERIAL to that, as pc.py does, so adb never talks to another emulator or a phone.
+# E2E_AVD=<name>: the AVD to make afresh and start, e2e-<api> by default; pc.py names it by its
+# slot (scripts/e2e/slot.py), so two jobs never remake each other's AVD.
 set -euo pipefail
 
 api="${1:?usage: emulator.sh <api level>}"
@@ -12,7 +14,8 @@ api="${1:?usage: emulator.sh <api level>}"
 # From API 37 on, the SDK names the image by platform version: android-37.0, not android-37.
 pkg_api="$api"; [ "$api" -lt 37 ] || pkg_api="$api.0"
 image="system-images;android-$pkg_api;default;x86_64"
-avd="e2e-$api"
+avd="${E2E_AVD:-e2e-$api}"
+[[ "$avd" =~ ^[A-Za-z0-9._-]+$ ]] || { echo "E2E_AVD=$avd: letters, digits, '.', '_' and '-' only" >&2; exit 1; }
 bin="$ANDROID_HOME/cmdline-tools/latest/bin"
 
 [ -e /dev/kvm ] || { echo "no /dev/kvm: the x86_64 emulator needs KVM" >&2; exit 1; }

@@ -4,7 +4,7 @@ Resume notes for any session: read this file first. Dates are ISO 8601, times 24
 
 How to keep it: **State** and **Next** are rewritten, not appended to, in every pull request that changes what the app does and at every release. Decisions, Pins and Working rules change only when the thing itself changes. Everything longer goes into [docs/dev-notes.md](docs/dev-notes.md), one section per subject, edited in place. History is in git.
 
-## State (2026-11-14)
+## State (2026-11-15)
 - Released: v0.4.0 (2026-11-14, versionCode 7) for Android 15, 16 and 17. Earlier: 0.1.0 (2026-10-29), 0.1.2 (2026-10-30), 0.1.3 (2026-10-31), 0.2.0 (2026-11-05), 0.3.0 (2026-11-12). 0.1.1 was never tagged. Releases are on GitHub; each is signed by the user on their own machine.
 - Built from: Syncthing v2.1.7 (three small patches in `go/patches/`), Go toolchain 1.26.11, AGP 9.5.0, Kotlin 2.4.21, Gradle 9.8.2, NDK r30. Details under Pins.
 - What works: everything in the README feature list. Native screens for folders, devices, settings, defaults, versions, recent changes, conflicts, run conditions, sync windows (global and per device), proxy, import and export; the web GUI stays as a fallback.
@@ -15,6 +15,7 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 - Known upstream bugs, tracked here: #80 (three devices, one edit lost in a same-second conflict), #15 and #23 (trash can versioning), #95 (a data race in the folder watcher; because of it CI runs the bridge tests without the race detector).
 - On `main`, not released yet: the app's own mark (one line with an arrow up and an arrow down, white on #0891D1) as launcher icon, themed icon, widget and top bar mark, store icon, and as the small icon of the service notification; the widget preview in dark mode. See "App mark" in docs/dev-notes.md.
 - A whole-project review on 2026-11-14 found no serious defect. Its hardening batch is on `main` for the next release (see "Hardening batch" in the dev notes): REST calls never use the system proxy, the signing script checks the build provenance before it signs, masked fields always get a password keyboard, cancelled work no longer reads as failed, the core names the app as its wrapper, Android offers to keep the app's data at uninstall, a private build directory under `/tmp`, Gradle repository content filters, key material and MAC addresses in the leak check.
+- Emulator tests: two PC runs can go at once, each from its own checkout, with `E2E_SLOT=1` for the second (own emulator port, AVDs and peer ports; slot 0 unchanged). See "Parallel PC jobs" in the dev notes.
 - On main since 0.4.0, for the next release: the "This phone" card on the Devices tab keeps its height when the first poll answers (a dashes line holds the place), so the list below no longer jumps. A soft memory limit for the Go core (Settings > Advanced > Core memory limit): automatic = Android 17's limit for the phone's memory less 300 MB (none before Android 17), or the user's own in MB; applied at once, no restart; the dialog shows the core's and the whole app's memory every 5 s; memory the core freed goes back to Android when the app's screens close (on Android Go returns it lazily, so RSS lags: issue #99, shelved). The memory-limit notice leaves the amount out when Android recorded none (the limiter's own kills record 0).
 
 ## Next
@@ -101,3 +102,4 @@ The long notes are in [docs/dev-notes.md](docs/dev-notes.md):
 - This phone card keeps its height (2026-11-14, for the release after 0.4.0)
 - Hardening batch (2026-11-14)
 - Core memory limit (2026-11-15, for the release after 0.4.0)
+- Parallel PC jobs (2026-11-15)
