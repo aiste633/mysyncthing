@@ -55,11 +55,11 @@ This issue is updated when that changes and closes itself when nothing is left.
 
 $(cat "$report")
 
-**How to bump** (cadence and steps: README, Keeping up to date)
+**How to bump** (cadence and steps: docs/development.md, Keeping up to date)
 
 - One pull request per bump or small batch, as usual. Read the release notes first: a new major
   version of an action needs \`using: node24\` or later in its \`action.yml\`.
-- Gradle, AGP or a library: regenerate \`gradle/verification-metadata.xml\` (README).
+- Gradle, AGP or a library: regenerate \`gradle/verification-metadata.xml\` (docs/releasing.md).
 - Anything the APK contains or is built with: run \`scripts/sbom.sh\`.
 - NDK, JDK or a new build step: the F-Droid recipe changes too, and fdroiddata needs it before the next tag.
 

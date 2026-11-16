@@ -61,7 +61,7 @@ Every month, and on every tag, an upkeep check lists newer releases of everythin
 pins (Syncthing, Go, Gradle, the NDK, the libraries, the actions, the scan tools) and checks
 that F-Droid keeps up: its recipe must match ours, and it must publish each release within 10
 days. Weekly it warns before GitHub turns off these scheduled checks after 60 quiet days. See
-[Keeping up to date](../README.md#keeping-up-to-date).
+[Keeping up to date](development.md#keeping-up-to-date).
 
 The workflows use a read-only token and leave no credentials in the checkout, and every
 GitHub Action is pinned by its full commit hash, so a moved tag cannot change what CI runs. A
@@ -249,7 +249,7 @@ download is running. Both builds are signed with the same key.
 When the new build has a newer Syncthing core, the core migrates the old config and database
 here, so a breaking change upstream fails the test too. It runs on the PC emulators before
 each release, from the last release and from the oldest one still in use (a step of releasing
-in the [README](../README.md#reproducible-builds-and-releases)), not in CI.
+in [Releasing](releasing.md#releasing)), not in CI.
 
 | Step | What must hold |
 |---|---|
@@ -551,7 +551,7 @@ and take down the namespace.
 
 The same commit gave a byte-identical unsigned release APK, with the same SHA-256, from a local
 build, both legs of the CI twin build, and F-Droid's build server image. CI checks the twin build on
-every pull request, and F-Droid's build on every tag. See [README](../README.md#reproducible-builds-and-releases).
+every pull request, and F-Droid's build on every tag. See [Reproducible builds](releasing.md#reproducible-builds).
 
 ## Not covered yet
 

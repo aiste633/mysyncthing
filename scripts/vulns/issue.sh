@@ -79,7 +79,7 @@ $findings
 
 - Go: bump the module, or the Go toolchain, in \`go/bridge/go.mod\`; then run \`scripts/sbom.sh\`.
 - Libraries: bump the dependency and run \`scripts/sbom.sh\`. If an advisory cannot affect the app, or only upstream Syncthing can fix it, accept it with a reason in \`scripts/vulns/accepted.toml\`.
-- GitHub Actions: pin the fixed release by its commit hash (see the README).
+- GitHub Actions: pin the fixed release by its commit hash (see docs/releasing.md).
 
 <!-- findings $fingerprint -->"
 
