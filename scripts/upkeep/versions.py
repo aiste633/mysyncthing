@@ -85,7 +85,7 @@ def checks(root):
     """Yields (what, ours, newest, where to bump) for every pin."""
     syncthing = (root / "go/syncthing.version").read_text().strip().removeprefix("v")
     yield "Syncthing", syncthing, newest(tags("syncthing/syncthing")), \
-        "README, Updating Syncthing"
+        "docs/development.md, Updating Syncthing"
 
     gomod = (root / "go/bridge/go.mod").read_text()
     ours = re.search(r"^toolchain go(\S+)", gomod, re.M).group(1)
@@ -142,7 +142,7 @@ def checks(root):
         for m in re.finditer(r"uses: ([\w.-]+/[\w.-]+)[\w./-]*@[0-9a-f]{40} # v(\S+)", workflow.read_text()):
             pinned.setdefault(m.group(1), m.group(2))
     for action, version in sorted(pinned.items()):
-        yield action, version, newest(tags(action)), "commit hash in `.github/workflows/` (README)"
+        yield action, version, newest(tags(action)), "commit hash in `.github/workflows/` (docs/releasing.md)"
     tools = {}
     for workflow in sorted((root / ".github/workflows").glob("*.yml")):
         for module, version in re.findall(r"go install (\S+)@v(\d\S*)", workflow.read_text()):

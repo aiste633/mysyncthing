@@ -1,46 +1,72 @@
 # MySyncthing
 
-A Syncthing client for Android 15, 16 and 17 (API 35–37), written in Kotlin and Jetpack Compose. It is a new app, not a fork of syncthing-android. It will be published on F-Droid once F-Droid accepts it; until then, signed releases are on the [releases page](https://github.com/aiste633/mysyncthing/releases).
+[Syncthing](https://syncthing.net) for Android 15, 16 and 17: your folders kept in sync between your devices, directly and encrypted, with no cloud service in between. MySyncthing is a new native app in Kotlin and Jetpack Compose around the official Syncthing core, not a fork of syncthing-android.
+
+Get it from the [releases page](https://github.com/aiste633/mysyncthing/releases) (signed APK). It will be published on F-Droid once F-Droid accepts it.
 
 MySyncthing is vibecoded: an AI coding assistant (Claude) wrote nearly all of its code, directed and tested by one person. It is tested hard (see [Testing](docs/testing.md)), but it comes with no guarantees: if something breaks or goes wrong, including lost or damaged files, that is on you, as the AGPL-3.0 (sections 15 and 16) says. Keep backups of anything that matters.
 
-## Home-screen widget
+<p align="center">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1-folders.png" width="240" alt="Folders in dark mode: each folder is a card with its path, size, devices and status">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3-devices.png" width="240" alt="Devices in dark mode: this device with its ID, the All devices row with Pause syncing and Sync windows, and the other devices with their status, a pause button and when they were last seen">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4-sync-windows.png" width="240" alt="Sync windows in dark mode: Only at set times is on, with one time window for weekday nights and one for the weekend">
+</p>
+
+## Features
+
+### Home-screen widget
 
 See your sync status at a glance, without opening the app. The widget is a single row like a search bar, and you can stretch it sideways. It shows whether everything is up to date, syncing (with progress), paused or needs your attention, and which devices are connected, or when one last was. Its button pauses and resumes syncing, and a tap opens the app. An amber dot on the status icon means conflict copies are waiting; a tap then opens the Folders tab. Colours and icons follow your wallpaper and dark mode.
 
-<p align="center"><img src="docs/images/widget.png" width="400" alt="The widget in four states: up to date, syncing at 43 %, no network, and paused"></p>
-
-## Features
+<p align="center"><img src="docs/images/widget.png" width="400" alt="The widget in dark mode in four states: up to date, syncing with progress, no network, and paused"></p>
 
 ### Syncing
 
 - Folders and devices as clear cards with colour and icon status. Each folder card has a button for that folder's recent changes. Pair devices by QR code or device ID.
 - Accept shared folders with a suggested location, choose the folder type, sharing and file versioning; restore older versions of a file.
 - Choose where a folder goes without typing a path: one tap for the usual folders (Camera, Screenshots, Download, Documents and more), or the app's own folder browser over internal storage, SD cards and USB sticks, with New folder. It shows which folders are already synced, and it can pick Download and the top of a storage, which Android's own picker refuses. Works in work profiles and Private Space too.
-- Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver; only at set times of the week (for example 22:00–07:00 on weekdays).
-- Pause single devices from their card. Each card says why a device is paused (by you, or for example on mobile data), and a device you paused stays paused when the run conditions allow syncing again.
-- Sync windows per device: a device can have its own windows, which narrow the global ones (for example the NAS only at night). The app warns of windows shorter than 1 h and refuses own windows that never overlap the global ones; the device card says "Outside its sync windows · next 22:00".
-- The Devices tab has the switches for all devices together: pause syncing, and the sync windows. Every device card says when the device was last seen.
 - Conflicts: when two devices changed the same file, Syncthing keeps the older edit as a `.sync-conflict-` copy. The folder's card counts the copies in amber, its Recent changes lists them on top (with how many copies per file the folder keeps), and the widget shows a small amber dot. The folder still reads "Up to date", because syncing goes on.
 - No device connected is a grey "Waiting for devices" for 30 minutes, and only then a red problem; devices you paused don't count.
 - Connect through a SOCKS5 or HTTP proxy, such as Tor with Orbot, optionally with nothing going around it.
-- Easy switch from Syncthing-Fork: import its backup, encrypted ones too, and take over its device ID, folders and devices. Export this app's setup and import it on another phone: strongly encrypted (Argon2id and XChaCha20-Poly1305) by default, or as a WinZip AES-256 zip that other apps open.
 - Starts at boot and keeps syncing in the background; the notification says what is happening.
 - Notifies you of new devices and shared folders (with Review and Ignore) and of folders that stop syncing.
 - Syncthing's own web GUI is built in for the few things the app does not cover, signed in automatically and private to the app.
 
+### Sync when it suits you
+
+Syncing only when it suits you is also what keeps battery use low: see [Caveats](#caveats).
+
+- Run conditions: metered Wi-Fi, mobile data and roaming each on or off; only while charging or only on battery; pause in battery saver.
+- Sync windows: syncing only at set times of the week (for example 22:00–07:00 on weekdays), set on the Devices tab. Outside the windows syncing pauses, and it resumes by itself.
+- Sync windows per device: a device can have its own windows, which narrow the global ones (for example the NAS only at night). The app warns of windows shorter than 1 h and refuses own windows that never overlap the global ones; the device card says "Outside its sync windows · next 22:00".
+- Pause single devices from their card. Each card says why a device is paused (by you, or for example on mobile data), and a device you paused stays paused when the run conditions allow syncing again.
+- The Devices tab has the switches for all devices together: pause syncing, and the sync windows. Every device card says when the device was last seen.
+- New devices use one connection instead of Syncthing's usual three, which is plenty for a phone; each device can still be set to more.
+- When idle, the app writes about 0.02–0.14 MB an hour to flash; it keeps no log files. Writes come from syncing itself.
+
 ### Made for Android 15, 16 and 17
 
 - Only Android 15, 16 and 17, so nothing is held back by older versions. It runs as a foreground service of the kind Android allows to run all day, without the 6-hour daily limit of data-sync services.
-- Native Material 3 screens in your wallpaper's colours (Material You), with dark mode and the home-screen widget.
+- Native Material 3 screens in your wallpaper's colours (Material You), with dark mode, the home-screen widget and a themed icon.
 - Works with TalkBack: every button is named and every switch and checkbox reads as on or off. Text stays readable (4.5:1) with Android's Colour contrast setting too.
-- In English, Italian, Spanish, German and French, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. The text is in standard Android string files, ready for a translation platform such as Weblate: see [Translations](#translations).
+- In English, Italian, Spanish, German and French, in the phone's language or one chosen for the app alone (Android's per-app language). Dates, times and numbers follow the phone's region and its 12/24 h setting. The text is in standard Android string files, ready for a translation platform such as Weblate: see [translations](docs/translations.md).
+- Android 17 stops apps that use too much memory. The app gives the Syncthing core a memory limit below the phone's, by itself or with a value you set (Settings › Advanced › Core memory limit, with the live memory use): near the limit the core frees memory more often, so syncing gets slower instead of stopping.
+- Uninstalling offers to keep the app's data, so that installing it again brings back the phone's identity and setup.
 
-### Light on battery and flash
+### Import and export
 
-- When idle, the app writes about 0.02–0.14 MB an hour to flash; it keeps no log files. Writes come from syncing itself.
-- The run conditions and sync windows let it sync only when it suits you: on Wi-Fi, while charging, at night, and each device at its own times.
-- New devices use one connection instead of Syncthing's usual three, which is plenty for a phone; each device can still be set to more.
+- Easy switch from Syncthing-Fork: import its backup, encrypted ones too, and take over its device ID, folders and devices. Export this app's setup and import it on another phone: strongly encrypted (Argon2id and XChaCha20-Poly1305) by default, or as a WinZip AES-256 zip that other apps open.
+
+<p align="center">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2-folder.png" width="200" alt="A folder's own screen in dark mode, with its status, sharing and settings">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5-restore.png" width="200" alt="Restoring an older version of a file, in dark mode">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6-error.png" width="200" alt="A folder that stopped syncing is shown in red, with a Folder error chip at the top, in dark mode">
+<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/7-offer.png" width="200" alt="A notification for a folder shared from another device, with Review and Ignore, in dark mode">
+</p>
+
+## Security and privacy
+
+A sync app can do more damage than most apps: a file deleted on one device is deleted on all of them. So the app keeps what other apps and the network can reach to a minimum, and it is tested hard.
 
 ### Privacy
 
@@ -49,16 +75,27 @@ See your sync status at a glance, without opening the app. The widget is a singl
 - Cloud backup is off, so the device keys never go to a cloud. Android's phone-to-phone transfer to a new phone does carry them, so the new phone keeps the old one's identity: afterwards stop Syncthing on the old phone (the app reminds you once).
 - Release builds keep Syncthing's routine log lines, which name devices and folders, out of Android's system log.
 
-Details: [privacy](docs/privacy.md).
+Details: [privacy](docs/privacy.md): what the app keeps on the phone, what goes to Syncthing's public servers and how to turn each off, permissions, your rights under the GDPR.
 
-### Hardened and tested
+### Hardening
 
-What each test covers, with its numbers: [testing and hardening](docs/testing.md).
-
-- Every input field checked against the Syncthing core's own rules, with property tests of 20,000 random inputs each; [input validation](docs/input-validation.md).
-- Go fuzzing of everything that reaches the core or reads a file from outside; it found and fixed a bug in Syncthing itself.
+- The app talks to its Syncthing core only inside the phone, over TLS that trusts only the core's own certificate, with an API key. The key and the web GUI's login are new at every start, and the old ones stop working. The app keeps them only in memory; Syncthing's configuration, in the app's private storage, holds the key and the password's hash until the next start replaces them.
+- The web GUI is protected by a random 64-character user and password that only the app knows, because other apps on the phone can reach the same address; the core refuses any change to them. The built-in web view loads only the core's own address and nothing else.
+- Of the app's own parts, other apps can open only its main screen. A list of every permission and every part other apps can reach, libraries included, is kept in the repository, and CI fails when it changes.
 - Imported backups are untrusted input: settings that could run a command, delete files outside the folder, reach the app's own files or report to other servers are taken out and listed before you import, and a backup changed after its preview is refused.
-- A security audit and a gap analysis against common practice: the built-in web view is locked to the core's own address, the web GUI login is random and locked, a shown password hides the screen from screenshots, StrictMode checks debug builds. [Security policy](SECURITY.md).
+- Every input field is checked against the Syncthing core's own rules and has a length limit, in the form, again before it reaches the core, and in imports; [input validation](docs/input-validation.md).
+- A shown password hides the screen from screenshots and screen recordings, and password fields always ask for a password keyboard.
+- Notifications about new devices and folders show no addresses, and on the lock screen no names.
+- Exported setups are encrypted by default (Argon2id and XChaCha20-Poly1305).
+
+Found a security problem? Report it privately: [security policy](SECURITY.md).
+
+### Tested
+
+What each test covers and what it found, with its numbers: [testing and hardening](docs/testing.md).
+
+- Property tests of 20,000 random inputs for each input field, and Go fuzzing of everything that reaches the core or reads a file from outside; it found and fixed a bug in Syncthing itself.
+- A security audit and a gap analysis against common practice, and a review of the whole project in November 2026.
 - Stress tests (50,000 files, full storage, random UI events), a 10-hour memory soak with no leak, flash-write tracing, and interruption tests (rotation, Android reclaiming the app, permissions taken away).
 - Emulator end-to-end tests on Android 15, 16 and 17 against a real Syncthing peer run on the maintainer's PC before every merge; each release commits their results in [`docs/e2e/`](docs/e2e/), and CI refuses a release tag without them.
 - CI checks every pull request, and `main` after each merge: unit tests, lint, a leak check that keeps personal details out of the repository and its history, a guard on the app's permissions, an audit of the workflows, and a twin build that must be byte-identical. CodeQL analyses the app and the core. A daily scan opens an issue when a vulnerability is published that affects the app: in its Go code, its libraries (the SBOM) or the pinned actions. A monthly check lists newer releases of everything the build pins and watches that F-Droid keeps up with each release. GitHub Actions are pinned by commit hash, and releases carry a signed build provenance attestation.
@@ -70,158 +107,41 @@ What each test covers, with its numbers: [testing and hardening](docs/testing.md
 - Reproducible builds: every build of a release gives a byte-identical APK, so anyone, F-Droid included, can check that a release APK was built from this source.
 - A [software bill of materials](docs/sbom.md) lists everything the APK contains, with versions and licences; CI keeps it current.
 
-## Screenshots
-
-<p align="center">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1-folders.png" width="240" alt="Folders: each folder is a card with its path, size, devices and status">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2-folder.png" width="240" alt="A folder's own screen with its status, sharing and settings">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3-devices.png" width="240" alt="Devices: this device with its ID, the All devices row with Pause syncing and Sync windows, and the other devices with their status, a pause button and when they were last seen">
-</p>
-<p align="center">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4-restore.png" width="240" alt="Restoring an older version of a file">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/5-error.png" width="240" alt="A folder that stopped syncing is shown in red, with a Folder error chip at the top">
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/6-offer.png" width="240" alt="A notification for a folder shared from another device, with Review and Ignore">
-</p>
-
-## Layout
-
-| Path | What |
-|---|---|
-| `app/` | Compose UI: folders, devices (QR pairing), settings, upstream web GUI as fallback |
-| `core/` | `specialUse` foreground service, run conditions, REST/event client |
-| `go/bridge/` | Go package `stbridge`; runs Syncthing in-process, exposes start/stop/identity |
-| `go/syncthing/` | Upstream Syncthing, git submodule pinned to a release tag |
-| `go/patches/` | Our fixes to upstream Syncthing, applied to the submodule by `go/patch.sh` at build time |
-
-The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, over TLS that trusts only the core's own certificate, authenticated with an API key. The web GUI is protected by a random 64-character user and password that only the app knows, because other apps can reach loopback; the core refuses any change to them. The API key, user and password are new at every core start and kept only in memory; the old ones and the web GUI sessions they opened stop working.
-
-## Build
-
-Requirements: JDK 21, Go (the toolchain auto-downloads the version pinned in `go/bridge/go.mod`), Android SDK 36, and the NDK version pinned in `gradle.properties` (`mysyncthing.ndkVersion`; `sdkmanager "ndk;<version>"`).
-
-```sh
-git submodule update --init
-./gradlew :app:assembleDebug   # runs go/build.sh first; :core alone cannot be bundled as an AAR
-```
-
-Screen tests run with the unit tests, on the JVM (Robolectric): the app's real screens with made-up folders and devices (`app/src/test/.../ui/Fixtures.kt`), checking the forms, the Discard prompt, that a shown password hides the screen from captures, that TalkBack can name every control, and that every text keeps 4.5:1 contrast with a normal and a high-contrast palette (`ContrastTest`). `ScreenshotTest` compares each screen in light, dark, the largest font, Italian and German (the longest text) with the images in `app/src/test/screenshots/`; CI runs it with `:app:verifyRoborazziDebug` and uploads the diff images when one differs. After a deliberate change to a screen, record them again with `./gradlew :app:recordRoborazziDebug` and look at the new images before committing them.
-
-End-to-end tests run the debug app on an emulator against a real Syncthing peer built from the same patched core: pairing, accepting a shared folder, sync both ways, restoring a Trash can version, run conditions (Wi-Fi off), pausing a device from its card and its screen, the Devices tab's "Pause syncing" and the grey-then-red wait for devices, a device's own sync windows (closed now, and never overlapping the global ones), typed text kept when the screen is recreated, an open dialog left idle (it must stop drawing), the app's process killed, All files access taken away (the peer must see no deletions), and a monkey run with a fixed seed; then the fast sync scenarios (`scripts/e2e/scenarios.py --only fast`: conflicts of several kinds and the web GUI login). The peer listens on loopback only, with discovery and relays off, and reaches the emulator through `adb reverse` and `adb forward`. They run on a PC with KVM, not in GitHub CI. One command does a whole run for the checked-out commit (about 1 h):
-
-```sh
-scripts/e2e/pc.py             # --release also writes docs/e2e/<version>.md; --online keeps the public servers
-```
-
-It needs a clean checkout, `ANDROID_HOME`, Go and JDK 21. It builds the APKs and the peer, starts a fresh Android 15, then 16, then 17 emulator on port 5580 (every adb call goes to it, never to another emulator or a phone), runs run.py and the fast scenarios on each, and writes `build/e2e-pc/summary.md` with every step's result and time, for the pull request; the logs, logcat and the peer's logs are next to it. It refuses to start while a Syncthing runs on the machine. A second run can go at the same time from another checkout with `E2E_SLOT=1` (its own emulator port, AVD names and peer ports; `scripts/e2e/slot.py`). To run one script by hand on an emulator that is already up (the scripts refuse a real phone, as they wipe the app's data):
-
-```sh
-./gradlew :app:assembleDebug :app:assembleDebugAndroidTest
-(cd go/syncthing && go build -tags noupgrade -o ../build/e2e-peer ./cmd/syncthing)
-scripts/e2e/run.py --peer go/build/e2e-peer --apk app/build/outputs/apk/debug/app-debug.apk \
-  --test-apk app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-```
-
-Results (`summary.md`), logcat and the peer's log land in `build/e2e/`.
-
-`scripts/e2e/upgrade.py` tests an update in place: it takes the debug APKs of the last release and of this build (`--old-apk`, `--old-test-apk`, `--apk`, `--test-apk`, built on the same machine so they share the debug key) and checks that everything set up in the old one survives and syncs on ([testing](docs/testing.md#app-updates)).
-
-`cd go/bridge && go test .` starts and stops the real core on the host. Run `go/patch.sh` and then `go generate ./lib/api/auto` in `go/syncthing` once first.
-
-`go/build.sh` applies `go/patches/*.patch` to the submodule (`go/patch.sh`, idempotent), so the submodule shows as modified after a build. Each patch is a fix we also report upstream; drop it once a Syncthing release has it. To change one, commit the change in the submodule and export it with `git format-patch -1 --no-signature --zero-commit -o ../patches/`, then check out the pinned commit again.
-
-## Security checks
-
-- `docs/manifest-surface.txt` lists every permission the release app has and every part of it other apps can reach, from the merged release manifest with all libraries. The `android` CI job fails when it changes, so a library that adds a permission or an exported component is seen in review. After an intended change: `./gradlew :app:processReleaseManifest && scripts/manifest-surface.py`, and commit the result.
-- CodeQL (`.github/workflows/codeql.yml`) analyses the Kotlin app, the Go bridge with the patched core, the workflows and the scripts, from a real build, on every push to `main`, weekly and by hand. Findings are under Security › Code scanning. It needs the repository's CodeQL setting on "Advanced".
-- Published vulnerabilities (`.github/workflows/vulnerabilities.yml`, daily at 04:41 UTC and by hand): govulncheck on the Go code (only what the app can reach), osv-scanner on every other library in `docs/sbom.cdx.json` (`scripts/vulns/osv.sh`), and zizmor's known-vulnerable-actions audit on the pinned actions (`scripts/vulns/actions.sh`). Findings open one issue (label `vulnerability`), assigned to the repository owner; it is updated when they change and closes itself when nothing is left. A scan that breaks leaves that issue alone and opens a second one (label `vulnerability-scan`), which closes itself once every scan works again: GitHub mails a failed scheduled run only to whoever last changed the schedule. An advisory that cannot affect the app, or that only upstream Syncthing can fix, goes into `scripts/vulns/accepted.toml` with its reason; a new advisory or another version of that package is reported again. Pull requests that change the scans or the SBOM run them as a check. osv-scanner's version and checksum are in `scripts/vulns/osv-scanner.txt`. Locally: `scripts/vulns/osv.sh --offline` (downloads the OSV database, about 250 MB).
-- Upkeep (`.github/workflows/upkeep.yml`): see [Keeping up to date](#keeping-up-to-date).
-- zizmor lints the workflows (`workflows` job in `build.yml`): script injection, credentials kept in the checkout, permissions, and that each pinned action commit belongs to its action. Its version and wheel checksum are in `scripts/zizmor-requirements.txt`. Checkouts never keep the job's token (`persist-credentials: false`).
-- govulncheck (`.github/workflows/govulncheck.yml`) looks up the Go vulnerability database for anything the bridge, the patched core, their modules or the Go standard library contain that the app's code can actually reach, for android/arm64 with cgo as the app is built. It runs on every pull request and push to `main`, and daily as part of the vulnerability scan above, since new vulnerabilities appear without changes here; a hit fails it. The fix is usually a newer Go (`toolchain` line in `go/bridge/go.mod`) or module; then run `scripts/sbom.sh`.
-
-## Reproducible builds and releases
-
-Every build of a commit gives a byte-identical unsigned release APK (arm64 only; debug builds also carry x86_64). This is what lets F-Droid ship the APK signed with our key. What keeps it that way:
-
-- Toolchains are pinned in one place each: NDK in `gradle.properties`, Go in `go/bridge/go.mod` (`toolchain` line; the CI release build checks the APK was built with it), Gradle in the wrapper (with checksum), JDK 21 via `jvmToolchain`.
-- `go/build.sh` strips paths, build IDs and timestamps from the Go library, and builds through a fixed symlink in `/tmp/mysyncthing-build/` (a directory only the building user can write), because gomobile records module paths.
-- `gradle/verification-metadata.xml` holds SHA-256 checksums of every Gradle dependency. After changing a dependency or plugin version, refresh it:
-
-  ```sh
-  ./gradlew --write-verification-metadata sha256 --refresh-dependencies --no-configuration-cache -I scripts/sbom/runtime-deps.init.gradle.kts \
-    :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest testDebugUnitTest :app:verifyRoborazziDebug \
-    :app:lintDebug :core:lintDebug :app:sbomRuntimeDeps
-  scripts/sbom.sh
-  ```
-
-  `--refresh-dependencies` makes Gradle fetch every POM again: with them cached it records only the `.module` files it reads, and a clean machine, which also reads the POMs, fails verification. The `sbomRuntimeDeps` part adds the POMs the SBOM reads licences from; `scripts/sbom.sh` then updates the SBOM (see [Licence](#licence)).
-
-- GitHub Actions are pinned by full commit hash, with the version in a comment, so a moved tag cannot change what CI runs. To bump one: `git ls-remote --tags https://github.com/<owner>/<action> 'v*'`, take the commit of the new release (the `^{}` line for an annotated tag), and check that its `action.yml` says `using: node24` or later. `setup-gradle` always runs with `cache-provider: basic`, the MIT-licensed cache: its default since v6 is a proprietary library.
-- CI (`.github/workflows/reproducible.yml`) builds the release APK twice, with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report is attached). On tags and manual runs, F-Droid's build image builds it a third time from the recipe in `fdroid/` and must match too. A pull request that changes the recipe or the build steps runs it by hand on its branch (Actions › reproducible › Run workflow).
-
-Releasing:
-
-1. Bump `versionCode` and `versionName` in `app/build.gradle.kts`, and add `fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`.
-2. Run `scripts/e2e/upgrade.py` (see [Build](#build)) on Android 15, 16 and 17 emulators, from the last release's tag to this commit, and again from the oldest release still in use; all builds made on the same machine. It is not in CI, so this is where a change that breaks updates is caught, our own or upstream's (a core update migrates the old config and database).
-3. Commit the version bump, then run `scripts/e2e/pc.py --release` on that commit (see [Build](#build)). When it passes it writes `docs/e2e/<version>.md`; commit that file. `scripts/e2e/check-results.sh <version>` checks it as CI will: a tag fails if the file is missing, did not pass on Android 15, 16 and 17, or names a commit that differs from the tag outside `docs/`, `fastlane/` and top-level `*.md`.
-4. If the F-Droid recipe's build steps changed (NDK, JDK, Go bootstrap, a new step), fdroiddata must have them first: F-Droid builds a new tag from its own copy, with only the version changed. The upkeep check runs on the tag and reports a recipe out of step.
-5. Tag and push: `git tag v0.1.0 && git push origin v0.1.0`. CI creates a draft release with `mysyncthing-0.1.0-unsigned.apk` and its SBOM, `mysyncthing-0.1.0-sbom.cdx.json`, and signed build provenance (SLSA) for both: which workflow run, commit and runner made them. Anyone can check a file with `gh attestation verify <file> --repo aiste633/mysyncthing`, the unsigned APK included once it is rebuilt (see [Verify a release](#verify-a-release)).
-6. On your machine, with the key's encrypted storage open: `KEYSTORE=/path/to/mysyncthing-release.p12 scripts/sign-release.sh v0.1.0`. It first checks the draft's APK against its build provenance (built by the release workflow from the tag, at the commit your checkout has for it) and signs nothing else. It signs the APK (signature only: no v1 files, alignment kept), checks with apksigcopier that the result is the build plus a signature, as F-Droid does, refuses a key other than the recipe's `AllowedAPKSigningKeys`, uploads `mysyncthing-0.1.0.apk` and removes the unsigned APK, so the release offers only the APK to install. It keeps a copy of the latest signed APK with its SHA-256 in `release/` (ignored by git; older ones are removed). Then publish the draft. The release notes come from the changelog.
-
 ### Verify a release
 
-Build the tag and check that the release APK is that build plus our signature. Needs the [Build](#build) requirements, `gh` and `apksigcopier` (Debian: `apt install apksigcopier`; it calls `apksigner` from build-tools):
+Build the tag and check that the release APK is that build plus our signature. Needs the [Build](docs/development.md#build) requirements, a recent `gh` that is logged in, and `apksigcopier` (Debian: `apt install apksigcopier`; it calls `apksigner` from build-tools):
 
 ```sh
-git clone --branch v0.1.0 --recurse-submodules https://github.com/aiste633/mysyncthing && cd mysyncthing
+v=X.Y.Z   # the version to check, for example 0.5.0
+git clone --branch "v$v" --recurse-submodules https://github.com/aiste633/mysyncthing && cd mysyncthing
 ./gradlew :app:assembleRelease
 unsigned=app/build/outputs/apk/release/app-release-unsigned.apk
 gh attestation verify "$unsigned" --repo aiste633/mysyncthing   # GitHub built these exact bytes from the tag
-gh release download v0.1.0 --pattern mysyncthing-0.1.0.apk
-apksigcopier compare mysyncthing-0.1.0.apk --unsigned "$unsigned" && echo "same build"
+gh release download "v$v" --pattern "mysyncthing-$v.apk"
+apksigcopier compare "mysyncthing-$v.apk" --unsigned "$unsigned" && echo "same build"
 ```
 
-F-Droid: `fdroid/eu.stedb.mysyncthing.yml` is the recipe for fdroiddata, ready to submit. It names the release key (`AllowedAPKSigningKeys`) and builds Go from source.
+## Caveats
 
-## Updating Syncthing
+- **Battery.** Despite our best optimisation efforts, we suggest you make aggressive use of scheduling to keep battery use low: the [sync windows](#sync-when-it-suits-you) on the Devices tab, each device's own windows, and the run conditions in Settings (for example only on unmetered Wi-Fi and only while charging). The reason is the core. It is the official Syncthing, written for computers, and it has not been reimplemented and optimised for mobile from the ground up: that would be a huge effort and an expensive Claude bill. It is not out of the question in the future. Outside the windows syncing stops, which is most of the work, but the core stays up to listen and to be found, so scheduling lowers battery use without bringing it to zero. The app holds no wakelock, so a sleeping phone wakes only for incoming traffic. Battery use has not been measured in mAh: on a phone in use, other apps swamp the app's share ([what was measured](docs/testing.md#flash-writes-2026-10-26)).
+- **Android 15, 16 and 17, 64-bit ARM only.** There is no build for older Android versions or for other processors.
+- **Not on F-Droid yet.** Until F-Droid accepts the app, updates are a new APK from the releases page, installed by hand.
+
+## Development
+
+The app is three parts: `app/` (the Compose screens), `core/` (the foreground service, run conditions and the client for the core's REST API) and `go/` (the bridge that runs the official Syncthing in the app's process, built with gomobile, and our few patches to it).
 
 ```sh
-cd go/syncthing && git checkout . && git clean -fd lib && git fetch --tags && git checkout vX.Y.Z
-echo vX.Y.Z > ../syncthing.version
-../patch.sh   # a patch that no longer applies: drop it if the release has the fix, else rebase it
-cd ../bridge && go mod tidy && go test .
+git submodule update --init
+./gradlew :app:assembleDebug   # on Linux, with JDK 21, Go, the Android SDK (platform 37) and the NDK pinned in gradle.properties
 ```
 
-## Keeping up to date
-
-Security fixes come first: the daily vulnerability scan opens an issue within a day (see [Security checks](#security-checks)). Everything else follows this cadence:
-
-- Syncthing: a new release within two weeks, with Go's latest patch release of our line. Each bump rebases or drops the patches in `go/patches/`.
-- Go: move to a newer line (1.N+1) before ours stops getting fixes, which is when Go 1.N+2 ships (February and August).
-- Gradle, AGP, Kotlin, libraries, NDK, actions and the scan tools: in batches, at least once a quarter.
-
-`.github/workflows/upkeep.yml` keeps the list. On the 10th of each month, and on every tag, it opens one issue (label `upkeep`) with:
-
-- every pin with a newer stable release (`scripts/upkeep/versions.py`): Syncthing, Go, the Go modules the bridge picks itself, Gradle, the NDK, each version in `gradle/libs.versions.toml`, the pinned actions, zizmor and osv-scanner. Not compileSdk/targetSdk, which are raised by hand with Android's behaviour changes, nor the Go modules that come with Syncthing.
-- F-Droid out of step (`scripts/upkeep/fdroid.sh`), once the app is there: fdroiddata's recipe differs from ours apart from versions (F-Droid would build a different APK, which cannot carry our signature, so that version would never be published), or F-Droid has not published our latest release within 10 days.
-
-The issue is updated when its list changes and closes itself when nothing is left; a check that breaks opens a second issue (label `upkeep-check`). Each Monday it also checks that main has had a commit in the last 45 days (`scripts/upkeep/quiet.sh`): GitHub turns off scheduled workflows after 60 days without activity, the vulnerability scan included, and nothing would report it. Otherwise it opens an issue (label `upkeep-quiet`) until the next commit. Locally: `scripts/upkeep/versions.py`, and `scripts/upkeep/fdroid.sh` (needs `gh`, `jq` and mikefarah's `yq`).
-
-A bump is an ordinary pull request: regenerate `gradle/verification-metadata.xml` for anything Gradle resolves, run `scripts/sbom.sh`, and for a new major version of an action check that its `action.yml` says `using: node24` or later.
-
-## Privacy and security
-
-- [Privacy](docs/privacy.md): what the app keeps on the phone, what goes to Syncthing's public servers and how to turn each off, permissions, your rights under the GDPR.
-- [Security policy](SECURITY.md): report a vulnerability privately through GitHub, never in a public issue.
-- [Testing and hardening](docs/testing.md): what each test covers and what it found, with its numbers.
-
-## Translations
-
-All text for people is in string resources; English is the source language; Italian, Spanish, German and French are translated. Files, conventions for translators, and how code handles text: [`docs/translations.md`](docs/translations.md).
+- [Development](docs/development.md): layout, build, tests, the security checks in CI, updating Syncthing, keeping everything up to date, the software bill of materials.
+- [Reproducible builds and releases](docs/releasing.md): what keeps builds byte-identical, the steps of a release, the F-Droid recipe.
+- [Testing and hardening](docs/testing.md), [input validation](docs/input-validation.md), [translations](docs/translations.md), [developer notes](docs/dev-notes.md).
 
 ## Licence
 
 AGPL-3.0-or-later: the GNU Affero General Public License version 3 (see `LICENSE`), or at your option any later version. The bundled Syncthing core is MPL-2.0.
 
-Everything the release APK contains, with versions and licences, is in the software bill of materials: [`docs/sbom.md`](docs/sbom.md), and [`docs/sbom.cdx.json`](docs/sbom.cdx.json) in CycloneDX 1.6 with checksums and the dependency graph. It covers the Android and Kotlin libraries, the Go modules linked into the core, C code they bundle, the third-party files in Syncthing's web GUI, and the pinned build tools.
-
-`scripts/sbom.sh` generates both files from the build itself: Gradle's resolved release classpath (licences from the POMs, checksums from `gradle/verification-metadata.xml`), `go list` with the core's build settings (licences read from each module's licence files), and `scripts/sbom/webgui.json` for the web GUI, whose files are pinned by checksum. It fails on anything it cannot place: a licence it has not seen before (it accepts only free software licences, so that the app stays free software), C code in a new Go package, a web GUI file in no entry or changed. CI keeps it current: the `sbom` job in `build.yml` regenerates it and fails when the committed files differ, and the release build checks the Go modules against the build info in the APK's `libgojni.so`. After a dependency, Syncthing or toolchain change, run `scripts/sbom.sh` and commit the result.
+Everything the release APK contains, with versions and licences, is in the [software bill of materials](docs/sbom.md).

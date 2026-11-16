@@ -2,7 +2,7 @@
 """The emulator end-to-end tests on the PC, for one commit (GitHub CI's e2e job until 11/2026).
 
 From a clean checkout: builds the debug app, its instrumented test APK and the test peer, then on an
-Android 15 and then an Android 16 emulator (one at a time, each started fresh) runs run.py and
+Android 15, then 16, then 17 emulator (one at a time, each started fresh) runs run.py and
 scenarios.py --only fast, each from a fresh install. Writes <out>/summary.md: the commit, the
 emulator and its images, and every step's result and time; all logs stay next to it. Paste the
 summary into the pull request. With --release a passing summary also goes to

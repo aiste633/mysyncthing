@@ -2,9 +2,10 @@
 
 A sync app can do more damage than most apps: when Syncthing records a file as deleted, every
 paired device deletes its copy too. So every change to MySyncthing goes through automated
-checks on each pull request, and every feature is also checked by hand on emulators and phones before
-it is merged. This page lists what is tested, how, and what the tests found. The numbers come
-from the test reports of October 2026, with Syncthing v2.1.7.
+checks on each pull request, and every feature is also checked by hand on emulators before
+it is merged; the larger ones have been checked on phones too. This page lists what is tested, how, and what the
+tests found. The numbers come from the test reports of October and November 2026, with Syncthing
+v2.1.7: a section with a date in its title is the record of that run, not of today's build.
 
 All tests use dummy data: generated files, made-up configurations and test devices. No test
 uses anyone's real folders, devices or backups.
@@ -13,13 +14,13 @@ uses anyone's real folders, devices or backups.
 
 | Area | How | Result |
 |---|---|---|
-| Every pull request | On GitHub: build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical. On the PC: the emulator end-to-end tests, with their results in the pull request | Required to merge |
-| Screen tests | 27 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 135 reference images, 4 contrast checks per screen, on every pull request |
-| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access and (Android 17) the local network taken away, monkey | Android 15, 16 and 17 on the PC (`scripts/e2e/pc.py`), before every merge; each release commits its results in [`docs/e2e/`](e2e/) |
+| Every pull request | On GitHub: build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a scan for known vulnerabilities in the Go code, a twin build that must be byte-identical. On the PC, when the pull request changes the app: the emulator end-to-end tests, with their results in the pull request | Required to merge |
+| Screen tests | 31 screens in light, dark, the largest font, Italian and German, and the text dialogs in landscape, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 177 reference images, 4 contrast checks per screen, on every pull request |
+| End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, length limits, a rotation with a dialog open, idle dialog, process death, All files access and (Android 17) the local network taken away, monkey | Android 15, 16 and 17 on the PC (`scripts/e2e/pc.py`), before every merge that changes the app; each release commits its results in [`docs/e2e/`](e2e/) |
 | App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15, 16 and 17, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
-| Fuzzing | 9 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
-| Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
+| Fuzzing | 11 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
+| Security reviews | An audit of the app, a gap analysis against common practice and a review of the whole project | 7 audit findings fixed; the hardening that followed is listed below |
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
 | Deep monkey | About 6 h of random UI events on Android 15 and 16: German at the largest font in dark mode, "Don't keep activities" with rotation, a live peer changing files | 2 ANRs found and fixed; no app crash of its own |
@@ -43,6 +44,7 @@ protected: a change reaches it only through a pull request whose checks have pas
 | `strings` | `scripts/check-strings.py`: text for people only in string resources, so it can be translated, and every string used with the number of arguments it expects (a missing one crashes at run time) |
 | `privacy` | `scripts/check-leaks.sh`: no personal detail (addresses, host names, device IDs, network card addresses, home paths, e-mail addresses) and no key material (a private key, or a key or keystore file) in any file, commit message or commit identity in the whole history. It works by allowlist: anything that is not a known public host or a placeholder fails, so a new kind of leak is caught without updating a list |
 | `sbom` | Regenerates the [software bill of materials](sbom.md) and fails if it differs from the committed one, or if a dependency has a licence it has not seen before |
+| `govulncheck` | Known Go vulnerabilities (vuln.go.dev) in code the app can reach: the bridge, the patched core, every module they link and the standard library of the pinned Go |
 | `workflows` | zizmor audits the GitHub workflows themselves: script injection, credentials left in the checkout, permissions, unpinned actions |
 | `reproducible` | Builds the release APK twice with different paths, time zones, locales and umasks, and fails if the bytes differ (a diffoscope report shows where). Checks that the Go modules inside the APK match the SBOM. On tags and manual runs, F-Droid's own build image builds it a third time and must match too (up to 90 min, so not on every pull request). A tag also needs the PC end-to-end results of its commit, committed as `docs/e2e/<version>.md` (`scripts/e2e/check-results.sh`) |
 
@@ -61,7 +63,7 @@ Every month, and on every tag, an upkeep check lists newer releases of everythin
 pins (Syncthing, Go, Gradle, the NDK, the libraries, the actions, the scan tools) and checks
 that F-Droid keeps up: its recipe must match ours, and it must publish each release within 10
 days. Weekly it warns before GitHub turns off these scheduled checks after 60 quiet days. See
-[Keeping up to date](../README.md#keeping-up-to-date).
+[Keeping up to date](development.md#keeping-up-to-date).
 
 The workflows use a read-only token and leave no credentials in the checkout, and every
 GitHub Action is pinned by its full commit hash, so a moved tag cannot change what CI runs. A
@@ -104,8 +106,9 @@ The app's real screens run on the JVM (Robolectric, Android 16) with made-up fol
 devices: three folders (up to date, syncing, stopped by an error), three devices (on the LAN,
 through a relay, offline and paused by the user) and a folder offer. No real device ID, name or address is used.
 
-- Screenshots: 27 screens, from the first-run checklist to the export form (Strong, Compatible and None), each in light,
-  dark, the largest font (200 %), Italian and German (the longest text): 135 images in `app/src/test/screenshots/`.
+- Screenshots: 31 screens, from the first-run checklist to the export form (Strong, Compatible and None), each in light,
+  dark, the largest font (200 %), Italian and German (the longest text): 155 images in `app/src/test/screenshots/`.
+  The folder browser and seven text dialogs are also shown in landscape (22 more images, 177 in all).
   The device list and a device's screen are also shown while a run condition pauses every device,
   and the device list after 30 min with no device connected; the device list and screens while
   devices' own sync windows hold them or never let them sync, and the sync windows editor for a
@@ -143,7 +146,7 @@ through a relay, offline and paused by the user) and a folder offer. No real dev
 Both checks were tried on purpose against a broken screen, and both failed as they should.
 Dialogs with a text field are left out upright: at the platform's default width Robolectric never
 gets them idle. On a phone on its side they fill the screen (`EntryDialog`), and `DialogScreenshotTest`
-compares all six in light, dark and German at the largest font; `EntryDialogTest` checks their bar.
+compares all seven in light, dark and German at the largest font; `EntryDialogTest` checks their bar.
 The end-to-end tests cover the upright ones and the rotation between the two on the emulators.
 
 ## End-to-end tests
@@ -184,6 +187,7 @@ The network tests and any measurement still run alone.
 | Own sync windows | The peer's own windows closed now: the peer loses the phone, the core holds it, the card names the next opening and its pause button rests, the device's screen says why; turned off in its editor (Save), the peer comes back and the hold is released. Own windows that miss the global ones: the peer stays away and the card says "Never syncs". The windows are set around the phone's clock, so no alarm is waited for |
 | Typed text | Text typed in a rename dialog and in list dialogs (Settings, device defaults) survives the screen being recreated. Checked at once, with no wait: dialogs on values read from Syncthing are there on the recreated screen's first frame, and Settings keeps its scroll position. Afterwards only one copy of the screen stays in memory |
 | Length limits | A folder name of 1025 characters keeps Save off, 1024 turns it on; the core refuses a 1025-character device name (as from the web GUI) and keeps running; with this phone named 1024 four-byte characters the peer connects again; a 257 kB `.stignore` written on disk opens read-only |
+| Rotation with a dialog open | The phone turned on its side and back with a rename dialog open and text typed: the same activity and the same windows stay (nothing is destroyed or added again), and so do the text, its cursor and the keyboard's focus; on its side the dialog fills the screen with Cancel and Save on a bar at the top |
 | Folder browser | Add folder, Browse, Download (which Android's own picker refuses), New folder `mysyncthing-test-browse`, Use this folder: the form takes the folder's name and the core gets the folder at that path; removed again after |
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Recent changes | A file written on the phone reaches the peer; the folder card's history icon opens that folder's recent changes, which list the file as changed on this phone |
@@ -195,8 +199,9 @@ The network tests and any measurement still run alone.
 | Remove goes back to the tab | A folder and a device removed on their screens: the Folders and Devices lists show, not a blank screen or the wrong tab |
 | Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze, no blank screen |
 
-The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. On the PC
-emulators (2026-10-28) every step passed on both versions, with 0 StrictMode reports.
+The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. Each release
+commits the results of its run in [`docs/e2e/`](e2e/): for 0.5.0 every step passed on Android 15, 16 and 17.
+(On 2026-10-28, on Android 15 and 16, the log held 0 StrictMode reports.)
 
 On a PC the runs keep the emulator off Syncthing's public servers: `E2E_OFFLINE=1 scripts/e2e/emulator.sh <api>`
 gives the emulator a DNS server where nothing answers (the script checks that no name resolves), and `--offline`
@@ -248,8 +253,8 @@ download is running. Both builds are signed with the same key.
 
 When the new build has a newer Syncthing core, the core migrates the old config and database
 here, so a breaking change upstream fails the test too. It runs on the PC emulators before
-each release, from the last release and from the oldest one still in use (a step of releasing
-in the [README](../README.md#reproducible-builds-and-releases)), not in CI.
+each release, from the last release (a step of releasing
+in [Releasing](releasing.md#releasing)), not in CI.
 
 | Step | What must hold |
 |---|---|
@@ -257,6 +262,7 @@ in the [README](../README.md#reproducible-builds-and-releases)), not in CI.
 | Nothing lost | The keys (so the device ID) are byte-identical. Every value of the core's config is unchanged, except the format version and the GUI's port and login, both new at every start; a newer core may only add values, which are logged. The ignore patterns read back the same. The database files are the same files, so there is no full rescan and no "moved from another phone" note. Every app setting is unchanged, except the login stored by 0.2.0 and older, which must be gone. All files access, notifications and the battery exemption are still granted |
 | The interrupted download | Finishes after the update, identical to the peer's file, with no conflict copies |
 | In the new build | The setup checklist is done, the peer and the folder are there, and new files sync both ways |
+| Local network access (Android 17) | Where the update leaves the permission not granted, as after a release that did not ask for it yet (0.3.0 and older): the core does not start and the app posts its notice; granted and the app opened, sync comes back. Where it stays granted, nothing is asked |
 | A user's Stop | Holds through an update |
 | Start at boot off | An update still starts sync again when it was running before |
 | Going back | Android refuses the old build as a downgrade |
@@ -300,7 +306,7 @@ limits](input-validation.md#length-limits).
 ## Fuzzing
 
 Go's fuzzer feeds random input to everything that reaches the core or reads a file from
-outside. The seed inputs run with every push; the long runs below were done when each target
+outside. The seed inputs run with every `go test`, so on every pull request; the long runs below were done when each target
 was written (without network access, since a fuzzed configuration can switch on discovery).
 
 | Target | Input | Invariant | Long run |
@@ -314,6 +320,8 @@ was written (without network access, since a fuzzed configuration can switch on 
 | `FuzzReadForkBackup` | Backup zips (Syncthing-Fork's and this app's) | Refused, or read and passing the import policy, never a crash; own sync windows only for devices the backup pairs with | 10 min, 499,258 inputs |
 | `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads, the import policy leaves nothing that runs a command, cleans out or reaches files outside shared storage, or reports elsewhere, and nothing over its length limit; a second run changes nothing | 15 min, 2,534,263 inputs (found a slice difference, fixed) |
 | `FuzzReadJavaPrefs` | Syncthing-Fork's saved preferences (Java serialization, read by a strict allowlist parser, never deserialized) | Refused or read, never a crash | 3 min |
+| `FuzzUnseal` | Strongly encrypted exports of this app, with any password | Refused or opened, never a crash, and never more bytes out than went in; the whole import path then reads the result | Seed inputs on every pull request; no long run recorded |
+| `FuzzMemoryLimitError` | A core memory limit and the phone's memory | Accepted exactly when it is 0 (no limit), or at least the minimum and no more than the phone's memory | Seed inputs on every pull request; no long run recorded |
 
 `FuzzRESTConfig` found a bug in Syncthing itself: six GUI setting changes in a row made the
 GUI and API unreachable for 15 seconds, because the core's supervisor counted each listener
@@ -352,11 +360,29 @@ open-source Android apps, which gave a list of 19 items. Done so far:
 - [Security policy](../SECURITY.md) with private reporting through GitHub, and a
   [privacy page](privacy.md).
 
+**Project review (2026-11-14).** A review of the whole project found no serious defect. What it
+suggested shipped in 0.5.0:
+
+- The app talks to its core over TLS and trusts only the core's own certificate, compared byte
+  for byte, in the REST client and in the web view. Before, it was plain HTTP on loopback, and
+  another app could have taken the port in the moment a restart leaves it free
+  (`TestGUIOnlyOverPinnedTLS`, `TestGUICertificateRenewed`, `RestClientTlsTest`). Release builds
+  allow the app's own code no cleartext traffic.
+- The app's calls to its core never go through the system's proxy, which could otherwise have
+  received them with the API key (`RestClientProxyTest`).
+- The boot receiver is no longer exported: only Android itself can start the app through it.
+- Every masked field asks for a password keyboard, which neither suggests nor learns what is typed.
+- The signing script checks the build provenance of the APK before it signs.
+- The leak check also looks for key material and network card addresses.
+- Android offers to keep the app's data at uninstall (off by default), so a reinstall can keep
+  the phone's identity.
+
 ## Emulators and phones
 
 Every feature is checked by hand before it is merged, on Android 15, 16 and 17 emulators (17
-since 0.4.0) with a local test peer; the larger ones also on two real phones (Android 16 and
-Android 17; the second ran Android 15 until 2026-11-11). Screens are
+since 0.4.0) with a local test peer. The larger ones were also checked on two real phones (Android 16
+and Android 17; the second ran Android 15 until 2026-11-11); since 2026-11-14 phones are used when
+the maintainer asks for it, not as a standing step. Screens are
 checked in light and dark mode, at the largest font size, and with TalkBack: every button is
 named, and every switch and checkbox reads as on or off. The Italian, Spanish, German and French
 translations were walked screen by screen the same way.
@@ -551,7 +577,7 @@ and take down the namespace.
 
 The same commit gave a byte-identical unsigned release APK, with the same SHA-256, from a local
 build, both legs of the CI twin build, and F-Droid's build server image. CI checks the twin build on
-every pull request, and F-Droid's build on every tag. See [README](../README.md#reproducible-builds-and-releases).
+every pull request, and F-Droid's build on every tag. See [Reproducible builds](releasing.md#reproducible-builds).
 
 ## Not covered yet
 

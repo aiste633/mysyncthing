@@ -1,6 +1,6 @@
 # Privacy
 
-Last updated: 2 November 2026. Changes to this page are in the repository's history.
+Last updated: 16 November 2026. Changes to this page are in the repository's history.
 
 MySyncthing runs Syncthing on your phone. Syncthing copies folders directly between devices you
 pair yourself. There is no MySyncthing account and no MySyncthing server: the app's developer
@@ -31,7 +31,7 @@ brings back this phone's identity and setup; leave that box unticked and everyth
 | Device ID and its key pair (`cert.pem`, `key.pem`) | Identifies this phone to your other devices |
 | Syncthing's configuration: paired devices (names, IDs, addresses), folders (names, paths) | To sync what you set up |
 | Syncthing's database of file names, sizes, times and hashes | To know what changed |
-| App settings (run conditions, sync windows, each device's own sync windows, proxy) | To behave as you set it up |
+| App settings (run conditions, sync windows, each device's own sync windows, proxy with its user name and password if you set them, core memory limit) | To behave as you set it up |
 | Syncthing's log, in memory only | Shown in the web GUI's Logs view; gone when the app stops |
 
 The synced files themselves are in the folders you choose on shared storage.
@@ -47,7 +47,13 @@ transfer stays between the two phones. Afterwards stop Syncthing on the old phon
 reminds you once): two phones with the same keys look like one device to your other devices.
 
 A backup you export (Settings › System › Export a backup) contains the configuration, the
-device keys and the app settings (run conditions, sync windows, proxy). It is written where you choose, in one of three formats. Strong (the default) encrypts the whole file with XChaCha20-Poly1305 under a key Argon2id derives from your password (64 MiB, 3 passes), which also hides the file names inside; only this app opens it. Compatible is a zip with WinZip AES-256 that Syncthing-Fork and zip apps open, but its key derivation (1000 PBKDF2-SHA1 rounds) lets a computer try millions of passwords per second and the file names stay readable: use it only to move to another app. None is not encrypted.
+device keys and the app settings (run conditions, sync windows, proxy), without the web GUI's
+login. It is written where you choose, in one of three formats. Strong (the default) encrypts
+the whole file with XChaCha20-Poly1305 under a key Argon2id derives from your password (64 MiB,
+3 passes), which also hides the file names inside; only this app opens it. Compatible is a zip
+with WinZip AES-256 that Syncthing-Fork and zip apps open, but its key derivation (1000
+PBKDF2-SHA1 rounds) lets a computer try millions of passwords per second and the file names stay
+readable: use it only to move to another app. None is not encrypted.
 Keep it safe: anyone with the file can act as this phone towards your devices.
 
 An imported backup (this app's or Syncthing-Fork's) never carries over consent to usage
@@ -71,7 +77,7 @@ developer. Each is a Syncthing default that you can turn off in the app's Settin
 |---|---|---|
 | Global discovery (`discovery-lookup`, `discovery-announce-v4` and `-v6.syncthing.net`) | This phone's device ID, its IP address and the ports it listens on; the device IDs it looks up | Settings › Finding devices › Internet discovery |
 | Relays (from the pool at `relays.syncthing.net`) | When no direct connection works: the IP addresses and device IDs of both ends, and the encrypted traffic, which the relay cannot read | Settings › Finding devices › Relays |
-| STUN (`stun.syncthing.net`, or public STUN servers run by others if it cannot be found) | This phone's IP address, to find out how it can be reached from outside | Off with Router port opening (Settings › Finding devices) |
+| STUN (`stun.syncthing.net`, or public STUN servers run by others if it cannot be found or reached) | This phone's IP address, to find out how it can be reached from outside | Off with Router port opening (Settings › Finding devices) |
 
 The Syncthing project's own documentation describes these services:
 [Security principles](https://docs.syncthing.net/users/security.html).
@@ -85,9 +91,10 @@ Settings › Finding devices › Local network, and Router port opening.
 ### Anonymous usage reporting (only with your consent)
 
 At first start the app asks whether to send Syncthing's anonymous usage reports to the
-Syncthing project. It is off unless you say yes, and Settings › Advanced › Anonymous usage
-reporting turns it off at any time; *Preview usage report* shows the exact report. What the
-reports contain and how they are used is described by the Syncthing project itself:
+Syncthing project; *Preview usage report* in that question shows the exact report. It is off
+unless you say yes, and Settings › Advanced › Anonymous usage reporting turns it on or off at
+any time. What the reports contain and how they are used is described by the Syncthing project
+itself:
 [Security principles](https://docs.syncthing.net/users/security.html) and
 [data.syncthing.net](https://data.syncthing.net).
 
@@ -98,12 +105,18 @@ of what the core was running at that moment. They hold no file contents. Turning
 off stops them too. Syncthing's reports of a crashed core are not sent: they need Syncthing's
 own launcher, which the app does not use.
 
-Syncthing's update check is off: updates come through the app store only.
+Syncthing's update check is off, and the app does not look for updates itself: an update comes
+from where you installed the app.
 
 ### Through a proxy
 
-With a proxy set (Settings › Network › Proxy), Syncthing's connections go through it, for
-example Tor with Orbot. The proxy's operator sees the connections the proxy carries.
+With a proxy set (Settings › Network › Proxy), Syncthing's outgoing connections go through it,
+for example Tor with Orbot. The proxy's operator sees the connections the proxy carries. Devices
+on the local network are always reached directly. With *Only through the proxy* on, nothing
+else goes around it: Syncthing waits when the proxy cannot be reached, and QUIC and router port
+opening are off. With it off, the proxy does not hide this phone's IP address: Syncthing also
+connects directly when the proxy fails or is slow to answer, and QUIC and router port opening do
+not use the proxy.
 
 ## Permissions
 
@@ -120,7 +133,9 @@ example Tor with Orbot. The proxy's operator sees the connections the proxy carr
 ## The web GUI and links
 
 Syncthing's web GUI runs on the phone, locked with a random password that only the app knows.
-The password is new every time Syncthing starts and is never stored by the app.
+The login is new every time Syncthing starts. The app does not store it; Syncthing's
+configuration in the app's private storage holds the password's hash and the key for that run,
+and the next start replaces both.
 The built-in view loads nothing from the internet. Links to websites open in your browser, under
 that browser's own privacy terms.
 
