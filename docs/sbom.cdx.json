@@ -17,7 +17,7 @@
       "type": "application",
       "bom-ref": "pkg:android/eu.stedb.mysyncthing",
       "name": "MySyncthing",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "licenses": [
         {
           "license": {
@@ -25,7 +25,7 @@
           }
         }
       ],
-      "purl": "pkg:android/eu.stedb.mysyncthing@0.4.0",
+      "purl": "pkg:android/eu.stedb.mysyncthing@0.5.0",
       "externalReferences": [
         {
           "type": "vcs",
@@ -1717,14 +1717,14 @@
     },
     {
       "type": "library",
-      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0",
       "group": "org.jetbrains.kotlinx",
       "name": "kotlinx-serialization-core-jvm",
-      "version": "1.12.0",
+      "version": "1.13.0",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "bcfddcac76159058ba0953af05938c17111d238cd41be7191874656454d62f1a"
+          "content": "db2eb98f585a408970ce726af9dfbaccbdfe5df498ccd9dba9918d208974302d"
         }
       ],
       "licenses": [
@@ -1734,18 +1734,18 @@
           }
         }
       ],
-      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
     },
     {
       "type": "library",
-      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0",
+      "bom-ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.13.0",
       "group": "org.jetbrains.kotlinx",
       "name": "kotlinx-serialization-json-jvm",
-      "version": "1.12.0",
+      "version": "1.13.0",
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "879eb73e46cb63253ab0fa7cca4448f5c96bca1a16ff377abcb71ebab60e0631"
+          "content": "389b0dd9b4b952db889c160a2478b1cbe54680804f5315756108389dbe9df251"
         }
       ],
       "licenses": [
@@ -1755,7 +1755,7 @@
           }
         }
       ],
-      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0"
+      "purl": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.13.0"
     },
     {
       "type": "library",
@@ -3483,9 +3483,9 @@
     },
     {
       "type": "application",
-      "bom-ref": "pkg:maven/com.android.tools.build/gradle@9.5.0",
+      "bom-ref": "pkg:maven/com.android.tools.build/gradle@9.5.1",
       "name": "android-gradle-plugin",
-      "version": "9.5.0",
+      "version": "9.5.1",
       "scope": "excluded",
       "licenses": [
         {
@@ -3494,7 +3494,7 @@
           }
         }
       ],
-      "purl": "pkg:maven/com.android.tools.build/gradle@9.5.0",
+      "purl": "pkg:maven/com.android.tools.build/gradle@9.5.1",
       "properties": [
         {
           "name": "mysyncthing:pinned-in",
@@ -3567,9 +3567,9 @@
     },
     {
       "type": "application",
-      "bom-ref": "pkg:generic/gradle@9.8.2",
+      "bom-ref": "pkg:generic/gradle@9.9.1",
       "name": "gradle",
-      "version": "9.8.2",
+      "version": "9.9.1",
       "scope": "excluded",
       "licenses": [
         {
@@ -3578,7 +3578,7 @@
           }
         }
       ],
-      "purl": "pkg:generic/gradle@9.8.2",
+      "purl": "pkg:generic/gradle@9.9.1",
       "properties": [
         {
           "name": "mysyncthing:pinned-in",
@@ -3653,7 +3653,7 @@
         "pkg:maven/com.squareup.okhttp3/okhttp-android@5.5.1?type=aar",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
         "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.13.0"
       ]
     },
     {
@@ -4513,7 +4513,7 @@
         "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-android@2.11.0?type=aar",
         "pkg:maven/androidx.lifecycle/lifecycle-viewmodel-savedstate-android@2.11.0?type=aar",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
       ]
     },
     {
@@ -4537,7 +4537,7 @@
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
         "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-android@1.11.0",
         "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
       ]
     },
     {
@@ -4554,7 +4554,7 @@
         "pkg:maven/androidx.savedstate/savedstate-android@1.5.0?type=aar",
         "pkg:maven/androidx.savedstate/savedstate-ktx@1.5.0?type=aar",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
       ]
     },
     {
@@ -4582,7 +4582,7 @@
         "pkg:maven/androidx.savedstate/savedstate-compose-android@1.5.0?type=aar",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
         "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
       ]
     },
     {
@@ -4600,7 +4600,7 @@
         "pkg:maven/androidx.navigation/navigation-common-android@2.10.2?type=aar",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
         "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
       ]
     },
     {
@@ -4644,7 +4644,7 @@
         "pkg:maven/androidx.lifecycle/lifecycle-common-jvm@2.11.0",
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
         "pkg:maven/org.jetbrains.kotlinx/kotlinx-coroutines-core-jvm@1.11.0",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
       ]
     },
     {
@@ -4769,16 +4769,16 @@
       ]
     },
     {
-      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0",
+      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0",
       "dependsOn": [
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21"
       ]
     },
     {
-      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.12.0",
+      "ref": "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-json-jvm@1.13.0",
       "dependsOn": [
         "pkg:maven/org.jetbrains.kotlin/kotlin-stdlib@2.4.21",
-        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.12.0"
+        "pkg:maven/org.jetbrains.kotlinx/kotlinx-serialization-core-jvm@1.13.0"
       ]
     },
     {
