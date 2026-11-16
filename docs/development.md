@@ -14,7 +14,7 @@ Paths in `code` are from the repository root.
 | `go/syncthing/` | Upstream Syncthing, git submodule pinned to a release tag |
 | `go/patches/` | Our fixes to upstream Syncthing, applied to the submodule by `go/patch.sh` at build time |
 
-The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, over TLS that trusts only the core's own certificate, authenticated with an API key. The web GUI is protected by a random 64-character user and password that only the app knows, because other apps can reach loopback; the core refuses any change to them. The API key, user and password are new at every core start and kept only in memory; the old ones and the web GUI sessions they opened stop working.
+The Go core is built into `go/build/stbridge.aar` with gomobile. Kotlin talks to it only through Syncthing's REST API on `127.0.0.1:<random port>`, over TLS that trusts only the core's own certificate, authenticated with an API key. The web GUI is protected by a random 64-character user and password that only the app knows, because other apps can reach loopback; the core refuses any change to them. The API key, user and password are new at every core start; the old ones and the web GUI sessions they opened stop working. The app keeps them only in memory; the core's `config.xml`, in the app's private storage, holds the key, the user and the password's bcrypt hash until the next start replaces them (an export leaves them out).
 
 ## Build
 

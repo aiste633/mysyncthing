@@ -79,7 +79,7 @@ Details: [privacy](docs/privacy.md): what the app keeps on the phone, what goes 
 
 ### Hardening
 
-- The app talks to its Syncthing core only inside the phone, over TLS that trusts only the core's own certificate, with an API key. The key and the web GUI's login are new at every start and kept only in memory.
+- The app talks to its Syncthing core only inside the phone, over TLS that trusts only the core's own certificate, with an API key. The key and the web GUI's login are new at every start, and the old ones stop working. The app keeps them only in memory; Syncthing's configuration, in the app's private storage, holds the key and the password's hash until the next start replaces them.
 - The web GUI is protected by a random 64-character user and password that only the app knows, because other apps on the phone can reach the same address; the core refuses any change to them. The built-in web view loads only the core's own address and nothing else.
 - Of the app's own parts, other apps can open only its main screen. A list of every permission and every part other apps can reach, libraries included, is kept in the repository, and CI fails when it changes.
 - Imported backups are untrusted input: settings that could run a command, delete files outside the folder, reach the app's own files or report to other servers are taken out and listed before you import, and a backup changed after its preview is refused.

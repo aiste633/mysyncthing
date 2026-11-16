@@ -112,5 +112,10 @@ inputs run with every `go test`.
 | `FuzzCheckIgnores` | Ignore pattern text | Whatever `CheckIgnores` accepts loads without error once written |
 | `FuzzProxyFrom` | Proxy scheme, host, port, user, password | Either refused, or the proxy URL it builds parses back to the same URL |
 | `FuzzReadOwnSettings` | `mysyncthing.json` (run conditions with time windows, proxy) | Either refused, or it re-encodes and reads back to the same settings |
+| `FuzzReadForkBackup` | A backup file (a zip, plain or encrypted, or a sealed file) and a password | Either refused, or read without a panic or runaway memory, and what is read passes the import policy |
+| `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads comes out of the import policy safe, and a second run changes nothing |
+| `FuzzReadJavaPrefs` | Syncthing-Fork's saved preferences (Java serialization) | Either refused, or read into the value types the reader promises, never a panic |
+| `FuzzUnseal` | A sealed (Strong) backup and a password | Either refused, or opened to no more bytes than went in; the whole import path then reads the same bytes |
+| `FuzzMemoryLimitError` | A core memory limit and the phone's memory, in bytes | Accepted exactly when it is 0, or at least the minimum and no more than the phone's memory (any limit when the memory is unknown) |
 
 Run without network access: a fuzzed config can turn on usage reporting or discovery.
