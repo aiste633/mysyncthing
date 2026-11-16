@@ -1,8 +1,10 @@
 package stbridge
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/syncthing/syncthing/lib/protocol"
 	"github.com/syncthing/syncthing/lib/syncthing"
+	"github.com/syncthing/syncthing/lib/tlsutil"
 )
 
 // Starts the real core in a temp home, checks REST auth, and restarts it in
@@ -29,9 +32,9 @@ func TestStartStopRestart(t *testing.T) {
 			t.Fatalf("round %d: not running after start", round)
 		}
 
-		req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/rest/system/status", nil)
+		req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+"/rest/system/status", nil)
 		req.Header.Set("X-API-Key", "test-key")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := guiClient.Do(req)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -40,7 +43,7 @@ func TestStartStopRestart(t *testing.T) {
 			t.Fatalf("round %d: status %d with API key", round, resp.StatusCode)
 		}
 
-		unauth, err := http.Get("http://" + GuiAddress() + "/rest/system/status")
+		unauth, err := guiClient.Get("https://" + GuiAddress() + "/rest/system/status")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -65,9 +68,9 @@ func TestGUILoginLocked(t *testing.T) {
 	defer Stop()
 
 	patch := func(body string) int {
-		req, _ := http.NewRequest(http.MethodPatch, "http://"+GuiAddress()+"/rest/config/gui", strings.NewReader(body))
+		req, _ := http.NewRequest(http.MethodPatch, "https://"+GuiAddress()+"/rest/config/gui", strings.NewReader(body))
 		req.Header.Set("X-API-Key", "test-key")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := guiClient.Do(req)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -115,9 +118,9 @@ func TestRestartInPlace(t *testing.T) {
 	before := current()
 
 	call := func(method, path string) error {
-		req, _ := http.NewRequest(method, "http://"+addr+path, nil)
+		req, _ := http.NewRequest(method, "https://"+addr+path, nil)
 		req.Header.Set("X-API-Key", "test-key")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := guiClient.Do(req)
 		if err != nil {
 			return err
 		}
@@ -147,6 +150,82 @@ func TestRestartInPlace(t *testing.T) {
 	}
 }
 
+// The API and GUI answer only over TLS with the certificate GuiCertificate
+// reads: plain HTTP gets a redirect and nothing else, and a client that checks
+// the certificate the usual way (as a server on the port in a gap would need
+// it to) does not get through. The certificate stays the same over a new start.
+func TestGUIOnlyOverPinnedTLS(t *testing.T) {
+	home := t.TempDir()
+	if err := Start(home, "test-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(Stop)
+	pin := GuiCertificate()
+	if len(pin) == 0 {
+		t.Fatal("no GUI certificate")
+	}
+
+	resp, err := guiClient.Get("https://" + GuiAddress() + "/rest/noauth/health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.TLS == nil || !bytes.Equal(resp.TLS.PeerCertificates[0].Raw, pin) {
+		t.Fatal("the GUI serves another certificate than GuiCertificate's")
+	}
+
+	plain := &http.Client{CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}
+	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/rest/system/status", nil)
+	req.Header.Set("X-API-Key", "test-key")
+	resp, err = plain.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if resp.StatusCode/100 != 3 || !strings.HasPrefix(resp.Header.Get("Location"), "https://") || bytes.Contains(body, []byte("myID")) {
+		t.Fatalf("plain HTTP: %d %q %q", resp.StatusCode, resp.Header.Get("Location"), body)
+	}
+
+	if _, err := http.Get("https://" + GuiAddress() + "/rest/noauth/health"); err == nil {
+		t.Fatal("a client without the pin trusted the GUI's certificate")
+	}
+
+	Stop()
+	if err := Start(home, "test-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(GuiCertificate(), pin) {
+		t.Fatal("GUI certificate changed over a new start")
+	}
+}
+
+// Upstream renews the GUI certificate when the listener starts and it expires
+// within a month. GuiCertificate must then give the new one, which the GUI serves.
+func TestGUICertificateRenewed(t *testing.T) {
+	home := t.TempDir()
+	if err := os.MkdirAll(home, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	old, err := tlsutil.NewCertificate(filepath.Join(home, "https-cert.pem"), filepath.Join(home, "https-key.pem"), "syncthing", 10, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Start(home, "test-key", "android", "secret"); err != nil {
+		t.Fatal(err)
+	}
+	defer Stop()
+	pin := GuiCertificate()
+	if len(pin) == 0 || bytes.Equal(pin, old.Certificate[0]) {
+		t.Fatal("the expiring certificate was not renewed")
+	}
+	resp, err := guiClient.Get("https://" + GuiAddress() + "/rest/noauth/health")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+}
+
 // Credentials that can't work as an HTTP header, a Basic auth login or a
 // bcrypt password are refused before anything is written.
 // The running core says which wrapper it is in, where upstream shows it: in the
@@ -158,7 +237,7 @@ func TestVersionNamesTheWrapper(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer Stop()
-	req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/rest/system/version", nil)
+	req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+"/rest/system/version", nil)
 	req.Header.Set("X-API-Key", "key")
 	resp, err := client.Do(req)
 	if err != nil {
@@ -262,9 +341,9 @@ func TestFolderIDsInRESTPaths(t *testing.T) {
 	}
 	defer Stop()
 	call := func(method, path, body string) int {
-		req, _ := http.NewRequest(method, "http://"+GuiAddress()+path, strings.NewReader(body))
+		req, _ := http.NewRequest(method, "https://"+GuiAddress()+path, strings.NewReader(body))
 		req.Header.Set("X-API-Key", "test-key")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := guiClient.Do(req)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -296,9 +375,9 @@ func TestNewDevicesUseOneConnection(t *testing.T) {
 	}
 	send := func(method, path, body string) {
 		t.Helper()
-		req, _ := http.NewRequest(method, "http://"+GuiAddress()+path, strings.NewReader(body))
+		req, _ := http.NewRequest(method, "https://"+GuiAddress()+path, strings.NewReader(body))
 		req.Header.Set("X-API-Key", "app-key")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := guiClient.Do(req)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -345,7 +424,7 @@ func TestLoginNewEveryStart(t *testing.T) {
 	t.Cleanup(Stop)
 	status := func(set func(*http.Request)) int {
 		t.Helper()
-		req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/rest/system/status", nil)
+		req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+"/rest/system/status", nil)
 		set(req)
 		resp, err := client.Do(req)
 		if err != nil {
@@ -362,7 +441,7 @@ func TestLoginNewEveryStart(t *testing.T) {
 	// cookies and the CSRF header; nil when no session was opened.
 	login := func(user, password string) func(*http.Request) {
 		t.Helper()
-		req, _ := http.NewRequest(http.MethodGet, "http://"+GuiAddress()+"/", nil)
+		req, _ := http.NewRequest(http.MethodGet, "https://"+GuiAddress()+"/", nil)
 		req.SetBasicAuth(user, password)
 		resp, err := client.Do(req)
 		if err != nil {
@@ -403,7 +482,7 @@ func TestLoginNewEveryStart(t *testing.T) {
 	mu.Lock()
 	before := app
 	mu.Unlock()
-	req, _ := http.NewRequest(http.MethodPost, "http://"+GuiAddress()+"/rest/system/restart", nil)
+	req, _ := http.NewRequest(http.MethodPost, "https://"+GuiAddress()+"/rest/system/restart", nil)
 	key("key-1")(req)
 	resp, err := client.Do(req)
 	if err != nil {

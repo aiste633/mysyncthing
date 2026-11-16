@@ -102,7 +102,7 @@ object Fixtures {
         globalDiscovery = true,
     )
 
-    val core = CoreState.Running(RestClient("127.0.0.1:9", "test"), "127.0.0.1:9", myId, Credentials("test", "test", "test"))
+    val core = CoreState.Running(RestClient("127.0.0.1:9", "test") { null }, "127.0.0.1:9", myId, Credentials("test", "test", "test"))
 
     val summary = summarize(core, snapshot, blockedBy = null, online = true)
 

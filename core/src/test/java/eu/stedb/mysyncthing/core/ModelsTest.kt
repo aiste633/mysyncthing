@@ -4,7 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class ModelsTest {
-    private val json = RestClient("127.0.0.1:1", "k").json
+    private val json = RestClient.plain("127.0.0.1:1", "k").json
 
     /**
      * The core keeps speed limits in a Go int, 64-bit on phones; the web GUI takes

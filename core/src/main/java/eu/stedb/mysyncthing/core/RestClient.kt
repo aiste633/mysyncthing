@@ -28,14 +28,22 @@ import java.io.IOException
 import java.net.Proxy
 import java.time.Instant
 import java.util.concurrent.TimeUnit
+import javax.net.ssl.SSLContext
+import javax.net.ssl.X509TrustManager
 import kotlin.coroutines.resumeWithException
 
 class ApiException(val code: Int, message: String) : IOException("HTTP $code: $message")
 
-/** Thin client for Syncthing's REST API on loopback. */
-class RestClient(address: String, private val apiKey: String) {
-    private val base: HttpUrl = HttpUrl.Builder().scheme("http").host(address.substringBeforeLast(':'))
-        .port(address.substringAfterLast(':').toInt()).build()
+/**
+ * Thin client for Syncthing's REST API on loopback, over TLS that trusts only the core's own
+ * certificate ([certificate], go/bridge GuiCertificate; see [isCoreCertificate]).
+ */
+class RestClient private constructor(address: String, private val apiKey: String, trust: X509TrustManager?) {
+    constructor(address: String, apiKey: String, certificate: () -> ByteArray?) :
+        this(address, apiKey, CoreTrustManager(certificate))
+
+    private val base: HttpUrl = HttpUrl.Builder().scheme(if (trust != null) "https" else "http")
+        .host(address.substringBeforeLast(':')).port(address.substringAfterLast(':').toInt()).build()
 
     private val http = OkHttpClient.Builder()
         // Never through the phone's proxy (a Wi-Fi network's manual or PAC setting): the calls carry the
@@ -44,6 +52,14 @@ class RestClient(address: String, private val apiKey: String) {
         .readTimeout(90, TimeUnit.SECONDS) // event long-poll uses 60 s
         // All calls go to one host (loopback): OkHttp's default of 5 at a time would queue them behind long-polls.
         .dispatcher(Dispatcher().apply { maxRequests = 64; maxRequestsPerHost = 64 })
+        .apply {
+            if (trust != null) {
+                val tls = SSLContext.getInstance("TLS").apply { init(null, arrayOf(trust), null) }
+                sslSocketFactory(tls.socketFactory, trust)
+                // The certificate itself is pinned; the name in it is the phone's host name, not 127.0.0.1.
+                hostnameVerifier { host, _ -> host == base.host }
+            }
+        }
         .build()
 
     val json = Json { ignoreUnknownKeys = true; explicitNulls = false }
@@ -315,8 +331,11 @@ class RestClient(address: String, private val apiKey: String) {
         })
     }
 
-    private companion object {
-        val JSON = "application/json".toMediaType()
+    internal companion object {
+        private val JSON = "application/json".toMediaType()
+
+        /** Plain HTTP, for tests against a fake core that has no certificate. */
+        fun plain(address: String, apiKey: String) = RestClient(address, apiKey, null)
     }
 }
 
