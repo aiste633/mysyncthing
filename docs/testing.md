@@ -14,11 +14,11 @@ uses anyone's real folders, devices or backups.
 | Area | How | Result |
 |---|---|---|
 | Every pull request | On GitHub: build, Go and Kotlin unit tests, screen tests, lint, text, leak, manifest, workflow and SBOM checks, a twin build that must be byte-identical. On the PC: the emulator end-to-end tests, with their results in the pull request | Required to merge |
-| Screen tests | 27 screens in light, dark, the largest font, Italian and German, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 135 reference images, 4 contrast checks per screen, on every pull request |
+| Screen tests | 31 screens in light, dark, the largest font, Italian and German, and the text dialogs in landscape, compared with reference images; forms; TalkBack names; text contrast with normal and high-contrast palettes | 177 reference images, 4 contrast checks per screen, on every pull request |
 | End-to-end | The app on emulators against a real Syncthing peer: pairing, sync both ways, restore, run conditions, device pause, the Devices tab, own sync windows, typed text, idle dialog, process death, All files access and (Android 17) the local network taken away, monkey | Android 15, 16 and 17 on the PC (`scripts/e2e/pc.py`), before every merge; each release commits its results in [`docs/e2e/`](e2e/) |
 | App updates | The last release, set up and syncing, updated in place to the new build in the middle of a download | Android 15, 16 and 17, before each release: keys, config, database, settings and permissions unchanged; sync back without opening the app |
 | Input validation | Every input field checked against the core's own rules; property tests with 20,000 random inputs each | 14 bugs found and fixed |
-| Fuzzing | 9 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
+| Fuzzing | 11 Go fuzz targets on what reaches the core or comes from a file | 1 core bug found and fixed; long runs clean |
 | Security reviews | An audit of the app and a gap analysis against common practice | 7 findings fixed; hardening batch below |
 | Interruptions | Rotation, Android reclaiming the app, switching away mid-task, permissions taken away | 4 bugs fixed, 1 of them a data-loss risk |
 | Stress | 50,000 files, event bursts, full storage, 15,000 random UI events | No crash or data loss; full-storage bugs fixed |
@@ -104,8 +104,9 @@ The app's real screens run on the JVM (Robolectric, Android 16) with made-up fol
 devices: three folders (up to date, syncing, stopped by an error), three devices (on the LAN,
 through a relay, offline and paused by the user) and a folder offer. No real device ID, name or address is used.
 
-- Screenshots: 27 screens, from the first-run checklist to the export form (Strong, Compatible and None), each in light,
-  dark, the largest font (200 %), Italian and German (the longest text): 135 images in `app/src/test/screenshots/`.
+- Screenshots: 31 screens, from the first-run checklist to the export form (Strong, Compatible and None), each in light,
+  dark, the largest font (200 %), Italian and German (the longest text): 155 images in `app/src/test/screenshots/`.
+  The folder browser and seven text dialogs are also shown in landscape (22 more images, 177 in all).
   The device list and a device's screen are also shown while a run condition pauses every device,
   and the device list after 30 min with no device connected; the device list and screens while
   devices' own sync windows hold them or never let them sync, and the sync windows editor for a
@@ -248,7 +249,7 @@ download is running. Both builds are signed with the same key.
 
 When the new build has a newer Syncthing core, the core migrates the old config and database
 here, so a breaking change upstream fails the test too. It runs on the PC emulators before
-each release, from the last release and from the oldest one still in use (a step of releasing
+each release, from the last release (a step of releasing
 in [Releasing](releasing.md#releasing)), not in CI.
 
 | Step | What must hold |
@@ -314,6 +315,8 @@ was written (without network access, since a fuzzed configuration can switch on 
 | `FuzzReadForkBackup` | Backup zips (Syncthing-Fork's and this app's) | Refused, or read and passing the import policy, never a crash; own sync windows only for devices the backup pairs with | 10 min, 499,258 inputs |
 | `FuzzImportPolicy` | `config.xml` of an imported backup | Whatever the core reads, the import policy leaves nothing that runs a command, cleans out or reaches files outside shared storage, or reports elsewhere, and nothing over its length limit; a second run changes nothing | 15 min, 2,534,263 inputs (found a slice difference, fixed) |
 | `FuzzReadJavaPrefs` | Syncthing-Fork's saved preferences (Java serialization, read by a strict allowlist parser, never deserialized) | Refused or read, never a crash | 3 min |
+| `FuzzUnseal` | Strongly encrypted exports of this app, with any password | Refused or opened, never a crash, and never more bytes out than went in; the whole import path then reads the result | Seed inputs on every push; no long run recorded |
+| `FuzzMemoryLimitError` | A core memory limit and the phone's memory | Accepted exactly when it is 0 (no limit), or at least the minimum and no more than the phone's memory | Seed inputs on every push; no long run recorded |
 
 `FuzzRESTConfig` found a bug in Syncthing itself: six GUI setting changes in a row made the
 GUI and API unreachable for 15 seconds, because the core's supervisor counted each listener

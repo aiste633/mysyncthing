@@ -109,15 +109,16 @@ What each test covers and what it found, with its numbers: [testing and hardenin
 
 ### Verify a release
 
-Build the tag and check that the release APK is that build plus our signature. Needs the [Build](docs/development.md#build) requirements, `gh` and `apksigcopier` (Debian: `apt install apksigcopier`; it calls `apksigner` from build-tools):
+Build the tag and check that the release APK is that build plus our signature. Needs the [Build](docs/development.md#build) requirements, a recent `gh` that is logged in, and `apksigcopier` (Debian: `apt install apksigcopier`; it calls `apksigner` from build-tools):
 
 ```sh
-git clone --branch v0.1.0 --recurse-submodules https://github.com/aiste633/mysyncthing && cd mysyncthing
+v=X.Y.Z   # the version to check, for example 0.5.0
+git clone --branch "v$v" --recurse-submodules https://github.com/aiste633/mysyncthing && cd mysyncthing
 ./gradlew :app:assembleRelease
 unsigned=app/build/outputs/apk/release/app-release-unsigned.apk
 gh attestation verify "$unsigned" --repo aiste633/mysyncthing   # GitHub built these exact bytes from the tag
-gh release download v0.1.0 --pattern mysyncthing-0.1.0.apk
-apksigcopier compare mysyncthing-0.1.0.apk --unsigned "$unsigned" && echo "same build"
+gh release download "v$v" --pattern "mysyncthing-$v.apk"
+apksigcopier compare "mysyncthing-$v.apk" --unsigned "$unsigned" && echo "same build"
 ```
 
 ## Caveats
@@ -132,7 +133,7 @@ The app is three parts: `app/` (the Compose screens), `core/` (the foreground se
 
 ```sh
 git submodule update --init
-./gradlew :app:assembleDebug   # needs JDK 21, Go, Android SDK 37 and the NDK pinned in gradle.properties
+./gradlew :app:assembleDebug   # on Linux, with JDK 21, Go, the Android SDK (platform 37) and the NDK pinned in gradle.properties
 ```
 
 - [Development](docs/development.md): layout, build, tests, the security checks in CI, updating Syncthing, keeping everything up to date, the software bill of materials.

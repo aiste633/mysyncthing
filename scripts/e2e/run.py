@@ -10,7 +10,7 @@ process killed, All files access taken away, and a monkey run.
 
 Runs only on an emulator: it wipes the app's data and its test folder. Results:
 <out>/summary.md (each step, its result and time), logs and logcat. scripts/e2e/pc.py runs it
-on both emulators with scenarios.py, as a PR or release needs.
+on each emulator with scenarios.py, as a PR or release needs.
 
   scripts/e2e/run.py --peer go/build/e2e-peer \\
       --apk app/build/outputs/apk/debug/app-debug.apk \\
