@@ -29,7 +29,7 @@ class CoreValueTest {
     @After
     fun tearDown() = scope.cancel()
 
-    private fun running(): RestClient = RestClient("127.0.0.1:9", "test").also {
+    private fun running(): RestClient = RestClient("127.0.0.1:9", "test") { null }.also {
         core.value = CoreState.Running(it, "127.0.0.1:9", "ID", Credentials("test", "test", "test"))
     }
 

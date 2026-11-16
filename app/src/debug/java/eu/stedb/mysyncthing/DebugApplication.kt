@@ -8,9 +8,10 @@ import eu.stedb.mysyncthing.stbridge.Stbridge
  * Debug builds only. StrictMode logs ("StrictMode policy violation") what
  * emulator and phone test runs should catch: disk or network use on the main
  * thread, leaked resources, unsafe intents and content URIs. Not cleartext
- * traffic: StrictMode cannot tell which host, and the app's loopback REST and
- * Syncthing's discovery, UPnP and STUN are plain text by design;
- * network_security_config.xml limits the app's own cleartext to loopback.
+ * traffic: StrictMode cannot tell which host, and Syncthing's discovery, UPnP
+ * and STUN are plain text by design. The app's own HTTP goes only to the core,
+ * over TLS; network_security_config.xml refuses its cleartext (debug builds
+ * allow it to loopback, for the end-to-end test's peer).
  * The core logs everything to logcat; release builds send only its warnings
  * and errors (go/bridge logfilter.go).
  */

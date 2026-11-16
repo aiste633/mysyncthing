@@ -469,9 +469,9 @@ def login_rotates(w: World) -> None:
         if old == new:
             fail(f"web GUI {what} unchanged after a restart")
     w.core.connect()
-    req = urllib.request.Request(f"http://127.0.0.1:{PHONE_API_PORT}/rest/system/ping", headers={"X-API-Key": before[0]})
+    req = urllib.request.Request(f"https://127.0.0.1:{PHONE_API_PORT}/rest/system/ping", headers={"X-API-Key": before[0]})
     try:
-        urllib.request.urlopen(req, timeout=10)
+        urllib.request.urlopen(req, timeout=10, context=w.core.tls)
         fail("the old API key still works after a restart")
     except urllib.error.HTTPError as e:
         if e.code not in (401, 403):

@@ -3,8 +3,10 @@ package eu.stedb.mysyncthing.ui
 import android.annotation.SuppressLint
 import android.content.pm.ApplicationInfo
 import android.graphics.Bitmap
+import android.net.http.SslError
 import android.util.Log
 import android.webkit.RenderProcessGoneDetail
+import android.webkit.SslErrorHandler
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -14,11 +16,17 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import eu.stedb.mysyncthing.R
 import eu.stedb.mysyncthing.core.CoreState
+import eu.stedb.mysyncthing.core.SyncthingCore
+import eu.stedb.mysyncthing.core.isCoreCertificate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayInputStream
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -26,17 +34,19 @@ import java.util.Base64
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
- * Upstream web GUI as a fallback for settings the native UI lacks. The first
- * request carries Basic auth; Syncthing then sets a session cookie. The user
+ * Upstream web GUI as a fallback for settings the native UI lacks, over TLS with the
+ * core's own certificate. The first request carries Basic auth; Syncthing then sets a
+ * session cookie. The user
  * never sees a login page or the login settings: only the app knows the login.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
-    val origin = "http://${core.address}"
+    val origin = "https://${core.address}"
     val auth = "Basic " + Base64.getEncoder()
         .encodeToString("${core.credentials.guiUser}:${core.credentials.guiPassword}".toByteArray())
     var webView: WebView? = null
+    val scope = rememberCoroutineScope()
     BackHandler { webView?.takeIf { it.canGoBack() }?.goBack() ?: onClose() }
     AppScreen(title = stringResource(R.string.settings_web_gui), onBack = onClose) { padding ->
         AndroidView(
@@ -102,6 +112,26 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                             }, 1_000)
                         }
 
+                        // The core's certificate is self-signed, so every load of the GUI lands here. Go on only
+                        // with exactly that certificate on the GUI's origin: a server that took the port while the
+                        // core's listener restarted never gets the login (the Authorization header) or the session.
+                        // Lint flags any proceed(); this one is the pin check, as in core/CoreCertificate.kt.
+                        @SuppressLint("WebViewClientOnReceivedSslError")
+                        // The pin is a file read, so it happens off the main thread; the handler may answer later.
+                        override fun onReceivedSslError(view: WebView, handler: SslErrorHandler, error: SslError) {
+                            val cert = error.certificate.x509Certificate
+                            val url = error.url
+                            scope.launch {
+                                val ours = onGui(url, origin) && withContext(Dispatchers.IO) { isCoreCertificate(cert, SyncthingCore.guiCertificate()) }
+                                if (ours) {
+                                    handler.proceed()
+                                } else {
+                                    if (debuggable) Log.w("WebGui", "Refused the certificate of $url")
+                                    handler.cancel()
+                                }
+                            }
+                        }
+
                         // Unhandled, a renderer crash would kill the whole process, and the sync core with it.
                         override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
                             onClose()
@@ -119,7 +149,7 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
 }
 
 /**
- * Whether [url] is on the core's GUI at [origin] (`http://127.0.0.1:<port>`). WebView hands over
+ * Whether [url] is on the core's GUI at [origin] (`https://127.0.0.1:<port>`). WebView hands over
  * canonical URLs, so a prefix check is exact; the character after it rules out `:<port>0` and
  * `:<port>@elsewhere`.
  */

@@ -12,7 +12,7 @@ import kotlin.random.Random
  * string concatenation, so "a\b" became two segments and "?" cut the path.
  */
 class RestClientPathTest {
-    private val client = RestClient("127.0.0.1:8384", "key")
+    private val client = RestClient.plain("127.0.0.1:8384", "key")
 
     private fun segments(id: String) = client.request("rest/config/folders", emptyList(), id).build().url.pathSegments
 

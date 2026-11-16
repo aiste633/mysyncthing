@@ -11,6 +11,7 @@ package stbridge
 import (
 	"context"
 	"crypto/tls"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -143,8 +144,10 @@ func prepare(early *suture.Supervisor, p params) (tls.Certificate, config.Wrappe
 		}
 	}
 	homeDir := p.homeDir
-	// Env overrides are read by lib/config on every access.
-	os.Setenv("STGUIADDRESS", p.addr)
+	// Env overrides are read by lib/config on every access. The scheme of the
+	// address override, not the config's TLS switch, decides whether the GUI
+	// listener requires TLS (GUIConfiguration.UseTLS).
+	os.Setenv("STGUIADDRESS", "https://"+p.addr)
 	os.Setenv("STGUIAPIKEY", p.apiKey)
 	os.Setenv("STNOUPGRADE", "1")
 
@@ -285,6 +288,25 @@ func GuiAddress() string {
 	return guiAddr
 }
 
+// GuiCertificate returns the DER of the certificate the REST API/GUI serves, as
+// its file in the core's private home holds it now, or nil. The app trusts the
+// loopback server only when it presents exactly this certificate: another app
+// that took the port while the core was not listening (a restart in place, a
+// GUI listener restart) cannot get the API key or the web GUI login. Read at
+// every call, because upstream renews the certificate itself (lib/api, about a
+// month before it expires) when the listener starts.
+func GuiCertificate() []byte {
+	data, err := os.ReadFile(locations.Get(locations.HTTPSCertFile))
+	if err != nil {
+		return nil
+	}
+	block, _ := pem.Decode(data)
+	if block == nil || block.Type != "CERTIFICATE" {
+		return nil
+	}
+	return block.Bytes
+}
+
 // DeviceID returns this device's ID once started at least once.
 func DeviceID() string {
 	mu.Lock()
@@ -344,7 +366,7 @@ func applyAndroidDefaults(cfg config.Wrapper, fresh bool, apiKey, user, password
 // locked returns gui with every setting that guards access set the app's way.
 func locked(gui config.GUIConfiguration) config.GUIConfiguration {
 	gui.Enabled = true
-	gui.RawUseTLS = false // loopback only; WebView would reject the self-signed cert
+	gui.RawUseTLS = true // as STGUIADDRESS says; the app pins the certificate (GuiCertificate)
 	gui.AuthMode = config.AuthModeStatic
 	gui.InsecureAdminAccess = false
 	gui.InsecureSkipHostCheck = false

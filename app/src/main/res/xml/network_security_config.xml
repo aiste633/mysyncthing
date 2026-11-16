@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The core's REST API/GUI is plain HTTP on loopback only. -->
+<!-- The app's own HTTP goes only to the core's REST API/GUI on loopback, over TLS with the
+     core's own certificate pinned (core/CoreCertificate.kt): no cleartext anywhere. -->
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="false">127.0.0.1</domain>
-    </domain-config>
+    <base-config cleartextTrafficPermitted="false" />
 </network-security-config>
