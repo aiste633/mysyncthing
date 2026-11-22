@@ -847,6 +847,7 @@ def main() -> None:
                 for fid in OFFERS:
                     peer.call("DELETE", f"rest/config/folders/{fid}")
             phase("stopAndStart", peer, a.out)
+            phase("restartInPlace", peer, a.out)
             with step("process death"):
                 process_death(peer, phone)
             with step("All files access revoked"):

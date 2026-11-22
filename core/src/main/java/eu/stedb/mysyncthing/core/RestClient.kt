@@ -113,8 +113,20 @@ class RestClient private constructor(address: String, private val apiKey: String
         return json.decodeFromString(send("POST", "rest/folder/versions", body, listOf("folder" to folder)).ifBlank { "{}" })
     }
 
-    suspend fun events(since: Long, timeoutS: Int = 60): List<Event> =
-        get("rest/events", "since" to since.toString(), "timeout" to timeoutS.toString())
+    /**
+     * The events after number [since], waiting up to [timeoutS] for the first; 0 returns at once.
+     * With [types] the core sends only those. It keeps one stream per set of types, numbered on its own
+     * and made at the first request for that set, so what happened before that request is never in it.
+     * A name the core does not know is left out without an error.
+     */
+    suspend fun events(since: Long, timeoutS: Int = 60, types: Set<String> = emptySet()): List<Event> = get(
+        "rest/events",
+        *listOfNotNull(
+            "since" to since.toString(),
+            "timeout" to timeoutS.toString(),
+            types.takeIf { it.isNotEmpty() }?.let { "events" to it.joinToString(",") },
+        ).toTypedArray(),
+    )
 
     /** Unspecified fields take Syncthing's configured defaults. */
     suspend fun addDevice(id: String, name: String) = send("POST", "rest/config/devices", buildJsonObject {

@@ -88,7 +88,9 @@ a property test pauses, resumes and holds devices at random against their own wi
 checks that only the user's own pauses stay; the grouped windows on the screen give back
 exactly the mask, also a property test), "last seen" in the phone's time zone, the
 notification and widget texts, which notification belongs to which request or stopped folder
-(keys with the same hash code, random histories), the REST client's paths, version restores, the settings
+(keys with the same hash code, random histories), the status follower against a fake core (it opens the core's
+filtered event stream before it reads anything, loads at most once a second and only on the events
+that need it, and opens the stream again after an error, as after a restart in place), the REST client's paths, version restores, the settings
 migration and writes on a full disk, the Syncthing-Fork import preview, and the translations
 (every translated string must take the same placeholders as the English one). Go tests start
 and stop the real Syncthing core in-process and check the GUI lock, restarts in place, the
@@ -193,6 +195,7 @@ The network tests and any measurement still run alone.
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Recent changes | A file written on the phone reaches the peer; the folder card's history icon opens that folder's recent changes, which list the file as changed on this phone |
 | Stop and start | The user's stop: the main thread answers within 1 s throughout (the core's shutdown runs in the background), the stop ends within 20 s (it does not wait for the 60 s event long-poll), the peer loses the phone; started again, it comes back. A start right after a stop starts the core once the stop is done. A stop with the web GUI open shows "Syncthing is stopped" with Start there (it was blank), and Start brings the core and the peer back |
+| Restart in place | Syncthing restarted in place over REST (as Settings > Restart and the web GUI do): the peer connects to the new core; a folder's label changed on it shows in the app, and so does the old label set back, so the app follows the new core's events |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
 | Local network taken away (Android 17 only) | The permission revoked: the service comes back by itself and posts "Syncing stopped", the core does not start, the app shows the checklist with the Local network access row; granted again and the app opened, the phone reconnects and the notice goes |
@@ -545,6 +548,21 @@ are the same.
 
 Battery drain is not measured in mAh: on a phone in use, other apps and notifications swamp the
 app's share. The app holds no wakelock, so a sleeping phone wakes only for incoming traffic.
+
+## CPU during a sync (2026-11-22)
+
+The app's CPU time (user and system, Go core included) while it received 20,000 small files (0.5 to
+4 KiB, 46 MB) from a peer, with the app in the background: debug builds on an Android 17 emulator,
+the PC doing nothing else, three rounds per build, alternating.
+
+| Build | CPU for the sync | Sync time | Idle, per minute |
+|---|---|---|---|
+| 0.5.0 | 37.5 s (36.9 to 37.9) | 37 s | 0.02 s |
+| Asking the core only for the events the app uses | 18.9 s (18.8 to 19.0) | 32 s | 0.02 s |
+
+The saving is in the app's side of the event stream: 0.5.0 received, decoded and dropped an event for
+every file, mostly in its HTTP threads (about 10 s) and the garbage collector. One emulator, one
+folder and one device; a phone's numbers differ, the ratio should not change much.
 
 ## Network tests (2026-11-13)
 

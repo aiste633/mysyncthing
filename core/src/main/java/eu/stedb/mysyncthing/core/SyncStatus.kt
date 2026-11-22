@@ -90,10 +90,23 @@ object SyncStatus {
      * happens a new notice thus shows within about a minute, the poll's timeout.
      * Conflict copies are tracked on an IO thread ([ConflictTracker]), fed by each refresh's
      * folders and the core's index updates.
+     *
+     * The core is asked only for [FOLLOW_EVENTS], so a sync's thousands of per-file events neither
+     * wake the app nor are decoded. The core makes that stream at the first request for it, and again
+     * after a restart in place; what happened before is not in it. So the first poll, and the first
+     * after an error, returns at once, and the snapshot is loaded only after it: a change is then
+     * either in that load or in the stream.
+     *
+     * [elapsed] (monotonic ms) and [pause] are the clock and the waits, for tests.
      */
-    internal suspend fun follow(client: RestClient) {
+    internal suspend fun follow(
+        client: RestClient,
+        elapsed: () -> Long = SystemClock::elapsedRealtime,
+        pause: suspend (ms: Long) -> Unit = ::delay,
+    ) {
         var since = 0L
-        var errorsAt = SystemClock.elapsedRealtime()
+        var subscribed = false
+        var errorsAt = elapsed()
         val refresh = Channel<Unit>(Channel.CONFLATED)
         val conflictWork = Channel<ConflictWork>(Channel.UNLIMITED)
         try {
@@ -104,7 +117,7 @@ object SyncStatus {
                             _snapshot.update { fresh.copy(pause = it.pause, conflicts = it.conflicts) }
                             conflictWork.trySend(ConflictWork.Folders(fresh.folders))
                         }
-                        delay(1_000)
+                        pause(REFRESH_EVERY_MS)
                     }
                 }
                 launch(Dispatchers.IO) {
@@ -119,10 +132,13 @@ object SyncStatus {
                         _snapshot.update { if (it.loaded && it.conflicts != now) it.copy(conflicts = now) else it }
                     }
                 }
-                refresh.trySend(Unit)
                 while (true) {
                     try {
-                        val events = client.events(since)
+                        val events = client.events(since, if (subscribed) POLL_S else 0, FOLLOW_EVENTS)
+                        if (!subscribed) {
+                            subscribed = true
+                            refresh.trySend(Unit)
+                        }
                         if (events.isNotEmpty()) since = events.last().id
                         if (events.any { it.type in REFRESH_EVENTS }) refresh.trySend(Unit)
                         for (e in events) {
@@ -133,8 +149,8 @@ object SyncStatus {
                         events.lastOrNull { it.type == "DownloadProgress" }?.let { e ->
                             runCatching { _downloads.value = client.json.decodeFromJsonElement(e.data!!) }
                         }
-                        if (SystemClock.elapsedRealtime() - errorsAt > ERRORS_EVERY_MS) {
-                            errorsAt = SystemClock.elapsedRealtime()
+                        if (elapsed() - errorsAt > ERRORS_EVERY_MS) {
+                            errorsAt = elapsed()
                             // Not via the catch below: that would rewind the event cursor.
                             runSuspendCatching { client.systemErrors() }.onSuccess { errors ->
                                 _snapshot.update { if (it.loaded) it.copy(systemErrors = errors) else it }
@@ -143,10 +159,12 @@ object SyncStatus {
                     } catch (e: CancellationException) {
                         throw e
                     } catch (_: Exception) {
-                        delay(5_000)
-                        // After a restart in place (web GUI) the core counts events from 1 again.
+                        pause(RETRY_AFTER_MS)
+                        // After a restart in place (web GUI) the core counts events from 1 again, in a new stream.
                         since = 0
+                        subscribed = false
                         conflictWork.trySend(ConflictWork.Forget)
+                        // As before the stream was filtered; the load that counts follows the next poll.
                         refresh.trySend(Unit)
                     }
                 }
@@ -158,6 +176,9 @@ object SyncStatus {
     }
 
     private const val ERRORS_EVERY_MS = 30_000L
+    private const val REFRESH_EVERY_MS = 1_000L
+    private const val RETRY_AFTER_MS = 5_000L
+    private const val POLL_S = 60
 
     private sealed interface ConflictWork {
         data class Folders(val folders: List<Folder>) : ConflictWork

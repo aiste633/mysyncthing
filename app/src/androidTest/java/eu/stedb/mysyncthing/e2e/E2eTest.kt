@@ -62,6 +62,8 @@ import eu.stedb.mysyncthing.ui.SHORT_WINDOW_DP
 import eu.stedb.mysyncthing.ui.lastSeenText
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -915,6 +917,32 @@ class E2eTest {
         eventually("peer connected after that start", 120_000) { peer.connected(me) }
     }
 
+    /**
+     * A restart in place (Settings > Restart, the web GUI) starts a new core on the same address. The
+     * status follower asks the core only for the events it uses, in a stream the core makes at the first
+     * request for it and numbers from 1: after the restart the follower must ask again from the start,
+     * or the snapshot no longer follows the core's changes.
+     *
+     * The new core is told by the peer's new connection to it: the process stays, and so does the
+     * core's uptime (upstream counts it from when the Go code was loaded, `ur.StartTime`).
+     */
+    @Test
+    fun restartInPlace() {
+        val me = phoneId()
+        eventually("the peer's connection started", 90_000) { peer.connectedAt(me) != null }
+        val before = peer.connectedAt(me)
+        val client = (SyncthingCore.state.value as CoreState.Running).client
+        runBlocking { client.restart() }
+        eventually("the peer connected to the new core", 120_000) { peer.connectedAt(me).let { it != null && it != before } }
+        eventually("the new core answers", 30_000) { runCatching { runBlocking { client.status() } }.isSuccess }
+
+        fun label() = SyncStatus.snapshot.value.folders.firstOrNull { it.id == FOLDER }?.label
+        runBlocking { client.patchFolder(FOLDER, buildJsonObject { put("label", RESTARTED_LABEL) }) }
+        eventually("the new label in the app", 30_000) { label() == RESTARTED_LABEL }
+        runBlocking { client.patchFolder(FOLDER, buildJsonObject { put("label", FOLDER_LABEL) }) }
+        eventually("the old label back in the app", 30_000) { label() == FOLDER_LABEL }
+    }
+
     private fun activities(): Int? =
         Regex("Activities:\\s+(\\d+)").find(shell("dumpsys meminfo ${app.packageName}"))?.groupValues?.get(1)?.toInt()
 
@@ -923,6 +951,7 @@ class E2eTest {
         const val EMULATOR_WIFI = "AndroidWifi"
         const val FOLDER = "e2e"
         const val FOLDER_LABEL = "E2E"
+        const val RESTARTED_LABEL = "E2E restarted"
         /** Frames, GC and a slow CI emulator stay well under it; a core stop on the main thread took seconds. */
         const val MAIN_THREAD_MAX_MS = 1_000L
         /** The core shuts down within 10 s (upstream's close timeout); waiting for the event long-poll could add 60 s. */

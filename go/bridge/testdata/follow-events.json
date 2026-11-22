@@ -1,0 +1,17 @@
+[
+ "ConfigSaved",
+ "StateChanged",
+ "FolderSummary",
+ "FolderCompletion",
+ "FolderErrors",
+ "DeviceConnected",
+ "DeviceDisconnected",
+ "DevicePaused",
+ "DeviceResumed",
+ "FolderPaused",
+ "FolderResumed",
+ "PendingDevicesChanged",
+ "PendingFoldersChanged",
+ "LocalIndexUpdated",
+ "DownloadProgress"
+]
