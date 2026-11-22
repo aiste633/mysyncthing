@@ -143,7 +143,7 @@ class NotificationIdentityTest {
         RequestNotifications.update(app, offers(listOf("Aa")))
         ProblemNotifications.updateFolders(app, problems(listOf("request", "folder")))
         assertEachItsOwn(offered = listOf("Aa"), stopped = listOf("request", "folder"))
-        assertEquals(6, nm.activeNotifications.size)
+        assertEquals(7, nm.activeNotifications.size)
 
         RequestNotifications.createChannel(app)
         ProblemNotifications.createChannel(app)
