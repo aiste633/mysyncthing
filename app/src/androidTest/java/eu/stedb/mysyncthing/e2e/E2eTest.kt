@@ -60,6 +60,8 @@ import eu.stedb.mysyncthing.ui.SHORT_WINDOW_DP
 import eu.stedb.mysyncthing.ui.lastSeenText
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -875,6 +877,36 @@ class E2eTest {
         eventually("peer connected after that start", 120_000) { peer.connected(me) }
     }
 
+    /**
+     * A restart in place (Settings > Restart, the web GUI) starts a new core on the same address. The
+     * status follower asks the core only for the events it uses, in a stream the core makes at the first
+     * request for it and numbers from 1: after the restart the follower must ask again from the start,
+     * or the snapshot no longer follows the core's changes.
+     */
+    @Test
+    fun restartInPlace() {
+        val me = phoneId()
+        eventually("peer connected", 90_000) { peer.connected(me) }
+        val client = (SyncthingCore.state.value as CoreState.Running).client
+        fun uptime() = runBlocking { client.status().uptime }
+        eventually("core up for 5 s", 30_000) { uptime() >= 5 }
+        val before = uptime()
+        val asked = System.currentTimeMillis()
+        runBlocking { client.restart() }
+        // The old core would be older by the time passed since; a new one is younger.
+        eventually("a new core", 60_000) { uptime() + 2 < before + (System.currentTimeMillis() - asked) / 1_000 }
+
+        fun label() = SyncStatus.snapshot.value.folders.firstOrNull { it.id == FOLDER }?.label
+        // Right after the restart, maybe before the follower asks again: in its load or in the stream.
+        runBlocking { client.patchFolder(FOLDER, buildJsonObject { put("label", RESTARTED_LABEL) }) }
+        eventually("the label changed right after the restart", 60_000) { label() == RESTARTED_LABEL }
+        // Long after it: only in the stream.
+        Thread.sleep(10_000)
+        runBlocking { client.patchFolder(FOLDER, buildJsonObject { put("label", FOLDER_LABEL) }) }
+        eventually("the label changed back 10 s later", 30_000) { label() == FOLDER_LABEL }
+        eventually("peer connected after the restart", 120_000) { peer.connected(me) }
+    }
+
     private fun activities(): Int? =
         Regex("Activities:\\s+(\\d+)").find(shell("dumpsys meminfo ${app.packageName}"))?.groupValues?.get(1)?.toInt()
 
@@ -883,6 +915,7 @@ class E2eTest {
         const val EMULATOR_WIFI = "AndroidWifi"
         const val FOLDER = "e2e"
         const val FOLDER_LABEL = "E2E"
+        const val RESTARTED_LABEL = "E2E restarted"
         /** Frames, GC and a slow CI emulator stay well under it; a core stop on the main thread took seconds. */
         const val MAIN_THREAD_MAX_MS = 1_000L
         /** The core shuts down within 10 s (upstream's close timeout); waiting for the event long-poll could add 60 s. */

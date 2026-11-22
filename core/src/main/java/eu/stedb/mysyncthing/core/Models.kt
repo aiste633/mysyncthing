@@ -294,5 +294,13 @@ val REFRESH_EVENTS = setOf(
     "FolderPaused", "FolderResumed", "PendingDevicesChanged", "PendingFoldersChanged",
 )
 
+/**
+ * Every event type the status follower asks the core for: [REFRESH_EVENTS], index updates (for the
+ * conflict copies) and download progress. The core sends nothing else, so a type the follower should
+ * react to must be added here. The names are checked against the core's by the bridge's
+ * TestFollowEventsContract, from the same file as SyncStatusFollowTest.
+ */
+val FOLLOW_EVENTS = REFRESH_EVENTS + setOf("LocalIndexUpdated", "DownloadProgress")
+
 @Serializable
 data class ApiError(@SerialName("error") val message: String = "")

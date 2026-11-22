@@ -87,7 +87,9 @@ the windows minute by minute, the next opening, stretches across midnight and th
 a property test pauses, resumes and holds devices at random against their own windows and
 checks that only the user's own pauses stay; the grouped windows on the screen give back
 exactly the mask, also a property test), "last seen" in the phone's time zone, the
-notification and widget texts, the REST client's paths, version restores, the settings
+notification and widget texts, the status follower against a fake core (it opens the core's
+filtered event stream before it reads anything, loads at most once a second and only on the events
+that need it, and opens the stream again after an error, as after a restart in place), the REST client's paths, version restores, the settings
 migration and writes on a full disk, the Syncthing-Fork import preview, and the translations
 (every translated string must take the same placeholders as the English one). Go tests start
 and stop the real Syncthing core in-process and check the GUI lock, restarts in place, the
@@ -192,6 +194,7 @@ The network tests and any measurement still run alone.
 | Idle dialog | An open rename dialog draws fewer than 30 frames in 5 s (a re-measure loop seen on Robolectric would draw about 300) |
 | Recent changes | A file written on the phone reaches the peer; the folder card's history icon opens that folder's recent changes, which list the file as changed on this phone |
 | Stop and start | The user's stop: the main thread answers within 1 s throughout (the core's shutdown runs in the background), the stop ends within 20 s (it does not wait for the 60 s event long-poll), the peer loses the phone; started again, it comes back. A start right after a stop starts the core once the stop is done. A stop with the web GUI open shows "Syncthing is stopped" with Start there (it was blank), and Start brings the core and the peer back |
+| Restart in place | Syncthing restarted in place over REST (as Settings > Restart and the web GUI do): a folder's new label shows in the app, set right after the restart and again 10 s later, so the app follows the new core's events; the peer comes back |
 | Process death | The app's process killed in the background: the service restarts by itself, reconnects and syncs a new file |
 | All files access taken away | For 45 s: the core does not start, the peer sees no deletions and its files are unchanged; with access back, the phone reconnects |
 | Local network taken away (Android 17 only) | The permission revoked: the service comes back by itself and posts "Syncing stopped", the core does not start, the app shows the checklist with the Local network access row; granted again and the app opened, the phone reconnects and the notice goes |
