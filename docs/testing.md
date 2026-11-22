@@ -547,6 +547,21 @@ are the same.
 Battery drain is not measured in mAh: on a phone in use, other apps and notifications swamp the
 app's share. The app holds no wakelock, so a sleeping phone wakes only for incoming traffic.
 
+## CPU during a sync (2026-11-22)
+
+The app's CPU time (user and system, Go core included) while it received 20,000 small files (0.5 to
+4 KiB, 46 MB) from a peer, with the app in the background: debug builds on an Android 17 emulator,
+the PC doing nothing else, three rounds per build, alternating.
+
+| Build | CPU for the sync | Sync time | Idle, per minute |
+|---|---|---|---|
+| 0.5.0 | 37.5 s (36.9 to 37.9) | 37 s | 0.02 s |
+| Asking the core only for the events the app uses | 18.9 s (18.8 to 19.0) | 32 s | 0.02 s |
+
+The saving is in the app's side of the event stream: 0.5.0 received, decoded and dropped an event for
+every file, mostly in its HTTP threads (about 10 s) and the garbage collector. One emulator, one
+folder and one device; a phone's numbers differ, the ratio should not change much.
+
 ## Network tests (2026-11-13)
 
 The end-to-end tests run their peer on loopback, which says nothing about how the app finds a
