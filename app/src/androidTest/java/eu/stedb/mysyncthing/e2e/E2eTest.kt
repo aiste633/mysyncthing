@@ -889,11 +889,12 @@ class E2eTest {
     @Test
     fun restartInPlace() {
         val me = phoneId()
-        eventually("peer connected", 90_000) { peer.connected(me) }
+        eventually("the peer's connection started", 90_000) { peer.connectedAt(me) != null }
         val before = peer.connectedAt(me)
         val client = (SyncthingCore.state.value as CoreState.Running).client
         runBlocking { client.restart() }
         eventually("the peer connected to the new core", 120_000) { peer.connectedAt(me).let { it != null && it != before } }
+        eventually("the new core answers", 30_000) { runCatching { runBlocking { client.status() } }.isSuccess }
 
         fun label() = SyncStatus.snapshot.value.folders.firstOrNull { it.id == FOLDER }?.label
         runBlocking { client.patchFolder(FOLDER, buildJsonObject { put("label", RESTARTED_LABEL) }) }
