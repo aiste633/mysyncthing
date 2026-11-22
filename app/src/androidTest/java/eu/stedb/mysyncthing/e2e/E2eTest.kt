@@ -882,29 +882,24 @@ class E2eTest {
      * status follower asks the core only for the events it uses, in a stream the core makes at the first
      * request for it and numbers from 1: after the restart the follower must ask again from the start,
      * or the snapshot no longer follows the core's changes.
+     *
+     * The new core is told by the peer's new connection to it: the process stays, and so does the
+     * core's uptime (upstream counts it from when the Go code was loaded, `ur.StartTime`).
      */
     @Test
     fun restartInPlace() {
         val me = phoneId()
         eventually("peer connected", 90_000) { peer.connected(me) }
+        val before = peer.connectedAt(me)
         val client = (SyncthingCore.state.value as CoreState.Running).client
-        fun uptime() = runBlocking { client.status().uptime }
-        eventually("core up for 5 s", 30_000) { uptime() >= 5 }
-        val before = uptime()
-        val asked = System.currentTimeMillis()
         runBlocking { client.restart() }
-        // The old core would be older by the time passed since; a new one is younger.
-        eventually("a new core", 60_000) { uptime() + 2 < before + (System.currentTimeMillis() - asked) / 1_000 }
+        eventually("the peer connected to the new core", 120_000) { peer.connectedAt(me).let { it != null && it != before } }
 
         fun label() = SyncStatus.snapshot.value.folders.firstOrNull { it.id == FOLDER }?.label
-        // Right after the restart, maybe before the follower asks again: in its load or in the stream.
         runBlocking { client.patchFolder(FOLDER, buildJsonObject { put("label", RESTARTED_LABEL) }) }
-        eventually("the label changed right after the restart", 60_000) { label() == RESTARTED_LABEL }
-        // Long after it: only in the stream.
-        Thread.sleep(10_000)
+        eventually("the new label in the app", 30_000) { label() == RESTARTED_LABEL }
         runBlocking { client.patchFolder(FOLDER, buildJsonObject { put("label", FOLDER_LABEL) }) }
-        eventually("the label changed back 10 s later", 30_000) { label() == FOLDER_LABEL }
-        eventually("peer connected after the restart", 120_000) { peer.connected(me) }
+        eventually("the old label back in the app", 30_000) { label() == FOLDER_LABEL }
     }
 
     private fun activities(): Int? =

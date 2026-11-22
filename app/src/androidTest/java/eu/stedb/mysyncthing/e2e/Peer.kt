@@ -48,6 +48,11 @@ class Peer(val id: String, private val key: String, private val phoneAddress: St
     fun connected(device: String): Boolean =
         JSONObject(call("GET", "rest/system/connections")).getJSONObject("connections").optJSONObject(device)?.optBoolean("connected") == true
 
+    /** When the open connection to [device] was made (the core's text), or null while not connected. */
+    fun connectedAt(device: String): String? =
+        JSONObject(call("GET", "rest/system/connections")).getJSONObject("connections").optJSONObject(device)
+            ?.takeIf { it.optBoolean("connected") }?.optString("startedAt")
+
     /** Connections to [device] beyond the first; none when either side wants one. */
     fun secondaryConnections(device: String): Int =
         JSONObject(call("GET", "rest/system/connections")).getJSONObject("connections").optJSONObject(device)
