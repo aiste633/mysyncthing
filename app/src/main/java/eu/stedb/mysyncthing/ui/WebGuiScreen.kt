@@ -16,8 +16,10 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.node.Ref
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import eu.stedb.mysyncthing.R
@@ -45,9 +47,11 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
     val origin = "https://${core.address}"
     val auth = "Basic " + Base64.getEncoder()
         .encodeToString("${core.credentials.guiUser}:${core.credentials.guiPassword}".toByteArray())
-    var webView: WebView? = null
+    // Remembered: the factory below runs once, this function again at every redraw (a rotation, for one).
+    // A plain local was null again by then, and Back closed the screen instead of going back in the GUI.
+    val webView = remember { Ref<WebView>() }
     val scope = rememberCoroutineScope()
-    BackHandler { webView?.takeIf { it.canGoBack() }?.goBack() ?: onClose() }
+    BackHandler { webView.value?.takeIf { it.canGoBack() }?.goBack() ?: onClose() }
     AppScreen(title = stringResource(R.string.settings_web_gui), onBack = onClose) { padding ->
         AndroidView(
             modifier = Modifier.fillMaxSize().padding(padding),
@@ -139,11 +143,11 @@ fun WebGuiScreen(core: CoreState.Running, onClose: () -> Unit) {
                         }
                     }
                     loadUrl("$origin/", mapOf("Authorization" to auth))
-                    webView = this
+                    webView.value = this
                 }
             },
             // Free the renderer when leaving, instead of letting it die with the view.
-            onRelease = { it.stopLoading(); it.destroy() },
+            onRelease = { webView.value = null; it.stopLoading(); it.destroy() },
         )
     }
 }
