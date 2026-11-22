@@ -36,6 +36,7 @@ fun Snapshot.requests(): List<Request> {
  * Separate "Requests" channel, so it can be muted without hiding the sync
  * status. Each request gets its own notification with Review and Ignore;
  * it disappears once the request is handled anywhere, even on another device.
+ * The request's key tells the notifications apart ([KeyedNotifications]).
  * No explicit group: cancelling a group summary also drops its children, and
  * Android groups several notifications from one app by itself.
  */
@@ -46,7 +47,7 @@ object RequestNotifications {
      */
     private const val CHANNEL_ID = "requests-high"
     private val OLD_CHANNEL_IDS = listOf("requests")
-    private const val TAG = "request"
+    private val keyed = KeyedNotifications("request", oldTag = "request")
 
     /** Extras on the launch intent that open the review screen for one request. */
     const val EXTRA_REVIEW_FOLDER = "eu.stedb.mysyncthing.REVIEW_FOLDER"
@@ -56,6 +57,7 @@ object RequestNotifications {
         val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
         OLD_CHANNEL_IDS.forEach(nm::deleteNotificationChannel)
+        keyed.removeOld(nm)
         // High: a request waits on the user, and missed in the shade it blocks syncing for good.
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_requests), NotificationManager.IMPORTANCE_HIGH).apply {
@@ -68,19 +70,16 @@ object RequestNotifications {
     fun update(base: Context, requests: List<Request>, repost: Boolean = false) {
         val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
-        val shown = nm.activeNotifications.filter { it.tag == TAG }.map { it.id }.toSet()
-        val wanted = requests.associateBy { it.key.hashCode() }
-        (shown - wanted.keys).forEach { nm.cancel(TAG, it) }
-        wanted.forEach { (id, r) -> if (repost || id !in shown) nm.notify(TAG, id, notification(context, r)) }
+        keyed.update(nm, requests.associateBy { it.key }, repost) { r, slot -> notification(context, r, slot) }
     }
 
-    private fun notification(context: Context, r: Request) = NotificationCompat.Builder(context, CHANNEL_ID)
+    private fun notification(context: Context, r: Request, slot: Int) = NotificationCompat.Builder(context, CHANNEL_ID)
         .setSmallIcon(R.drawable.widget_ic_input)
         .setContentTitle(r.title.resolve(context))
         .setContentText(r.text.resolve(context))
         .setStyle(NotificationCompat.BigTextStyle().bigText(r.text.resolve(context)))
-        .setContentIntent(review(context, r))
-        .addAction(0, context.getString(R.string.action_review), review(context, r))
+        .setContentIntent(review(context, r, slot))
+        .addAction(0, context.getString(R.string.action_review), review(context, r, slot))
         .addAction(0, context.getString(R.string.action_ignore), ignore(context, r))
         .setOnlyAlertOnce(true)
         .setAutoCancel(true)
@@ -95,19 +94,21 @@ object RequestNotifications {
         )
         .build()
 
-    private fun review(context: Context, r: Request): PendingIntent {
+    private fun review(context: Context, r: Request, slot: Int): PendingIntent {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             .putExtra(EXTRA_REVIEW_DEVICE, r.device)
         r.folder?.let { launch.putExtra(EXTRA_REVIEW_FOLDER, it) }
-        return PendingIntent.getActivity(context, r.key.hashCode(), launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        return PendingIntent.getActivity(context, slot, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
+    /** Ignore is for good, so its intent is the request's by name: the key is its identifier. */
     private fun ignore(context: Context, r: Request): PendingIntent {
         val intent = Intent(context, IgnoreRequestReceiver::class.java)
+            .setIdentifier(r.key)
             .putExtra(EXTRA_REVIEW_DEVICE, r.device)
             .putExtra(EXTRA_REVIEW_FOLDER, r.folder)
-        return PendingIntent.getBroadcast(context, r.key.hashCode(), intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        return PendingIntent.getBroadcast(context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 }
 

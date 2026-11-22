@@ -87,7 +87,8 @@ the windows minute by minute, the next opening, stretches across midnight and th
 a property test pauses, resumes and holds devices at random against their own windows and
 checks that only the user's own pauses stay; the grouped windows on the screen give back
 exactly the mask, also a property test), "last seen" in the phone's time zone, the
-notification and widget texts, the status follower against a fake core (it opens the core's
+notification and widget texts, which notification belongs to which request or stopped folder
+(keys with the same hash code, random histories), the status follower against a fake core (it opens the core's
 filtered event stream before it reads anything, loads at most once a second and only on the events
 that need it, and opens the stream again after an error, as after a restart in place), the REST client's paths, version restores, the settings
 migration and writes on a full disk, the Syncthing-Fork import preview, and the translations
@@ -200,6 +201,7 @@ The network tests and any measurement still run alone.
 | Local network taken away (Android 17 only) | The permission revoked: the service comes back by itself and posts "Syncing stopped", the core does not start, the app shows the checklist with the Local network access row; granted again and the app opened, the phone reconnects and the notice goes |
 | Launcher starts | Opened first by an intent other than the launcher's, then three times from the launcher: one copy of the main screen stays, not four |
 | Remove goes back to the tab | A folder and a device removed on their screens: the Folders and Devices lists show, not a blank screen or the wrong tab |
+| Request notifications | The peer offers two folders whose requests have the same hash code (up to 0.5.0 the notification's ID): each offer has its own notification; the tap on each opens that offer's form, back and forth; Ignore on one ignores that offer and leaves the other's notification, Ignore on the other clears both |
 | Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze, no blank screen |
 
 The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. Each release

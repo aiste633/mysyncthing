@@ -33,10 +33,10 @@ fun Snapshot.folderProblems(): List<FolderProblem> = folders.filter { !it.paused
 object ProblemNotifications {
     private const val CHANNEL_ID = "problems"
     private const val NOTIFICATION_ID = 3
-    private const val FOLDER_TAG = "folder"
     private const val NO_ACCESS_ID = 4
     private const val NO_LOCAL_NETWORK_ID = 5
     private const val MEMORY_LIMIT_ID = 6
+    private val folders = KeyedNotifications("problem", oldTag = "folder")
 
     /** Extra on the launch intent that opens one folder's screen. */
     const val EXTRA_OPEN_FOLDER = "eu.stedb.mysyncthing.OPEN_FOLDER"
@@ -46,11 +46,13 @@ object ProblemNotifications {
 
     fun createChannel(base: Context) {
         val context = base.inAppLanguage()
-        context.getSystemService(NotificationManager::class.java).createNotificationChannel(
+        val nm = context.getSystemService(NotificationManager::class.java)
+        nm.createNotificationChannel(
             NotificationChannel(CHANNEL_ID, context.getString(R.string.channel_problems), NotificationManager.IMPORTANCE_HIGH).apply {
                 description = context.getString(R.string.channel_problems_description)
             }
         )
+        folders.removeOld(nm)
     }
 
     fun update(base: Context, errors: List<SystemError>) {
@@ -158,25 +160,21 @@ object ProblemNotifications {
     }
 
     /**
-     * One notification per folder in error, gone once the folder recovers. Only
-     * a new one alerts; read from the shade, so this holds across process restarts.
+     * One notification per folder in error, told apart by the folder's ID ([KeyedNotifications]) and
+     * gone once the folder recovers. Only a new one alerts; read from the shade, so this holds
+     * across process restarts.
      */
     fun updateFolders(base: Context, problems: List<FolderProblem>) {
         val context = base.inAppLanguage()
         val nm = context.getSystemService(NotificationManager::class.java)
-        val shown = nm.activeNotifications.filter { it.tag == FOLDER_TAG }.map { it.id }.toSet()
-        val wanted = problems.associateBy { it.id.hashCode() }
-        (shown - wanted.keys).forEach { nm.cancel(FOLDER_TAG, it) }
-        wanted.forEach { (id, p) -> nm.notify(FOLDER_TAG, id, folderNotification(context, p)) }
+        folders.update(nm, problems.associateBy { it.id }, repost = true) { p, slot -> folderNotification(context, p, slot) }
     }
 
-    private fun folderNotification(context: Context, p: FolderProblem): Notification {
+    private fun folderNotification(context: Context, p: FolderProblem, slot: Int): Notification {
         val launch = context.packageManager.getLaunchIntentForPackage(context.packageName)!!
             .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
             .putExtra(EXTRA_OPEN_FOLDER, p.id)
-        val open = PendingIntent.getActivity(
-            context, p.id.hashCode(), launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
+        val open = PendingIntent.getActivity(context, slot, launch, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val title = context.getString(R.string.problem_folder_stopped, p.name)
         val error = problemText(p.error).resolve(context)
         return NotificationCompat.Builder(context, CHANNEL_ID)

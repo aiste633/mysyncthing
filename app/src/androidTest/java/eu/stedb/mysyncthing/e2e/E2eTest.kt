@@ -1,7 +1,9 @@
 package eu.stedb.mysyncthing.e2e
 
 import android.app.Activity
+import android.app.ActivityOptions
 import android.app.Application
+import android.app.NotificationManager
 import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.os.Bundle
@@ -772,6 +774,44 @@ class E2eTest {
     }
 
     /**
+     * run.py made the peer offer two folders whose requests share a `String.hashCode()`, which up to
+     * 0.5.0 was the notification's ID: the two had one notification, and its buttons acted on the offer
+     * posted last. Each has its own; Review opens its offer, Ignore ignores it and leaves the other.
+     * The buttons are pressed as the notification shade does it, by sending their PendingIntents.
+     */
+    @Test
+    fun requestNotifications() {
+        phoneId()
+        val nm = app.getSystemService(NotificationManager::class.java)
+        fun key(offer: String) = "folder:$offer:${peer.id}"
+        fun shown(offer: String) = nm.activeNotifications.singleOrNull { it.tag == "request:${key(offer)}" }?.notification
+        fun pending() = SyncStatus.snapshot.value.pendingFolders.filterValues { peer.id in it.offeredBy }.keys
+        assertEquals("the two requests' hash codes", key(OFFER_A).hashCode(), key(OFFER_B).hashCode())
+        eventually("a notification for each offer", 90_000) { shown(OFFER_A) != null && shown(OFFER_B) != null }
+
+        // The app is on screen, so it may open its own screens through a PendingIntent, as the shade may.
+        @Suppress("DEPRECATION") // the newer names of this mode start with Android 16
+        val fromTheScreen = ActivityOptions.makeBasic()
+            .setPendingIntentBackgroundActivityStartMode(ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED).toBundle()
+        for (offer in listOf(OFFER_A, OFFER_B, OFFER_A)) {
+            shown(offer)!!.contentIntent.send(app, 0, null, null, null, null, fromTheScreen)
+            val title = app.getString(R.string.folder_add_offer, offer)
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(title)).fetchSemanticsNodes().isNotEmpty() }
+            tap(str(R.string.action_back))
+            rule.waitUntil(20_000) { rule.onAllNodes(hasText(title)).fetchSemanticsNodes().isEmpty() }
+        }
+
+        val ignore = str(CoreR.string.action_ignore)
+        shown(OFFER_B)!!.actions.single { it.title.toString() == ignore }.actionIntent.send()
+        eventually("the ignored offer gone, the other still there", 30_000) { pending() == setOf(OFFER_A) && shown(OFFER_B) == null }
+        assertTrue("the other offer's notification stays", shown(OFFER_A) != null)
+        shown(OFFER_A)!!.actions.single { it.title.toString() == ignore }.actionIntent.send()
+        eventually("both offers ignored, no request notification left", 30_000) {
+            pending().isEmpty() && nm.activeNotifications.none { it.tag?.startsWith("request:") == true }
+        }
+    }
+
+    /**
      * scripts/e2e/upgrade.py installed this build over the last release, which ran its own
      * [pairAndSync]: the setup, the identity, the peer and the folder are still there, the
      * database too (no "moved from another phone"), and files sync both ways.
@@ -921,6 +961,9 @@ class E2eTest {
         const val REMOVE_LABEL = "To remove"
         const val REMOVE_NAME = "To remove too"
         /** Valid, and no device ever connects with it (the unit tests' laptop). */
+        // run.py's: "Aa" and "BB" have the same String.hashCode(), so the two requests' keys have too.
+        const val OFFER_A = "offer-Aa"
+        const val OFFER_B = "offer-BB"
         const val REMOVE_DEVICE = "EUYDWRS-RLRTXET-7MISOPK-TNF7ZLL-K6B27WA-EGBOIRY-NHBBU4W-LEN55AT"
         const val SEEDS = 20
         const val VERSIONED = "versioned.txt"
