@@ -14,8 +14,8 @@ android {
         applicationId = "eu.stedb.mysyncthing"
         minSdk = 35
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.5.0"
+        versionCode = 9
+        versionName = "0.5.1"
         // End-to-end tests on an emulator against a real Syncthing peer (scripts/e2e/run.py).
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
