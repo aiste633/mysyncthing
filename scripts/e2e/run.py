@@ -391,6 +391,18 @@ def main_activities() -> int:
     return sum(1 for line in sh("dumpsys activity activities").splitlines() if "Hist" in line and f"{APP}/.MainActivity" in line)
 
 
+OFFERS = ("offer-Aa", "offer-BB")  # E2eTest's: "Aa" and "BB" have the same String.hashCode() in Kotlin
+
+
+def offer(peer: Peer, phone: str) -> None:
+    """Two more folders of the peer, shared with the phone: the phone sees two offers (E2eTest#requestNotifications)."""
+    for fid in OFFERS:
+        d = peer.dir / fid
+        d.mkdir()
+        peer.call("POST", "rest/config/folders", {"id": fid, "label": fid, "path": str(d), "fsWatcherEnabled": False,
+                                                 "rescanIntervalS": 3600, "devices": [{"deviceID": phone}]})
+
+
 def launcher_starts() -> None:
     """Opened first by an intent that is not the launcher's, then three times from the launcher: one
     MainActivity stays, not four (each copy kept its own screens; the monkey stacked 121, then an ANR)."""
@@ -828,6 +840,12 @@ def main() -> None:
             phase("recentChanges", peer, a.out)
             phase("browseFolder", peer, a.out)
             phase("removeGoesBackToTheTab", peer, a.out)
+            with step("two offers from the peer whose requests share a hash code"):
+                offer(peer, phone)
+            phase("requestNotifications", peer, a.out)
+            with step("the peer's two offers withdrawn"):
+                for fid in OFFERS:
+                    peer.call("DELETE", f"rest/config/folders/{fid}")
             phase("stopAndStart", peer, a.out)
             with step("process death"):
                 process_death(peer, phone)
