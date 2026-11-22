@@ -561,8 +561,18 @@ the PC doing nothing else, three rounds per build, alternating.
 | Asking the core only for the events the app uses | 18.9 s (18.8 to 19.0) | 32 s | 0.02 s |
 
 The saving is in the app's side of the event stream: 0.5.0 received, decoded and dropped an event for
-every file, mostly in its HTTP threads (about 10 s) and the garbage collector. One emulator, one
-folder and one device; a phone's numbers differ, the ratio should not change much.
+every file, mostly in its HTTP threads (about 10 s) and the garbage collector.
+
+The same day, the snapshot updated from events instead of reloaded (refactor review P1b), against
+the filtered build, three rounds each, also with nine more folders shared and idle:
+
+| Folders | Reloading the snapshot | Updating it from events | Sync time |
+|---|---|---|---|
+| 1 | 19.0 s (18.9 to 19.1) | 18.4 s (18.3 to 18.5) | 32 s for both |
+| 10 | 19.8 s (19.8 to 19.9) | 19.2 s (19.2 to 19.3) | 32 s for both |
+
+3 % less in both, so it was not adopted: after the filter, the reloads cost little. One emulator and
+one device; a phone's numbers differ, the ratios should not change much.
 
 ## Network tests (2026-11-13)
 
