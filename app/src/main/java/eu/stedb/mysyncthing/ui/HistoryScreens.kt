@@ -58,7 +58,9 @@ import eu.stedb.mysyncthing.core.DiskChange
 import eu.stedb.mysyncthing.core.FileVersion
 import eu.stedb.mysyncthing.core.Snapshot
 import eu.stedb.mysyncthing.core.parseConflictCopy
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import java.time.OffsetDateTime
 import java.time.ZoneId
@@ -79,6 +81,9 @@ fun RecentChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: 
     // Folder states change whenever files do, so this follows new changes without a second event poll.
     LaunchedEffect(s.folderStatus) { vm.recentChanges(RECENT_LIMIT)?.let { all -> changes = all.filter { it.change.folder == folder } } }
     val label = s.folders.find { it.id == folder }?.label?.ifEmpty { null } ?: folder
+    // Grouped when the changes or the day change, not on every redraw: the snapshot changes once a second during a sync.
+    val now = LocalNow.current().atZone(ZoneId.systemDefault())
+    val days = remember(changes, now.toLocalDate(), now.zone) { changes?.groupBy { dayText(it.time, now) } }
 
     AppScreen(title = stringResource(R.string.recent_changes), subtitle = label, onBack = onBack) { padding ->
         LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(top = 4.dp, bottom = 32.dp)) {
@@ -93,12 +98,11 @@ fun RecentChangesScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: 
                 }
                 item("conflicts") { ConflictsBox(copies, s, s.folders.find { it.id == folder }?.maxConflicts ?: DEFAULT_MAX_CONFLICTS) }
             }
-            val shown = changes
             when {
-                shown == null -> item("loading") { Hint(stringResource(R.string.loading)) }
-                shown.isEmpty() -> item("none") { Hint(stringResource(R.string.recent_none)) }
+                days == null -> item("loading") { Hint(stringResource(R.string.loading)) }
+                days.isEmpty() -> item("none") { Hint(stringResource(R.string.recent_none)) }
                 else -> {
-                    shown.groupBy { dayText(it.time) }.forEach { (day, list) ->
+                    days.forEach { (day, list) ->
                         item("day-$day") { GroupTitle(day?.asString().orEmpty()) }
                         item("list-$day") {
                             ListCard {
@@ -194,22 +198,20 @@ private enum class Range(@StringRes val label: Int, @StringRes val newest: Int, 
 @Composable
 fun VersionsScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () -> Unit) {
     val f = s.folders.find { it.id == folder }
-    var versions by remember { mutableStateOf<Map<String, List<FileVersion>>?>(null) }
+    // Read and sorted once per load, off the main thread: a large folder has thousands of version times.
+    var all by remember { mutableStateOf<List<VersionedFile>?>(null) }
     var reload by remember { mutableIntStateOf(0) }
-    LaunchedEffect(folder, reload) { versions = vm.versions(folder) }
+    LaunchedEffect(folder, reload) { all = vm.versions(folder)?.let { withContext(Dispatchers.Default) { versionedFiles(it) } } }
     var range by rememberSaveable { mutableStateOf(Range.Week) }
     var query by rememberSaveable { mutableStateOf("") }
     var open by rememberSaveable { mutableStateOf<String?>(null) }
     var confirmAll by rememberSaveable { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    val since = range.days?.let { Instant.now().minus(it, ChronoUnit.DAYS) }
-    // Per file, its versions newest first, kept when at least one falls in the range.
-    val files = versions.orEmpty().mapNotNull { (path, list) ->
-        val sorted = list.sortedByDescending { instant(it.versionTime) }
-        val inRange = sorted.filter { since == null || (instant(it.versionTime) ?: Instant.MIN) >= since }
-        if (inRange.isEmpty() || (query.isNotBlank() && query.trim().lowercase() !in path.lowercase())) null else Triple(path, sorted, inRange)
-    }.sortedByDescending { instant(it.third.first().versionTime) }
+    val now = LocalNow.current
+    val files = remember(all, range, query) {
+        all.orEmpty().matching(range.days?.let { now().atZone(ZoneId.systemDefault()).toInstant().minus(it, ChronoUnit.DAYS) }, query)
+    }
 
     AppScreen(
         title = stringResource(R.string.restore_versions),
@@ -230,22 +232,23 @@ fun VersionsScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () ->
                 }
             }
             when {
-                versions == null -> item("loading") { Hint(stringResource(R.string.loading)) }
-                files.isEmpty() -> item("none") { Hint(stringResource(if (versions!!.isEmpty()) R.string.versions_none else R.string.versions_no_match)) }
+                all == null -> item("loading") { Hint(stringResource(R.string.loading)) }
+                files.isEmpty() -> item("none") { Hint(stringResource(if (all!!.isEmpty()) R.string.versions_none else R.string.versions_no_match)) }
             }
-            items(files, key = { it.first }) { (path, all, inRange) ->
+            items(files, key = { it.path }) { file ->
+                val path = file.path
                 ListCard {
                     SettingRow(
                         path.substringAfterLast('/'),
                         listOfNotNull(
                             path.substringBeforeLast('/', "").ifEmpty { null },
-                            count(R.plurals.count_versions, all.size).asString(),
-                            whenText(inRange.first().versionTime)?.let { stringResource(R.string.versions_latest, it.asString()) },
+                            count(R.plurals.count_versions, file.versions.size).asString(),
+                            whenText(file.versions.first().versionTime)?.let { stringResource(R.string.versions_latest, it.asString()) },
                         ).joinToString(" · "),
                         icon = Icons.Default.History,
                     ) { open = if (open == path) null else path }
                     if (open == path) {
-                        VersionPicker(all, inRange.first(), f?.type) { v ->
+                        VersionPicker(file.versions, file.versions.first(), f?.type) { v ->
                             scope.launch { if (vm.restoreVersions(folder, mapOf(path to v.versionTime))) { open = null; reload++ } }
                         }
                     }
@@ -260,7 +263,7 @@ fun VersionsScreen(s: Snapshot, folder: String, vm: MainViewModel, onBack: () ->
             stringResource(R.string.action_restore), onDismiss = { confirmAll = false },
         ) {
             confirmAll = false
-            val pick = files.associate { (path, _, inRange) -> path to inRange.first().versionTime }
+            val pick = files.associate { it.path to it.versions.first().versionTime }
             scope.launch { if (vm.restoreVersions(folder, pick)) reload++ }
         }
     }
@@ -290,6 +293,28 @@ private fun VersionPicker(versions: List<FileVersion>, initial: FileVersion, fol
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(top = 4.dp),
         )
     }
+}
+
+/** A file's archived [versions], newest first and never empty; [newest] is the first one's time, null when unreadable. */
+internal class VersionedFile(val path: String, val versions: List<FileVersion>, val newest: Instant?)
+
+/**
+ * The core's versions per file as the screen lists them: each file's versions newest first, and the
+ * file with the newest version first. Every time is read once, here; unreadable ones come last.
+ */
+internal fun versionedFiles(versions: Map<String, List<FileVersion>>): List<VersionedFile> =
+    versions.mapNotNull { (path, list) ->
+        val timed = list.map { it to instant(it.versionTime) }.sortedByDescending { it.second }
+        timed.firstOrNull()?.let { (_, newest) -> VersionedFile(path, timed.map { it.first }, newest) }
+    }.sortedByDescending { it.newest }
+
+/**
+ * The files with a version archived at or after [since] (at any time when null) and [query] in their
+ * path. The newest version decides: the versions are sorted, so when it is too old, all are.
+ */
+internal fun List<VersionedFile>.matching(since: Instant?, query: String): List<VersionedFile> {
+    val q = query.trim().lowercase()
+    return filter { (since == null || (it.newest ?: Instant.MIN) >= since) && q in it.path.lowercase() }
 }
 
 private fun instant(rfc3339: String): Instant? = runCatching { OffsetDateTime.parse(rfc3339).toInstant() }.getOrNull()
