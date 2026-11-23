@@ -205,7 +205,7 @@ The network tests and any measurement still run alone.
 | Monkey | 30,000 random events with a fixed seed (about 13 min), BACK and rotation included, the app pinned so no tap leaves it (pinned again within 2 s where Android 16's launcher lets a tap through): no crash, no freeze, no blank screen |
 
 The run also fails on any crash or ANR of the app in the log (crashes and ANRs of other processes are listed), and on a blank screen: the app logs an error when its back stack empties, which no crash check would see. It counts StrictMode reports. Each release
-commits the results of its run in [`docs/e2e/`](e2e/): for 0.5.0 every step passed on Android 15, 16 and 17.
+commits the results of its run in [`docs/e2e/`](e2e/): for 0.5.1 every step passed on Android 15, 16 and 17.
 (On 2026-10-28, on Android 15 and 16, the log held 0 StrictMode reports.)
 
 On a PC the runs keep the emulator off Syncthing's public servers: `E2E_OFFLINE=1 scripts/e2e/emulator.sh <api>`

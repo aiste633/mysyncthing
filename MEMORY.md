@@ -6,7 +6,7 @@ How to keep it: **State** and **Next** are rewritten, not appended to, in every 
 
 ## State (2026-11-22)
 - Released: v0.5.0 (2026-11-16, versionCode 8) for Android 15, 16 and 17. Earlier: 0.1.0 (2026-10-29), 0.1.2 (2026-10-30), 0.1.3 (2026-10-31), 0.2.0 (2026-11-05), 0.3.0 (2026-11-12), 0.4.0 (2026-11-14). 0.1.1 was never tagged. Releases are on GitHub; each is signed by the user on their own machine.
-- Prepared: v0.5.1 (2026-11-22, versionCode 9), a fixes release: the three lines of this list that start with "In 0.5.1", and the documentation rework of 2026-11-16 (store text and screenshots). No dependency or toolchain change since 0.5.0. Tested for 0.5.1: see `docs/e2e/0.5.1.md` once the PC run is committed.
+- Prepared: v0.5.1 (2026-11-22, versionCode 9), a fixes release: the three lines of this list that start with "In 0.5.1", and the documentation rework of 2026-11-16 (store text and screenshots). No dependency or toolchain change since 0.5.0. Tested for 0.5.1 on 2026-11-23: unit and screen tests; the emulator end-to-end run, monkey included, on API 35, 36 and 37 (`docs/e2e/0.5.1.md`); the upgrade test from 0.5.0 on API 37, 36 and 35; a manual walk.
 - Built from: Syncthing v2.1.7 (three small patches in `go/patches/`), Go toolchain 1.26.11, AGP 9.5.1, Kotlin 2.4.21, Gradle 9.9.1, NDK r30. Details under Pins.
 - What works: everything in the README feature list. Native screens for folders, devices, settings, defaults, versions, recent changes, conflicts, run conditions, sync windows (global and per device), proxy, import and export; the web GUI stays as a fallback.
 - Languages: English, Italian, Spanish, German, French.
