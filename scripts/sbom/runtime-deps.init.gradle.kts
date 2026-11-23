@@ -10,6 +10,7 @@ import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.result.ResolvedArtifactResult
 import org.gradle.api.artifacts.result.ResolvedComponentResult
 import org.gradle.api.artifacts.result.ResolvedDependencyResult
+import org.gradle.api.artifacts.result.UnresolvedArtifactResult
 import org.gradle.api.attributes.Attribute
 import org.gradle.maven.MavenModule
 import org.gradle.maven.MavenPomArtifact
@@ -54,6 +55,8 @@ allprojects {
                 query.withArtifacts(MavenModule::class.java, MavenPomArtifact::class.java).execute()
                     .resolvedComponents.sortedBy { it.id.displayName }.forEach { c ->
                         c.getArtifacts(MavenPomArtifact::class.java).forEach { a ->
+                            // A failed download (network, verification) comes back unresolved: name it and its cause.
+                            if (a is UnresolvedArtifactResult) throw GradleException("POM of ${c.id.displayName} not resolved", a.failure)
                             val pom = (a as ResolvedArtifactResult).file
                             println("pom ${c.id.displayName} $pom")
                             val doc = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(pom)
